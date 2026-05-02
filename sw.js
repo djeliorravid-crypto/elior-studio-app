@@ -1,5 +1,5 @@
 const CACHE = 'elior-studio-v1';
-const ASSETS = ['/'];
+const ASSETS = ['/elior-studio-app/'];
 
 self.addEventListener('install', e => {
   e.waitUntil(

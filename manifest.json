@@ -2,7 +2,7 @@
   "name": "אליאור רביד - ניהול חשבונות",
   "short_name": "אליאור רביד",
   "description": "ניהול הכנסות, הוצאות ולקוחות לאולפן הקלטות",
-  "start_url": "/",
+  "start_url": "/elior-studio-app/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f2f4fb",
