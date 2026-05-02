@@ -3414,13 +3414,11 @@ if ('serviceWorker' in navigator) {
 initFirebase().then(() => refreshAll());
 
 // ===== LOGIN =====
-const LOGIN_KEY = 'studio_auth';
 const PASS = '110';
 
 function doLogin() {
   const val = document.getElementById('login-pass').value;
   if (val === PASS) {
-    localStorage.setItem(LOGIN_KEY, '1');
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('login-pass').value = '';
   } else {
@@ -3430,11 +3428,6 @@ function doLogin() {
     document.getElementById('login-pass').focus();
     setTimeout(() => err.textContent = '', 2000);
   }
-}
-
-// בדוק אם כבר מחובר
-if (localStorage.getItem(LOGIN_KEY) === '1') {
-  document.getElementById('login-screen').classList.add('hidden');
 }
 </script>
 </body>
