@@ -1,4 +1,4 @@
-const CACHE = 'elior-studio-v1';
+const CACHE = 'elior-studio-v3';
 const ASSETS = ['/elior-studio-app/'];
 
 self.addEventListener('install', e => {
