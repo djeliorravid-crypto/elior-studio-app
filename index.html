@@ -3255,7 +3255,19 @@ function importBackup(event) {
 
 // ===== PWA — Service Worker + אייקון =====
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/elior-studio-app/sw.js').then(reg => {
+    // בדוק עדכון כל פעם שפותחים את האפליקציה
+    reg.update();
+    // כשנמצאה גרסה חדשה — טען מחדש אוטומטית
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'activated') {
+          window.location.reload();
+        }
+      });
+    });
+  }).catch(() => {});
 }
 (function() {
   try {
