@@ -1,35 +1,10 @@
-const CACHE = 'elior-studio-v4';
-const ASSETS = ['/elior-studio-app/'];
-
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
-  );
-  self.skipWaiting();
-});
-
+// Service Worker — ללא caching, תמיד טוען מהרשת
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
+  // מחק את כל הcaches הישנים
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
   );
   self.clients.claim();
 });
-
-// Network first, fallback to cache
-self.addEventListener('fetch', e => {
-  // רק בקשות GET ולאותו domain
-  if (e.request.method !== 'GET') return;
-  if (!e.request.url.startsWith(self.location.origin)) return;
-
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-        return res;
-      })
-      .catch(() => caches.match(e.request))
-  );
-});
+// לא מטפל בfetch — הדפדפן טוען ישירות מהרשת תמיד
