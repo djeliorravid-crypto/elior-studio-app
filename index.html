@@ -1,0 +1,3295 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>אליאור רביד - ניהול חשבונות</title>
+
+  <!-- ===== PWA ===== -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#6c47f5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="אליאור רביד" />
+  <link id="apple-icon" rel="apple-touch-icon" />
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- פונט Heebo — עברית פרמיום -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ===== מצב אור (ברירת מחדל) ===== */
+    :root {
+      --bg:           #f2f4fb;
+      --surface:      #ffffff;
+      --surface2:     #f5f6fb;
+      --surface3:     #eef0f8;
+      --border:       #e2e5f0;
+      --border-glow:  rgba(108,71,245,0.18);
+      --accent:       #6c47f5;
+      --accent-light: #ede9ff;
+      --accent2:      #a78bfa;
+      --accent-glow:  rgba(108,71,245,0.10);
+      --green:        #16a34a;
+      --green-light:  #dcfce7;
+      --green-border: #86efac;
+      --red:          #dc2626;
+      --red-light:    #fee2e2;
+      --orange:       #d97706;
+      --text:         #1a1a2e;
+      --text-muted:   #6b7280;
+      --radius:       14px;
+      --shadow:       0 2px 16px rgba(108,71,245,0.08);
+      --shadow-hover: 0 8px 32px rgba(108,71,245,0.15);
+      --sidebar-bg:   #ffffff;
+      --sidebar-w:    220px;
+      --tr-hover:     #fafbff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Heebo', 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+      direction: rtl;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      z-index: 100;
+      box-shadow: -2px 0 20px rgba(0,0,0,0.08);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .sidebar-logo {
+      padding: 24px 18px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .logo-icon { font-size: 28px; margin-bottom: 6px; }
+    .sidebar-logo h1 { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: 0.02em; }
+    .sidebar-logo p { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+    nav { flex: 1; padding: 10px 0; }
+    nav a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 18px; color: var(--text-muted);
+      text-decoration: none; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all 0.18s;
+      border-right: 3px solid transparent; margin: 1px 0;
+    }
+    nav a:hover { color: var(--text); background: var(--surface2); }
+    nav a.active {
+      color: var(--accent);
+      background: var(--accent-light);
+      border-right-color: var(--accent);
+      font-weight: 700;
+    }
+    nav a .nav-icon { font-size: 15px; width: 20px; text-align: center; }
+    .sidebar-footer {
+      padding: 14px 18px; border-top: 1px solid var(--border);
+      font-size: 11px; color: var(--text-muted);
+    }
+
+    /* כפתור עריכת תמונת לקוח */
+    .photo-edit-wrap {
+      position: relative; display: inline-block; cursor: pointer;
+    }
+    .photo-edit-wrap:hover .photo-edit-overlay { opacity: 1; }
+    .photo-edit-overlay {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.2s;
+      font-size: 18px;
+    }
+
+    /* ===== MAIN ===== */
+    .main {
+      margin-right: var(--sidebar-w); flex: 1; padding: 28px 32px;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ===== PAGE HEADER ===== */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .page-header h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+    .page-header p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ===== MONTH SELECTOR ===== */
+    .month-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 12px;
+    }
+
+    .month-selector button {
+      background: none; border: none;
+      color: var(--text-muted); cursor: pointer;
+      font-size: 16px; padding: 2px 6px;
+      border-radius: 6px; transition: all 0.15s;
+    }
+
+    .month-selector button:hover { background: var(--surface2); color: var(--text); }
+
+    .month-label {
+      font-size: 14px; font-weight: 700;
+      color: var(--text); min-width: 120px; text-align: center;
+    }
+
+    /* ===== SUMMARY CARDS ===== */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      border-color: var(--border-glow);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px var(--border-glow);
+    }
+
+    .card-icon { font-size: 22px; margin-bottom: 12px; }
+    .card-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; font-weight: 600; }
+    .card-value { font-size: 26px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.02em; }
+    .card-value.green { color: var(--green); }
+    .card-value.red { color: var(--red); }
+    .card-value.purple { color: var(--accent); }
+    .card-value.orange { color: var(--orange); }
+    .card-value.blue { color: #2563eb; }
+    .card-sub { font-size: 12px; color: var(--text-muted); }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 10px;
+      font-size: 13px; font-weight: 700;
+      cursor: pointer; border: none; transition: all 0.17s;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    .btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+
+    .btn-danger { background: var(--red-light); color: var(--red); }
+    .btn-danger:hover { filter: brightness(0.95); }
+
+    .btn-back { background: var(--accent-light); color: var(--accent); }
+    .btn-back:hover { filter: brightness(0.95); }
+
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* ===== TABLE ===== */
+    .table-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+    }
+
+    .table-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1.5px solid var(--border);
+      flex-wrap: wrap; gap: 10px;
+    }
+
+    .table-header h3 { font-size: 15px; font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      background: var(--surface2);
+      padding: 11px 16px;
+      font-size: 11px; font-weight: 700;
+      color: var(--text-muted); text-align: right;
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+
+    td {
+      padding: 14px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--tr-hover); }
+
+    /* ── מסגרת שחורה לשורות — desktop בלבד ── */
+    @media (min-width: 701px) {
+      .row-framed td { border-top: 1.5px solid #1a1a2e !important; border-bottom: 1.5px solid #1a1a2e !important; }
+      .row-framed td:first-child { border-right: 1.5px solid #1a1a2e !important; }
+      .row-framed td:last-child  { border-left:  1.5px solid #1a1a2e !important; }
+    }
+
+    /* ===== BADGE ===== */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+    }
+
+    .badge-green { background: var(--green-light); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+    .badge-gray { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border); }
+    .badge-red { background: var(--red-light); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+    .badge-orange { background: rgba(251,191,36,0.1); color: var(--orange); border: 1px solid rgba(251,191,36,0.2); }
+    .badge-purple { background: var(--accent-light); color: var(--accent); border: 1px solid rgba(201,168,76,0.2); }
+    .badge-blue { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      z-index: 1000; align-items: center; justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px;
+      width: 100%; max-width: 480px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);
+      direction: rtl; max-height: 90vh; overflow-y: auto;
+    }
+
+    .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 22px; letter-spacing: -0.01em; }
+
+    .form-group { margin-bottom: 15px; }
+
+    .form-group label {
+      display: block; font-size: 12px; font-weight: 700;
+      color: var(--text-muted); margin-bottom: 5px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 14px;
+      font-size: 14px; color: var(--text); outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s; direction: rtl;
+      font-family: 'Heebo', inherit;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(201,168,76,0.12);
+    }
+
+    .form-group textarea { resize: vertical; min-height: 72px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+    /* ===== SEARCH BAR ===== */
+    .search-bar { position: relative; }
+
+    .search-bar input {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 8px 14px 8px 36px;
+      font-size: 13px; color: var(--text); outline: none;
+      transition: border-color 0.15s; direction: rtl;
+      width: 220px;
+    }
+
+    .search-bar input:focus { border-color: var(--accent); }
+
+    .search-bar .si {
+      position: absolute; left: 11px; top: 50%;
+      transform: translateY(-50%); color: var(--text-muted); font-size: 13px;
+    }
+
+    /* ===== CHART ===== */
+    .chart-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px; margin-bottom: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .chart-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+
+    .bar-chart {
+      display: flex; align-items: flex-end; gap: 8px; height: 150px;
+    }
+
+    .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .bar-wrap { width: 100%; display: flex; gap: 3px; align-items: flex-end; height: 125px; }
+
+    .bar {
+      flex: 1; border-radius: 5px 5px 0 0; min-height: 4px;
+      transition: height 0.45s ease; cursor: pointer;
+    }
+
+    .bar.income { background: linear-gradient(180deg, #34d399, #0d9488); }
+    .bar.expense { background: linear-gradient(180deg, #f87171, #dc2626); }
+    .bar-lbl { font-size: 10px; color: var(--text-muted); }
+
+    /* ===== RECENT ===== */
+    .recent-item {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .recent-item:last-child { border-bottom: none; }
+
+    .recent-item-r { display: flex; align-items: center; gap: 12px; }
+
+    .ri-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+    }
+
+    .ri-icon.in { background: var(--green-light); }
+    .ri-icon.out { background: var(--red-light); }
+    .ri-name { font-size: 14px; font-weight: 600; }
+    .ri-date { font-size: 12px; color: var(--text-muted); }
+    .ri-amount { font-size: 15px; font-weight: 800; }
+
+    /* ===== PROFILES PAGE ===== */
+    .section-title {
+      font-size: 13px; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .06em; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .section-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+
+    .profiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+
+    .profile-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .profile-card.active-client {
+      border-color: var(--green-border);
+    }
+
+    .profile-card.active-client::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #4ade80, #16a34a);
+    }
+
+    .profile-card.inactive-client {
+      border-color: var(--border);
+      opacity: 0.55;
+    }
+
+    .profile-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .profile-card.active-client:hover { border-color: #4ade80; }
+    .profile-card.inactive-client:hover { opacity: 0.85; border-color: var(--text-muted); }
+
+    .pc-top {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 14px;
+    }
+
+    .pc-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: #fff;
+    }
+
+    .pc-status { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; }
+    .pc-status .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .pc-status.active { color: var(--green); }
+    .pc-status.active .dot { background: var(--green); }
+    .pc-status.inactive { color: #9ca3af; }
+    .pc-status.inactive .dot { background: #9ca3af; }
+
+    .pc-name { font-size: 17px; font-weight: 800; margin-bottom: 3px; }
+    .pc-type { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+    .pc-contact { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
+
+    .pc-stats {
+      display: flex; gap: 0;
+      border-top: 1px solid var(--border);
+      margin: 0 -20px -18px;
+    }
+
+    .pc-stat {
+      flex: 1; padding: 12px 16px; text-align: center;
+      border-left: 1px solid var(--border);
+    }
+
+    .pc-stat:last-child { border-left: none; }
+    .pc-stat-val { font-size: 16px; font-weight: 800; color: var(--accent); }
+    .pc-stat-lbl { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+    /* ===== PROFILE DETAIL PAGE ===== */
+    .detail-wrap { max-width: 760px; }
+
+    .detail-header {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 30px; margin-bottom: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .detail-header-inner { display: flex; gap: 22px; align-items: flex-start; }
+
+    .detail-avatar {
+      width: 88px; height: 88px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px; font-weight: 800; color: #fff;
+      flex-shrink: 0;
+      box-shadow: 0 4px 20px rgba(108,71,245,0.2);
+    }
+
+    .detail-info { flex: 1; }
+    .detail-name { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+    .detail-type { font-size: 14px; color: var(--accent); font-weight: 700; margin-bottom: 10px; }
+
+    .detail-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+    .detail-meta-item { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); }
+
+    .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+    .detail-section {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px; margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .detail-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 7px; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+    .stat-box { background: var(--surface2); border-radius: 12px; padding: 16px; text-align: center; }
+    .stat-box-val { font-size: 26px; font-weight: 800; color: var(--accent); margin-bottom: 3px; }
+    .stat-box-lbl { font-size: 12px; color: var(--text-muted); }
+
+    .contact-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .contact-item {
+      display: flex; align-items: center; gap: 13px;
+      padding: 12px 14px; background: var(--surface2);
+      border-radius: 10px; font-size: 14px; transition: background 0.15s;
+    }
+
+    .contact-item:hover { background: var(--accent-light); }
+
+    .contact-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: var(--accent-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0;
+    }
+
+    .contact-lbl { font-size: 11px; color: var(--text-muted); }
+    .contact-val { font-size: 14px; font-weight: 600; color: var(--text); }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center; padding: 48px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .ei { font-size: 48px; margin-bottom: 10px; }
+    .empty-state p { font-size: 15px; }
+
+    /* ===== AVATAR COLORS ===== */
+    .av-0 { background: linear-gradient(135deg, #6c47f5, #a78bfa); }
+    .av-1 { background: linear-gradient(135deg, #0ea5e9, #38bdf8); }
+    .av-2 { background: linear-gradient(135deg, #ec4899, #f472b6); }
+    .av-3 { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+    .av-4 { background: linear-gradient(135deg, #10b981, #34d399); }
+    .av-5 { background: linear-gradient(135deg, #ef4444, #f87171); }
+    .av-6 { background: linear-gradient(135deg, #8b5cf6, #c084fc); }
+    .av-7 { background: linear-gradient(135deg, #14b8a6, #2dd4bf); }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; bottom: 26px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface3);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 12px 24px; border-radius: 12px;
+      font-size: 14px; font-weight: 600;
+      z-index: 9999; transition: transform 0.3s ease;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ===== CONGRATS POPUP ===== */
+    .congrats-popup {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.7);
+      opacity: 0;
+      background: var(--surface);
+      border: 2px solid var(--green-border);
+      border-radius: 24px;
+      padding: 40px 56px;
+      text-align: center;
+      z-index: 99999;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 40px rgba(52,211,153,0.15);
+      pointer-events: none;
+      transition: transform 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.3s ease;
+    }
+
+    .congrats-popup.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .congrats-popup .cp-emoji {
+      font-size: 52px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .congrats-popup .cp-text {
+      font-size: 32px;
+      font-weight: 900;
+      color: #16a34a;
+      letter-spacing: -0.5px;
+    }
+
+    /* ===== TOGGLE SWITCH ===== */
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+    .toggle {
+      width: 38px; height: 22px; border-radius: 11px;
+      border: none; cursor: pointer;
+      position: relative; transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toggle::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; top: 3px; right: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+
+    .toggle.on { background: var(--green); }
+    .toggle.on::after { transform: translateX(-16px); }
+    .toggle.off { background: #d1d5db; }
+
+    /* ===== FILTER TABS ===== */
+    .filter-tabs { display: flex; gap: 6px; }
+
+    .ftab {
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .ftab:hover { color: var(--accent); border-color: var(--accent2); }
+    .ftab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* Amounts */
+    .amt-pos { color: var(--green); font-weight: 800; }
+    .amt-neg { color: var(--red); font-weight: 800; }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ===== INSTALLMENTS ===== */
+    .plan-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px 0;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s;
+      overflow: hidden;
+    }
+    .plan-card:hover { box-shadow: var(--shadow-hover); }
+
+    .plan-card-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; margin-bottom: 14px; gap: 12px;
+    }
+
+    .plan-title { font-size: 16px; font-weight: 800; margin-bottom: 3px; }
+    .plan-client { font-size: 13px; color: var(--accent); font-weight: 600; }
+
+    .plan-meta {
+      display: flex; gap: 18px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .plan-meta-item { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+    .plan-meta-item strong { color: var(--text); font-weight: 700; }
+
+    /* Progress bar */
+    .plan-progress-wrap { margin-bottom: 16px; }
+    .plan-progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: var(--text-muted); margin-bottom: 6px;
+    }
+    .plan-progress-label span { font-weight: 700; color: var(--text); }
+    .plan-progress-bar {
+      height: 8px; background: var(--surface2);
+      border-radius: 4px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .plan-progress-fill {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, #4ade80, #16a34a);
+      transition: width 0.5s ease;
+    }
+
+    /* Payment timeline */
+    .payment-timeline {
+      display: flex; gap: 0;
+      margin: 0 -24px;
+      border-top: 1.5px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .payment-step {
+      flex: 1; min-width: 80px;
+      padding: 12px 10px;
+      text-align: center;
+      border-left: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+    .payment-step:last-child { border-left: none; }
+    .payment-step:hover { background: var(--surface2); }
+
+    .payment-step.paid { background: #f0fdf4; }
+    .payment-step.paid:hover { background: #dcfce7; }
+    .payment-step.overdue { background: #fff5f5; }
+    .payment-step.overdue:hover { background: #fee2e2; }
+
+    .ps-icon { font-size: 18px; margin-bottom: 4px; }
+    .ps-num { font-size: 10px; color: var(--text-muted); margin-bottom: 2px; }
+    .ps-date { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; }
+    .ps-amount { font-size: 12px; font-weight: 700; }
+    .ps-amount.paid { color: var(--green); }
+    .ps-amount.pending { color: var(--accent); }
+    .ps-amount.overdue { color: var(--red); }
+
+    .ps-badge {
+      display: inline-block; padding: 2px 7px;
+      border-radius: 10px; font-size: 10px; font-weight: 700;
+      margin-top: 4px;
+    }
+    .ps-badge.paid { background: var(--green-light); color: var(--green); }
+    .ps-badge.pending { background: var(--accent-light); color: var(--accent); }
+    .ps-badge.overdue { background: #fee2e2; color: var(--red); }
+
+    /* ===== MINI CALENDAR ===== */
+    .mini-cal {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px 18px;
+      box-shadow: var(--shadow);
+      margin-bottom: 22px;
+    }
+
+    .mini-cal-title {
+      font-size: 13px; font-weight: 800;
+      text-align: center; margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .mini-cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .mini-cal-header {
+      text-align: center;
+      font-size: 11px; font-weight: 700;
+      color: var(--text-muted);
+      padding: 4px 0 6px;
+    }
+
+    .mini-cal-day {
+      text-align: center;
+      font-size: 13px;
+      padding: 5px 2px;
+      border-radius: 8px;
+      cursor: default;
+      min-height: 46px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+    }
+
+    .mini-cal-day.today {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .mini-cal-day.empty { pointer-events: none; }
+
+    .mini-cal-dots {
+      display: flex; gap: 3px; justify-content: center;
+    }
+
+    .mc-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .mc-dot:hover { transform: scale(1.3); }
+    .mc-dot.income { background: var(--green); }
+    .mc-dot.expense { background: var(--red); }
+
+    /* tooltip — נראה בלחיצה ובhover */
+    .mc-dot:hover .mc-tooltip,
+    .mc-dot.active-tip .mc-tooltip { display: block; }
+
+    .mc-tooltip {
+      display: none;
+      position: absolute;
+      bottom: 18px;
+      right: 50%;
+      transform: translateX(50%);
+      background: var(--text);
+      color: #fff;
+      font-size: 12px;
+      line-height: 1.5;
+      padding: 7px 11px;
+      border-radius: 10px;
+      z-index: 9999;
+      width: max-content;
+      max-width: 200px;
+      white-space: normal;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+
+    /* חץ קטן מתחת לטולטיפ */
+    .mc-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%; right: 50%;
+      transform: translateX(50%);
+      border: 5px solid transparent;
+      border-top-color: var(--text);
+    }
+
+    /* ===== PROJECTS PAGE ===== */
+    .proj-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+      transition: all 0.2s;
+    }
+
+    .proj-card.done {
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border-color: var(--green-border);
+    }
+
+    .proj-card:hover { box-shadow: var(--shadow-hover); }
+
+    .proj-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .proj-progress-bar {
+      height: 14px; background: var(--surface2);
+      border-radius: 7px; overflow: hidden;
+      border: 1px solid var(--border);
+      margin-top: 8px;
+    }
+
+    .proj-progress-fill {
+      height: 100%; border-radius: 7px;
+      background: linear-gradient(90deg, #4ade80, #16a34a);
+      transition: width 0.5s ease;
+    }
+
+    /* ===== MOBILE RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      :root { --sidebar-w: 0px; }
+
+      /* מניעת zoom בפוקוס על input */
+      input, select, textarea { font-size: 16px !important; }
+
+      /* ===== תפריט תחתון ===== */
+      .sidebar {
+        width: 100%;
+        height: auto;
+        min-height: 60px;
+        top: auto; right: 0; bottom: 0; left: 0;
+        flex-direction: row;
+        border-left: none;
+        border-top: 1.5px solid var(--border);
+        box-shadow: 0 -4px 20px rgba(108,71,245,0.10);
+        z-index: 200;
+        padding-bottom: env(safe-area-inset-bottom);
+        background: rgba(255,255,255,0.97);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+      .sidebar-logo { display: none; }
+      .sidebar-footer { display: none; }
+      nav {
+        flex: 1;
+        padding: 0;
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+      }
+      nav a {
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 2px 6px;
+        gap: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        border-right: none;
+        border-top: 3px solid transparent;
+        text-align: center;
+        white-space: nowrap;
+        color: #9ca3af;
+        -webkit-tap-highlight-color: transparent;
+        transition: color 0.15s;
+        overflow: hidden;
+      }
+      /* הצג רק אייקון + שם קצר */
+      nav a .nav-icon { font-size: 22px; width: auto; line-height: 1; }
+      nav a.active {
+        color: var(--accent);
+        border-right-color: transparent;
+        border-top-color: var(--accent);
+        background: linear-gradient(180deg, #f3f0ff 0%, transparent 100%);
+      }
+
+      /* ===== תוכן ראשי ===== */
+      .main {
+        margin-right: 0;
+        padding: calc(env(safe-area-inset-top) + 18px) 14px calc(72px + env(safe-area-inset-bottom));
+        min-height: 100vh;
+      }
+
+      /* ===== כותרת עמוד ===== */
+      .page-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .page-header > div:first-child { flex: 1; min-width: 0; }
+      .page-header h2 { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .page-header p { display: none; }
+      .page-header > div:last-child {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 6px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      /* בורר חודש קומפקטי */
+      .month-selector { padding: 5px 8px; gap: 4px; }
+      .month-label { font-size: 12px; min-width: 80px; }
+      .month-selector button { padding: 2px 4px; font-size: 14px; }
+
+      /* ===== כרטיסי סיכום ===== */
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+        max-width: 100% !important;
+        margin-bottom: 16px;
+      }
+      .card {
+        padding: 14px 12px;
+        border-radius: 12px;
+      }
+      .card-icon { font-size: 18px; margin-bottom: 6px; }
+      .card-label { font-size: 10px; margin-bottom: 4px; }
+      .card-value { font-size: 19px; }
+      .card-sub { font-size: 11px; }
+
+      /* ===== כפתורים ===== */
+      .btn { padding: 10px 14px; font-size: 13px; min-height: 40px; border-radius: 10px; }
+      .btn-sm { padding: 7px 12px; font-size: 12px; }
+
+      /* ===== טבלאות → כרטיסי שורה ===== */
+      .table-card {
+        border-radius: 14px;
+        overflow: hidden;
+        padding: 0;
+      }
+      .table-header {
+        padding: 14px 14px 10px;
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
+      }
+      .table-header h3 { font-size: 15px; }
+      .table-header > div { width: 100%; flex-direction: column; gap: 8px; }
+      .search-bar { width: 100% !important; }
+      .table-header select { width: 100%; padding: 9px 12px; }
+
+      /* הסתר כותרות עמודה */
+      table thead { display: none; }
+      table { min-width: unset; width: 100%; }
+      table tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px 10px;
+        padding: 13px 14px;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+      }
+      table tbody tr:last-child { border-bottom: none; }
+      table tbody td { display: inline-flex; align-items: center; border: none !important; padding: 0; font-size: 13px; }
+      /* ביטול מוחלט של row-framed על מובייל — specificity גבוהה יותר */
+      table tbody tr.row-framed td { border: none !important; outline: none !important; box-shadow: none !important; }
+      table tbody tr.row-framed { border: none !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; margin-bottom: 0 !important; }
+
+      /* טבלת הכנסות — עמודות מוגדרות */
+      #i-tbody tr td:nth-child(1) { order: 3; font-size: 11px; color: var(--text-muted); width: 100%; }
+      #i-tbody tr td:nth-child(2) { order: 1; font-weight: 700; font-size: 14px; flex: 1; }
+      #i-tbody tr td:nth-child(3) { order: 2; color: var(--text-muted); font-size: 12px; width: 100%; }
+      #i-tbody tr td:nth-child(4) { order: 4; }
+      #i-tbody tr td:nth-child(5) { order: 1; font-weight: 800; font-size: 15px; color: var(--green); flex-shrink: 0; }
+      #i-tbody tr td:nth-child(6) { order: 4; }
+      #i-tbody tr td:nth-child(7) { order: 5; width: 100%; justify-content: flex-start; gap: 6px; margin-top: 4px; }
+
+      /* טבלת תשלומים */
+      #inst-tbody tr td:nth-child(1) { order: 1; font-weight: 700; font-size: 14px; flex: 1; }
+      #inst-tbody tr td:nth-child(2) { order: 3; font-size: 11px; color: var(--text-muted); }
+      #inst-tbody tr td:nth-child(3) { order: 2; font-weight: 800; color: var(--accent); flex-shrink: 0; }
+      #inst-tbody tr td:nth-child(4) { order: 4; }
+      #inst-tbody tr td:nth-child(5) { order: 5; width: 100%; margin-top: 4px; }
+
+      /* ===== מודאל — עולה מלמטה ===== */
+      .modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+      }
+      .modal-box, .modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 88vh !important;
+        overflow-y: auto;
+        margin: 0 !important;
+        padding: 20px 18px calc(16px + env(safe-area-inset-bottom)) !important;
+      }
+      .modal-box::before, .modal::before {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        margin: 0 auto 16px;
+      }
+      .form-row { flex-direction: column; gap: 10px; }
+      .form-group input, .form-group select, .form-group textarea {
+        padding: 12px 14px;
+        border-radius: 10px;
+      }
+      .modal-actions { flex-direction: column-reverse; gap: 8px; }
+      .modal-actions .btn { width: 100%; justify-content: center; }
+
+      /* ===== פרופילים ===== */
+      .profiles-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px;
+      }
+      .profile-card { padding: 14px 10px; }
+      .avatar { width: 52px; height: 52px; font-size: 20px; margin-bottom: 8px; }
+
+      /* ===== לוח שנה ===== */
+      .mini-cal { padding: 14px 10px; margin-top: 16px; }
+      .mini-cal-title { font-size: 13px; }
+      .mini-cal-day { font-size: 10px; min-height: 34px; padding: 3px 2px; }
+      .mini-cal-header { font-size: 10px; }
+
+      /* ===== פרויקטים ===== */
+      .proj-grid { grid-template-columns: 1fr !important; gap: 12px; }
+      .proj-card { padding: 16px; }
+
+      /* ===== כרטיס יתרה ===== */
+      #e-balance-card { flex-direction: column; gap: 12px; padding: 16px; }
+      #e-balance-card > div:last-child { width: 100%; justify-content: space-around; }
+
+      /* ===== דף פרטי לקוח ===== */
+      .profile-detail-header { flex-direction: column; gap: 12px; }
+      .profile-detail-avatar { width: 70px; height: 70px; font-size: 28px; }
+    }
+
+    /* ===== מסך קטן מאוד ===== */
+    @media (max-width: 380px) {
+      .cards-grid { grid-template-columns: 1fr !important; }
+      nav a { font-size: 9px; }
+      nav a .nav-icon { font-size: 20px; }
+      .profiles-grid { grid-template-columns: 1fr !important; }
+    }
+
+    /* ===== STATISTICS PAGE ===== */
+    .stat-ytd-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-ytd-cell {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 14px;
+      text-align: center;
+    }
+    .stat-ytd-lbl { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
+    .stat-ytd-val { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .stat-ytd-sub { font-size: 11px; color: var(--text-muted); }
+
+    .stat-insights-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat-insight-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .si-icon { font-size: 18px; margin-bottom: 4px; }
+    .si-lbl { font-size: 10px; color: var(--text-muted); font-weight: 600; margin-bottom: 5px; line-height: 1.3; }
+    .si-val { font-size: 15px; font-weight: 800; color: var(--text); }
+
+    .stat-cat-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .stat-cat-row:last-child { border-bottom: none; }
+    .stat-cat-name { flex: 1; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat-cat-bar-wrap { flex: 2; background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; }
+    .stat-cat-bar { height: 100%; border-radius: 4px; transition: width .4s; }
+    .stat-cat-amount { font-weight: 700; font-size: 12px; white-space: nowrap; }
+    .stat-cat-pct { font-size: 10px; color: var(--text-muted); min-width: 30px; text-align: left; }
+
+    .stat-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .stat-two-col .table-card { margin-bottom: 0; }
+
+    @media (max-width: 700px) {
+      .stat-ytd-strip { grid-template-columns: 1fr; gap: 8px; }
+      .stat-ytd-val { font-size: 20px; }
+      .stat-insights-row { grid-template-columns: 1fr 1fr; }
+      .stat-two-col { grid-template-columns: 1fr; }
+    }
+
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🎚️</div>
+    <h1>אליאור רביד</h1>
+    <p>ניהול חשבונות</p>
+  </div>
+  <nav id="sidebar-nav">
+    <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#16a34a;font-weight:900">+</span></span></span> הכנסה חודשית</a>
+    <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאה חודשית</a>
+    <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
+    <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
+    <a onclick="showPage('projects')" data-page="projects"><span class="nav-icon">🎵</span> פרויקטים</a>
+    <a onclick="showPage('dashboard')" data-page="dashboard"><span class="nav-icon">📊</span> סטטיסטיקה</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button onclick="exportBackup()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right">📤 יצוא גיבוי</button>
+      <label style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:block">
+        📥 ייבוא גיבוי
+        <input type="file" accept=".json" onchange="importBackup(event)" style="display:none"/>
+      </label>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- ===== DASHBOARD ===== -->
+  <div class="page" id="page-dashboard">
+    <div class="page-header">
+      <div><h2>📊 סטטיסטיקה</h2><p>נתונים מפורטים על העסק שלך</p></div>
+    </div>
+
+    <!-- שנה עד היום -->
+    <div class="stat-ytd-strip">
+      <div class="stat-ytd-cell">
+        <div class="stat-ytd-lbl">💰 הכנסות השנה</div>
+        <div class="stat-ytd-val green" id="stat-ytd-inc">₪0</div>
+        <div class="stat-ytd-sub" id="stat-ytd-inc-n">0 עסקאות</div>
+      </div>
+      <div class="stat-ytd-cell">
+        <div class="stat-ytd-lbl">📤 הוצאות השנה</div>
+        <div class="stat-ytd-val red" id="stat-ytd-exp">₪0</div>
+        <div class="stat-ytd-sub" id="stat-ytd-exp-n">0 עסקאות</div>
+      </div>
+      <div class="stat-ytd-cell">
+        <div class="stat-ytd-lbl">📈 רווח נקי השנה</div>
+        <div class="stat-ytd-val" id="stat-ytd-profit">₪0</div>
+        <div class="stat-ytd-sub" id="stat-ytd-profit-sub">שנה עד היום</div>
+      </div>
+    </div>
+
+    <!-- תובנות חודשיות -->
+    <div class="stat-insights-row">
+      <div class="stat-insight-item">
+        <div class="si-icon">📈</div>
+        <div class="si-lbl">ממוצע הכנסות לחודש</div>
+        <div class="si-val green" id="stat-avg-inc">₪0</div>
+      </div>
+      <div class="stat-insight-item">
+        <div class="si-icon">📉</div>
+        <div class="si-lbl">ממוצע הוצאות לחודש</div>
+        <div class="si-val red" id="stat-avg-exp">₪0</div>
+      </div>
+      <div class="stat-insight-item">
+        <div class="si-icon">🏆</div>
+        <div class="si-lbl">החודש הכי רווחי</div>
+        <div class="si-val" id="stat-best-month">—</div>
+      </div>
+      <div class="stat-insight-item">
+        <div class="si-icon">👥</div>
+        <div class="si-lbl">לקוחות פעילים</div>
+        <div class="si-val" id="stat-active-clients">0</div>
+      </div>
+    </div>
+
+    <!-- גרף 6 חודשים -->
+    <div class="chart-card">
+      <h3>📊 6 חודשים אחרונים</h3>
+      <div class="bar-chart" id="bar-chart"></div>
+      <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:11px;height:11px;border-radius:3px;background:var(--green);display:inline-block"></span>הכנסות</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:11px;height:11px;border-radius:3px;background:var(--red);display:inline-block"></span>הוצאות</span>
+      </div>
+    </div>
+
+    <!-- לקוחות מובילים + הכנסות לפי קטגוריה -->
+    <div class="stat-two-col">
+      <div class="table-card">
+        <div class="table-header"><h3>🏆 לקוחות מובילים</h3></div>
+        <div id="stat-top-clients"><div class="empty-state"><p>אין נתונים</p></div></div>
+      </div>
+      <div class="table-card">
+        <div class="table-header"><h3>💰 הכנסות לפי קטגוריה</h3></div>
+        <div id="stat-inc-cats"><div class="empty-state"><p>אין נתונים</p></div></div>
+      </div>
+    </div>
+
+    <!-- הוצאות לפי קטגוריה -->
+    <div class="table-card">
+      <div class="table-header"><h3>📤 הוצאות לפי קטגוריה</h3></div>
+      <div id="stat-exp-cats"><div class="empty-state"><p>אין נתונים</p></div></div>
+    </div>
+
+    <!-- פעולות אחרונות -->
+    <div class="table-card">
+      <div class="table-header"><h3>⏱️ פעולות אחרונות</h3></div>
+      <div id="recent-list">
+        <div class="empty-state"><div class="ei">📭</div><p>אין פעולות עדיין</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== INCOME ===== -->
+  <div class="page active" id="page-income">
+    <div class="page-header">
+      <div><h2>💰 הכנסה חודשית</h2><p>ניהול כל ההכנסות שלך</p></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="month-selector">
+          <button onclick="changeMonth(-1)">›</button>
+          <span class="month-label" id="lbl-income"></span>
+          <button onclick="changeMonth(1)">‹</button>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('income')">+ הכנסה חדשה</button>
+      </div>
+    </div>
+
+    <div class="cards-grid" style="margin-bottom:20px">
+      <div class="card" style="border-color:#ddd6fe;background:linear-gradient(135deg,#faf8ff,#f3f0ff)">
+        <div class="card-icon">⏳</div>
+        <div class="card-label">צפוי להתקבל החודש</div>
+        <div class="card-value purple" id="i-expected">₪0</div>
+        <div class="card-sub" id="i-expected-count">0 ממתינים</div>
+      </div>
+      <div class="card" style="border-color:var(--green-border);background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
+        <div class="card-icon">✅</div>
+        <div class="card-label">התקבל בפועל</div>
+        <div class="card-value green" id="i-total">₪0</div>
+        <div class="card-sub" id="i-count">0 עסקאות שולמו</div>
+      </div>
+      <div class="card" style="border-color:#bfdbfe;background:linear-gradient(135deg,#eff6ff,#dbeafe)">
+        <div class="card-icon">🔭</div>
+        <div class="card-label">רווח נקי עתידי החודש</div>
+        <div class="card-value blue" id="i-future-profit">₪0</div>
+        <div class="card-sub" id="i-future-profit-sub">הכל מינוס הוצאות</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <div class="card-label">רווח נקי החודש בפועל</div>
+        <div class="card-value" id="i-net-profit">₪0</div>
+        <div class="card-sub">שולם פחות הוצאות</div>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h3>רשימת הכנסות</h3>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div class="search-bar"><span class="si">🔍</span><input type="text" placeholder="חיפוש..." id="i-search" oninput="renderIncome()"/></div>
+          <select style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:7px 12px;font-size:13px;color:var(--text);outline:none;" id="i-client-filter" onchange="renderIncome()">
+            <option value="">כל הלקוחות</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>תאריך</th><th>לקוח</th><th>תיאור</th><th>קטגוריה</th><th>סכום</th><th>סטטוס</th><th></th></tr></thead>
+        <tbody id="i-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="mini-cal" id="mini-cal-container">
+      <div class="mini-cal-title" id="mini-cal-title"></div>
+      <div class="mini-cal-grid" id="mini-cal-grid"></div>
+    </div>
+  </div>
+
+  <!-- ===== EXPENSES ===== -->
+  <div class="page" id="page-expenses">
+    <div class="page-header">
+      <div><h2>📤 הוצאה חודשית</h2><p>ניהול כל ההוצאות שלך</p></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="month-selector">
+          <button onclick="changeMonth(-1)">›</button>
+          <span class="month-label" id="lbl-expenses"></span>
+          <button onclick="changeMonth(1)">‹</button>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('expense')">+ הוצאה חדשה</button>
+      </div>
+    </div>
+
+    <!-- כרטיס נשאר לך -->
+    <div id="e-balance-card" style="border-radius:var(--radius);padding:22px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;box-shadow:var(--shadow);border:2px solid var(--border)">
+      <div>
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:6px">נשאר לך החודש</div>
+        <div id="e-balance" style="font-size:36px;font-weight:900;line-height:1">₪0</div>
+        <div id="e-balance-sub" style="font-size:13px;margin-top:6px;color:var(--text-muted)"></div>
+      </div>
+      <div style="display:flex;gap:28px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:3px">הכנסות החודש</div>
+          <div id="e-inc-ref" style="font-size:18px;font-weight:800;color:var(--green)">₪0</div>
+        </div>
+        <div style="font-size:24px;color:var(--text-muted);align-self:center">−</div>
+        <div style="text-align:center">
+          <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:3px">הוצאות החודש</div>
+          <div id="e-exp-ref" style="font-size:18px;font-weight:800;color:var(--red)">₪0</div>
+        </div>
+        <div style="font-size:24px;color:var(--text-muted);align-self:center">=</div>
+        <div style="text-align:center">
+          <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:3px">נשאר</div>
+          <div id="e-balance-small" style="font-size:18px;font-weight:800">₪0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards-grid" style="grid-template-columns:repeat(3,1fr);max-width:560px;margin-bottom:24px">
+      <div class="card"><div class="card-label">סה"כ הכנסות</div><div class="card-value green" id="e-total-inc">₪0</div></div>
+      <div class="card"><div class="card-label">סה"כ הוצאות</div><div class="card-value red" id="e-total">₪0</div></div>
+      <div class="card"><div class="card-label">רווח נקי</div><div class="card-value purple" id="e-net">₪0</div></div>
+    </div>
+
+    <!-- פרויקטים -->
+    <div id="e-projects-list" style="display:flex;flex-direction:column;gap:16px"></div>
+  </div>
+
+  <!-- ===== PROFILES LIST ===== -->
+  <div class="page" id="page-profiles">
+    <div class="page-header">
+      <div><h2>👥 פרופילים</h2><p>כל הלקוחות שלך במקום אחד</p></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="search-bar"><span class="si">🔍</span><input type="text" placeholder="חיפוש לקוח..." id="pr-search" oninput="renderProfiles()"/></div>
+        <button class="btn btn-primary" onclick="openModal('client')">+ לקוח חדש</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:22px;flex-wrap:wrap">
+      <div class="filter-tabs">
+        <button class="ftab active" onclick="setPrFilter(this,'all')">הכל</button>
+        <button class="ftab" onclick="setPrFilter(this,'active')">🟢 פעילים</button>
+        <button class="ftab" onclick="setPrFilter(this,'inactive')">⚫ לא פעילים</button>
+      </div>
+    </div>
+
+    <div class="section-title" id="pr-active-title">לקוחות פעילים</div>
+    <div class="profiles-grid" id="pr-active-grid"></div>
+
+    <div class="section-title" id="pr-inactive-title" style="margin-top:8px">לקוחות לא פעילים</div>
+    <div class="profiles-grid" id="pr-inactive-grid"></div>
+  </div>
+
+  <!-- ===== INSTALLMENTS ===== -->
+  <div class="page" id="page-installments">
+    <div class="page-header">
+      <div><h2>📅 תשלומים</h2><p>מעקב אחרי עסקאות בתשלומים</p></div>
+      <button class="btn btn-primary" onclick="openPlanModal()">+ תוכנית תשלום חדשה</button>
+    </div>
+
+    <div class="cards-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:26px">
+      <div class="card">
+        <div class="card-icon">📋</div>
+        <div class="card-label">תוכניות פעילות</div>
+        <div class="card-value purple" id="pl-active">0</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">✅</div>
+        <div class="card-label">סה"כ התקבל</div>
+        <div class="card-value green" id="pl-received">₪0</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⏳</div>
+        <div class="card-label">צפוי החודש</div>
+        <div class="card-value orange" id="pl-this-month">₪0</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔴</div>
+        <div class="card-label">באיחור</div>
+        <div class="card-value red" id="pl-overdue">₪0</div>
+      </div>
+    </div>
+
+    <div id="plans-list" style="display:flex;flex-direction:column;gap:18px"></div>
+  </div>
+
+  <!-- ===== PROJECTS ===== -->
+  <div class="page" id="page-projects">
+    <div class="page-header">
+      <div><h2>🎵 פרויקטים</h2><p>מעקב אחרי פרויקטי הפקה פעילים</p></div>
+    </div>
+    <!-- progress summary -->
+    <div id="proj-progress-section" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:22px 26px;margin-bottom:24px;box-shadow:var(--shadow)">
+      <div style="font-size:14px;font-weight:700;color:var(--text-muted);margin-bottom:8px" id="proj-progress-label">0 מתוך 0 פרויקטים הושלמו</div>
+      <div class="proj-progress-bar">
+        <div class="proj-progress-fill" id="proj-progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="proj-grid" id="proj-grid"></div>
+  </div>
+
+  <!-- ===== PROFILE DETAIL ===== -->
+  <div class="page" id="page-profile-detail">
+    <div class="detail-wrap">
+      <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+        <button class="btn btn-back" onclick="showPage('profiles')">← חזרה לפרופילים</button>
+        <button class="btn btn-danger btn-sm" id="detail-delete-btn">🗑 מחיקת לקוח</button>
+      </div>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== INCOME MODAL ===== -->
+<div class="modal-overlay" id="modal-income">
+  <div class="modal">
+    <h3>💰 הכנסה חדשה</h3>
+    <div class="form-row">
+      <div class="form-group"><label>תאריך *</label><input type="date" id="inc-date"/></div>
+      <div class="form-group"><label>סכום (₪) *</label><input type="number" id="inc-amount" placeholder="0" min="0"/></div>
+    </div>
+    <div class="form-group"><label>לקוח</label><select id="inc-client"><option value="">בחר לקוח</option></select></div>
+    <div class="form-group"><label>תיאור *</label><input type="text" id="inc-desc" placeholder="הקלטה, מיקס..."/></div>
+    <div class="form-group"><label>קטגוריה</label>
+      <select id="inc-cat">
+        <option>הקלטה</option><option>מיקס ומאסטרינג</option>
+        <option>הפקה מוזיקלית</option><option>עריכה</option>
+        <option>פרויקט מיוחד</option><option>אחר</option>
+      </select>
+    </div>
+    <div class="form-group"><label>הערות</label><textarea id="inc-notes" placeholder="הערות..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveIncome()">שמירה</button>
+      <button class="btn btn-ghost" onclick="closeModal('income')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EXPENSE MODAL ===== -->
+<div class="modal-overlay" id="modal-expense">
+  <div class="modal">
+    <h3 id="exp-modal-title">📤 הוצאה חדשה</h3>
+    <div class="form-group">
+      <label>פרויקט (הכנסה)</label>
+      <select id="exp-project">
+        <option value="">— הוצאה כללית (לא משויכת לפרויקט) —</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>תאריך *</label><input type="date" id="exp-date"/></div>
+      <div class="form-group"><label>סכום (₪) *</label><input type="number" id="exp-amount" placeholder="0" min="0"/></div>
+    </div>
+    <div class="form-group"><label>תיאור *</label><input type="text" id="exp-desc" placeholder="תאר את ההוצאה..."/></div>
+    <div class="form-group"><label>קטגוריה</label>
+      <select id="exp-cat">
+        <option>ציוד</option><option>שכירות</option><option>חשמל/מים</option>
+        <option>תוכנות</option><option>שיווק</option><option>תחבורה</option><option>אחר</option>
+      </select>
+    </div>
+    <div class="form-group"><label>הערות</label><textarea id="exp-notes" placeholder="הערות..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveExpense()">שמירה</button>
+      <button class="btn btn-ghost" onclick="closeModal('expense')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CLIENT MODAL ===== -->
+<div class="modal-overlay" id="modal-client">
+  <div class="modal">
+    <h3>👤 לקוח חדש</h3>
+    <div class="form-group"><label>שם מלא *</label><input type="text" id="cli-name" placeholder="שם הלקוח"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>טלפון</label><input type="tel" id="cli-phone" placeholder="05X-XXXXXXX"/></div>
+      <div class="form-group"><label>אימייל</label><input type="email" id="cli-email" placeholder="mail@example.com"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>סוג אמן</label>
+        <select id="cli-type">
+          <option>זמר/זמרת</option><option>להקה</option><option>ראפר</option>
+          <option>מפיק</option><option>פודקסטר</option><option>שחקן קולות</option><option>אחר</option>
+        </select>
+      </div>
+      <div class="form-group"><label>מיקום</label><input type="text" id="cli-location" placeholder="תל אביב..."/></div>
+    </div>
+    <div class="form-group"><label>הערות</label><textarea id="cli-notes" placeholder="הערות..."></textarea></div>
+    <div class="form-group">
+      <label>תמונה</label>
+      <input type="file" id="cli-photo" accept="image/*" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--text);width:100%;outline:none;direction:rtl;font-family:inherit;cursor:pointer"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveClient()">שמירה</button>
+      <button class="btn btn-ghost" onclick="closeModal('client')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PLAN MODAL ===== -->
+<div class="modal-overlay" id="modal-plan">
+  <div class="modal">
+    <h3>📅 תוכנית תשלום חדשה</h3>
+    <div class="form-group"><label>שם הפרויקט *</label><input type="text" id="pl-project" placeholder="לדוגמה: אלבום, EP, סינגל..."/></div>
+    <div class="form-group"><label>לקוח *</label><select id="pl-client"><option value="">בחר לקוח</option></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>סכום כולל (₪) *</label><input type="number" id="pl-total" placeholder="0" min="0" oninput="calcInstallment()"/></div>
+      <div class="form-group"><label>מספר תשלומים *</label><input type="number" id="pl-count" placeholder="0" min="1" max="60" oninput="calcInstallment()"/></div>
+    </div>
+    <div class="form-group" style="background:var(--accent-light);border-radius:10px;padding:12px 14px;border:1.5px solid #ddd6fe">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px">כל תשלום יהיה:</div>
+      <div id="pl-calc" style="font-size:20px;font-weight:800;color:var(--accent)">₪0</div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>תאריך תשלום ראשון *</label><input type="date" id="pl-start"/></div>
+      <div class="form-group"><label>תדירות</label>
+        <select id="pl-freq">
+          <option value="monthly">חודשי</option>
+          <option value="weekly">שבועי</option>
+          <option value="biweekly">כל שבועיים</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>הערות</label><textarea id="pl-notes" placeholder="הערות..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="savePlan()">✓ צור תוכנית</button>
+      <button class="btn btn-ghost" onclick="closeModal('plan')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="congrats-popup" id="congrats-popup">
+  <span class="cp-emoji">🎉</span>
+  <div class="cp-text">כל הכבוד אחי!</div>
+</div>
+
+<script>
+// ===== STATE =====
+const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+let curYear = new Date().getFullYear();
+let curMonth = new Date().getMonth();
+let prFilter = 'all';
+let currentDetailId = null;
+
+// ===== STORAGE =====
+// ===== FIREBASE CONFIG =====
+// הדבק כאן את הפרטים מ-Firebase Console שלך:
+const firebaseConfig = {
+  apiKey:            "AIzaSyB1c6rZVcGrX50UbhEMx3Ra6uaO_S5Fb5o",
+  authDomain:        "elior-studio.firebaseapp.com",
+  databaseURL:       "https://elior-studio-default-rtdb.firebaseio.com",
+  projectId:         "elior-studio",
+  storageBucket:     "elior-studio.firebasestorage.app",
+  messagingSenderId: "719956484293",
+  appId:             "1:719956484293:web:4e1be740d9e49a709350ac",
+  measurementId:     "G-B4RMD8X8R3"
+};
+
+let firebaseDB = null;
+let firebaseReady = false;
+
+let _isFirstSync = true;
+
+function initFirebase() {
+  try {
+    if (!firebase || firebaseConfig.apiKey === 'PASTE_YOUR_API_KEY_HERE') {
+      console.warn('Firebase not configured – running in local-only mode');
+      return Promise.resolve();
+    }
+    firebase.initializeApp(firebaseConfig);
+    firebaseDB = firebase.database();
+
+    // האזנה בזמן אמת — כל שינוי מכל מכשיר מתעדכן מיד
+    return new Promise(resolve => {
+      firebaseDB.ref('studio_data').on('value', snapshot => {
+        const cloudData = snapshot.val();
+
+        if (_isFirstSync) {
+          // טעינה ראשונה — מיזוג חכם: ענן + מקומי
+          ALL_KEYS.forEach(key => {
+            const localRaw  = localStorage.getItem('s_' + key);
+            const localVal  = localRaw ? JSON.parse(localRaw) : null;
+            const cloudVal  = cloudData ? cloudData[key] : null;
+
+            const hasLocal  = localVal && (Array.isArray(localVal) ? localVal.length > 0 : Object.keys(localVal).length > 0);
+            const hasCloud  = cloudVal && (Array.isArray(cloudVal) ? cloudVal.length > 0 : Object.keys(cloudVal).length > 0);
+
+            if (hasCloud && hasLocal) {
+              // שניהם קיימים — מיזוג לפי id (הענן גובר על כפולות)
+              if (Array.isArray(cloudVal) && Array.isArray(localVal)) {
+                const cloudIds = new Set(cloudVal.map(i => i.id));
+                const merged  = [...cloudVal, ...localVal.filter(i => !cloudIds.has(i.id))];
+                localStorage.setItem('s_' + key, JSON.stringify(merged));
+                firebaseDB.ref('studio_data/' + key).set(merged);
+              } else {
+                // אובייקט — מיזוג, הענן גובר
+                const merged = Object.assign({}, localVal, cloudVal);
+                localStorage.setItem('s_' + key, JSON.stringify(merged));
+                firebaseDB.ref('studio_data/' + key).set(merged);
+              }
+            } else if (hasCloud) {
+              // יש רק בענן — קח מהענן
+              localStorage.setItem('s_' + key, JSON.stringify(cloudVal));
+            } else if (hasLocal) {
+              // יש רק מקומית — העלה לענן
+              firebaseDB.ref('studio_data/' + key).set(localVal);
+            }
+          });
+          _isFirstSync = false;
+          firebaseReady = true;
+          console.log('Firebase synced + merged ✓');
+          resolve();
+        } else {
+          // עדכון בזמן אמת ממכשיר אחר — עדכן תצוגה
+          if (cloudData) {
+            ALL_KEYS.forEach(key => {
+              if (cloudData[key] !== undefined) {
+                localStorage.setItem('s_' + key, JSON.stringify(cloudData[key]));
+              }
+            });
+            refreshAll();
+            console.log('🔄 עדכון בזמן אמת מהענן');
+          }
+        }
+      }, err => {
+        console.warn('Firebase listener failed:', err.message);
+        resolve();
+      });
+    });
+  } catch(e) {
+    console.warn('Firebase init failed:', e.message);
+    return Promise.resolve();
+  }
+}
+
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done'];
+
+function pushAllToCloud() {
+  if (!firebaseDB) return;
+  const data = {};
+  ALL_KEYS.forEach(k => {
+    const v = localStorage.getItem('s_' + k);
+    if (v) data[k] = JSON.parse(v);
+  });
+  firebaseDB.ref('studio_data').set(data).catch(e => console.warn('Cloud push failed:', e.message));
+}
+
+function syncKeyToCloud(key) {
+  if (!firebaseDB) return;
+  const v = localStorage.getItem('s_' + key);
+  if (v) {
+    firebaseDB.ref('studio_data/' + key).set(JSON.parse(v))
+      .catch(e => console.warn('Cloud key sync failed:', e.message));
+  }
+}
+
+// ===== LOCAL STORAGE (+ CLOUD SYNC) =====
+const load = key => JSON.parse(localStorage.getItem('s_' + key) || '[]');
+
+const save = (key, val) => {
+  localStorage.setItem('s_' + key, JSON.stringify(val));
+  syncKeyToCloud(key);
+};
+
+const genId = () => 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+
+// ===== UTILS =====
+const fmtMoney = n => '₪' + Math.abs(n).toLocaleString('he-IL', {minimumFractionDigits:0, maximumFractionDigits:0});
+const fmtDate = s => { if(!s) return ''; const d=new Date(s); return d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'}); };
+const inCurMonth = s => { const d=new Date(s); return d.getFullYear()===curYear && d.getMonth()===curMonth; };
+const avClass = (i, inactive) => inactive ? 'av-7' : ('av-' + (i%8));
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ===== NAVIGATION =====
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const map = {income:0, expenses:1, installments:2, profiles:3, projects:4, dashboard:5};
+  const navLinks = document.querySelectorAll('#sidebar-nav a');
+  const key = name === 'profile-detail' ? 'profiles' : name;
+  const idx = map[key];
+  if (idx !== undefined) navLinks[idx]?.classList.add('active');
+  refreshAll();
+}
+
+// ===== MONTH =====
+function changeMonth(dir) {
+  curMonth += dir;
+  if (curMonth > 11) { curMonth = 0; curYear++; }
+  if (curMonth < 0) { curMonth = 11; curYear--; }
+  refreshAll();
+}
+
+function setMonthLabels() {
+  const lbl = MONTHS_HE[curMonth] + ' ' + curYear;
+  ['lbl-dash','lbl-income','lbl-expenses'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = lbl;
+  });
+}
+
+// ===== MODALS =====
+function openModal(type) {
+  const today = new Date().toISOString().split('T')[0];
+  if (type === 'income') {
+    document.getElementById('inc-date').value = today;
+    ['inc-amount','inc-desc','inc-notes'].forEach(id => document.getElementById(id).value = '');
+    populateClientSel('inc-client');
+  }
+  if (type === 'expense') {
+    document.getElementById('exp-date').value = today;
+    ['exp-amount','exp-desc','exp-notes'].forEach(id => document.getElementById(id).value = '');
+    populateProjectDropdown('exp-project', '');
+    document.getElementById('exp-modal-title').textContent = '📤 הוצאה חדשה';
+  }
+  if (type === 'client') {
+    ['cli-name','cli-phone','cli-email','cli-location','cli-notes'].forEach(id => document.getElementById(id).value = '');
+    const photoEl = document.getElementById('cli-photo');
+    if (photoEl) photoEl.value = '';
+  }
+  document.getElementById('modal-' + type).classList.add('open');
+}
+
+function closeModal(type) { document.getElementById('modal-' + type).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); }));
+
+// ===== CLIENTS =====
+function populateClientSel(selId) {
+  const clients = load('clients');
+  const sel = document.getElementById(selId);
+  sel.innerHTML = '<option value="">— ללא לקוח —</option>';
+  clients.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
+}
+
+function populateClientFilter() {
+  const clients = load('clients');
+  const sel = document.getElementById('i-client-filter');
+  sel.innerHTML = '<option value="">כל הלקוחות</option>';
+  clients.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
+}
+
+function saveClient() {
+  const name = document.getElementById('cli-name').value.trim();
+  if (!name) { toast('נא להזין שם'); return; }
+  const clients = load('clients');
+  const newClient = {
+    id: genId(), name,
+    phone: document.getElementById('cli-phone').value.trim(),
+    email: document.getElementById('cli-email').value.trim(),
+    type: document.getElementById('cli-type').value,
+    location: document.getElementById('cli-location').value.trim(),
+    notes: document.getElementById('cli-notes').value.trim(),
+    active: true,
+    createdAt: new Date().toISOString()
+  };
+  const photoFile = document.getElementById('cli-photo')?.files?.[0];
+  if (photoFile) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      newClient.photo = e.target.result;
+      clients.push(newClient);
+      save('clients', clients);
+      closeModal('client');
+      toast('✓ לקוח נוסף בהצלחה');
+      refreshAll();
+    };
+    reader.readAsDataURL(photoFile);
+  } else {
+    clients.push(newClient);
+    save('clients', clients);
+    closeModal('client');
+    toast('✓ לקוח נוסף בהצלחה');
+    refreshAll();
+  }
+}
+
+function deleteClient(id) {
+  if (!confirm('למחוק לקוח זה לצמיתות?')) return;
+  save('clients', load('clients').filter(c => c.id !== id));
+  toast('לקוח נמחק');
+  showPage('profiles');
+}
+
+function toggleActive(id) {
+  const clients = load('clients');
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  c.active = !c.active;
+  save('clients', clients);
+  refreshAll();
+}
+
+// ===== PROFILES FILTER =====
+function setPrFilter(el, val) {
+  prFilter = val;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderProfiles();
+}
+
+// ===== RENDER PROFILES =====
+function renderProfiles() {
+  const clients = load('clients');
+  const income = load('income');
+  const search = (document.getElementById('pr-search')?.value || '').toLowerCase();
+
+  let filtered = clients.filter(c => {
+    if (!search) return true;
+    return c.name.toLowerCase().includes(search) ||
+      (c.type||'').toLowerCase().includes(search) ||
+      (c.phone||'').includes(search);
+  });
+
+  if (prFilter === 'active') filtered = filtered.filter(c => c.active);
+  if (prFilter === 'inactive') filtered = filtered.filter(c => !c.active);
+
+  const active = filtered.filter(c => c.active);
+  const inactive = filtered.filter(c => !c.active);
+
+  const activeTitle = document.getElementById('pr-active-title');
+  const inactiveTitle = document.getElementById('pr-inactive-title');
+
+  // show/hide titles based on filter
+  activeTitle.style.display = (prFilter === 'inactive') ? 'none' : 'flex';
+  inactiveTitle.style.display = (prFilter === 'active') ? 'none' : 'flex';
+  document.getElementById('pr-active-grid').style.display = (prFilter === 'inactive') ? 'none' : '';
+  document.getElementById('pr-inactive-grid').style.display = (prFilter === 'active') ? 'none' : '';
+
+  function cardHtml(c, idx) {
+    const clientIncome = income.filter(i => i.clientId === c.id);
+    const totalIncome = clientIncome.reduce((s,i) => s + Number(i.amount), 0);
+    const sessions = clientIncome.length;
+    const avCls = c.active ? avClass(idx, false) : 'av-7';
+    const avatarHtml = c.photo
+      ? `<img src="${c.photo}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0" alt="${c.name}"/>`
+      : `<div class="pc-avatar ${avCls}">${c.name.charAt(0)}</div>`;
+    return `
+      <div class="profile-card ${c.active ? 'active-client' : 'inactive-client'}" onclick="showProfileDetail('${c.id}')">
+        <div class="pc-top">
+          ${avatarHtml}
+          <div class="pc-status ${c.active ? 'active' : 'inactive'}">
+            <span class="dot"></span>${c.active ? 'פעיל' : 'לא פעיל'}
+          </div>
+        </div>
+        <div class="pc-name">${c.name}</div>
+        <div class="pc-type">${c.type}</div>
+        <div class="pc-contact">
+          ${c.phone ? '📞 ' + c.phone : ''}
+          ${c.phone && c.email ? '<br>' : ''}
+          ${c.email ? '✉️ ' + c.email : ''}
+          ${!c.phone && !c.email ? '<span style="color:var(--text-muted)">אין פרטי קשר</span>' : ''}
+        </div>
+        <div class="pc-stats">
+          <div class="pc-stat">
+            <div class="pc-stat-val" style="color:${c.active ? 'var(--green)' : '#9ca3af'}">${fmtMoney(totalIncome)}</div>
+            <div class="pc-stat-lbl">סה"כ הכנסות</div>
+          </div>
+          <div class="pc-stat">
+            <div class="pc-stat-val">${sessions}</div>
+            <div class="pc-stat-lbl">הזמנות</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById('pr-active-grid').innerHTML = active.length === 0 && prFilter !== 'inactive'
+    ? `<div class="empty-state" style="grid-column:1/-1"><div class="ei">🎵</div><p>אין לקוחות פעילים</p></div>`
+    : active.map((c, i) => cardHtml(c, i)).join('');
+
+  document.getElementById('pr-inactive-grid').innerHTML = inactive.length === 0 && prFilter !== 'active'
+    ? `<div class="empty-state" style="grid-column:1/-1"><div class="ei">💤</div><p>אין לקוחות לא פעילים</p></div>`
+    : inactive.map((c, i) => cardHtml(c, i)).join('');
+}
+
+// ===== PROFILE DETAIL =====
+// ── inline edit helpers ──
+function editField(clientId, field) {
+  const clients = load('clients');
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+
+  const wrap = document.getElementById('ef-' + field);
+  if (!wrap) return;
+
+  const typeOptions = ['זמר/זמרת','להקה','ראפר','מפיק','פודקסטר','שחקן קולות','אחר'];
+  const isSelect = field === 'type';
+  const isTextarea = field === 'notes';
+  const current = c[field] || '';
+
+  const inputHtml = isSelect
+    ? `<select id="ef-input-${field}" style="background:var(--surface2);border:1.5px solid var(--accent);border-radius:8px;padding:8px 12px;font-size:14px;color:var(--text);outline:none;direction:rtl;font-family:inherit;width:100%">
+        ${typeOptions.map(o => `<option ${o===current?'selected':''}>${o}</option>`).join('')}
+       </select>`
+    : isTextarea
+    ? `<textarea id="ef-input-${field}" style="width:100%;background:var(--surface2);border:1.5px solid var(--accent);border-radius:8px;padding:8px 12px;font-size:14px;color:var(--text);outline:none;direction:rtl;font-family:inherit;resize:vertical;min-height:72px">${current}</textarea>`
+    : `<input id="ef-input-${field}" type="text" value="${current}" style="width:100%;background:var(--surface2);border:1.5px solid var(--accent);border-radius:8px;padding:8px 12px;font-size:14px;color:var(--text);outline:none;direction:rtl;font-family:inherit"/>`;
+
+  wrap.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px;width:100%">
+      ${inputHtml}
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="saveField('${clientId}','${field}')">✓ שמור</button>
+        <button class="btn btn-ghost btn-sm" onclick="showProfileDetail('${clientId}')">ביטול</button>
+      </div>
+    </div>`;
+
+  const inp = document.getElementById('ef-input-' + field);
+  if (inp) { inp.focus(); if (inp.select) inp.select(); }
+}
+
+function saveField(clientId, field) {
+  const clients = load('clients');
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  const inp = document.getElementById('ef-input-' + field);
+  if (!inp) return;
+  const val = inp.value.trim();
+  if (field === 'name' && !val) { toast('שם לא יכול להיות ריק'); return; }
+  c[field] = val;
+  save('clients', clients);
+  toast('✓ עודכן');
+  showProfileDetail(clientId);
+}
+
+function editRow(label, value, clientId, field) {
+  return `
+    <div class="contact-item" id="ef-wrap-${field}" style="align-items:flex-start">
+      <div class="contact-icon" style="margin-top:2px">${label}</div>
+      <div style="flex:1" id="ef-${field}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div>
+            <div class="contact-lbl">${fieldLabel(field)}</div>
+            <div class="contact-val">${value || '<span style="color:var(--text-muted);font-style:italic">ריק</span>'}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="editField('${clientId}','${field}')" style="flex-shrink:0">✏️ ערוך</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function fieldLabel(f) {
+  return {name:'שם',type:'סוג אמן',phone:'טלפון',email:'אימייל',location:'מיקום',notes:'הערות'}[f] || f;
+}
+
+function showProfileDetail(id) {
+  currentDetailId = id;
+  const clients = load('clients');
+  const income = load('income');
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+
+  const idx = clients.indexOf(c);
+  const avCls = c.active ? avClass(idx, false) : 'av-7';
+  const clientIncome = income.filter(i => i.clientId === id);
+  const totalIncome = clientIncome.reduce((s,i) => s + Number(i.amount), 0);
+  const sessions = clientIncome.length;
+  const avgSession = sessions ? Math.round(totalIncome / sessions) : 0;
+
+  const detailAvatarHtml = `
+    <label class="photo-edit-wrap" title="לחץ לשינוי תמונה" style="flex-shrink:0;cursor:pointer">
+      ${c.photo
+        ? `<img src="${c.photo}" style="width:88px;height:88px;border-radius:50%;object-fit:cover;display:block;box-shadow:0 4px 20px rgba(108,71,245,0.2)" alt="${c.name}"/>`
+        : `<div class="detail-avatar ${avCls}" style="width:88px;height:88px;font-size:36px">${c.name.charAt(0)}</div>`
+      }
+      <div class="photo-edit-overlay">📷</div>
+      <input type="file" accept="image/*" style="display:none" onchange="updateClientPhoto('${c.id}', this)"/>
+    </label>`;
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-header-inner">
+        ${detailAvatarHtml}
+        <div class="detail-info">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap">
+            <div class="detail-name">${c.name}</div>
+            <span class="badge ${c.active ? 'badge-green' : 'badge-gray'}">${c.active ? '🟢 פעיל' : '⚫ לא פעיל'}</span>
+          </div>
+          <div class="detail-type">${c.type}</div>
+          <div class="detail-meta">
+            ${c.location ? `<span class="detail-meta-item">📍 ${c.location}</span>` : ''}
+            ${c.email    ? `<span class="detail-meta-item">✉️ ${c.email}</span>` : ''}
+            ${c.phone    ? `<span class="detail-meta-item">📞 ${c.phone}</span>` : ''}
+          </div>
+          <div class="detail-actions">
+            ${c.phone ? `<a href="tel:${c.phone}" class="btn btn-primary" style="text-decoration:none">📞 התקשר</a>` : ''}
+            ${c.email ? `<a href="mailto:${c.email}" class="btn btn-ghost" style="text-decoration:none">✉️ מייל</a>` : ''}
+            <button class="btn ${c.active ? 'btn-danger' : 'btn-ghost'}" onclick="toggleActiveFromDetail('${c.id}')">
+              ${c.active ? '⏸ סמן כלא פעיל' : '▶ סמן כפעיל'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- stats -->
+    <div class="detail-section">
+      <h3>📊 נתונים כלליים</h3>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-box-val">${fmtMoney(totalIncome)}</div><div class="stat-box-lbl">סה"כ הכנסות</div></div>
+        <div class="stat-box"><div class="stat-box-val">${sessions}</div><div class="stat-box-lbl">הזמנות</div></div>
+        <div class="stat-box"><div class="stat-box-val">${fmtMoney(avgSession)}</div><div class="stat-box-lbl">ממוצע להזמנה</div></div>
+      </div>
+    </div>
+
+    <!-- editable fields -->
+    <div class="detail-section">
+      <h3>✏️ פרטי לקוח</h3>
+      <div class="contact-list">
+        ${editRow('👤', c.name,     id, 'name')}
+        ${editRow('🎵', c.type,     id, 'type')}
+        ${editRow('📞', c.phone,    id, 'phone')}
+        ${editRow('✉️', c.email,    id, 'email')}
+        ${editRow('📍', c.location, id, 'location')}
+        ${editRow('📝', c.notes,    id, 'notes')}
+      </div>
+    </div>
+
+    <!-- income history -->
+    <div class="detail-section">
+      <h3>💰 היסטוריית הכנסות</h3>
+      ${clientIncome.length === 0
+        ? '<div style="color:var(--text-muted);font-size:14px">אין הכנסות עדיין</div>'
+        : `<table style="width:100%;border-collapse:collapse">
+            <thead><tr>
+              <th style="background:var(--surface2);padding:10px 14px;font-size:12px;color:var(--text-muted);text-align:right;font-weight:700">תאריך</th>
+              <th style="background:var(--surface2);padding:10px 14px;font-size:12px;color:var(--text-muted);text-align:right;font-weight:700">תיאור</th>
+              <th style="background:var(--surface2);padding:10px 14px;font-size:12px;color:var(--text-muted);text-align:right;font-weight:700">קטגוריה</th>
+              <th style="background:var(--surface2);padding:10px 14px;font-size:12px;color:var(--text-muted);text-align:right;font-weight:700">סכום</th>
+            </tr></thead>
+            <tbody>
+              ${clientIncome.map(i => `
+                <tr>
+                  <td style="padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text-muted)">${fmtDate(i.date)}</td>
+                  <td style="padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border)">${i.description}</td>
+                  <td style="padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border)"><span class="badge badge-purple">${i.category}</span></td>
+                  <td style="padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);font-weight:800;color:var(--green)">${fmtMoney(i.amount)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>`
+      }
+    </div>
+  `;
+
+  document.getElementById('detail-delete-btn').onclick = () => deleteClient(id);
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-profile-detail').classList.add('active');
+  document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('#sidebar-nav a')[3]?.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleActiveFromDetail(id) {
+  toggleActive(id);
+  showProfileDetail(id);
+  toast('סטטוס לקוח עודכן');
+}
+
+function updateClientPhoto(clientId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const clients = load('clients');
+    const c = clients.find(x => x.id === clientId);
+    if (!c) return;
+    c.photo = e.target.result;
+    save('clients', clients);
+    showProfileDetail(clientId);
+    toast('✓ תמונה עודכנה');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ===== SAVE INCOME =====
+function saveIncome() {
+  const date = document.getElementById('inc-date').value;
+  const amount = parseFloat(document.getElementById('inc-amount').value);
+  const desc = document.getElementById('inc-desc').value.trim();
+  if (!date || !amount || !desc) { toast('נא למלא שדות חובה'); return; }
+  const clientId = document.getElementById('inc-client').value;
+  const clients = load('clients');
+  const client = clients.find(c => c.id === clientId);
+  const income = load('income');
+  income.push({
+    id: genId(), date, amount, clientId,
+    clientName: client ? client.name : '',
+    description: desc,
+    category: document.getElementById('inc-cat').value,
+    notes: document.getElementById('inc-notes').value.trim(),
+    status: 'pending'
+  });
+  income.sort((a,b) => new Date(b.date) - new Date(a.date));
+  save('income', income);
+  closeModal('income');
+  const cp = document.getElementById('congrats-popup');
+  cp.classList.add('show');
+  setTimeout(() => cp.classList.remove('show'), 2000);
+  refreshAll();
+}
+
+function deleteIncome(id) {
+  if (!confirm('למחוק הכנסה זו?')) return;
+  save('income', load('income').filter(i => i.id !== id));
+  toast('הכנסה נמחקה'); refreshAll();
+}
+
+// ===== RENDER INCOME =====
+function setIncomeStatus(id, status) {
+  const income = load('income');
+  const entry = income.find(i => i.id === id);
+  if (!entry) return;
+  entry.status = status;
+  save('income', income);
+  if (status === 'paid') {
+    const cp = document.getElementById('congrats-popup');
+    cp.classList.add('show');
+    setTimeout(() => cp.classList.remove('show'), 2000);
+  }
+  refreshAll();
+}
+
+function renderIncome() {
+  const income = load('income');
+  const plans  = load('plans');
+  const search = (document.getElementById('i-search')?.value || '').toLowerCase();
+  const cf     = document.getElementById('i-client-filter')?.value || '';
+  const today  = new Date(); today.setHours(0,0,0,0);
+
+  // הכנסות החודש
+  const monthEntries = income.filter(i => {
+    if (!inCurMonth(i.date)) return false;
+    if (cf && i.clientId !== cf) return false;
+    if (search && !(i.description.toLowerCase().includes(search) || (i.clientName||'').toLowerCase().includes(search))) return false;
+    return true;
+  });
+
+  // התקבל בפועל = רק status:'paid' (או ישנות בלי status נחשבות כשולמו)
+  const paid    = monthEntries.filter(i => (i.status || 'paid') === 'paid');
+  const notPaid = monthEntries.filter(i => (i.status || 'paid') !== 'paid');
+
+  const totalPaid     = paid.reduce((s,i) => s + Number(i.amount), 0);
+  const totalNotPaid  = notPaid.reduce((s,i) => s + Number(i.amount), 0);
+
+  // צפוי מתוכניות תשלום
+  const pendingInst = [];
+  plans.forEach(plan => {
+    plan.payments.forEach(p => {
+      if (p.paid) return;
+      const d = new Date(p.dueDate);
+      if (d.getFullYear() !== curYear || d.getMonth() !== curMonth) return;
+      if (cf && plan.clientId !== cf) return;
+      const desc = `${plan.project} — תשלום ${p.index} מתוך ${plan.count}`;
+      if (search && !(desc.toLowerCase().includes(search) || (plan.clientName||'').toLowerCase().includes(search))) return;
+      pendingInst.push({ planId: plan.id, paymentId: p.id, dueDate: p.dueDate,
+        clientName: plan.clientName, description: desc,
+        amount: p.amount, overdue: d < today });
+    });
+  });
+
+  const totalPendingInst = pendingInst.reduce((s,p) => s + Number(p.amount), 0);
+  const totalExpected    = totalNotPaid + totalPendingInst;
+
+  // רווח נקי החודש (שולם בפועל פחות הוצאות)
+  const monthExpensesForNet = load('expenses').filter(e => inCurMonth(e.date)).reduce((s,e) => s + Number(e.amount), 0);
+  const netProfit = totalPaid - monthExpensesForNet;
+  const netEl = document.getElementById('i-net-profit');
+  if (netEl) {
+    netEl.textContent = (netProfit < 0 ? '-' : '') + fmtMoney(Math.abs(netProfit));
+    netEl.className = 'card-value ' + (netProfit >= 0 ? 'green' : 'red');
+  }
+
+  // רווח נקי עתידי החודש (הכל — שולם + ממתין + תשלומים — פחות הוצאות)
+  const futureProfit = totalPaid + totalExpected - monthExpensesForNet;
+  const futureEl = document.getElementById('i-future-profit');
+  if (futureEl) {
+    futureEl.textContent = (futureProfit < 0 ? '-' : '') + fmtMoney(Math.abs(futureProfit));
+    futureEl.className = 'card-value ' + (futureProfit >= 0 ? 'blue' : 'red');
+  }
+  const futureSub = document.getElementById('i-future-profit-sub');
+  if (futureSub) futureSub.textContent = `${fmtMoney(totalPaid + totalExpected)} צפוי פחות ${fmtMoney(monthExpensesForNet)} הוצאות`;
+
+  document.getElementById('i-total').textContent          = fmtMoney(totalPaid);
+  document.getElementById('i-count').textContent          = paid.length + ' עסקאות שולמו';
+  document.getElementById('i-expected').textContent       = fmtMoney(totalExpected);
+  document.getElementById('i-expected-count').textContent = (notPaid.length + pendingInst.length) + ' ממתינים';
+
+  // מיני לוח שנה
+  renderMiniCal(income, load('expenses'));
+
+  const tbody = document.getElementById('i-tbody');
+  if (!tbody) return;
+
+  if (monthEntries.length === 0 && pendingInst.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="ei">💸</div><p>אין הכנסות לחודש זה</p></div></td></tr>`;
+    return;
+  }
+
+  const catBadge = {'הקלטה':'badge-green','מיקס ומאסטרינג':'badge-blue','הפקה מוזיקלית':'badge-purple','עריכה':'badge-orange'};
+
+  function statusCell(i) {
+    const st = i.status || 'paid';
+    if (st === 'paid') return `
+      <td>
+        <span class="badge badge-green" style="cursor:pointer" onclick="setIncomeStatus('${i.id}','pending')" title="לחץ לשינוי">✅ שולם</span>
+      </td>`;
+    if (st === 'overdue') return `
+      <td>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+          <span class="badge badge-red">🔴 באיחור</span>
+          <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700;padding:3px 8px" onclick="setIncomeStatus('${i.id}','paid')">✓ שולם</button>
+        </div>
+      </td>`;
+    // pending — show gray badge + action buttons
+    return `
+      <td>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+          <span class="badge badge-gray">טרם שולם</span>
+          <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700;padding:3px 9px" onclick="setIncomeStatus('${i.id}','paid')">✅ שולם</button>
+          <button class="btn btn-sm" style="background:#fee2e2;color:var(--red);font-weight:700;padding:3px 9px" onclick="setIncomeStatus('${i.id}','overdue')">🔴 באיחור</button>
+        </div>
+      </td>`;
+  }
+
+  function rowStyle(i) {
+    const st = i.status || 'paid';
+    if (st === 'overdue') return 'background:#fff8f8;border-right:3px solid var(--red)';
+    if (st !== 'paid')    return 'background:#fafbff;border-right:3px solid var(--accent)';
+    return '';
+  }
+
+  const incomeRows = monthEntries.map(i => `
+    <tr class="row-framed" style="${rowStyle(i)}">
+      <td>${fmtDate(i.date)}</td>
+      <td>${i.clientName || '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td>${i.description}</td>
+      <td><span class="badge ${catBadge[i.category]||'badge-purple'}">${i.category}</span></td>
+      <td>
+        <span style="border:2px solid var(--green);border-radius:8px;padding:4px 10px;color:var(--green);font-weight:800;display:inline-block">
+          ${fmtMoney(i.amount)}
+        </span>
+      </td>
+      ${statusCell(i)}
+      <td><button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')">🗑</button></td>
+    </tr>
+  `).join('');
+
+  const pendingRows = pendingInst.map(p => `
+    <tr class="row-framed" style="background:${p.overdue?'#fff8f8':'#fafbff'};border-right:3px solid ${p.overdue?'var(--red)':'var(--accent)'}">
+      <td style="color:var(--text-muted)">${fmtDate(p.dueDate)}</td>
+      <td>${p.clientName || '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td style="color:var(--text-muted)">${p.description}</td>
+      <td><span class="badge ${p.overdue?'badge-red':'badge-purple'}">${p.overdue?'🔴 באיחור':'⏳ תשלומים'}</span></td>
+      <td style="color:var(--text-muted)">${fmtMoney(p.amount)}</td>
+      <td>
+        <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700"
+          onclick="markPaymentPaid('${p.planId}','${p.paymentId}')">✅ שולם</button>
+      </td>
+      <td></td>
+    </tr>
+  `).join('');
+
+  tbody.innerHTML = incomeRows + (pendingInst.length ? `
+    <tr><td colspan="7" style="padding:6px 16px;background:var(--surface2);font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.05em">
+      תשלומים צפויים מתוכניות תשלום
+    </td></tr>
+    ${pendingRows}
+  ` : '');
+}
+
+// ===== SAVE EXPENSE =====
+function populateProjectDropdown(selId, preselect) {
+  const income = load('income');
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— הוצאה כללית (לא משויכת לפרויקט) —</option>';
+  // show all income entries sorted by date desc
+  [...income].sort((a,b) => new Date(b.date)-new Date(a.date)).forEach(i => {
+    const label = `${fmtDate(i.date)} · ${i.description}${i.clientName ? ' (' + i.clientName + ')' : ''} · ${fmtMoney(i.amount)}`;
+    sel.innerHTML += `<option value="${i.id}" ${i.id===preselect?'selected':''}>${label}</option>`;
+  });
+}
+
+function openExpenseForProject(incomeId) {
+  const income = load('income');
+  const inc = income.find(i => i.id === incomeId);
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('exp-date').value = today;
+  ['exp-amount','exp-desc','exp-notes'].forEach(id => document.getElementById(id).value = '');
+  populateProjectDropdown('exp-project', incomeId);
+  document.getElementById('exp-modal-title').textContent = inc
+    ? `📤 הוצאה עבור: ${inc.description}`
+    : '📤 הוצאה חדשה';
+  document.getElementById('modal-expense').classList.add('open');
+}
+
+function saveExpense() {
+  const date = document.getElementById('exp-date').value;
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const desc = document.getElementById('exp-desc').value.trim();
+  if (!date || !amount || !desc) { toast('נא למלא שדות חובה'); return; }
+  const projectId = document.getElementById('exp-project').value;
+  const income = load('income');
+  const proj = income.find(i => i.id === projectId);
+  const expenses = load('expenses');
+  expenses.push({
+    id: genId(), date, amount, description: desc,
+    category: document.getElementById('exp-cat').value,
+    notes: document.getElementById('exp-notes').value.trim(),
+    projectId: projectId || '',
+    projectName: proj ? proj.description : ''
+  });
+  expenses.sort((a,b) => new Date(b.date) - new Date(a.date));
+  save('expenses', expenses);
+  closeModal('expense');
+  toast('✓ הוצאה נוספה');
+  refreshAll();
+}
+
+function deleteExpense(id) {
+  if (!confirm('למחוק הוצאה זו?')) return;
+  save('expenses', load('expenses').filter(e => e.id !== id));
+  toast('הוצאה נמחקה'); refreshAll();
+}
+
+// ===== RENDER EXPENSES =====
+function renderExpenses() {
+  const expenses = load('expenses');
+  const income   = load('income');
+  const plans    = load('plans');
+
+  // כל ההכנסות מכל הזמנים (לא רק החודש) — כל אחת היא פרויקט
+  const monthIncome = income.filter(i => inCurMonth(i.date));
+  const allExpenses = expenses; // הוצאות לא מוגבלות לחודש — משויכות לפרויקט
+
+  // הוצאות ממויינות לפי פרויקט
+  const byProject = {};
+  allExpenses.forEach(e => {
+    const key = e.projectId || '__general__';
+    if (!byProject[key]) byProject[key] = [];
+    byProject[key].push(e);
+  });
+
+  // סה"כ הוצאות מכל הפרויקטים
+  const totalExpenses = allExpenses.reduce((s,e) => s + Number(e.amount), 0);
+  const totalIncome   = income.reduce((s,i) => s + Number(i.amount), 0);
+  const netProfit     = totalIncome - totalExpenses;
+
+  // הוצאות החודש בלבד לכרטיס הנשאר
+  const monthExpenses = allExpenses.filter(e => inCurMonth(e.date)).reduce((s,e)=>s+Number(e.amount),0);
+  const monthIncTotal = monthIncome.reduce((s,i)=>s+Number(i.amount),0);
+  let expectedInst = 0;
+  plans.forEach(plan => plan.payments.forEach(p => {
+    if (p.paid) return;
+    const d = new Date(p.dueDate);
+    if (d.getFullYear()===curYear && d.getMonth()===curMonth) expectedInst += p.amount;
+  }));
+  const monthIncWithInst = monthIncTotal + expectedInst;
+  const balance = monthIncWithInst - monthExpenses;
+  const isPos   = balance >= 0;
+
+  // ── כרטיס נשאר ──
+  const card = document.getElementById('e-balance-card');
+  if (card) {
+    card.style.background   = isPos ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fff5f5,#fee2e2)';
+    card.style.borderColor  = isPos ? 'var(--green-border)' : '#fca5a5';
+    document.getElementById('e-balance').textContent        = (isPos?'':'-') + fmtMoney(balance);
+    document.getElementById('e-balance').style.color        = isPos ? 'var(--green)' : 'var(--red)';
+    document.getElementById('e-balance-small').textContent  = (isPos?'':'-') + fmtMoney(balance);
+    document.getElementById('e-balance-small').style.color  = isPos ? 'var(--green)' : 'var(--red)';
+    document.getElementById('e-inc-ref').textContent        = fmtMoney(monthIncWithInst);
+    document.getElementById('e-exp-ref').textContent        = fmtMoney(monthExpenses);
+    document.getElementById('e-balance-sub').textContent    = expectedInst > 0
+      ? `כולל ${fmtMoney(expectedInst)} צפוי מתוכניות תשלום`
+      : 'אחרי הוצאות';
+  }
+
+  document.getElementById('e-total-inc').textContent = fmtMoney(totalIncome);
+  document.getElementById('e-total').textContent     = fmtMoney(totalExpenses);
+  const netEl = document.getElementById('e-net');
+  netEl.textContent  = (netProfit>=0?'':'-') + fmtMoney(netProfit);
+  netEl.style.color  = netProfit >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // ── רשימת פרויקטים ──
+  const container = document.getElementById('e-projects-list');
+  if (!container) return;
+
+  const catBadge = {'ציוד':'badge-blue','שכירות':'badge-red','חשמל/מים':'badge-orange','תוכנות':'badge-purple','שיווק':'badge-green','תחבורה':'badge-blue'};
+
+  function expensesTableHtml(exps) {
+    if (!exps || exps.length === 0)
+      return `<div style="font-size:13px;color:var(--text-muted);padding:10px 0">אין הוצאות עדיין</div>`;
+    return `<table style="width:100%;border-collapse:collapse;margin-top:8px">
+      <thead><tr>
+        <th style="background:var(--surface2);padding:8px 12px;font-size:11px;color:var(--text-muted);text-align:right;font-weight:700">תאריך</th>
+        <th style="background:var(--surface2);padding:8px 12px;font-size:11px;color:var(--text-muted);text-align:right;font-weight:700">תיאור</th>
+        <th style="background:var(--surface2);padding:8px 12px;font-size:11px;color:var(--text-muted);text-align:right;font-weight:700">קטגוריה</th>
+        <th style="background:var(--surface2);padding:8px 12px;font-size:11px;color:var(--text-muted);text-align:right;font-weight:700">סכום</th>
+        <th style="background:var(--surface2);padding:8px 12px"></th>
+      </tr></thead>
+      <tbody>
+        ${exps.map(e => `<tr class="row-framed">
+          <td style="padding:9px 12px;font-size:13px;color:var(--text-muted)">${fmtDate(e.date)}</td>
+          <td style="padding:9px 12px;font-size:13px">${e.description}</td>
+          <td style="padding:9px 12px;font-size:13px"><span class="badge ${catBadge[e.category]||'badge-orange'}">${e.category}</span></td>
+          <td style="padding:9px 12px;font-size:13px;font-weight:800;color:var(--red)">-${fmtMoney(e.amount)}</td>
+          <td style="padding:9px 12px"><button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">🗑</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  let html = '';
+
+  // ── כרטיס לכל הכנסה (פרויקט) ──
+  if (income.length === 0) {
+    html += `<div class="empty-state"><div class="ei">💡</div><p>הוסף הכנסות תחילה — כל הכנסה תהפוך לפרויקט שניתן לשייך אליו הוצאות</p></div>`;
+  } else {
+    // sort: with expenses first, then by date desc
+    const sortedIncome = [...income].sort((a,b) => {
+      const aHas = (byProject[a.id]||[]).length > 0 ? 1 : 0;
+      const bHas = (byProject[b.id]||[]).length > 0 ? 1 : 0;
+      if (bHas !== aHas) return bHas - aHas;
+      return new Date(b.date) - new Date(a.date);
+    });
+    sortedIncome.forEach(inc => {
+      const projExps   = byProject[inc.id] || [];
+      const totalExp   = projExps.reduce((s,e) => s+Number(e.amount), 0);
+      const net        = Number(inc.amount) - totalExp;
+      const netPos     = net >= 0;
+      const pct        = inc.amount > 0 ? Math.min(100, Math.round((totalExp/inc.amount)*100)) : 0;
+
+      html += `
+        <div class="table-card" style="overflow:visible">
+          <div class="table-header" style="align-items:flex-start;gap:14px">
+            <div style="flex:1">
+              <div style="font-size:15px;font-weight:800;margin-bottom:3px">${inc.description}</div>
+              <div style="font-size:12px;color:var(--text-muted)">${fmtDate(inc.date)}${inc.clientName?' · '+inc.clientName:''} · <span class="badge badge-purple" style="font-size:11px">${inc.category}</span></div>
+            </div>
+            <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+              <div style="text-align:center">
+                <div style="font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:2px">הכנסה</div>
+                <div style="font-size:16px;font-weight:800;color:var(--green)">${fmtMoney(inc.amount)}</div>
+              </div>
+              <div style="font-size:18px;color:var(--text-muted)">−</div>
+              <div style="text-align:center">
+                <div style="font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:2px">הוצאות</div>
+                <div style="font-size:16px;font-weight:800;color:var(--red)">${fmtMoney(totalExp)}</div>
+              </div>
+              <div style="font-size:18px;color:var(--text-muted)">=</div>
+              <div style="text-align:center">
+                <div style="font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:2px">נשאר</div>
+                <div style="font-size:16px;font-weight:800;color:${netPos?'var(--green)':'var(--red)'}">${netPos?'':'-'}${fmtMoney(net)}</div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openExpenseForProject('${inc.id}')">+ הוסף הוצאה</button>
+            </div>
+          </div>
+          ${totalExp > 0 ? `
+          <div style="padding:0 20px 12px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px">
+              <span>שימוש מהתקציב</span><span style="font-weight:700">${pct}%</span>
+            </div>
+            <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;border:1px solid var(--border)">
+              <div style="height:100%;border-radius:3px;background:${pct>=80?'var(--red)':pct>=50?'var(--orange)':'var(--accent)'};width:${pct}%;transition:width .4s"></div>
+            </div>
+          </div>` : ''}
+          <div style="padding:0 20px 16px">${expensesTableHtml(projExps)}</div>
+        </div>`;
+    });
+  }
+
+  // ── הוצאות כלליות (לא משויכות) ──
+  const general = byProject['__general__'] || [];
+  if (general.length > 0) {
+    const genTotal = general.reduce((s,e)=>s+Number(e.amount),0);
+    html += `
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <div style="font-size:15px;font-weight:800">🗂️ הוצאות כלליות</div>
+            <div style="font-size:12px;color:var(--text-muted)">לא משויכות לפרויקט ספציפי</div>
+          </div>
+          <div style="font-size:16px;font-weight:800;color:var(--red)">${fmtMoney(genTotal)}</div>
+        </div>
+        <div style="padding:0 20px 16px">${expensesTableHtml(general)}</div>
+      </div>`;
+  }
+
+  // ── 📋 כל ההוצאות (טבלה שטוחה) ──
+  if (allExpenses.length > 0) {
+    const sortedAll = [...allExpenses].sort((a,b) => new Date(b.date)-new Date(a.date));
+    html += `
+      <div class="table-card" style="margin-top:8px">
+        <div class="table-header">
+          <h3>📋 כל ההוצאות</h3>
+          <div style="font-size:16px;font-weight:800;color:var(--red)">${fmtMoney(totalExpenses)}</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th>תאריך</th>
+            <th>פרויקט</th>
+            <th>תיאור</th>
+            <th>קטגוריה</th>
+            <th>סכום</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            ${sortedAll.map(e => `
+              <tr>
+                <td style="color:var(--text-muted)">${fmtDate(e.date)}</td>
+                <td>${e.projectName || '<span style="color:var(--text-muted)">כללי</span>'}</td>
+                <td>${e.description}</td>
+                <td><span class="badge ${catBadge[e.category]||'badge-orange'}">${e.category}</span></td>
+                <td style="font-weight:800;color:var(--red)">-${fmtMoney(e.amount)}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">🗑</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ===== RENDER DASHBOARD =====
+function renderDashboard() {
+  const income   = load('income');
+  const expenses = load('expenses');
+  const clients  = load('clients');
+  const now      = new Date();
+  const thisYear = now.getFullYear();
+  const thisMonth= now.getMonth();
+
+  // ── שנה עד היום ──
+  const ytdInc  = income.filter(i  => new Date(i.date).getFullYear()  === thisYear);
+  const ytdExp  = expenses.filter(e => new Date(e.date).getFullYear() === thisYear);
+  const ytdIncTotal = ytdInc.reduce((s,i) => s + Number(i.amount), 0);
+  const ytdExpTotal = ytdExp.reduce((s,e) => s + Number(e.amount), 0);
+  const ytdProfit   = ytdIncTotal - ytdExpTotal;
+
+  document.getElementById('stat-ytd-inc').textContent     = fmtMoney(ytdIncTotal);
+  document.getElementById('stat-ytd-inc-n').textContent   = ytdInc.length + ' עסקאות';
+  document.getElementById('stat-ytd-exp').textContent     = fmtMoney(ytdExpTotal);
+  document.getElementById('stat-ytd-exp-n').textContent   = ytdExp.length + ' עסקאות';
+  const profEl = document.getElementById('stat-ytd-profit');
+  profEl.textContent  = (ytdProfit < 0 ? '-' : '') + fmtMoney(Math.abs(ytdProfit));
+  profEl.className    = 'stat-ytd-val ' + (ytdProfit >= 0 ? 'green' : 'red');
+  document.getElementById('stat-ytd-profit-sub').textContent = `${thisYear} שנה עד היום`;
+
+  // ── ממוצעים ־ 6 חודשים אחרונים ──
+  const last6months = [];
+  for (let i = 5; i >= 0; i--) {
+    let m = thisMonth - i, y = thisYear;
+    while (m < 0) { m += 12; y--; }
+    last6months.push({ m, y, lbl: MONTHS_HE[m] });
+  }
+  const inc6 = last6months.map(({m,y}) => income.filter(i=>{ const d=new Date(i.date); return d.getFullYear()===y&&d.getMonth()===m; }).reduce((s,i)=>s+Number(i.amount),0));
+  const exp6 = last6months.map(({m,y}) => expenses.filter(e=>{ const d=new Date(e.date); return d.getFullYear()===y&&d.getMonth()===m; }).reduce((s,e)=>s+Number(e.amount),0));
+
+  const avgInc = Math.round(inc6.reduce((s,v)=>s+v,0) / 6);
+  const avgExp = Math.round(exp6.reduce((s,v)=>s+v,0) / 6);
+
+  // החודש הכי רווחי (מכל הזמנים)
+  const profitByMonth = {};
+  income.forEach(i => {
+    const d = new Date(i.date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    profitByMonth[key] = (profitByMonth[key] || 0) + Number(i.amount);
+  });
+  expenses.forEach(e => {
+    const d = new Date(e.date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    profitByMonth[key] = (profitByMonth[key] || 0) - Number(e.amount);
+  });
+  let bestKey = null, bestVal = -Infinity;
+  Object.entries(profitByMonth).forEach(([k,v]) => { if (v > bestVal) { bestVal = v; bestKey = k; } });
+  let bestMonthStr = '—';
+  if (bestKey) {
+    const [by, bm] = bestKey.split('-').map(Number);
+    bestMonthStr = `${MONTHS_HE[bm]} ${by}`;
+  }
+
+  document.getElementById('stat-avg-inc').textContent     = fmtMoney(avgInc);
+  document.getElementById('stat-avg-exp').textContent     = fmtMoney(avgExp);
+  document.getElementById('stat-best-month').textContent  = bestMonthStr;
+  document.getElementById('stat-active-clients').textContent = clients.filter(c=>c.active).length + ' / ' + clients.length;
+
+  // ── גרף עמודות ──
+  const chart = document.getElementById('bar-chart');
+  const maxV  = Math.max(...inc6, ...exp6, 1);
+  chart.innerHTML = last6months.map(({lbl}, i) => {
+    const ih = Math.round((inc6[i]/maxV)*115);
+    const eh = Math.round((exp6[i]/maxV)*115);
+    return `<div class="bar-group">
+      <div class="bar-wrap">
+        <div class="bar income" style="height:${ih}px" title="הכנסות: ${fmtMoney(inc6[i])}"></div>
+        <div class="bar expense" style="height:${eh}px" title="הוצאות: ${fmtMoney(exp6[i])}"></div>
+      </div>
+      <div class="bar-lbl">${lbl.slice(0,3)}</div>
+    </div>`;
+  }).join('');
+
+  // ── לקוחות מובילים ──
+  const clientTotals = {};
+  income.forEach(i => {
+    const name = i.clientName || 'ללא לקוח';
+    clientTotals[name] = (clientTotals[name] || 0) + Number(i.amount);
+  });
+  const topClients = Object.entries(clientTotals).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxClient  = topClients[0]?.[1] || 1;
+  const tcEl = document.getElementById('stat-top-clients');
+  tcEl.innerHTML = topClients.length === 0
+    ? `<div class="empty-state"><p>אין נתונים</p></div>`
+    : `<div style="padding:8px 0">` + topClients.map(([name, total]) => `
+      <div class="stat-cat-row">
+        <div class="stat-cat-name">${name}</div>
+        <div class="stat-cat-bar-wrap"><div class="stat-cat-bar" style="width:${Math.round((total/maxClient)*100)}%;background:var(--green)"></div></div>
+        <div class="stat-cat-amount green">${fmtMoney(total)}</div>
+      </div>`).join('') + `</div>`;
+
+  // ── הכנסות/הוצאות לפי קטגוריה ──
+  function renderCats(data, colorVar, elId) {
+    const cats = {};
+    data.forEach(r => { const c = r.category || 'כללי'; cats[c] = (cats[c]||0) + Number(r.amount); });
+    const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+    const maxCat = sorted[0]?.[1] || 1;
+    const total  = sorted.reduce((s,[,v])=>s+v,0);
+    document.getElementById(elId).innerHTML = sorted.length === 0
+      ? `<div class="empty-state"><p>אין נתונים</p></div>`
+      : `<div style="padding:8px 0">` + sorted.map(([cat, val]) => `
+        <div class="stat-cat-row">
+          <div class="stat-cat-name">${cat}</div>
+          <div class="stat-cat-bar-wrap"><div class="stat-cat-bar" style="width:${Math.round((val/maxCat)*100)}%;background:${colorVar}"></div></div>
+          <div class="stat-cat-amount" style="color:${colorVar}">${fmtMoney(val)}</div>
+          <div class="stat-cat-pct">${Math.round((val/total)*100)}%</div>
+        </div>`).join('') + `</div>`;
+  }
+  renderCats(income,   'var(--green)', 'stat-inc-cats');
+  renderCats(expenses, 'var(--red)',   'stat-exp-cats');
+
+  // ── פעולות אחרונות ──
+  const allTx = [
+    ...income.slice(0,10).map(i => ({...i, txType:'income'})),
+    ...expenses.slice(0,10).map(e => ({...e, txType:'expense'}))
+  ].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,8);
+
+  document.getElementById('recent-list').innerHTML = allTx.length === 0
+    ? `<div class="empty-state"><div class="ei">📭</div><p>אין פעולות עדיין</p></div>`
+    : allTx.map(tx => `
+      <div class="recent-item">
+        <div class="recent-item-r">
+          <div class="ri-icon ${tx.txType==='income'?'in':'out'}">${tx.txType==='income'?'💰':'📤'}</div>
+          <div>
+            <div class="ri-name">${tx.description}</div>
+            <div class="ri-date">${fmtDate(tx.date)}${tx.clientName?' · '+tx.clientName:''}</div>
+          </div>
+        </div>
+        <div class="ri-amount" style="color:${tx.txType==='income'?'var(--green)':'var(--red)'}">
+          ${tx.txType==='income'?'+':'-'}${fmtMoney(tx.amount)}
+        </div>
+      </div>`).join('');
+}
+
+// ===== INSTALLMENTS =====
+
+function calcInstallment() {
+  const total = parseFloat(document.getElementById('pl-total').value) || 0;
+  const count = parseInt(document.getElementById('pl-count').value) || 0;
+  const per = count > 0 ? Math.round(total / count) : 0;
+  document.getElementById('pl-calc').textContent = fmtMoney(per);
+}
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function addMonths(dateStr, months) {
+  const d = new Date(dateStr);
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().split('T')[0];
+}
+
+function generatePaymentDates(startDate, count, freq) {
+  const dates = [];
+  for (let i = 0; i < count; i++) {
+    if (freq === 'monthly')   dates.push(addMonths(startDate, i));
+    else if (freq === 'weekly')    dates.push(addDays(startDate, i * 7));
+    else if (freq === 'biweekly')  dates.push(addDays(startDate, i * 14));
+  }
+  return dates;
+}
+
+function openPlanModal() {
+  openModal('plan');
+  populateClientSel('pl-client');
+  document.getElementById('pl-start').value = new Date().toISOString().split('T')[0];
+  ['pl-project','pl-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pl-total').value = '';
+  document.getElementById('pl-count').value = '';
+  document.getElementById('pl-calc').textContent = '₪0';
+}
+
+function savePlan() {
+  const project = document.getElementById('pl-project').value.trim();
+  const clientId = document.getElementById('pl-client').value;
+  const total = parseFloat(document.getElementById('pl-total').value);
+  const count = parseInt(document.getElementById('pl-count').value);
+  const startDate = document.getElementById('pl-start').value;
+  const freq = document.getElementById('pl-freq').value;
+
+  if (!project || !total || !count || !startDate) { toast('נא למלא שדות חובה'); return; }
+
+  const clients = load('clients');
+  const client = clients.find(c => c.id === clientId);
+  const perPayment = Math.round(total / count);
+  const dates = generatePaymentDates(startDate, count, freq);
+
+  const payments = dates.map((date, i) => ({
+    id: genId(),
+    index: i + 1,
+    dueDate: date,
+    amount: i === count - 1 ? total - perPayment * (count - 1) : perPayment, // last covers rounding
+    paid: false,
+    paidDate: null,
+    incomeId: null
+  }));
+
+  const plans = load('plans');
+  plans.push({
+    id: genId(),
+    project,
+    clientId: clientId || '',
+    clientName: client ? client.name : '',
+    totalAmount: total,
+    count,
+    freq,
+    notes: document.getElementById('pl-notes').value.trim(),
+    payments,
+    createdAt: new Date().toISOString()
+  });
+
+  save('plans', plans);
+  closeModal('plan');
+  toast('✓ תוכנית תשלום נוצרה');
+  refreshAll();
+}
+
+function markPaymentPaid(planId, paymentId) {
+  const plans = load('plans');
+  const plan = plans.find(p => p.id === planId);
+  if (!plan) return;
+  const payment = plan.payments.find(p => p.id === paymentId);
+  if (!payment || payment.paid) return;
+
+  if (!confirm(`לסמן תשלום ${payment.index} (${fmtMoney(payment.amount)}) כשולם?\nיתווסף אוטומטית לדף ההכנסות.`)) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  payment.paid = true;
+  payment.paidDate = today;
+
+  // Auto-add to income
+  const income = load('income');
+  const incomeEntry = {
+    id: genId(),
+    date: today,
+    amount: payment.amount,
+    clientId: plan.clientId,
+    clientName: plan.clientName,
+    description: `${plan.project} — תשלום ${payment.index} מתוך ${plan.count}`,
+    category: 'הפקה מוזיקלית',
+    notes: `תוכנית תשלום: ${plan.project}`,
+    status: 'paid',
+    fromPlan: planId
+  };
+  payment.incomeId = incomeEntry.id;
+  income.push(incomeEntry);
+  income.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  save('plans', plans);
+  save('income', income);
+
+  const cp = document.getElementById('congrats-popup');
+  cp.classList.add('show');
+  setTimeout(() => cp.classList.remove('show'), 2000);
+
+  refreshAll();
+}
+
+function markPaymentUnpaid(planId, paymentId) {
+  const plans = load('plans');
+  const plan = plans.find(p => p.id === planId);
+  if (!plan) return;
+  const payment = plan.payments.find(p => p.id === paymentId);
+  if (!payment || !payment.paid) return;
+
+  // Remove from income
+  if (payment.incomeId) {
+    save('income', load('income').filter(i => i.id !== payment.incomeId));
+  }
+  payment.paid = false;
+  payment.paidDate = null;
+  payment.incomeId = null;
+
+  save('plans', plans);
+  toast('תשלום סומן כלא שולם');
+  refreshAll();
+}
+
+function deletePlan(planId) {
+  const plan = load('plans').find(p => p.id === planId);
+  if (!plan) return;
+  const paidCount = plan.payments.filter(p => p.paid).length;
+  const msg = paidCount > 0
+    ? `למחוק את תוכנית "${plan.project}"?\n${paidCount} תשלומים ששולמו כבר יימחקו גם מדף ההכנסות.`
+    : `למחוק את תוכנית "${plan.project}"?`;
+  if (!confirm(msg)) return;
+  // מחק הכנסות שנוצרו מתשלומים ששולמו
+  const paidIncomeIds = plan.payments.filter(p => p.incomeId).map(p => p.incomeId);
+  if (paidIncomeIds.length > 0) {
+    save('income', load('income').filter(i => !paidIncomeIds.includes(i.id)));
+  }
+  save('plans', load('plans').filter(p => p.id !== planId));
+  toast(`✅ תוכנית "${plan.project}" נמחקה`);
+  refreshAll();
+}
+
+function getPaymentStatus(payment) {
+  if (payment.paid) return 'paid';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(payment.dueDate);
+  return due < today ? 'overdue' : 'pending';
+}
+
+function renderInstallments() {
+  const plans = load('plans');
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let totalReceived = 0, totalOverdue = 0, thisMonth = 0, activePlans = 0;
+
+  plans.forEach(plan => {
+    const allPaid = plan.payments.every(p => p.paid);
+    if (!allPaid) activePlans++;
+    plan.payments.forEach(p => {
+      if (p.paid) {
+        totalReceived += p.amount;
+      } else {
+        const due = new Date(p.dueDate);
+        if (due < today) totalOverdue += p.amount;
+        if (due.getFullYear() === curYear && due.getMonth() === curMonth) thisMonth += p.amount;
+      }
+    });
+  });
+
+  document.getElementById('pl-active').textContent = activePlans;
+  document.getElementById('pl-received').textContent = fmtMoney(totalReceived);
+  document.getElementById('pl-this-month').textContent = fmtMoney(thisMonth);
+  document.getElementById('pl-overdue').textContent = fmtMoney(totalOverdue);
+
+  const container = document.getElementById('plans-list');
+  if (!container) return;
+
+  if (plans.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="ei">📅</div><p>אין תוכניות תשלום עדיין. לחץ "+ תוכנית תשלום חדשה" כדי להתחיל.</p></div>`;
+    return;
+  }
+
+  const freqLabel = { monthly:'חודשי', weekly:'שבועי', biweekly:'כל שבועיים' };
+
+  container.innerHTML = plans.map(plan => {
+    const paidCount = plan.payments.filter(p => p.paid).length;
+    const paidAmount = plan.payments.filter(p => p.paid).reduce((s,p) => s+p.amount, 0);
+    const progress = Math.round((paidCount / plan.count) * 100);
+    const allDone = paidCount === plan.count;
+
+    const stepsHtml = plan.payments.map(p => {
+      const status = getPaymentStatus(p);
+      const icons = { paid:'✅', pending:'⏳', overdue:'🔴' };
+      const labels = { paid:'שולם', pending:'צפוי', overdue:'באיחור' };
+      const d = new Date(p.dueDate);
+      const dateStr = d.toLocaleDateString('he-IL', {day:'2-digit', month:'2-digit'});
+      const clickFn = p.paid
+        ? `markPaymentUnpaid('${plan.id}','${p.id}')`
+        : `markPaymentPaid('${plan.id}','${p.id}')`;
+      return `
+        <div class="payment-step ${status}" onclick="${clickFn}" title="${p.paid ? 'לחץ לביטול' : 'לחץ לסימון כשולם'}">
+          <div class="ps-icon">${icons[status]}</div>
+          <div class="ps-num">תשלום ${p.index}</div>
+          <div class="ps-date">${dateStr}</div>
+          <div class="ps-amount ${status}">${fmtMoney(p.amount)}</div>
+          <div class="ps-badge ${status}">${labels[status]}</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="plan-card">
+        <div class="plan-card-top">
+          <div>
+            <div class="plan-title">${plan.project} ${allDone ? '🎉' : ''}</div>
+            <div class="plan-client">${plan.clientName || 'ללא לקוח'}</div>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="deletePlan('${plan.id}')">🗑</button>
+        </div>
+        <div class="plan-meta">
+          <div class="plan-meta-item">💰 סה"כ: <strong>${fmtMoney(plan.totalAmount)}</strong></div>
+          <div class="plan-meta-item">📆 תדירות: <strong>${freqLabel[plan.freq]}</strong></div>
+          <div class="plan-meta-item">✅ שולם: <strong>${fmtMoney(paidAmount)}</strong></div>
+          <div class="plan-meta-item">⏳ נותר: <strong>${fmtMoney(plan.totalAmount - paidAmount)}</strong></div>
+        </div>
+        <div class="plan-progress-wrap">
+          <div class="plan-progress-label">
+            <span>התקדמות</span>
+            <span>${paidCount} / ${plan.count} תשלומים · ${progress}%</span>
+          </div>
+          <div class="plan-progress-bar">
+            <div class="plan-progress-fill" style="width:${progress}%"></div>
+          </div>
+        </div>
+        <div class="payment-timeline">${stepsHtml}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== MINI CALENDAR =====
+// סגירת tooltip בלחיצה בחוץ
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.mc-dot')) {
+    document.querySelectorAll('.mc-dot.active-tip').forEach(d => d.classList.remove('active-tip'));
+  }
+});
+
+function onDotTap(el) {
+  const wasActive = el.classList.contains('active-tip');
+  document.querySelectorAll('.mc-dot.active-tip').forEach(d => d.classList.remove('active-tip'));
+  if (!wasActive) el.classList.add('active-tip');
+}
+
+function renderMiniCal(incomeData, expensesData) {
+  const calGrid = document.getElementById('mini-cal-grid');
+  const calTitle = document.getElementById('mini-cal-title');
+  if (!calGrid) return;
+
+  calTitle.textContent = MONTHS_HE[curMonth] + ' ' + curYear;
+
+  // Build day->items maps for current month
+  const incByDay = {};
+  incomeData.forEach(i => {
+    if (!inCurMonth(i.date)) return;
+    const d = new Date(i.date).getDate();
+    if (!incByDay[d]) incByDay[d] = [];
+    incByDay[d].push(i);
+  });
+
+  const expByDay = {};
+  expensesData.forEach(e => {
+    if (!inCurMonth(e.date)) return;
+    const d = new Date(e.date).getDate();
+    if (!expByDay[d]) expByDay[d] = [];
+    expByDay[d].push(e);
+  });
+
+  const dayHeaders = ['א','ב','ג','ד','ה','ו','ש'];
+  let html = dayHeaders.map(h => `<div class="mini-cal-header">${h}</div>`).join('');
+
+  const firstDay = new Date(curYear, curMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === curYear && today.getMonth() === curMonth;
+
+  // empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    html += `<div class="mini-cal-day empty"></div>`;
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const isToday = isCurrentMonth && today.getDate() === day;
+    const incItems = incByDay[day] || [];
+    const expItems = expByDay[day] || [];
+
+    let dotsHtml = '';
+    if (incItems.length > 0) {
+      const tooltip = incItems.map(i => `💚 ${i.description}: ${fmtMoney(i.amount)}`).join('<br>');
+      dotsHtml += `<span class="mc-dot income" onclick="onDotTap(this)">
+        <span class="mc-tooltip">${tooltip}</span>
+      </span>`;
+    }
+    if (expItems.length > 0) {
+      const tooltip = expItems.map(e => `🔴 ${e.description}: ${fmtMoney(e.amount)}`).join('<br>');
+      dotsHtml += `<span class="mc-dot expense" onclick="onDotTap(this)">
+        <span class="mc-tooltip">${tooltip}</span>
+      </span>`;
+    }
+
+    html += `
+      <div class="mini-cal-day${isToday ? ' today' : ''}">
+        <span>${day}</span>
+        ${dotsHtml ? `<div class="mini-cal-dots">${dotsHtml}</div>` : ''}
+      </div>`;
+  }
+
+  calGrid.innerHTML = html;
+}
+
+// ===== PROJECTS PAGE =====
+function loadObj(key) {
+  const v = JSON.parse(localStorage.getItem('s_' + key) || '{}');
+  return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+}
+
+function renderProjects() {
+  const income = load('income');
+  const projNotes = loadObj('proj_notes');
+  const projDone  = loadObj('proj_done');
+
+  const projectCats = ['הפקה מוזיקלית', 'מיקס ומאסטרינג', 'הקלטה'];
+  const projects = income
+    .filter(i => projectCats.includes(i.category))
+    .sort((a, b) => {
+      const aDone = !!projDone[a.id];
+      const bDone = !!projDone[b.id];
+      if (aDone !== bDone) return aDone ? 1 : -1; // בוצע → למטה
+      return 0;
+    });
+
+  const total = projects.length;
+  const done  = projects.filter(i => projDone[i.id]).length;
+  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const labelEl = document.getElementById('proj-progress-label');
+  const fillEl  = document.getElementById('proj-progress-fill');
+  if (labelEl) labelEl.textContent = `${done} מתוך ${total} פרויקטים הושלמו`;
+  if (fillEl)  fillEl.style.width  = pct + '%';
+
+  const grid = document.getElementById('proj-grid');
+  if (!grid) return;
+
+  if (projects.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="ei">🎵</div><p>אין פרויקטים עדיין. הוסף הכנסות מסוג הפקה מוזיקלית, מיקס ומאסטרינג או הקלטה.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = projects.map(i => {
+    const isDone  = !!projDone[i.id];
+    const note    = projNotes[i.id] || '';
+    return `
+      <div class="proj-card${isDone ? ' done' : ''}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
+          <div>
+            <div style="font-size:16px;font-weight:800;margin-bottom:3px">${i.description}${isDone ? ' ✅ הושלם' : ''}</div>
+            <div style="font-size:12px;color:var(--accent);font-weight:600">${i.clientName || 'ללא לקוח'}</div>
+          </div>
+          <div style="text-align:left;flex-shrink:0">
+            <div style="font-size:18px;font-weight:800;color:var(--green)">${fmtMoney(i.amount)}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${fmtDate(i.date)}</div>
+          </div>
+        </div>
+        <div style="margin-bottom:4px">
+          <span class="badge badge-purple" style="font-size:11px">${i.category}</span>
+        </div>
+        <div style="margin-bottom:12px;margin-top:10px">
+          <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">📝 מצב הפקה</label>
+          <textarea
+            id="proj-note-${i.id}"
+            style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;direction:rtl;font-family:inherit;resize:vertical;min-height:60px"
+            placeholder="כתוב הערות על מצב הפרויקט..."
+            oninput="saveProjectNote('${i.id}', this.value)"
+          >${note}</textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button
+            class="btn ${isDone ? 'btn-ghost' : 'btn-primary'} btn-sm"
+            onclick="toggleProjectDone('${i.id}')"
+          >${isDone ? '↩ בטל סיום' : '✅ סיימתי'}</button>
+          ${isDone ? '<span class="badge badge-green">הושלם 🎉</span>' : '<span class="badge badge-gray">בתהליך</span>'}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function saveProjectNote(incomeId, note) {
+  const notes = loadObj('proj_notes');
+  notes[incomeId] = note;
+  save('proj_notes', notes);
+}
+
+function toggleProjectDone(incomeId) {
+  const done = loadObj('proj_done');
+  done[incomeId] = !done[incomeId];
+  save('proj_done', done);
+  renderProjects();
+}
+
+// ===== REFRESH ALL =====
+function refreshAll() {
+  setMonthLabels();
+  renderDashboard();
+  renderIncome();
+  renderExpenses();
+  renderProfiles();
+  renderInstallments();
+  renderProjects();
+  populateClientFilter();
+}
+
+// ===== גיבוי ושחזור =====
+function exportBackup() {
+  const data = {};
+  ALL_KEYS.forEach(k => {
+    const v = localStorage.getItem('s_' + k);
+    if (v) data[k] = JSON.parse(v);
+  });
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'elior-studio-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ גיבוי הורד בהצלחה');
+}
+
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      ALL_KEYS.forEach(k => {
+        if (data[k] !== undefined) {
+          localStorage.setItem('s_' + k, JSON.stringify(data[k]));
+        }
+      });
+      // העלה הכל לענן
+      pushAllToCloud();
+      refreshAll();
+      toast('✅ גיבוי יובא בהצלחה — כל הנתונים שוחזרו');
+    } catch(err) {
+      toast('❌ קובץ לא תקין');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+
+// ===== PWA — Service Worker + אייקון =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+(function() {
+  try {
+    const s = 180, c = document.createElement('canvas');
+    c.width = c.height = s;
+    const ctx = c.getContext('2d'), r = s*.21;
+    ctx.beginPath();
+    ctx.moveTo(r,0); ctx.lineTo(s-r,0); ctx.arcTo(s,0,s,r,r);
+    ctx.lineTo(s,s-r); ctx.arcTo(s,s,s-r,s,r);
+    ctx.lineTo(r,s); ctx.arcTo(0,s,0,s-r,r);
+    ctx.lineTo(0,r); ctx.arcTo(0,0,r,0,r); ctx.closePath();
+    const bg = ctx.createLinearGradient(0,0,s,s);
+    bg.addColorStop(0,'#1a0a3d'); bg.addColorStop(.5,'#2d1470'); bg.addColorStop(1,'#0d0621');
+    ctx.fillStyle=bg; ctx.fill();
+    ctx.save(); ctx.clip();
+    const glow=ctx.createRadialGradient(s*.38,s*.28,0,s*.5,s*.5,s*.75);
+    glow.addColorStop(0,'rgba(140,100,255,0.35)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glow; ctx.fillRect(0,0,s,s); ctx.restore();
+    const cx=s*.5,banY=s*.5,banR=s*.285,lw=s*.062,earR=s*.115,earIn=s*.065,lx=cx-banR,rx=cx+banR,ey=banY+s*.02;
+    ctx.save(); ctx.shadowColor='rgba(120,80,255,0.6)'; ctx.shadowBlur=s*.06;
+    ctx.beginPath(); ctx.arc(cx,banY,banR,Math.PI,0,false);
+    ctx.strokeStyle='#fff'; ctx.lineWidth=lw; ctx.lineCap='round'; ctx.stroke(); ctx.restore();
+    [lx,rx].forEach(ex=>{
+      ctx.save(); ctx.shadowColor='rgba(120,80,255,0.5)'; ctx.shadowBlur=s*.05;
+      ctx.beginPath(); ctx.arc(ex,ey,earR,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); ctx.restore();
+      ctx.beginPath(); ctx.arc(ex,ey,earIn,0,Math.PI*2);
+      const cu=ctx.createRadialGradient(ex-earIn*.2,ey-earIn*.2,0,ex,ey,earIn);
+      cu.addColorStop(0,'#4a1fa8'); cu.addColorStop(1,'#200d58'); ctx.fillStyle=cu; ctx.fill();
+    });
+    ctx.save(); ctx.shadowColor='rgba(160,120,255,0.8)'; ctx.shadowBlur=s*.05;
+    ctx.fillStyle='#fff'; ctx.font=`900 ${s*.195}px Arial Black,Arial`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('ER',cx,banY+banR*.62); ctx.restore();
+    document.getElementById('apple-icon').href=c.toDataURL('image/png');
+  } catch(e){}
+})();
+
+// ===== STARTUP – sync from cloud then render =====
+initFirebase().then(() => refreshAll());
+</script>
+</body>
+</html>

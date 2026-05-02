@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Generate Icons — ER Studio</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 40px; }
+  .preview { display: flex; gap: 30px; flex-wrap: wrap; align-items: flex-end; margin: 30px 0; }
+  canvas { border-radius: 22%; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+  a.dl { display:inline-block; padding:12px 24px; background:#6c47f5; color:#fff;
+         border-radius:10px; text-decoration:none; font-weight:700; margin-top:10px; }
+  .item { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  h1 { color:#333; }
+</style>
+</head>
+<body>
+<h1>🎧 ER Studio — אייקונים לאפליקציה</h1>
+<div class="preview" id="preview"></div>
+<script>
+function drawIcon(canvas) {
+  const s = canvas.width;
+  const ctx = canvas.getContext('2d');
+
+  /* ---- רקע מעוגל ---- */
+  const r = s * 0.21;
+  function roundedRect() {
+    ctx.beginPath();
+    ctx.moveTo(r, 0); ctx.lineTo(s-r, 0); ctx.arcTo(s,0,s,r,r);
+    ctx.lineTo(s,s-r); ctx.arcTo(s,s,s-r,s,r);
+    ctx.lineTo(r,s);   ctx.arcTo(0,s,0,s-r,r);
+    ctx.lineTo(0,r);   ctx.arcTo(0,0,r,0,r);
+    ctx.closePath();
+  }
+
+  // גרדיאנט כחול-סגול עמוק
+  roundedRect();
+  const bg = ctx.createLinearGradient(0, 0, s, s);
+  bg.addColorStop(0,   '#1a0a3d');
+  bg.addColorStop(0.5, '#2d1470');
+  bg.addColorStop(1,   '#0d0621');
+  ctx.fillStyle = bg; ctx.fill();
+
+  // זוהר עדין מהמרכז
+  roundedRect();
+  ctx.clip();
+  const glow = ctx.createRadialGradient(s*0.38, s*0.28, 0, s*0.5, s*0.5, s*0.75);
+  glow.addColorStop(0, 'rgba(140,100,255,0.35)');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0,0,s,s);
+
+  /* ---- אוזניות ---- */
+  const cx   = s * 0.5;
+  const banY = s * 0.50;   // מרכז קשת הכרית
+  const banR = s * 0.285;  // רדיוס קשת
+  const lw   = s * 0.062;  // עובי קו
+
+  // רדיוס כוסות האוזניים
+  const earR  = s * 0.115;
+  const earIn = s * 0.065;
+  const leftX  = cx - banR;
+  const rightX = cx + banR;
+  const earY   = banY + s * 0.02;
+
+  // === קשת עליונה (headband) ===
+  // צל
+  ctx.save();
+  ctx.shadowColor = 'rgba(120,80,255,0.6)';
+  ctx.shadowBlur = s * 0.06;
+  ctx.beginPath();
+  ctx.arc(cx, banY, banR, Math.PI, 0, false);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.restore();
+
+  // === כוס שמאל ===
+  // חיצוני
+  ctx.save();
+  ctx.shadowColor = 'rgba(120,80,255,0.5)';
+  ctx.shadowBlur = s * 0.05;
+  ctx.beginPath();
+  ctx.arc(leftX, earY, earR, 0, Math.PI*2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.restore();
+  // פנימי (כרית)
+  ctx.beginPath();
+  ctx.arc(leftX, earY, earIn, 0, Math.PI*2);
+  const lCushion = ctx.createRadialGradient(leftX-earIn*0.2, earY-earIn*0.2, 0, leftX, earY, earIn);
+  lCushion.addColorStop(0, '#4a1fa8');
+  lCushion.addColorStop(1, '#200d58');
+  ctx.fillStyle = lCushion; ctx.fill();
+
+  // === כוס ימין ===
+  ctx.save();
+  ctx.shadowColor = 'rgba(120,80,255,0.5)';
+  ctx.shadowBlur = s * 0.05;
+  ctx.beginPath();
+  ctx.arc(rightX, earY, earR, 0, Math.PI*2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.restore();
+  ctx.beginPath();
+  ctx.arc(rightX, earY, earIn, 0, Math.PI*2);
+  const rCushion = ctx.createRadialGradient(rightX-earIn*0.2, earY-earIn*0.2, 0, rightX, earY, earIn);
+  rCushion.addColorStop(0, '#4a1fa8');
+  rCushion.addColorStop(1, '#200d58');
+  ctx.fillStyle = rCushion; ctx.fill();
+
+  /* ---- טקסט ER ---- */
+  ctx.save();
+  ctx.shadowColor = 'rgba(160,120,255,0.8)';
+  ctx.shadowBlur = s * 0.05;
+
+  // ER
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `900 ${s*0.195}px Arial Black, Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.letterSpacing = `${s*0.01}px`;
+  ctx.fillText('ER', cx, banY + banR * 0.62);
+
+  // קו קטן מתחת
+  const lineW = s * 0.22;
+  const lineY = banY + banR * 0.85;
+  const lineGrad = ctx.createLinearGradient(cx - lineW, lineY, cx + lineW, lineY);
+  lineGrad.addColorStop(0,   'rgba(255,255,255,0)');
+  lineGrad.addColorStop(0.5, 'rgba(255,255,255,0.5)');
+  lineGrad.addColorStop(1,   'rgba(255,255,255,0)');
+  ctx.fillStyle = lineGrad;
+  ctx.fillRect(cx - lineW, lineY, lineW*2, s*0.012);
+  ctx.restore();
+}
+
+const sizes = [512, 192];
+sizes.forEach(size => {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  drawIcon(c);
+
+  const item = document.createElement('div');
+  item.className = 'item';
+
+  const img = document.createElement('img');
+  img.src = c.toDataURL();
+  img.width = img.height = Math.min(size, 180);
+  img.style.borderRadius = '22%';
+  img.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)';
+
+  const a = document.createElement('a');
+  a.href = c.toDataURL('image/png');
+  a.download = `icon-${size}.png`;
+  a.textContent = `⬇️ הורד icon-${size}.png`;
+  a.className = 'dl';
+
+  item.appendChild(img);
+  item.appendChild(a);
+  document.getElementById('preview').appendChild(item);
+});
+</script>
+</body>
+</html>
