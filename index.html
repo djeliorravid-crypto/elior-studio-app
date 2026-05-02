@@ -2,6 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -1207,8 +1208,8 @@
     content: '';
     position: absolute;
     inset: 0;
-    backdrop-filter: blur(2px);
-    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(1px);
+    background: rgba(0,0,0,0.25);
   }
   #login-screen.hidden { display: none; }
   .login-box {
@@ -1224,22 +1225,22 @@
     text-align: center;
     box-shadow: 0 24px 60px rgba(0,0,0,0.6);
   }
-  .login-logo-icon {
-    font-size: 56px;
-    margin-bottom: 12px;
-    filter: drop-shadow(0 4px 16px rgba(108,71,245,0.5));
-  }
-  .login-title {
-    font-size: 24px;
-    font-weight: 800;
+  .login-signature {
+    font-family: 'Great Vibes', cursive;
+    font-size: 58px;
     color: #fff;
-    margin-bottom: 4px;
-    font-family: inherit;
+    margin-bottom: 2px;
+    line-height: 1.1;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.6), 0 0 40px rgba(255,255,255,0.1);
+    letter-spacing: 1px;
   }
   .login-sub {
-    font-size: 13px;
-    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
     margin-bottom: 32px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 500;
   }
   .login-label {
     font-size: 12px;
@@ -1298,9 +1299,8 @@
 <!-- ===== LOGIN ===== -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo-icon">🎚️</div>
-    <div class="login-title">אליאור רביד</div>
-    <div class="login-sub">ניהול חשבונות</div>
+    <div class="login-signature">Elior Ravid</div>
+    <div class="login-sub">Studio Management</div>
     <label class="login-label">סיסמא</label>
     <input class="login-input" type="password" id="login-pass" placeholder="הכנס סיסמא" onkeydown="if(event.key==='Enter')doLogin()" autofocus />
     <button class="login-btn" onclick="doLogin()">כניסה</button>
