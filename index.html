@@ -3427,6 +3427,21 @@ if ('serviceWorker' in navigator) {
 // ===== STARTUP – sync from cloud then render =====
 initFirebase().then(() => refreshAll());
 
+// בדיקת עדכון אוטומטית — כל פתיחה
+(function checkVersion() {
+  fetch('/elior-studio-app/version.txt?t=' + Date.now())
+    .then(r => r.text())
+    .then(serverVer => {
+      const localVer = localStorage.getItem('app_version');
+      if (localVer && localVer !== serverVer.trim()) {
+        localStorage.setItem('app_version', serverVer.trim());
+        location.reload(true);
+      } else {
+        localStorage.setItem('app_version', serverVer.trim());
+      }
+    }).catch(() => {});
+})();
+
 // ===== LOGIN =====
 const PASS = '110';
 
