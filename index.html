@@ -1191,24 +1191,35 @@
   #login-screen {
     position: fixed;
     inset: 0;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
     flex-direction: column;
+    background-image: url('studio-bg.jpg');
+    background-size: cover;
+    background-position: center;
+  }
+  #login-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(6px);
+    background: rgba(0,0,0,0.55);
   }
   #login-screen.hidden { display: none; }
   .login-box {
-    background: rgba(255,255,255,0.07);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.15);
+    position: relative;
+    z-index: 1;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.18);
     border-radius: 28px;
     padding: 48px 40px;
     width: 320px;
     max-width: 90vw;
     text-align: center;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
   }
   .login-logo-icon {
     font-size: 56px;
@@ -1259,13 +1270,13 @@
     padding: 14px;
     border-radius: 14px;
     border: none;
-    background: linear-gradient(135deg, #6c47f5, #4f35c7);
+    background: linear-gradient(135deg, #16a34a, #15803d);
     color: #fff;
     font-size: 16px;
     font-weight: 800;
     cursor: pointer;
     margin-top: 4px;
-    box-shadow: 0 6px 20px rgba(108,71,245,0.4);
+    box-shadow: 0 6px 20px rgba(22,163,74,0.45);
     transition: opacity .2s, transform .1s;
     font-family: inherit;
   }
