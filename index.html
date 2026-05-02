@@ -1186,8 +1186,113 @@
     }
 
   </style>
+<style>
+  /* ===== LOGIN SCREEN ===== */
+  #login-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    flex-direction: column;
+  }
+  #login-screen.hidden { display: none; }
+  .login-box {
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 28px;
+    padding: 48px 40px;
+    width: 320px;
+    max-width: 90vw;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+  }
+  .login-logo-icon {
+    font-size: 56px;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 4px 16px rgba(108,71,245,0.5));
+  }
+  .login-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 4px;
+    font-family: inherit;
+  }
+  .login-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 32px;
+  }
+  .login-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.6);
+    text-align: right;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .login-input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 6px;
+    outline: none;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+    transition: border-color .2s;
+    font-family: inherit;
+  }
+  .login-input:focus { border-color: #6c47f5; }
+  .login-input::placeholder { letter-spacing: 2px; font-size: 14px; font-weight: 400; color: rgba(255,255,255,0.3); }
+  .login-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #6c47f5, #4f35c7);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    margin-top: 4px;
+    box-shadow: 0 6px 20px rgba(108,71,245,0.4);
+    transition: opacity .2s, transform .1s;
+    font-family: inherit;
+  }
+  .login-btn:active { opacity: 0.85; transform: scale(0.98); }
+  .login-error {
+    color: #ff6b6b;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 10px;
+    min-height: 18px;
+  }
+</style>
 </head>
 <body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo-icon">🎚️</div>
+    <div class="login-title">אליאור רביד</div>
+    <div class="login-sub">ניהול חשבונות</div>
+    <label class="login-label">סיסמא</label>
+    <input class="login-input" type="password" id="login-pass" placeholder="הכנס סיסמא" onkeydown="if(event.key==='Enter')doLogin()" autofocus />
+    <button class="login-btn" onclick="doLogin()">כניסה</button>
+    <div class="login-error" id="login-err"></div>
+  </div>
+</div>
 
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -3307,6 +3412,30 @@ if ('serviceWorker' in navigator) {
 
 // ===== STARTUP – sync from cloud then render =====
 initFirebase().then(() => refreshAll());
+
+// ===== LOGIN =====
+const LOGIN_KEY = 'studio_auth';
+const PASS = '110';
+
+function doLogin() {
+  const val = document.getElementById('login-pass').value;
+  if (val === PASS) {
+    localStorage.setItem(LOGIN_KEY, '1');
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('login-pass').value = '';
+  } else {
+    const err = document.getElementById('login-err');
+    err.textContent = '❌ סיסמא שגויה';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-pass').focus();
+    setTimeout(() => err.textContent = '', 2000);
+  }
+}
+
+// בדוק אם כבר מחובר
+if (localStorage.getItem(LOGIN_KEY) === '1') {
+  document.getElementById('login-screen').classList.add('hidden');
+}
 </script>
 </body>
 </html>
