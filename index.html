@@ -4186,13 +4186,14 @@ function setSessionStatus(id, status) {
   const sessions = load('sessions');
   const s = sessions.find(x => x.id === id);
   if (!s) return;
+  if (status === 'cancelled') {
+    // ביטול = מחיקה מוחלטת (כמו גוגל)
+    deleteSession(id);
+    return;
+  }
   s.status = status;
   save('sessions', sessions);
   renderSessionCal();
-  // סנכרון ביטול לגוגל קלנדר
-  if (status === 'cancelled' && _gcalToken && s.gcalEventId) {
-    deleteGcalEvent(s.gcalEventId);
-  }
 }
 
 function renderSessionCal() {
@@ -4406,15 +4407,12 @@ function renderSessionCal() {
         const sessionsHtml = daySessions.map(s => {
           const info   = SES_TYPES[s.type] || SES_TYPES['אחר'];
           const dur    = sesDurationLabel(s.startTime, s.endTime);
-          const isCanc = s.status === 'cancelled';
           const isComp = s.status === 'completed';
           const statusBadge = isComp
             ? `<span style="background:#d1fae5;color:#15803d;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap">✅ הושלם</span>`
-            : isCanc
-            ? `<span style="background:#f3f4f6;color:#6b7280;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap">❌ בוטל</span>`
             : `<span style="background:var(--accent-light);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap">📅 מתוכנן</span>`;
           return `
-            <div class="session-row" style="${isCanc?'opacity:0.55;':''}" onclick="openSessionModal('${s.date}','${s.id}')">
+            <div class="session-row" onclick="openSessionModal('${s.date}','${s.id}')">
               <div style="width:5px;min-height:48px;border-radius:3px;flex-shrink:0;background:${info.color}"></div>
               <div class="session-row-time">${s.startTime}<br><span style="font-size:11px;opacity:0.6">${s.endTime}</span></div>
               <div style="flex:1;min-width:0">
@@ -4422,11 +4420,10 @@ function renderSessionCal() {
                 <div class="session-row-type">${info.label}${dur ? ' · <b>' + dur + '</b>' : ''}</div>
               </div>
               ${statusBadge}
-              ${!isComp && !isCanc ? `
+              ${!isComp ? `
                 <button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#d1fae5;color:#15803d;white-space:nowrap">✓ סיום</button>
                 <button onclick="event.stopPropagation();setSessionStatus('${s.id}','cancelled')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#fee2e2;color:#dc2626;white-space:nowrap">✕ ביטול</button>
               ` : ''}
-              ${isCanc ? `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','scheduled')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text-muted);white-space:nowrap">↩ שחזר</button>` : ''}
               <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:#ccc;cursor:pointer;font-size:20px;padding:2px 6px;line-height:1" title="מחק">×</button>
             </div>`;
         }).join('');
@@ -5002,8 +4999,9 @@ const GCAL_COLORS = ['','#ac725e','#d06b64','#f83a22','#fa573c','#ff7537','#ffad
 
 // סנכרון שינויים מגוגל חזרה לסשנים באפליקציה
 function syncGcalToSessions(gcalEvents) {
-  const sessions = load('sessions');
+  let sessions = load('sessions');
   let changed = false;
+  const sessionsToDelete = [];
   const curMonthKey = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
 
   sessions.forEach(s => {
@@ -5029,16 +5027,9 @@ function syncGcalToSessions(gcalEvents) {
       if (ge) { s.gcalEventId = ge.id; changed = true; }
     }
 
-    // ── אירוע נמחק/בוטל בגוגל ──
-    if (!ge && s.gcalEventId && s.status !== 'cancelled') {
-      // היה לנו gcalEventId אבל האירוע לא קיים יותר → בוטל בגוגל
-      s.status = 'cancelled';
-      changed = true;
-      return;
-    }
-    if (ge && ge.status === 'cancelled' && s.status !== 'cancelled') {
-      s.status = 'cancelled';
-      changed = true;
+    // ── אירוע נמחק/בוטל בגוגל → מחק מהאפליקציה ──
+    if ((!ge && s.gcalEventId) || (ge && ge.status === 'cancelled')) {
+      sessionsToDelete.push(s.id);
       return;
     }
 
@@ -5053,6 +5044,10 @@ function syncGcalToSessions(gcalEvents) {
     if (newEnd   && newEnd   !== s.endTime)   { s.endTime   = newEnd;   changed = true; }
   });
 
+  if (sessionsToDelete.length) {
+    sessions = sessions.filter(s => !sessionsToDelete.includes(s.id));
+    changed = true;
+  }
   if (changed) { save('sessions', sessions); renderSessionCal(); }
 }
 
