@@ -2226,6 +2226,7 @@ function initFirebase() {
           _isFirstSync = false;
           firebaseReady = true;
           console.log('Firebase synced ✓ (cloud is source of truth)');
+          refreshAll();
           resolve();
         } else {
           // עדכון בזמן אמת ממכשיר אחר — עדכן תצוגה
@@ -4800,6 +4801,45 @@ initFirebase().then(() => {
     setTimeout(gcalSilentReconnect, 2000);
   }
 });
+
+// ── עקביות נתונים ──
+
+// 1. כשהאפליקציה חוזרת למסך — סנכרן מיד מהענן
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && firebaseDB) {
+    firebaseDB.ref('studio_data').once('value').then(snapshot => {
+      const cloudData = snapshot.val();
+      if (!cloudData) return;
+      let changed = false;
+      ALL_KEYS.forEach(key => {
+        if (cloudData[key] !== undefined) {
+          const cur = localStorage.getItem('s_' + key);
+          const next = JSON.stringify(cloudData[key]);
+          if (cur !== next) { localStorage.setItem('s_' + key, next); changed = true; }
+        }
+      });
+      if (changed) { refreshAll(); console.log('🔄 סנכרון בחזרה למסך'); }
+    }).catch(() => {});
+  }
+});
+
+// 2. סנכרון שקט כל 5 דקות — מגן מפני חוסר עקביות
+setInterval(() => {
+  if (!firebaseDB || document.visibilityState !== 'visible') return;
+  firebaseDB.ref('studio_data').once('value').then(snapshot => {
+    const cloudData = snapshot.val();
+    if (!cloudData) return;
+    let changed = false;
+    ALL_KEYS.forEach(key => {
+      if (cloudData[key] !== undefined) {
+        const cur = localStorage.getItem('s_' + key);
+        const next = JSON.stringify(cloudData[key]);
+        if (cur !== next) { localStorage.setItem('s_' + key, next); changed = true; }
+      }
+    });
+    if (changed) { refreshAll(); console.log('🔄 סנכרון תקופתי'); }
+  }).catch(() => {});
+}, 5 * 60 * 1000);
 
 // בדיקת עדכון אוטומטית — כל פתיחה
 (function checkVersion() {
