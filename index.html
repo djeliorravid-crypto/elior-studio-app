@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Frank+Ruhl+Libre:wght@700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Frank+Ruhl+Libre:wght@400;700;900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
@@ -84,7 +84,7 @@
       border-bottom: 1px solid var(--border);
     }
     .sidebar-logo .logo-icon { font-size: 28px; margin-bottom: 6px; }
-    .sidebar-logo h1 { font-size: 14px; font-weight: 800; color: var(--text); letter-spacing: 0.02em; }
+    .sidebar-logo h1 { font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: 0.02em; font-family: 'Frank Ruhl Libre', 'Heebo', serif; }
     .sidebar-logo p { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
     nav { flex: 1; padding: 10px 0; }
     nav a {
@@ -138,8 +138,8 @@
       gap: 14px;
     }
 
-    .page-header h2 { font-size: 32px; font-weight: 900; letter-spacing: -0.03em; color: #f0f0f5; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-    .page-header p { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.65); margin-top: 4px; }
+    .page-header h2 { font-size: 32px; font-weight: 900; letter-spacing: -0.02em; color: #f0f0f5; text-shadow: 0 2px 8px rgba(0,0,0,0.5); font-family: 'Rubik', 'Heebo', sans-serif; }
+    .page-header p { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.65); margin-top: 4px; font-family: 'Heebo', sans-serif; }
 
     /* ===== MONTH SELECTOR ===== */
     .month-selector {
@@ -189,7 +189,7 @@
     }
 
     .card-icon { font-size: 30px; margin-bottom: 12px; }
-    .card-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px; font-weight: 900; }
+    .card-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .12em; margin-bottom: 10px; font-weight: 900; font-family: 'Rubik', 'Heebo', sans-serif; }
     .card-value { font-size: 36px; font-weight: 900; margin-bottom: 6px; letter-spacing: -0.03em; line-height: 1; }
     .card-value.green { color: var(--green); }
     .card-value.red { color: var(--red); }
@@ -244,7 +244,7 @@
       flex-wrap: wrap; gap: 10px;
     }
 
-    .table-header h3 { font-size: 18px; font-weight: 900; letter-spacing: -0.02em; }
+    .table-header h3 { font-size: 18px; font-weight: 900; letter-spacing: -0.02em; font-family: 'Frank Ruhl Libre', 'Heebo', serif; }
 
     table { width: 100%; border-collapse: collapse; }
 
@@ -258,8 +258,8 @@
 
     td {
       padding: 15px 16px;
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 16px;
+      font-weight: 700;
       border-bottom: 1px solid var(--border);
       text-align: right;
     }
@@ -308,7 +308,7 @@
       direction: rtl; max-height: 90vh; overflow-y: auto;
     }
 
-    .modal h3 { font-size: 22px; font-weight: 900; margin-bottom: 22px; letter-spacing: -0.02em; }
+    .modal h3 { font-size: 22px; font-weight: 900; margin-bottom: 22px; letter-spacing: -0.02em; font-family: 'Frank Ruhl Libre', 'Heebo', serif; }
 
     .form-group { margin-bottom: 16px; }
 
@@ -371,7 +371,7 @@
       box-shadow: var(--shadow);
     }
 
-    .chart-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+    .chart-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; font-family: 'Rubik', 'Heebo', sans-serif; }
 
     .bar-chart {
       display: flex; align-items: flex-end; gap: 8px; height: 150px;
@@ -408,9 +408,9 @@
 
     .ri-icon.in { background: var(--green-light); }
     .ri-icon.out { background: var(--red-light); }
-    .ri-name { font-size: 14px; font-weight: 600; }
-    .ri-date { font-size: 12px; color: var(--text-muted); }
-    .ri-amount { font-size: 15px; font-weight: 800; }
+    .ri-name { font-size: 15px; font-weight: 700; }
+    .ri-date { font-size: 13px; color: var(--text-muted); }
+    .ri-amount { font-size: 16px; font-weight: 800; }
 
     /* ===== PROFILES PAGE ===== */
     .section-title {
@@ -418,6 +418,7 @@
       color: var(--text-muted); text-transform: uppercase;
       letter-spacing: .06em; margin-bottom: 14px;
       display: flex; align-items: center; gap: 8px;
+      font-family: 'Rubik', 'Heebo', sans-serif;
     }
 
     .section-title::after {
@@ -487,9 +488,9 @@
     .pc-status.inactive { color: #9ca3af; }
     .pc-status.inactive .dot { background: #9ca3af; }
 
-    .pc-name { font-size: 17px; font-weight: 800; margin-bottom: 3px; }
-    .pc-type { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
-    .pc-contact { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
+    .pc-name { font-size: 18px; font-weight: 800; margin-bottom: 3px; font-family: 'Frank Ruhl Libre', 'Heebo', serif; }
+    .pc-type { font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 8px; }
+    .pc-contact { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
 
     .pc-stats {
       display: flex; gap: 0;
@@ -1474,22 +1475,22 @@
     <!-- תיבת נשאר לגבות / לשלם -->
     <div id="pending-summary-box" style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
       <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid var(--green-border);box-shadow:var(--shadow)">
-        <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">💚 נשאר להכניס</div>
-        <div id="pending-income-amt" style="font-size:26px;font-weight:900;color:var(--green)">₪0</div>
-        <div id="pending-income-sub" style="font-size:12px;color:var(--text-muted);margin-top:4px;margin-bottom:10px">הכנסות שעדיין לא שולמו</div>
+        <div style="font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-family:'Rubik','Heebo',sans-serif">💚 נשאר להכניס</div>
+        <div id="pending-income-amt" style="font-size:28px;font-weight:900;color:var(--green)">₪0</div>
+        <div id="pending-income-sub" style="font-size:14px;color:var(--text-muted);margin-top:4px;margin-bottom:10px">הכנסות שעדיין לא שולמו</div>
         <div style="height:7px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden">
           <div id="pending-income-bar" style="height:100%;border-radius:4px;background:var(--green);transition:width .5s;width:0%"></div>
         </div>
-        <div id="pending-income-pct" style="font-size:11px;color:var(--green);font-weight:700;margin-top:5px">0% גבוי</div>
+        <div id="pending-income-pct" style="font-size:13px;color:var(--green);font-weight:700;margin-top:5px">0% גבוי</div>
       </div>
       <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#fff5f5,#fee2e2);border:2px solid #fca5a5;box-shadow:var(--shadow)">
-        <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🔴 נשאר להוציא</div>
-        <div id="pending-expenses-amt" style="font-size:26px;font-weight:900;color:var(--red)">₪0</div>
-        <div id="pending-expenses-sub" style="font-size:12px;color:var(--text-muted);margin-top:4px;margin-bottom:10px">הוצאות שעדיין לא שולמו</div>
+        <div style="font-size:13px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-family:'Rubik','Heebo',sans-serif">🔴 נשאר להוציא</div>
+        <div id="pending-expenses-amt" style="font-size:28px;font-weight:900;color:var(--red)">₪0</div>
+        <div id="pending-expenses-sub" style="font-size:14px;color:var(--text-muted);margin-top:4px;margin-bottom:10px">הוצאות שעדיין לא שולמו</div>
         <div style="height:7px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden">
           <div id="pending-expenses-bar" style="height:100%;border-radius:4px;background:var(--red);transition:width .5s;width:0%"></div>
         </div>
-        <div id="pending-expenses-pct" style="font-size:11px;color:var(--red);font-weight:700;margin-top:5px">0% שולם</div>
+        <div id="pending-expenses-pct" style="font-size:13px;color:var(--red);font-weight:700;margin-top:5px">0% שולם</div>
       </div>
     </div>
 
@@ -2294,18 +2295,18 @@ function showProfileDetail(id) {
         ? '<div style="color:var(--text-muted);font-size:14px">אין הכנסות עדיין</div>'
         : `<table style="width:100%;border-collapse:collapse">
             <thead><tr>
-              <th style="background:var(--surface2);padding:10px 14px;font-size:12px;color:var(--text-muted);text-align:right;font-weight:700">תאריך</th>
-              <th style="background:var(--surface2);padding:10px 14px;font-size:12px;color:var(--text-muted);text-align:right;font-weight:700">תיאור</th>
-              <th style="background:var(--surface2);padding:10px 14px;font-size:12px;color:var(--text-muted);text-align:right;font-weight:700">קטגוריה</th>
-              <th style="background:var(--surface2);padding:10px 14px;font-size:12px;color:var(--text-muted);text-align:right;font-weight:700">סכום</th>
+              <th style="background:var(--surface2);padding:10px 14px;font-size:13px;color:var(--text-muted);text-align:right;font-weight:700">תאריך</th>
+              <th style="background:var(--surface2);padding:10px 14px;font-size:13px;color:var(--text-muted);text-align:right;font-weight:700">תיאור</th>
+              <th style="background:var(--surface2);padding:10px 14px;font-size:13px;color:var(--text-muted);text-align:right;font-weight:700">קטגוריה</th>
+              <th style="background:var(--surface2);padding:10px 14px;font-size:13px;color:var(--text-muted);text-align:right;font-weight:700">סכום</th>
             </tr></thead>
             <tbody>
               ${clientIncome.map(i => `
                 <tr>
-                  <td style="padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text-muted)">${fmtDate(i.date)}</td>
-                  <td style="padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border)">${i.description}</td>
-                  <td style="padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border)"><span class="badge badge-purple">${i.category}</span></td>
-                  <td style="padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);font-weight:800;color:var(--green)">${fmtMoney(i.amount)}</td>
+                  <td style="padding:11px 14px;font-size:15px;border-bottom:1px solid var(--border);color:var(--text-muted)">${fmtDate(i.date)}</td>
+                  <td style="padding:11px 14px;font-size:15px;border-bottom:1px solid var(--border)">${i.description}</td>
+                  <td style="padding:11px 14px;font-size:15px;border-bottom:1px solid var(--border)"><span class="badge badge-purple">${i.category}</span></td>
+                  <td style="padding:11px 14px;font-size:15px;border-bottom:1px solid var(--border);font-weight:800;color:var(--green)">${fmtMoney(i.amount)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -2538,7 +2539,7 @@ function renderIncome() {
   `).join('');
 
   tbody.innerHTML = incomeRows + (pendingInst.length ? `
-    <tr><td colspan="7" style="padding:6px 16px;background:var(--surface2);font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.05em">
+    <tr><td colspan="7" style="padding:8px 16px;background:var(--surface2);font-size:13px;font-weight:700;color:var(--text-muted);letter-spacing:.05em">
       תשלומים צפויים מתוכניות תשלום
     </td></tr>
     ${pendingRows}
@@ -2731,17 +2732,17 @@ function renderExpenses() {
 
   function expensesTableHtml(exps) {
     if (!exps || exps.length === 0)
-      return `<div style="font-size:12px;color:var(--text-muted);padding:6px 0">אין הוצאות</div>`;
+      return `<div style="font-size:14px;color:var(--text-muted);padding:6px 0">אין הוצאות</div>`;
     return exps.map(e => `
-      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);${e.paid?'opacity:0.5':''}">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);${e.paid?'opacity:0.5':''}">
         <div style="flex:1;min-width:0">
-          <span style="font-size:13px;font-weight:600;${e.paid?'text-decoration:line-through;color:var(--text-muted)':''}">${e.description}</span>
-          <span style="font-size:11px;color:var(--text-muted);margin-right:6px">${fmtDate(e.date)}</span>
-          <span class="badge ${catBadge[e.category]||'badge-orange'}" style="font-size:10px">${e.category}</span>
+          <span style="font-size:15px;font-weight:700;${e.paid?'text-decoration:line-through;color:var(--text-muted)':''}">${e.description}</span>
+          <span style="font-size:13px;color:var(--text-muted);margin-right:6px">${fmtDate(e.date)}</span>
+          <span class="badge ${catBadge[e.category]||'badge-orange'}" style="font-size:11px">${e.category}</span>
         </div>
-        <span style="font-size:13px;font-weight:800;white-space:nowrap;${e.paid?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">-${fmtMoney(e.amount)}</span>
-        <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:6px;padding:3px 7px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;${e.paid?'background:#d1fae5;color:#15803d':'background:var(--red-light);color:var(--red)'}">${e.paid?'✓':'שולם'}</button>
-        <button onclick="deleteExpense('${e.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:2px 4px">×</button>
+        <span style="font-size:15px;font-weight:800;white-space:nowrap;${e.paid?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">-${fmtMoney(e.amount)}</span>
+        <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;${e.paid?'background:#d1fae5;color:#15803d':'background:var(--red-light);color:var(--red)'}">${e.paid?'✓':'שולם'}</button>
+        <button onclick="deleteExpense('${e.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 4px">×</button>
       </div>`).join('');
   }
 
@@ -2765,17 +2766,17 @@ function renderExpenses() {
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:8px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
             <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${inc.description}</div>
-              <div style="font-size:11px;color:var(--text-muted)">${inc.clientName||fmtDate(inc.date)}</div>
+              <div style="font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${inc.description}</div>
+              <div style="font-size:13px;color:var(--text-muted)">${inc.clientName||fmtDate(inc.date)}</div>
             </div>
             <div style="display:flex;gap:12px;align-items:center;flex-shrink:0">
               <div style="text-align:center">
-                <div style="font-size:9px;color:var(--text-muted);font-weight:700">הוצאות</div>
-                <div style="font-size:13px;font-weight:800;color:var(--red)">-${fmtMoney(totalExp)}</div>
+                <div style="font-size:11px;color:var(--text-muted);font-weight:700">הוצאות</div>
+                <div style="font-size:15px;font-weight:800;color:var(--red)">-${fmtMoney(totalExp)}</div>
               </div>
               <div style="text-align:center">
-                <div style="font-size:9px;color:var(--text-muted);font-weight:700">נשאר</div>
-                <div style="font-size:13px;font-weight:800;color:${netPos?'var(--green)':'var(--red)'}">${netPos?'':'-'}${fmtMoney(Math.abs(net))}</div>
+                <div style="font-size:11px;color:var(--text-muted);font-weight:700">נשאר</div>
+                <div style="font-size:15px;font-weight:800;color:${netPos?'var(--green)':'var(--red)'}">${netPos?'':'-'}${fmtMoney(Math.abs(net))}</div>
               </div>
             </div>
           </div>
@@ -2831,7 +2832,7 @@ function renderExpenses() {
       <div class="table-card" style="margin-top:8px">
         <div class="table-header">
           <h3>🔁 הוצאות קבועות</h3>
-          <div style="font-size:13px;color:var(--text-muted)">חוזרות כל חודש אוטומטית</div>
+          <div style="font-size:15px;color:var(--text-muted)">חוזרות כל חודש אוטומטית</div>
         </div>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr>
@@ -2851,9 +2852,9 @@ function renderExpenses() {
                 <td style="${isPaidThisMonth?'text-decoration:line-through;color:var(--text-muted)':''};font-weight:600">${r.description}</td>
                 <td><span class="badge ${catBadge[r.category]||'badge-orange'}">${r.category}</span></td>
                 <td style="font-weight:800;${isPaidThisMonth?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">-${fmtMoney(r.amount)}</td>
-                <td style="color:var(--text-muted);font-size:12px">${r.startMonth}</td>
-                <td style="color:var(--text-muted);font-size:12px">${r.endMonth || '∞ ללא הגבלה'}</td>
-                <td>${isActive ? `<button onclick="toggleRecurringPaid('${r.id}')" style="border:none;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;${isPaidThisMonth?'background:#d1fae5;color:#15803d':'background:var(--red-light);color:var(--red)'}">${isPaidThisMonth?'✓ שולם':'שולם'}</button>` : '<span style="color:var(--text-muted);font-size:12px">לא פעיל</span>'}</td>
+                <td style="color:var(--text-muted);font-size:14px">${r.startMonth}</td>
+                <td style="color:var(--text-muted);font-size:14px">${r.endMonth || '∞ ללא הגבלה'}</td>
+                <td>${isActive ? `<button onclick="toggleRecurringPaid('${r.id}')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;${isPaidThisMonth?'background:#d1fae5;color:#15803d':'background:var(--red-light);color:var(--red)'}">${isPaidThisMonth?'✓ שולם':'שולם'}</button>` : '<span style="color:var(--text-muted);font-size:14px">לא פעיל</span>'}</td>
                 <td><button class="btn btn-danger btn-sm" onclick="deleteRecurring('${r.id}')">🗑</button></td>
               </tr>`;
             }).join('')}
@@ -3398,22 +3399,22 @@ function renderProjects() {
       <div class="proj-card${isDone ? ' done' : ''}">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px">
           <div>
-            <div style="font-size:16px;font-weight:800;margin-bottom:3px">${i.description}${isDone ? ' ✅ הושלם' : ''}</div>
-            <div style="font-size:12px;color:var(--accent);font-weight:600">${i.clientName || 'ללא לקוח'}</div>
+            <div style="font-size:17px;font-weight:800;margin-bottom:3px">${i.description}${isDone ? ' ✅ הושלם' : ''}</div>
+            <div style="font-size:14px;color:var(--accent);font-weight:600">${i.clientName || 'ללא לקוח'}</div>
           </div>
           <div style="text-align:left;flex-shrink:0">
             <div style="font-size:18px;font-weight:800;color:var(--green)">${fmtMoney(i.amount)}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${fmtDate(i.date)}</div>
+            <div style="font-size:13px;color:var(--text-muted)">${fmtDate(i.date)}</div>
           </div>
         </div>
         <div style="margin-bottom:4px">
-          <span class="badge badge-purple" style="font-size:11px">${i.category}</span>
+          <span class="badge badge-purple" style="font-size:12px">${i.category}</span>
         </div>
         <div style="margin-bottom:12px;margin-top:10px">
-          <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">📝 מצב הפקה</label>
+          <label style="font-size:13px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px">📝 מצב הפקה</label>
           <textarea
             id="proj-note-${i.id}"
-            style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;direction:rtl;font-family:inherit;resize:vertical;min-height:60px"
+            style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;font-size:15px;color:var(--text);outline:none;direction:rtl;font-family:inherit;resize:vertical;min-height:60px"
             placeholder="כתוב הערות על מצב הפרויקט..."
             oninput="saveProjectNote('${i.id}', this.value)"
           >${note}</textarea>
