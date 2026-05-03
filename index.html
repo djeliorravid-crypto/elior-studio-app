@@ -4759,10 +4759,10 @@ function disconnectGoogle() {
 
 function gcalStartAutoRefresh() {
   gcalStopAutoRefresh();
-  // רענון אוטומטי כל 2 דקות
+  // רענון אוטומטי כל 30 שניות
   _gcalAutoRefreshTimer = setInterval(() => {
-    if (_gcalToken) fetchGoogleEvents(true); // silent=true (ללא הודעות)
-  }, 2 * 60 * 1000);
+    if (_gcalToken) fetchGoogleEvents(true);
+  }, 30 * 1000);
 }
 
 function gcalStopAutoRefresh() {
