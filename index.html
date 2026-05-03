@@ -25,32 +25,32 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    /* ===== מצב אור (ברירת מחדל) ===== */
+    /* ===== רקע שחור מט ===== */
     :root {
-      --bg:           #f2f4fb;
-      --surface:      #ffffff;
-      --surface2:     #f5f6fb;
-      --surface3:     #eef0f8;
-      --border:       #e2e5f0;
-      --border-glow:  rgba(108,71,245,0.18);
-      --accent:       #6c47f5;
-      --accent-light: #ede9ff;
+      --bg:           #111113;
+      --surface:      #1c1c20;
+      --surface2:     #252529;
+      --surface3:     #2d2d32;
+      --border:       #36363d;
+      --border-glow:  rgba(108,71,245,0.30);
+      --accent:       #7c5ff5;
+      --accent-light: #2a2245;
       --accent2:      #a78bfa;
-      --accent-glow:  rgba(108,71,245,0.10);
-      --green:        #16a34a;
-      --green-light:  #dcfce7;
-      --green-border: #86efac;
-      --red:          #dc2626;
-      --red-light:    #fee2e2;
-      --orange:       #d97706;
-      --text:         #1a1a2e;
-      --text-muted:   #6b7280;
+      --accent-glow:  rgba(108,71,245,0.15);
+      --green:        #22c55e;
+      --green-light:  #14291e;
+      --green-border: #166534;
+      --red:          #f87171;
+      --red-light:    #2d1414;
+      --orange:       #fb923c;
+      --text:         #eeeef3;
+      --text-muted:   #8a8a9a;
       --radius:       14px;
-      --shadow:       0 2px 16px rgba(108,71,245,0.08);
-      --shadow-hover: 0 8px 32px rgba(108,71,245,0.15);
-      --sidebar-bg:   #ffffff;
+      --shadow:       0 2px 20px rgba(0,0,0,0.45);
+      --shadow-hover: 0 8px 36px rgba(0,0,0,0.6);
+      --sidebar-bg:   #161618;
       --sidebar-w:    220px;
-      --tr-hover:     #fafbff;
+      --tr-hover:     #22222a;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -743,10 +743,10 @@
     .payment-step:last-child { border-left: none; }
     .payment-step:hover { background: var(--surface2); }
 
-    .payment-step.paid { background: #f0fdf4; }
-    .payment-step.paid:hover { background: #dcfce7; }
-    .payment-step.overdue { background: #fff5f5; }
-    .payment-step.overdue:hover { background: #fee2e2; }
+    .payment-step.paid { background: #14291e; }
+    .payment-step.paid:hover { background: #1a3326; }
+    .payment-step.overdue { background: #2d1414; }
+    .payment-step.overdue:hover { background: #381a1a; }
 
     .ps-icon { font-size: 18px; margin-bottom: 4px; }
     .ps-num { font-size: 10px; color: var(--text-muted); margin-bottom: 2px; }
@@ -877,7 +877,7 @@
     }
 
     .proj-card.done {
-      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      background: linear-gradient(135deg, #14291e, #1a3326);
       border-color: var(--green-border);
     }
 
@@ -959,7 +959,7 @@
         color: var(--accent);
         border-right-color: transparent;
         border-top-color: var(--accent);
-        background: linear-gradient(180deg, #f3f0ff 0%, transparent 100%);
+        background: linear-gradient(180deg, #1e1a30 0%, transparent 100%);
       }
 
       /* ===== תוכן ראשי ===== */
@@ -1439,19 +1439,19 @@
     </div>
 
     <div class="cards-grid" style="margin-bottom:20px">
-      <div class="card" style="border-color:#ddd6fe;background:linear-gradient(135deg,#faf8ff,#f3f0ff)">
+      <div class="card" style="border-color:#ddd6fe;background:linear-gradient(135deg,#1e1a30,#231e38)">
         <div class="card-icon">⏳</div>
         <div class="card-label">צפוי להתקבל החודש</div>
         <div class="card-value purple" id="i-expected">₪0</div>
         <div class="card-sub" id="i-expected-count">0 ממתינים</div>
       </div>
-      <div class="card" style="border-color:var(--green-border);background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
+      <div class="card" style="border-color:var(--green-border);background:linear-gradient(135deg,#14291e,#1a3326)">
         <div class="card-icon">✅</div>
         <div class="card-label">התקבל בפועל</div>
         <div class="card-value green" id="i-total">₪0</div>
         <div class="card-sub" id="i-count">0 עסקאות שולמו</div>
       </div>
-      <div class="card" style="border-color:#bfdbfe;background:linear-gradient(135deg,#eff6ff,#dbeafe)">
+      <div class="card" style="border-color:#bfdbfe;background:linear-gradient(135deg,#141d2d,#192233)">
         <div class="card-icon">🔭</div>
         <div class="card-label">רווח נקי עתידי החודש</div>
         <div class="card-value blue" id="i-future-profit">₪0</div>
@@ -1467,12 +1467,12 @@
 
     <!-- תיבת נשאר לגבות / לשלם -->
     <div id="pending-summary-box" style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-      <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid var(--green-border);box-shadow:var(--shadow)">
+      <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#14291e,#1a3326);border:2px solid var(--green-border);box-shadow:var(--shadow)">
         <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">💚 נשאר להכניס</div>
         <div id="pending-income-amt" style="font-size:26px;font-weight:900;color:var(--green)">₪0</div>
         <div id="pending-income-sub" style="font-size:12px;color:var(--text-muted);margin-top:4px">הכנסות שעדיין לא שולמו</div>
       </div>
-      <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#fff5f5,#fee2e2);border:2px solid #fca5a5;box-shadow:var(--shadow)">
+      <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#2d1414,#381a1a);border:2px solid #fca5a5;box-shadow:var(--shadow)">
         <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🔴 נשאר להוציא</div>
         <div id="pending-expenses-amt" style="font-size:26px;font-weight:900;color:var(--red)">₪0</div>
         <div id="pending-expenses-sub" style="font-size:12px;color:var(--text-muted);margin-top:4px">הוצאות שעדיין לא שולמו</div>
@@ -2450,17 +2450,21 @@ function renderIncome() {
         <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
           <span class="badge badge-gray">טרם שולם</span>
           <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700;padding:3px 9px" onclick="setIncomeStatus('${i.id}','paid')">✅ שולם</button>
-          <button class="btn btn-sm" style="background:#fee2e2;color:var(--red);font-weight:700;padding:3px 9px" onclick="setIncomeStatus('${i.id}','overdue')">🔴 באיחור</button>
+          <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);font-weight:700;padding:3px 9px" onclick="setIncomeStatus('${i.id}','overdue')">🔴 באיחור</button>
         </div>
       </td>`;
   }
 
   function rowStyle(i) {
     const st = i.status || 'paid';
-    if (st === 'overdue') return 'background:#fff8f8;border-right:3px solid var(--red)';
-    if (st !== 'paid')    return 'background:#fafbff;border-right:3px solid var(--accent)';
+    if (st === 'overdue') return 'background:#2d1414;border-right:3px solid var(--red)';
+    if (st !== 'paid')    return 'background:#1e1a30;border-right:3px solid var(--accent)';
     return '';
   }
+
+  // מיון עולה לפי תאריך (הקרוב ביותר ראשון)
+  monthEntries.sort((a,b) => new Date(a.date) - new Date(b.date));
+  pendingInst.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
 
   const incomeRows = monthEntries.map(i => `
     <tr class="row-framed" style="${rowStyle(i)}">
@@ -2479,7 +2483,7 @@ function renderIncome() {
   `).join('');
 
   const pendingRows = pendingInst.map(p => `
-    <tr class="row-framed" style="background:${p.overdue?'#fff8f8':'#fafbff'};border-right:3px solid ${p.overdue?'var(--red)':'var(--accent)'}">
+    <tr class="row-framed" style="background:${p.overdue?'#2d1414':'#1e1a30'};border-right:3px solid ${p.overdue?'var(--red)':'var(--accent)'}">
       <td style="color:var(--text-muted)">${fmtDate(p.dueDate)}</td>
       <td>${p.clientName || '<span style="color:var(--text-muted)">—</span>'}</td>
       <td style="color:var(--text-muted)">${p.description}</td>
@@ -2575,9 +2579,9 @@ function renderExpenses() {
   const monthIncome = income.filter(i => inCurMonth(i.date));
   const allExpenses = expenses; // הוצאות לא מוגבלות לחודש — משויכות לפרויקט
 
-  // הוצאות ממויינות לפי פרויקט
+  // הוצאות ממויינות לפי פרויקט (מיון עולה לפי תאריך)
   const byProject = {};
-  allExpenses.forEach(e => {
+  [...allExpenses].sort((a,b) => new Date(a.date)-new Date(b.date)).forEach(e => {
     const key = e.projectId || '__general__';
     if (!byProject[key]) byProject[key] = [];
     byProject[key].push(e);
@@ -2604,7 +2608,7 @@ function renderExpenses() {
   // ── כרטיס נשאר ──
   const card = document.getElementById('e-balance-card');
   if (card) {
-    card.style.background   = isPos ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fff5f5,#fee2e2)';
+    card.style.background   = isPos ? 'linear-gradient(135deg,#14291e,#1a3326)' : 'linear-gradient(135deg,#2d1414,#381a1a)';
     card.style.borderColor  = isPos ? 'var(--green-border)' : '#fca5a5';
     document.getElementById('e-balance').textContent        = (isPos?'':'-') + fmtMoney(balance);
     document.getElementById('e-balance').style.color        = isPos ? 'var(--green)' : 'var(--red)';
@@ -2647,7 +2651,7 @@ function renderExpenses() {
           <td style="padding:9px 12px;font-size:13px"><span class="badge ${catBadge[e.category]||'badge-orange'}">${e.category}</span></td>
           <td style="padding:9px 12px;font-size:13px;font-weight:800;${e.paid ? 'text-decoration:line-through;color:var(--text-muted)' : 'color:var(--red)'}">-${fmtMoney(e.amount)}</td>
           <td style="padding:9px 12px;white-space:nowrap">
-            <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px;${e.paid ? 'background:#d1fae5;color:#15803d' : 'background:var(--red-light);color:var(--red)'}">${e.paid ? '✓ שולם' : 'שולם'}</button>
+            <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px;${e.paid ? 'background:#14291e;color:var(--green)' : 'background:var(--red-light);color:var(--red)'}">${e.paid ? '✓ שולם' : 'שולם'}</button>
             <button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">🗑</button>
           </td>
         </tr>`).join('')}
@@ -2733,7 +2737,7 @@ function renderExpenses() {
 
   // ── 📋 כל ההוצאות (טבלה שטוחה) ──
   if (allExpenses.length > 0) {
-    const sortedAll = [...allExpenses].sort((a,b) => new Date(b.date)-new Date(a.date));
+    const sortedAll = [...allExpenses].sort((a,b) => new Date(a.date)-new Date(b.date));
     html += `
       <div class="table-card" style="margin-top:8px">
         <div class="table-header">
