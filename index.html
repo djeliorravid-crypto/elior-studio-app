@@ -1691,6 +1691,19 @@
       </select>
     </div>
     <div class="form-group"><label>הערות</label><textarea id="exp-notes" placeholder="הערות..."></textarea></div>
+    <!-- הוצאה חוזרת -->
+    <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:12px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;font-size:14px">
+        <input type="checkbox" id="exp-recurring" onchange="toggleRecurringUI()" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer">
+        🔁 הוצאה קבועה — חוזרת כל חודש
+      </label>
+      <div id="exp-recurring-opts" style="display:none;margin-top:10px">
+        <div class="form-group" style="margin-bottom:0">
+          <label>עד חודש (ריק = ללא הגבלה)</label>
+          <input type="month" id="exp-end-month" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface2);color:var(--text)"/>
+        </div>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="saveExpense()">שמירה</button>
       <button class="btn btn-ghost" onclick="closeModal('expense')">ביטול</button>
@@ -1865,7 +1878,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses'];
 
 function pushAllToCloud() {
   if (!firebaseDB) return;
@@ -1962,6 +1975,9 @@ function openModal(type) {
   if (type === 'expense') {
     document.getElementById('exp-date').value = today;
     ['exp-amount','exp-desc','exp-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('exp-end-month').value = '';
+    document.getElementById('exp-recurring').checked = false;
+    document.getElementById('exp-recurring-opts').style.display = 'none';
     populateProjectDropdown('exp-project', '');
     document.getElementById('exp-modal-title').textContent = '📤 הוצאה חדשה';
   }
@@ -2553,26 +2569,55 @@ function openExpenseForProject(incomeId) {
   document.getElementById('modal-expense').classList.add('open');
 }
 
+function toggleRecurringUI() {
+  const on = document.getElementById('exp-recurring').checked;
+  document.getElementById('exp-recurring-opts').style.display = on ? 'block' : 'none';
+}
+
 function saveExpense() {
-  const date = document.getElementById('exp-date').value;
+  const date   = document.getElementById('exp-date').value;
   const amount = parseFloat(document.getElementById('exp-amount').value);
-  const desc = document.getElementById('exp-desc').value.trim();
+  const desc   = document.getElementById('exp-desc').value.trim();
   if (!date || !amount || !desc) { toast('נא למלא שדות חובה'); return; }
+
   const projectId = document.getElementById('exp-project').value;
-  const income = load('income');
-  const proj = income.find(i => i.id === projectId);
-  const expenses = load('expenses');
-  expenses.push({
-    id: genId(), date, amount, description: desc,
-    category: document.getElementById('exp-cat').value,
-    notes: document.getElementById('exp-notes').value.trim(),
-    projectId: projectId || '',
-    projectName: proj ? proj.description : ''
-  });
-  expenses.sort((a,b) => new Date(b.date) - new Date(a.date));
-  save('expenses', expenses);
-  closeModal('expense');
-  toast('✓ הוצאה נוספה');
+  const income    = load('income');
+  const proj      = income.find(i => i.id === projectId);
+  const isRecurring = document.getElementById('exp-recurring').checked;
+
+  if (isRecurring) {
+    // שמור כהוצאה חוזרת
+    const endMonth = document.getElementById('exp-end-month').value; // "YYYY-MM" or ""
+    const recurring = load('recurring_expenses');
+    recurring.push({
+      id: genId(),
+      description: desc,
+      amount,
+      category: document.getElementById('exp-cat').value,
+      notes: document.getElementById('exp-notes').value.trim(),
+      projectId: projectId || '',
+      projectName: proj ? proj.description : '',
+      startMonth: date.slice(0, 7), // "YYYY-MM"
+      endMonth: endMonth || null,
+      paidMonths: {}
+    });
+    save('recurring_expenses', recurring);
+    closeModal('expense');
+    toast('🔁 הוצאה חוזרת נוספה');
+  } else {
+    const expenses = load('expenses');
+    expenses.push({
+      id: genId(), date, amount, description: desc,
+      category: document.getElementById('exp-cat').value,
+      notes: document.getElementById('exp-notes').value.trim(),
+      projectId: projectId || '',
+      projectName: proj ? proj.description : ''
+    });
+    expenses.sort((a,b) => new Date(b.date) - new Date(a.date));
+    save('expenses', expenses);
+    closeModal('expense');
+    toast('✓ הוצאה נוספה');
+  }
   refreshAll();
 }
 
@@ -2580,6 +2625,23 @@ function deleteExpense(id) {
   if (!confirm('למחוק הוצאה זו?')) return;
   save('expenses', load('expenses').filter(e => e.id !== id));
   toast('הוצאה נמחקה'); refreshAll();
+}
+
+function toggleRecurringPaid(id) {
+  const key = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+  const recurring = load('recurring_expenses');
+  const r = recurring.find(r => r.id === id);
+  if (!r) return;
+  if (!r.paidMonths) r.paidMonths = {};
+  r.paidMonths[key] = !r.paidMonths[key];
+  save('recurring_expenses', recurring);
+  refreshAll();
+}
+
+function deleteRecurring(id) {
+  if (!confirm('למחוק הוצאה חוזרת זו לחלוטין (מכל החודשים)?')) return;
+  save('recurring_expenses', load('recurring_expenses').filter(r => r.id !== id));
+  toast('הוצאה חוזרת נמחקה'); refreshAll();
 }
 
 function toggleExpensePaid(id) {
@@ -2593,9 +2655,18 @@ function toggleExpensePaid(id) {
 
 // ===== RENDER EXPENSES =====
 function renderExpenses() {
-  const expenses = load('expenses');
-  const income   = load('income');
-  const plans    = load('plans');
+  const expenses   = load('expenses');
+  const income     = load('income');
+  const plans      = load('plans');
+  const recurring  = load('recurring_expenses');
+
+  // הוצאות חוזרות שחלות על החודש הנוכחי
+  const curMonthKey = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+  const activeRecurring = recurring.filter(r => {
+    if (r.startMonth > curMonthKey) return false;
+    if (r.endMonth && r.endMonth < curMonthKey) return false;
+    return true;
+  });
 
   // כל ההכנסות מכל הזמנים (לא רק החודש) — כל אחת היא פרויקט
   const monthIncome = income.filter(i => inCurMonth(i.date));
@@ -2609,13 +2680,14 @@ function renderExpenses() {
     byProject[key].push(e);
   });
 
-  // סה"כ הוצאות מכל הפרויקטים
-  const totalExpenses = allExpenses.reduce((s,e) => s + Number(e.amount), 0);
+  // סה"כ הוצאות — כולל חוזרות של החודש הנוכחי
+  const recurringMonthTotal = activeRecurring.reduce((s,r) => s + Number(r.amount), 0);
+  const totalExpenses = allExpenses.reduce((s,e) => s + Number(e.amount), 0) + recurringMonthTotal;
   const totalIncome   = income.reduce((s,i) => s + Number(i.amount), 0);
   const netProfit     = totalIncome - totalExpenses;
 
-  // הוצאות החודש בלבד לכרטיס הנשאר
-  const monthExpenses = allExpenses.filter(e => inCurMonth(e.date)).reduce((s,e)=>s+Number(e.amount),0);
+  // הוצאות החודש בלבד לכרטיס הנשאר — כולל חוזרות
+  const monthExpenses = allExpenses.filter(e => inCurMonth(e.date)).reduce((s,e)=>s+Number(e.amount),0) + recurringMonthTotal;
   const monthIncTotal = monthIncome.reduce((s,i)=>s+Number(i.amount),0);
   let expectedInst = 0;
   plans.forEach(plan => plan.payments.forEach(p => {
@@ -2767,6 +2839,44 @@ function renderExpenses() {
                 </td>
               </tr>
             `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── 🔁 הוצאות קבועות ──
+  const allRecurring = load('recurring_expenses');
+  if (allRecurring.length > 0) {
+    html += `
+      <div class="table-card" style="margin-top:8px">
+        <div class="table-header">
+          <h3>🔁 הוצאות קבועות</h3>
+          <div style="font-size:13px;color:var(--text-muted)">חוזרות כל חודש אוטומטית</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th>תיאור</th>
+            <th>קטגוריה</th>
+            <th>סכום חודשי</th>
+            <th>מאז</th>
+            <th>עד</th>
+            <th>החודש</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            ${allRecurring.map(r => {
+              const isPaidThisMonth = !!(r.paidMonths && r.paidMonths[curMonthKey]);
+              const isActive = r.startMonth <= curMonthKey && (!r.endMonth || r.endMonth >= curMonthKey);
+              return `<tr style="${isPaidThisMonth ? 'opacity:0.55;background:var(--surface2)' : ''}">
+                <td style="${isPaidThisMonth?'text-decoration:line-through;color:var(--text-muted)':''};font-weight:600">${r.description}</td>
+                <td><span class="badge ${catBadge[r.category]||'badge-orange'}">${r.category}</span></td>
+                <td style="font-weight:800;${isPaidThisMonth?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">-${fmtMoney(r.amount)}</td>
+                <td style="color:var(--text-muted);font-size:12px">${r.startMonth}</td>
+                <td style="color:var(--text-muted);font-size:12px">${r.endMonth || '∞ ללא הגבלה'}</td>
+                <td>${isActive ? `<button onclick="toggleRecurringPaid('${r.id}')" style="border:none;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;${isPaidThisMonth?'background:#d1fae5;color:#15803d':'background:var(--red-light);color:var(--red)'}">${isPaidThisMonth?'✓ שולם':'שולם'}</button>` : '<span style="color:var(--text-muted);font-size:12px">לא פעיל</span>'}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteRecurring('${r.id}')">🗑</button></td>
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>
       </div>`;
@@ -3385,11 +3495,18 @@ function renderPendingBox() {
   const monthTotal     = totalPending + totalCollected;
   const incPct = monthTotal > 0 ? Math.round((totalCollected / monthTotal) * 100) : 0;
 
-  // הוצאות החודש שלא שולמו
+  // הוצאות החודש שלא שולמו + הוצאות חוזרות של החודש
+  const monthKey2    = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+  const allRecurring = load('recurring_expenses');
+  const activeRec    = allRecurring.filter(r => r.startMonth <= monthKey2 && (!r.endMonth || r.endMonth >= monthKey2));
+  const unpaidRec    = activeRec.filter(r => !(r.paidMonths && r.paidMonths[monthKey2]));
+  const paidRecAmt   = activeRec.filter(r => r.paidMonths && r.paidMonths[monthKey2]).reduce((s,r) => s + Number(r.amount), 0);
+  const unpaidRecAmt = unpaidRec.reduce((s,r) => s + Number(r.amount), 0);
+
   const monthExp     = expenses.filter(e => inMonth(e.date));
   const unpaidExp    = monthExp.filter(e => !e.paid);
-  const paidExpAmt   = monthExp.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0);
-  const unpaidExpAmt = unpaidExp.reduce((s,e) => s + Number(e.amount), 0);
+  const paidExpAmt   = monthExp.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0) + paidRecAmt;
+  const unpaidExpAmt = unpaidExp.reduce((s,e) => s + Number(e.amount), 0) + unpaidRecAmt;
   const totalExpMonth = paidExpAmt + unpaidExpAmt;
   const expPct = totalExpMonth > 0 ? Math.round((paidExpAmt / totalExpMonth) * 100) : 0;
 
@@ -3404,8 +3521,10 @@ function renderPendingBox() {
   set('pending-income-pct', incPct + '% גבוי');
   setW('pending-income-bar', incPct);
 
+  const totalUnpaidExpCount = unpaidExp.length + unpaidRec.length;
   set('pending-expenses-amt', fmtMoney(unpaidExpAmt));
-  set('pending-expenses-sub', unpaidExp.length === 0 ? 'הכל שולם החודש 🎉' : `${unpaidExp.length} הוצאות שעדיין לא שולמו`);
+  set('pending-expenses-sub', totalUnpaidExpCount === 0 ? 'הכל שולם החודש 🎉' :
+    [unpaidExp.length > 0 ? `${unpaidExp.length} הוצאות` : '', unpaidRec.length > 0 ? `${unpaidRec.length} קבועות` : ''].filter(Boolean).join(' + ') + ' ממתינות');
   set('pending-expenses-pct', expPct + '% שולם');
   setW('pending-expenses-bar', expPct);
 }
