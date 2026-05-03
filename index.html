@@ -1470,12 +1470,20 @@
       <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid var(--green-border);box-shadow:var(--shadow)">
         <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">💚 נשאר להכניס</div>
         <div id="pending-income-amt" style="font-size:26px;font-weight:900;color:var(--green)">₪0</div>
-        <div id="pending-income-sub" style="font-size:12px;color:var(--text-muted);margin-top:4px">הכנסות שעדיין לא שולמו</div>
+        <div id="pending-income-sub" style="font-size:12px;color:var(--text-muted);margin-top:4px;margin-bottom:10px">הכנסות שעדיין לא שולמו</div>
+        <div style="height:7px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden">
+          <div id="pending-income-bar" style="height:100%;border-radius:4px;background:var(--green);transition:width .5s;width:0%"></div>
+        </div>
+        <div id="pending-income-pct" style="font-size:11px;color:var(--green);font-weight:700;margin-top:5px">0% גבוי</div>
       </div>
       <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#fff5f5,#fee2e2);border:2px solid #fca5a5;box-shadow:var(--shadow)">
         <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">🔴 נשאר להוציא</div>
         <div id="pending-expenses-amt" style="font-size:26px;font-weight:900;color:var(--red)">₪0</div>
-        <div id="pending-expenses-sub" style="font-size:12px;color:var(--text-muted);margin-top:4px">הוצאות שעדיין לא שולמו</div>
+        <div id="pending-expenses-sub" style="font-size:12px;color:var(--text-muted);margin-top:4px;margin-bottom:10px">הוצאות שעדיין לא שולמו</div>
+        <div style="height:7px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden">
+          <div id="pending-expenses-bar" style="height:100%;border-radius:4px;background:var(--red);transition:width .5s;width:0%"></div>
+        </div>
+        <div id="pending-expenses-pct" style="font-size:11px;color:var(--red);font-weight:700;margin-top:5px">0% שולם</div>
       </div>
     </div>
 
@@ -3348,23 +3356,49 @@ function toggleProjectDone(incomeId) {
 function renderPendingBox() {
   const income   = load('income');
   const expenses = load('expenses');
+  const plans    = load('plans');
 
-  // נשאר להכניס = הכנסות שסטטוס שלהן אינו 'paid'
-  const unpaidInc = income.filter(i => (i.status || 'paid') !== 'paid');
+  // ── נשאר להכניס: הכנסות שלא שולמו + תשלומים עתידיים מתוכניות ──
+  const unpaidInc    = income.filter(i => (i.status || 'paid') !== 'paid');
   const unpaidIncAmt = unpaidInc.reduce((s,i) => s + Number(i.amount), 0);
 
-  // נשאר להוציא = הוצאות שלא סומנו שולם
-  const unpaidExp = expenses.filter(e => !e.paid);
-  const unpaidExpAmt = unpaidExp.reduce((s,e) => s + Number(e.amount), 0);
+  // תשלומים עתידיים מתוכניות תשלום שלא שולמו
+  let pendingInstAmt = 0, pendingInstCount = 0;
+  plans.forEach(plan => plan.payments.forEach(p => {
+    if (!p.paid) { pendingInstAmt += Number(p.amount); pendingInstCount++; }
+  }));
 
-  const incEl  = document.getElementById('pending-income-amt');
-  const expEl  = document.getElementById('pending-expenses-amt');
-  const incSub = document.getElementById('pending-income-sub');
-  const expSub = document.getElementById('pending-expenses-sub');
-  if (incEl)  incEl.textContent  = fmtMoney(unpaidIncAmt);
-  if (expEl)  expEl.textContent  = fmtMoney(unpaidExpAmt);
-  if (incSub) incSub.textContent = unpaidInc.length === 0 ? 'הכל גבית 🎉' : `${unpaidInc.length} הכנסות שעדיין לא שולמו`;
-  if (expSub) expSub.textContent = unpaidExp.length === 0 ? 'הכל שולם 🎉' : `${unpaidExp.length} הוצאות שעדיין לא שולמו`;
+  const totalPending = unpaidIncAmt + pendingInstAmt;
+
+  // סה"כ הכנסות (כולל שולמו) + כל תשלומי התוכניות
+  const totalIncAll = income.reduce((s,i) => s + Number(i.amount), 0);
+  let totalInstAll  = 0;
+  plans.forEach(plan => plan.payments.forEach(p => { totalInstAll += Number(p.amount); }));
+  const grandTotal  = totalIncAll + totalInstAll;
+  const collectedAmt = grandTotal - totalPending;
+  const incPct = grandTotal > 0 ? Math.round((collectedAmt / grandTotal) * 100) : 0;
+
+  // ── נשאר להוציא: הוצאות שלא סומנו שולם ──
+  const unpaidExp    = expenses.filter(e => !e.paid);
+  const unpaidExpAmt = unpaidExp.reduce((s,e) => s + Number(e.amount), 0);
+  const paidExpAmt   = expenses.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0);
+  const totalExpAll  = unpaidExpAmt + paidExpAmt;
+  const expPct = totalExpAll > 0 ? Math.round((paidExpAmt / totalExpAll) * 100) : 0;
+
+  // ── עדכון DOM ──
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setW = (id, pct) => { const el = document.getElementById(id); if (el) el.style.width = pct + '%'; };
+
+  set('pending-income-amt',  fmtMoney(totalPending));
+  set('pending-income-sub',  totalPending === 0 ? 'הכל גבית 🎉' :
+    [unpaidInc.length > 0 ? `${unpaidInc.length} הכנסות` : '', pendingInstCount > 0 ? `${pendingInstCount} תשלומים` : ''].filter(Boolean).join(' + ') + ' ממתינים');
+  set('pending-income-pct',  incPct + '% גבוי');
+  setW('pending-income-bar', incPct);
+
+  set('pending-expenses-amt', fmtMoney(unpaidExpAmt));
+  set('pending-expenses-sub', unpaidExp.length === 0 ? 'הכל שולם 🎉' : `${unpaidExp.length} הוצאות שעדיין לא שולמו`);
+  set('pending-expenses-pct', expPct + '% שולם');
+  setW('pending-expenses-bar', expPct);
 }
 
 function refreshAll() {
