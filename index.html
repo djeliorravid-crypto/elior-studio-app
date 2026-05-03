@@ -3620,15 +3620,23 @@ initFirebase().then(() => refreshAll());
 
 // בדיקת עדכון אוטומטית — כל פתיחה
 (function checkVersion() {
+  // אם טענו עם cache-buster — נקה את ה-URL ושמור גרסה
+  const params = new URLSearchParams(location.search);
+  if (params.get('_v')) {
+    localStorage.setItem('app_version', params.get('_v'));
+    history.replaceState(null, '', location.pathname);
+    return;
+  }
   fetch('/elior-studio-app/version.txt?t=' + Date.now())
     .then(r => r.text())
     .then(serverVer => {
+      const v = serverVer.trim();
       const localVer = localStorage.getItem('app_version');
-      if (localVer && localVer !== serverVer.trim()) {
-        localStorage.setItem('app_version', serverVer.trim());
-        location.reload(true);
+      if (localVer && localVer !== v) {
+        // נווט ל-URL חדש — iOS חייבת לטעון מהרשת
+        location.replace(location.pathname + '?_v=' + v);
       } else {
-        localStorage.setItem('app_version', serverVer.trim());
+        localStorage.setItem('app_version', v);
       }
     }).catch(() => {});
 })();
