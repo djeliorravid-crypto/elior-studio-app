@@ -4173,6 +4173,79 @@ function saveSession() {
   }
 }
 
+/* ─── Pill popup menu ──────────────────────────────────────────── */
+function showPillMenu(sesId, evt) {
+  evt.stopPropagation();
+  closePillMenu();
+  const sessions = load('sessions');
+  const s = sessions.find(x => x.id === sesId);
+  if (!s) return;
+  const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
+  const dur  = sesDurationLabel(s.startTime, s.endTime);
+
+  const menu = document.createElement('div');
+  menu.id = 'pill-menu';
+  menu.style.cssText = `
+    position:fixed;z-index:9999;background:#fff;border-radius:16px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:14px 16px 12px;
+    min-width:200px;direction:rtl;font-family:'Heebo',sans-serif;
+    border:1.5px solid rgba(0,0,0,0.07);
+  `;
+
+  menu.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1.5px solid #f0f0f0">
+      <div style="width:10px;height:10px;border-radius:50%;background:${info.color};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:800;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.clientName || info.label}</div>
+        <div style="font-size:11px;color:#888;margin-top:1px">${s.startTime}–${s.endTime}${dur ? ' · ' + dur : ''}</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button onclick="closePillMenu();openSessionModal('${s.date}','${s.id}')"
+        style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
+               background:#f4f0ff;color:#6c47f5;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+        <span>✏️</span><span>עריכה</span>
+      </button>
+      <button onclick="closePillMenu();setSessionStatus('${s.id}','completed')"
+        style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
+               background:#d1fae5;color:#15803d;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+        <span>✅</span><span>סמן כהושלם</span>
+      </button>
+      <button onclick="closePillMenu();setSessionStatus('${s.id}','cancelled')"
+        style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
+               background:#fee2e2;color:#dc2626;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+        <span>✕</span><span>ביטול וסגירה</span>
+      </button>
+      <button onclick="closePillMenu();deleteSession('${s.id}')"
+        style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
+               background:#fff0f0;color:#b91c1c;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+        <span>🗑</span><span>מחיקה</span>
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(menu);
+
+  // position near click
+  const rect = menu.getBoundingClientRect();
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let x = evt.clientX + 8, y = evt.clientY + 8;
+  if (x + 220 > vw) x = evt.clientX - 220;
+  if (y + menu.scrollHeight + 20 > vh) y = evt.clientY - menu.scrollHeight - 8;
+  menu.style.left = Math.max(8, x) + 'px';
+  menu.style.top  = Math.max(8, y) + 'px';
+
+  // close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', closePillMenu, { once: true });
+  }, 10);
+}
+
+function closePillMenu() {
+  const m = document.getElementById('pill-menu');
+  if (m) m.remove();
+}
+
 function deleteSession(id) {
   const all = load('sessions');
   const target = all.find(s => s.id === id);
@@ -4341,7 +4414,7 @@ function renderSessionCal() {
         const s = item.s;
         const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
         const struck = s.status === 'cancelled' ? 'opacity:0.4;' : '';
-        return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="event.stopPropagation();openSessionModal('${s.date}','${s.id}')"><span class="sp-time">${s.startTime}–${s.endTime}</span><span class="sp-name">${s.clientName || s.type}</span></span>`;
+        return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="showPillMenu('${s.id}',event)"><span class="sp-time">${s.startTime}–${s.endTime}</span><span class="sp-name">${s.clientName || s.type}</span></span>`;
       } else {
         const e = item.e;
         const st = e.start.dateTime.split('T')[1]?.slice(0,5) || '';
