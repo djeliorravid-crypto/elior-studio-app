@@ -4324,7 +4324,7 @@ function renderSessionCal() {
     const appGcalIds = new Set(daySes.map(s => s.gcalEventId).filter(Boolean));
     const dayGcal = _gcalEventsCache.filter(e => {
       const eDate = (e.start?.dateTime || e.start?.date || '').split('T')[0];
-      return eDate === dateStr && e.start?.dateTime && !appGcalIds.has(e.id);
+      return eDate === dateStr && e.start?.dateTime && !appGcalIds.has(e.id) && e.status !== 'cancelled';
     }).sort((a,b) => (a.start.dateTime||'').localeCompare(b.start.dateTime||''));
     const allPills = [...daySes.map(s => ({type:'ses', s})), ...dayGcal.map(e => ({type:'gcal', e}))];
     // הצג את כל האירועים — ללא הגבלה
@@ -4899,9 +4899,9 @@ function fetchGoogleEvents(silent) {
   const url   = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'
     + '?timeMin=' + encodeURIComponent(start)
     + '&timeMax=' + encodeURIComponent(end)
-    + '&singleEvents=true&orderBy=startTime&maxResults=250'
-    + '&fields=items(id,summary,description,start,end,colorId,location,extendedProperties)'
-    + '&_=' + Date.now(); // מונע קאש
+    + '&singleEvents=true&orderBy=startTime&maxResults=250&showDeleted=true'
+    + '&fields=items(id,status,summary,description,start,end,colorId,location,extendedProperties)'
+    + '&_=' + Date.now();
 
   fetch(url, {
     headers: { Authorization: 'Bearer ' + _gcalToken },
@@ -4992,38 +4992,50 @@ const GCAL_COLORS = ['','#ac725e','#d06b64','#f83a22','#fa573c','#ff7537','#ffad
 function syncGcalToSessions(gcalEvents) {
   const sessions = load('sessions');
   let changed = false;
+  const curMonthKey = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
 
   sessions.forEach(s => {
+    // רק סשנים בחודש הנוכחי — לאחרים אין לנו נתונים מגוגל
+    if (!s.date?.startsWith(curMonthKey)) return;
+
     let ge = null;
 
-    // 1. מדויק ביותר: extendedProperties.private.appSessionId שמכיל את ה-ID שלנו
-    if (!ge) {
-      ge = gcalEvents.find(e => e.extendedProperties?.private?.appSessionId === s.id);
-      if (ge && ge.id !== s.gcalEventId) { s.gcalEventId = ge.id; changed = true; }
-    }
+    // 1. מדויק ביותר: appSessionId בתוך האירוע
+    ge = gcalEvents.find(e => e.extendedProperties?.private?.appSessionId === s.id);
+    if (ge && ge.id !== s.gcalEventId) { s.gcalEventId = ge.id; changed = true; }
 
     // 2. לפי gcalEventId שמור
-    if (!ge && s.gcalEventId) {
-      ge = gcalEvents.find(e => e.id === s.gcalEventId);
-    }
+    if (!ge && s.gcalEventId) ge = gcalEvents.find(e => e.id === s.gcalEventId);
 
-    // 3. fallback: לפי תאריך + שעת התחלה (לסשנים ישנים)
+    // 3. fallback: לפי תאריך + שעה (לסשנים ישנים)
     if (!ge && s.date && s.startTime) {
       ge = gcalEvents.find(e => {
         if (!e.start?.dateTime) return false;
-        const eDate  = e.start.dateTime.split('T')[0];
-        const eStart = e.start.dateTime.split('T')[1]?.slice(0,5);
-        return eDate === s.date && eStart === s.startTime;
+        return e.start.dateTime.split('T')[0] === s.date &&
+               e.start.dateTime.split('T')[1]?.slice(0,5) === s.startTime;
       });
       if (ge) { s.gcalEventId = ge.id; changed = true; }
     }
 
+    // ── אירוע נמחק/בוטל בגוגל ──
+    if (!ge && s.gcalEventId && s.status !== 'cancelled') {
+      // היה לנו gcalEventId אבל האירוע לא קיים יותר → בוטל בגוגל
+      s.status = 'cancelled';
+      changed = true;
+      return;
+    }
+    if (ge && ge.status === 'cancelled' && s.status !== 'cancelled') {
+      s.status = 'cancelled';
+      changed = true;
+      return;
+    }
+
     if (!ge) return;
 
+    // ── עדכון שעות/תאריך ──
     const newDate  = (ge.start?.dateTime || ge.start?.date || '').split('T')[0];
     const newStart = ge.start?.dateTime?.split('T')[1]?.slice(0,5) || s.startTime;
     const newEnd   = ge.end?.dateTime?.split('T')[1]?.slice(0,5)   || s.endTime;
-
     if (newDate  && newDate  !== s.date)      { s.date      = newDate;  changed = true; }
     if (newStart && newStart !== s.startTime) { s.startTime = newStart; changed = true; }
     if (newEnd   && newEnd   !== s.endTime)   { s.endTime   = newEnd;   changed = true; }
