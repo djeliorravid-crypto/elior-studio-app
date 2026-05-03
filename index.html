@@ -4300,29 +4300,66 @@ function renderSessionCal() {
       listEl.innerHTML = `<div class="empty-state"><div class="ei">🗓️</div><p>אין סשנים החודש — לחץ "+ סשן חדש" כדי להתחיל</p></div>`;
     } else {
       const sorted = [...monthSes].sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
-      listEl.innerHTML = sorted.map(s => {
-        const info   = SES_TYPES[s.type] || SES_TYPES['אחר'];
-        const dur    = sesDurationLabel(s.startTime, s.endTime);
-        const struck = s.status === 'cancelled' ? 'opacity:0.5;' : '';
-        const statusBadge = s.status === 'completed'
-          ? `<span class="badge badge-green">✅ הושלם</span>`
-          : s.status === 'cancelled'
-          ? `<span class="badge badge-gray">❌ בוטל</span>`
-          : `<span class="badge badge-purple">📅 מתוכנן</span>`;
+      const todayStr2 = new Date().toISOString().slice(0,10);
+      const HE_DAYS = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+
+      // קיבוץ לפי תאריך
+      const byDay = {};
+      sorted.forEach(s => {
+        if (!byDay[s.date]) byDay[s.date] = [];
+        byDay[s.date].push(s);
+      });
+
+      listEl.innerHTML = Object.entries(byDay).map(([date, daySessions]) => {
+        const d       = new Date(date + 'T12:00:00');
+        const dayName = HE_DAYS[d.getDay()];
+        const dayNum  = d.getDate();
+        const monthName = MONTHS_HE[d.getMonth()];
+        const isToday   = date === todayStr2;
+        const dayHrs    = daySessions.filter(s => s.type !== 'אחר' && s.status !== 'cancelled')
+                            .reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
+        const hrsLabel  = dayHrs > 0 ? `${dayHrs % 1 === 0 ? dayHrs : dayHrs.toFixed(1)} שעות` : '';
+
+        const sessionsHtml = daySessions.map(s => {
+          const info   = SES_TYPES[s.type] || SES_TYPES['אחר'];
+          const dur    = sesDurationLabel(s.startTime, s.endTime);
+          const struck = s.status === 'cancelled' ? 'opacity:0.5;' : '';
+          const statusBadge = s.status === 'completed'
+            ? `<span class="badge badge-green">✅ הושלם</span>`
+            : s.status === 'cancelled'
+            ? `<span class="badge badge-gray">❌ בוטל</span>`
+            : `<span class="badge badge-purple">📅 מתוכנן</span>`;
+          return `
+            <div class="session-row" style="${struck}margin-bottom:6px" onclick="openSessionModal('${s.date}','${s.id}')">
+              <div style="width:4px;height:40px;border-radius:2px;flex-shrink:0;background:${info.color}"></div>
+              <div class="session-row-time">${s.startTime}–${s.endTime}</div>
+              <div style="flex:1;min-width:0">
+                <div class="session-row-client">${s.clientName || '—'}</div>
+                <div class="session-row-type">${info.label}${dur ? ' · ' + dur : ''}</div>
+              </div>
+              ${statusBadge}
+              ${s.status !== 'completed'
+                ? `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;background:#d1fae5;color:#15803d">✓ סיום</button>`
+                : ''}
+              <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 6px">×</button>
+            </div>`;
+        }).join('');
+
         return `
-          <div class="session-row" style="${struck}" onclick="openSessionModal('${s.date}','${s.id}')">
-            <div class="session-type-dot" style="background:${info.color}"></div>
-            <div class="session-row-time">${s.startTime}–${s.endTime}</div>
-            <div style="flex:1;min-width:0">
-              <div class="session-row-client">${s.clientName || '—'}</div>
-              <div class="session-row-type">${info.label} · ${fmtDate(s.date)}</div>
+          <div style="margin-bottom:18px">
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 16px 6px;border-bottom:2px solid ${isToday ? 'var(--accent)' : 'var(--border)'}">
+              <div style="width:36px;height:36px;border-radius:10px;background:${isToday ? 'var(--accent)' : 'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:${isToday ? '#fff' : 'var(--text)'}">
+                ${dayNum}
+              </div>
+              <div>
+                <div style="font-size:16px;font-weight:900;color:${isToday ? 'var(--accent)' : 'var(--text)'};font-family:'Frank Ruhl Libre','Heebo',serif">${dayName}${isToday ? ' — היום' : ''}</div>
+                <div style="font-size:12px;color:var(--text-muted);font-weight:700">${monthName} ${dayNum}${hrsLabel ? ' · ' + hrsLabel : ''}</div>
+              </div>
+              <div style="margin-right:auto">
+                <button onclick="openSessionModal('${date}')" style="border:1.5px solid var(--border);border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text)">+ סשן</button>
+              </div>
             </div>
-            ${dur ? `<div class="session-row-dur">${dur}</div>` : ''}
-            ${statusBadge}
-            ${s.status !== 'completed'
-              ? `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;background:#d1fae5;color:#15803d">✓ סיום</button>`
-              : ''}
-            <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 6px">×</button>
+            <div style="padding:8px 4px 0">${sessionsHtml}</div>
           </div>`;
       }).join('');
     }
