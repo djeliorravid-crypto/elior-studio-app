@@ -136,8 +136,8 @@
       gap: 14px;
     }
 
-    .page-header h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
-    .page-header p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+    .page-header h2 { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; color: #f0f0f5; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+    .page-header p { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 3px; }
 
     /* ===== MONTH SELECTOR ===== */
     .month-selector {
@@ -1548,11 +1548,7 @@
       </div>
     </div>
 
-    <div class="cards-grid" style="grid-template-columns:repeat(3,1fr);max-width:560px;margin-bottom:24px">
-      <div class="card"><div class="card-label">סה"כ הכנסות</div><div class="card-value green" id="e-total-inc">₪0</div></div>
-      <div class="card"><div class="card-label">סה"כ הוצאות</div><div class="card-value red" id="e-total">₪0</div></div>
-      <div class="card"><div class="card-label">רווח נקי</div><div class="card-value purple" id="e-net">₪0</div></div>
-    </div>
+    <div style="display:none"><span id="e-total-inc"></span><span id="e-total"></span><span id="e-net"></span></div>
 
     <!-- פרויקטים -->
     <div id="e-projects-list" style="display:flex;flex-direction:column;gap:16px"></div>
