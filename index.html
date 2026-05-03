@@ -4667,8 +4667,10 @@ if ('serviceWorker' in navigator) {
 // ===== STARTUP – sync from cloud then render =====
 initFirebase().then(() => {
   refreshAll();
-  // נסה להתחבר שקט לגוגל אם יש Client ID שמור
-  setTimeout(gcalSilentReconnect, 2000);
+  // חיבור שקט לגוגל — רק אם יש אימייל שמור (= כבר התחבר בעבר)
+  if (localStorage.getItem('gcal_user_email')) {
+    setTimeout(gcalSilentReconnect, 2000);
+  }
 });
 
 // בדיקת עדכון אוטומטית — כל פתיחה
@@ -4716,29 +4718,35 @@ function gcalInitPage() {
 // התחברות שקטה — אם גוגל זוכר את ההרשאה, אין popup
 function gcalSilentReconnect() {
   const clientId = localStorage.getItem('gcal_client_id');
-  if (!clientId) return;
+  const hint     = localStorage.getItem('gcal_user_email') || '';
+  if (!clientId || !hint) return; // בלי hint — לא ניתן לחבר בשקט
   if (typeof google === 'undefined' || !google.accounts) {
-    setTimeout(gcalSilentReconnect, 1000);
+    setTimeout(gcalSilentReconnect, 1200);
     return;
   }
-  const hint = localStorage.getItem('gcal_user_email') || ''; // email שמור → מונע בחירת חשבון
+  let _silentDone = false;
   try {
     const client = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: 'https://www.googleapis.com/auth/calendar.events',
-      prompt: '',
+      prompt: 'none',      // none = אסור להציג UI — אם נכשל, קבל שגיאה שקטה
       login_hint: hint,
       callback: (response) => {
+        _silentDone = true;
         if (!response.error && response.access_token) {
           _gcalToken = response.access_token;
-          _gcalUser = hint || _gcalUser;
+          _gcalUser  = hint;
           gcalUpdateUI();
           fetchGoogleEvents(true);
           gcalStartAutoRefresh();
         }
+        // אם response.error === 'interaction_required' — המשתמש צריך ללחוץ בעצמו
+        // לא מציגים popup אוטומטי
       }
     });
-    client.requestAccessToken({ prompt: '', login_hint: hint });
+    client.requestAccessToken({ prompt: 'none', login_hint: hint });
+    // safety: אם אחרי 5 שניות אין תשובה — לא עושים כלום
+    setTimeout(() => { if (!_silentDone) {} }, 5000);
   } catch(e) {}
 }
 
@@ -4913,17 +4921,38 @@ const GCAL_COLORS = ['','#ac725e','#d06b64','#f83a22','#fa573c','#ff7537','#ffad
 function syncGcalToSessions(gcalEvents) {
   const sessions = load('sessions');
   let changed = false;
+
   sessions.forEach(s => {
-    if (!s.gcalEventId) return;
-    const ge = gcalEvents.find(e => e.id === s.gcalEventId);
-    if (!ge) return; // אירוע לא בחלון החודש — לא מעדכנים
+    let ge = null;
+
+    if (s.gcalEventId) {
+      // חיפוש לפי מזהה — הכי מדויק
+      ge = gcalEvents.find(e => e.id === s.gcalEventId);
+    }
+
+    if (!ge && s.date && s.startTime) {
+      // fallback: חיפוש לפי תאריך + שעת התחלה (לסשנים ישנים בלי gcalEventId)
+      ge = gcalEvents.find(e => {
+        if (!e.start?.dateTime) return false;
+        const eDate  = e.start.dateTime.split('T')[0];
+        const eStart = e.start.dateTime.split('T')[1]?.slice(0,5);
+        return eDate === s.date && eStart === s.startTime;
+      });
+      // שמור את ה-ID למעתה
+      if (ge) { s.gcalEventId = ge.id; changed = true; }
+    }
+
+    if (!ge) return;
+
     const newDate  = (ge.start?.dateTime || ge.start?.date || '').split('T')[0];
     const newStart = ge.start?.dateTime?.split('T')[1]?.slice(0,5) || s.startTime;
     const newEnd   = ge.end?.dateTime?.split('T')[1]?.slice(0,5)   || s.endTime;
-    if (newDate && newDate !== s.date)       { s.date = newDate;       changed = true; }
-    if (newStart && newStart !== s.startTime){ s.startTime = newStart; changed = true; }
-    if (newEnd   && newEnd   !== s.endTime)  { s.endTime   = newEnd;   changed = true; }
+
+    if (newDate  && newDate  !== s.date)      { s.date      = newDate;  changed = true; }
+    if (newStart && newStart !== s.startTime) { s.startTime = newStart; changed = true; }
+    if (newEnd   && newEnd   !== s.endTime)   { s.endTime   = newEnd;   changed = true; }
   });
+
   if (changed) { save('sessions', sessions); renderSessionCal(); }
 }
 
