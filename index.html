@@ -4185,7 +4185,14 @@ function deleteSession(id) {
 function setSessionStatus(id, status) {
   const sessions = load('sessions');
   const s = sessions.find(x => x.id === id);
-  if (s) { s.status = status; save('sessions', sessions); renderSessionCal(); }
+  if (!s) return;
+  s.status = status;
+  save('sessions', sessions);
+  renderSessionCal();
+  // סנכרון ביטול לגוגל קלנדר
+  if (status === 'cancelled' && _gcalToken && s.gcalEventId) {
+    deleteGcalEvent(s.gcalEventId);
+  }
 }
 
 function renderSessionCal() {
@@ -4415,9 +4422,11 @@ function renderSessionCal() {
                 <div class="session-row-type">${info.label}${dur ? ' · <b>' + dur + '</b>' : ''}</div>
               </div>
               ${statusBadge}
-              ${!isComp && !isCanc
-                ? `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#d1fae5;color:#15803d;white-space:nowrap">✓ סיום</button>`
-                : ''}
+              ${!isComp && !isCanc ? `
+                <button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#d1fae5;color:#15803d;white-space:nowrap">✓ סיום</button>
+                <button onclick="event.stopPropagation();setSessionStatus('${s.id}','cancelled')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#fee2e2;color:#dc2626;white-space:nowrap">✕ ביטול</button>
+              ` : ''}
+              ${isCanc ? `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','scheduled')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text-muted);white-space:nowrap">↩ שחזר</button>` : ''}
               <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:#ccc;cursor:pointer;font-size:20px;padding:2px 6px;line-height:1" title="מחק">×</button>
             </div>`;
         }).join('');
@@ -4488,7 +4497,10 @@ function selectCalDay(dateStr, noToggle) {
         ? `<span class="badge badge-green">✅ הושלם</span>`
         : s.status === 'cancelled'
         ? `<span class="badge badge-gray">❌ בוטל</span>`
-        : `<button onclick="setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#d1fae5;color:#15803d">✓ סיים סשן</button>`;
+        : `<span style="display:flex;gap:6px">
+             <button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#d1fae5;color:#15803d">✓ סיום</button>
+             <button onclick="event.stopPropagation();setSessionStatus('${s.id}','cancelled')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#fee2e2;color:#dc2626">✕ ביטול</button>
+           </span>`;
       return `
         <div class="session-row" onclick="openSessionModal('${s.date}','${s.id}')">
           <div style="width:5px;height:48px;border-radius:3px;flex-shrink:0;background:${info.color}"></div>
