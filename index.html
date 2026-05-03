@@ -4718,31 +4718,27 @@ function gcalSilentReconnect() {
   const clientId = localStorage.getItem('gcal_client_id');
   if (!clientId) return;
   if (typeof google === 'undefined' || !google.accounts) {
-    // ספרייה עוד נטענת — נסה שוב בעוד שנייה
     setTimeout(gcalSilentReconnect, 1000);
     return;
   }
+  const hint = localStorage.getItem('gcal_user_email') || ''; // email שמור → מונע בחירת חשבון
   try {
     const client = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: 'https://www.googleapis.com/auth/calendar.events',
       prompt: '',
+      login_hint: hint,
       callback: (response) => {
         if (!response.error && response.access_token) {
           _gcalToken = response.access_token;
-          // שלוף פרטי משתמש
-          fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: 'Bearer ' + _gcalToken }
-          }).then(r => r.json()).then(info => {
-            _gcalUser = info.email || info.name || '';
-            gcalUpdateUI();
-            fetchGoogleEvents(true);
-            gcalStartAutoRefresh();
-          }).catch(() => { gcalUpdateUI(); fetchGoogleEvents(true); gcalStartAutoRefresh(); });
+          _gcalUser = hint || _gcalUser;
+          gcalUpdateUI();
+          fetchGoogleEvents(true);
+          gcalStartAutoRefresh();
         }
       }
     });
-    client.requestAccessToken({ prompt: '' });
+    client.requestAccessToken({ prompt: '', login_hint: hint });
   } catch(e) {}
 }
 
@@ -4782,6 +4778,7 @@ function connectGoogle() {
         headers: { Authorization: 'Bearer ' + _gcalToken }
       }).then(r => r.json()).then(info => {
         _gcalUser = info.email || info.name || '';
+        localStorage.setItem('gcal_user_email', info.email || ''); // שמור לחיבור שקט עתידי
         gcalUpdateUI();
         fetchGoogleEvents();
         gcalStartAutoRefresh();
@@ -4803,6 +4800,7 @@ function disconnectGoogle() {
   }
   _gcalToken = null;
   _gcalUser = null;
+  localStorage.removeItem('gcal_user_email');
   gcalStopAutoRefresh();
   const list = document.getElementById('gcal-events-list');
   if (list) list.innerHTML = '';
@@ -4841,7 +4839,9 @@ function fetchGoogleEvents(silent) {
     })
     .then(data => {
       if (btn) { btn.textContent = '🔄 רענן'; btn.disabled = false; }
-      renderGcalEvents(data.items || []);
+      const items = data.items || [];
+      syncGcalToSessions(items); // עדכן סשנים שהשתנו בגוגל
+      renderGcalEvents(items);
     })
     .catch(err => {
       if (btn) { btn.textContent = '🔄 רענן'; btn.disabled = false; }
@@ -4908,6 +4908,24 @@ async function deleteGcalEvent(gcalEventId) {
 }
 
 const GCAL_COLORS = ['','#ac725e','#d06b64','#f83a22','#fa573c','#ff7537','#ffad46','#42d692','#16a765','#7bd148','#b3dc6c','#fbe983','#fad165','#92e1c0','#9fe1e7','#9fc6e7','#4986e7','#9a9cff','#b99aff','#c2c2c2'];
+
+// סנכרון שינויים מגוגל חזרה לסשנים באפליקציה
+function syncGcalToSessions(gcalEvents) {
+  const sessions = load('sessions');
+  let changed = false;
+  sessions.forEach(s => {
+    if (!s.gcalEventId) return;
+    const ge = gcalEvents.find(e => e.id === s.gcalEventId);
+    if (!ge) return; // אירוע לא בחלון החודש — לא מעדכנים
+    const newDate  = (ge.start?.dateTime || ge.start?.date || '').split('T')[0];
+    const newStart = ge.start?.dateTime?.split('T')[1]?.slice(0,5) || s.startTime;
+    const newEnd   = ge.end?.dateTime?.split('T')[1]?.slice(0,5)   || s.endTime;
+    if (newDate && newDate !== s.date)       { s.date = newDate;       changed = true; }
+    if (newStart && newStart !== s.startTime){ s.startTime = newStart; changed = true; }
+    if (newEnd   && newEnd   !== s.endTime)  { s.endTime   = newEnd;   changed = true; }
+  });
+  if (changed) { save('sessions', sessions); renderSessionCal(); }
+}
 
 function renderGcalEvents(events) {
   const container   = document.getElementById('gcal-events-list');
