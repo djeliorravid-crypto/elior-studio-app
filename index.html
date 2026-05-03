@@ -1575,13 +1575,13 @@
     <!-- Calendar -->
     <div class="cal-wrap">
       <div class="cal-header">
-        <div class="cal-dow weekend">ש׳</div>
-        <div class="cal-dow">א׳</div>
-        <div class="cal-dow">ב׳</div>
-        <div class="cal-dow">ג׳</div>
-        <div class="cal-dow">ד׳</div>
-        <div class="cal-dow">ה׳</div>
-        <div class="cal-dow weekend">ו׳</div>
+        <div class="cal-dow">ראשון</div>
+        <div class="cal-dow">שני</div>
+        <div class="cal-dow">שלישי</div>
+        <div class="cal-dow">רביעי</div>
+        <div class="cal-dow">חמישי</div>
+        <div class="cal-dow">שישי</div>
+        <div class="cal-dow weekend">שבת</div>
       </div>
       <div class="cal-grid" id="cal-grid"></div>
     </div>
@@ -4088,7 +4088,7 @@ function renderSessionCal() {
   // Actually our header is ש א ב ג ד ה ו = Sat Sun Mon Tue Wed Thu Fri
   // So Sat=col0, Sun=col1, Mon=col2... Fri=col6
   // Remap: col = (dow + 1) % 7 where dow: 0=Sun→col1, 6=Sat→col0
-  const dowToCol = d => (d + 1) % 7;
+  const dowToCol = d => d; // 0=Sun→col0(right in RTL), 6=Sat→col6(left)
   const startCol = dowToCol(startDow);
   const daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
   const daysInPrev  = new Date(curYear, curMonth, 0).getDate();
