@@ -943,15 +943,23 @@
         display: flex;
         flex-direction: row;
         align-items: stretch;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
       }
+      nav::-webkit-scrollbar { display: none; }
       nav a {
-        flex: 1;
+        flex: 0 0 auto;
+        min-width: 68px;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 8px 2px 6px;
+        padding: 8px 6px 6px;
         gap: 3px;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 800;
         border-right: none;
         border-top: 3px solid transparent;
@@ -960,9 +968,8 @@
         color: #9ca3af;
         -webkit-tap-highlight-color: transparent;
         transition: color 0.15s;
-        overflow: hidden;
+        scroll-snap-align: start;
       }
-      /* הצג רק אייקון + שם קצר */
       nav a .nav-icon { font-size: 22px; width: auto; line-height: 1; }
       nav a.active {
         color: var(--accent);
@@ -1134,7 +1141,7 @@
     /* ===== מסך קטן מאוד ===== */
     @media (max-width: 380px) {
       .cards-grid { grid-template-columns: 1fr !important; }
-      nav a { font-size: 9px; }
+      nav a { font-size: 9px; min-width: 60px; }
       nav a .nav-icon { font-size: 20px; }
       .profiles-grid { grid-template-columns: 1fr !important; }
     }
@@ -1525,12 +1532,12 @@
     <p>ניהול חשבונות</p>
   </div>
   <nav id="sidebar-nav">
-    <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#16a34a;font-weight:900">+</span></span></span> הכנסה חודשית</a>
-    <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאה חודשית</a>
+    <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#16a34a;font-weight:900">+</span></span></span> הכנסות</a>
+    <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
     <a onclick="showPage('projects')" data-page="projects"><span class="nav-icon">🎵</span> פרויקטים</a>
-    <a onclick="showPage('gcal')" data-page="gcal"><span class="nav-icon">📅</span> יומן סשנים</a>
+    <a onclick="showPage('gcal')" data-page="gcal"><span class="nav-icon">📅</span> יומן</a>
     <a onclick="showPage('dashboard')" data-page="dashboard"><span class="nav-icon">📊</span> סטטיסטיקה</a>
   </nav>
   <div class="sidebar-footer">
