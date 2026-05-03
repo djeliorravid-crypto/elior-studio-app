@@ -27,7 +27,7 @@
   <style>
     /* ===== צבעים ===== */
     :root {
-      --bg:           #1a1b1e;
+      --bg:           #2c2d32;
       --surface:      #ffffff;
       --surface2:     #f5f6fb;
       --surface3:     #eef0f8;
@@ -3358,45 +3358,54 @@ function renderPendingBox() {
   const expenses = load('expenses');
   const plans    = load('plans');
 
-  // ── נשאר להכניס: הכנסות שלא שולמו + תשלומים עתידיים מתוכניות ──
-  const unpaidInc    = income.filter(i => (i.status || 'paid') !== 'paid');
-  const unpaidIncAmt = unpaidInc.reduce((s,i) => s + Number(i.amount), 0);
+  // ── פילטר לחודש הנוכחי בלבד ──
+  const inMonth = date => {
+    const d = new Date(date);
+    return d.getFullYear() === curYear && d.getMonth() === curMonth;
+  };
 
-  // תשלומים עתידיים מתוכניות תשלום שלא שולמו
+  // הכנסות החודש שלא שולמו
+  const monthInc     = income.filter(i => inMonth(i.date));
+  const unpaidInc    = monthInc.filter(i => (i.status || 'paid') !== 'paid');
+  const paidInc      = monthInc.filter(i => (i.status || 'paid') === 'paid');
+  const unpaidIncAmt = unpaidInc.reduce((s,i) => s + Number(i.amount), 0);
+  const paidIncAmt   = paidInc.reduce((s,i) => s + Number(i.amount), 0);
+
+  // תשלומים מתוכניות שמועד פירעונם החודש ועדיין לא שולמו
   let pendingInstAmt = 0, pendingInstCount = 0;
+  let paidInstAmt   = 0;
   plans.forEach(plan => plan.payments.forEach(p => {
-    if (!p.paid) { pendingInstAmt += Number(p.amount); pendingInstCount++; }
+    if (!inMonth(p.dueDate)) return;
+    if (p.paid) { paidInstAmt += Number(p.amount); }
+    else        { pendingInstAmt += Number(p.amount); pendingInstCount++; }
   }));
 
-  const totalPending = unpaidIncAmt + pendingInstAmt;
+  const totalPending   = unpaidIncAmt + pendingInstAmt;
+  const totalCollected = paidIncAmt + paidInstAmt;
+  const monthTotal     = totalPending + totalCollected;
+  const incPct = monthTotal > 0 ? Math.round((totalCollected / monthTotal) * 100) : 0;
 
-  // סה"כ הכנסות (כולל שולמו) + כל תשלומי התוכניות
-  const totalIncAll = income.reduce((s,i) => s + Number(i.amount), 0);
-  let totalInstAll  = 0;
-  plans.forEach(plan => plan.payments.forEach(p => { totalInstAll += Number(p.amount); }));
-  const grandTotal  = totalIncAll + totalInstAll;
-  const collectedAmt = grandTotal - totalPending;
-  const incPct = grandTotal > 0 ? Math.round((collectedAmt / grandTotal) * 100) : 0;
-
-  // ── נשאר להוציא: הוצאות שלא סומנו שולם ──
-  const unpaidExp    = expenses.filter(e => !e.paid);
+  // הוצאות החודש שלא שולמו
+  const monthExp     = expenses.filter(e => inMonth(e.date));
+  const unpaidExp    = monthExp.filter(e => !e.paid);
+  const paidExpAmt   = monthExp.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0);
   const unpaidExpAmt = unpaidExp.reduce((s,e) => s + Number(e.amount), 0);
-  const paidExpAmt   = expenses.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0);
-  const totalExpAll  = unpaidExpAmt + paidExpAmt;
-  const expPct = totalExpAll > 0 ? Math.round((paidExpAmt / totalExpAll) * 100) : 0;
+  const totalExpMonth = paidExpAmt + unpaidExpAmt;
+  const expPct = totalExpMonth > 0 ? Math.round((paidExpAmt / totalExpMonth) * 100) : 0;
 
   // ── עדכון DOM ──
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const set  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
   const setW = (id, pct) => { const el = document.getElementById(id); if (el) el.style.width = pct + '%'; };
 
-  set('pending-income-amt',  fmtMoney(totalPending));
-  set('pending-income-sub',  totalPending === 0 ? 'הכל גבית 🎉' :
-    [unpaidInc.length > 0 ? `${unpaidInc.length} הכנסות` : '', pendingInstCount > 0 ? `${pendingInstCount} תשלומים` : ''].filter(Boolean).join(' + ') + ' ממתינים');
-  set('pending-income-pct',  incPct + '% גבוי');
+  set('pending-income-amt', fmtMoney(totalPending));
+  set('pending-income-sub', totalPending === 0 ? 'הכל גבית החודש 🎉' :
+    [unpaidInc.length > 0 ? `${unpaidInc.length} הכנסות` : '',
+     pendingInstCount > 0 ? `${pendingInstCount} תשלומים` : ''].filter(Boolean).join(' + ') + ' ממתינים החודש');
+  set('pending-income-pct', incPct + '% גבוי');
   setW('pending-income-bar', incPct);
 
   set('pending-expenses-amt', fmtMoney(unpaidExpAmt));
-  set('pending-expenses-sub', unpaidExp.length === 0 ? 'הכל שולם 🎉' : `${unpaidExp.length} הוצאות שעדיין לא שולמו`);
+  set('pending-expenses-sub', unpaidExp.length === 0 ? 'הכל שולם החודש 🎉' : `${unpaidExp.length} הוצאות שעדיין לא שולמו`);
   set('pending-expenses-pct', expPct + '% שולם');
   setW('pending-expenses-bar', expPct);
 }
