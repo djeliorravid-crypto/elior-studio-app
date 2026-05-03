@@ -1197,191 +1197,193 @@
       .stat-two-col { grid-template-columns: 1fr; }
     }
 
-    /* ===== SESSIONS CALENDAR ===== */
+    /* ===== SESSIONS CALENDAR — REDESIGN ===== */
+
+    /* ── Stats Strip ── */
     .cal-stats-strip {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 14px;
+      margin-bottom: 22px;
     }
     .cal-stat-card {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 20px;
       box-shadow: var(--shadow);
       text-align: center;
+      transition: transform 0.18s, box-shadow 0.18s;
+      position: relative;
+      overflow: hidden;
     }
-    .cal-stat-icon { font-size: 22px; margin-bottom: 6px; }
-    .cal-stat-val { font-size: 26px; font-weight: 900; letter-spacing: -0.03em; }
-    .cal-stat-lbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-top: 3px; font-family: 'Rubik','Heebo',sans-serif; }
+    .cal-stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; left: 0;
+      height: 3px;
+      border-radius: 16px 16px 0 0;
+      background: var(--accent);
+      opacity: 0.5;
+    }
+    .cal-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(108,71,245,0.13); }
+    .cal-stat-icon { font-size: 26px; margin-bottom: 8px; }
+    .cal-stat-val { font-size: 32px; font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
+    .cal-stat-lbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-top: 6px; font-family: 'Rubik','Heebo',sans-serif; }
 
+    /* ── Week Strip ── */
+    .week-strip-day {
+      text-align: center; padding: 8px 4px; border-radius: 12px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .week-strip-day:hover { background: var(--surface2); }
+
+    /* ── Calendar Wrap ── */
     .cal-wrap {
       background: var(--surface);
       border: 1.5px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 18px;
       overflow: hidden;
-      box-shadow: var(--shadow);
-      margin-bottom: 20px;
+      box-shadow: 0 4px 24px rgba(108,71,245,0.08);
+      margin-bottom: 22px;
     }
     .cal-header {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      border-bottom: 1.5px solid var(--border);
+      background: linear-gradient(135deg, #f8f7ff, #f0eeff);
+      border-bottom: 2px solid var(--border);
     }
     .cal-dow {
-      padding: 10px 4px;
+      padding: 12px 4px;
       text-align: center;
       font-size: 11px;
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: .08em;
+      letter-spacing: .1em;
       color: var(--text-muted);
       font-family: 'Rubik','Heebo',sans-serif;
     }
     .cal-dow.weekend { color: var(--accent); }
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-    }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
     .cal-cell {
-      min-height: 100px;
+      min-height: 110px;
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
-      padding: 6px 5px 4px;
+      padding: 8px 6px 6px;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background 0.12s;
       position: relative;
-      vertical-align: top;
     }
     .cal-cell:nth-child(7n+1) { border-right: none; }
-    .cal-cell:hover { background: var(--surface2); }
+    .cal-cell:hover { background: #faf9ff; }
     .cal-cell.today {
-      background: linear-gradient(135deg,#faf8ff,#f3f0ff);
-      border-color: var(--accent) !important;
-      box-shadow: inset 0 0 0 1.5px var(--accent);
+      background: linear-gradient(160deg,#f5f2ff,#ede9ff);
     }
-    .cal-cell.other-month .cal-date-num { opacity: 0.3; }
-    .cal-cell.other-month { background: var(--surface2); }
-    .cal-cell.selected { background: var(--accent-light); }
+    .cal-cell.other-month { background: #fafafa; }
+    .cal-cell.other-month .cal-date-num { opacity: 0.25; }
+    .cal-cell.selected { background: #eeeaff; outline: 2px solid var(--accent); outline-offset: -2px; }
     .cal-date-num {
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--text);
-      display: inline-block;
-      width: 24px;
-      height: 24px;
-      line-height: 24px;
-      text-align: center;
-      border-radius: 50%;
-      margin-bottom: 3px;
+      font-size: 13px; font-weight: 800; color: var(--text);
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; border-radius: 50%;
+      margin-bottom: 4px; transition: all 0.15s;
     }
     .cal-cell.today .cal-date-num {
-      background: var(--accent);
-      color: #fff;
+      background: var(--accent); color: #fff;
+      box-shadow: 0 2px 10px rgba(108,71,245,0.4);
     }
+
+    /* ── Session Pills ── */
     .session-pill {
       display: block;
       font-size: 11px;
       font-weight: 700;
-      border-radius: 5px;
+      border-radius: 6px;
       padding: 3px 6px;
       margin-bottom: 3px;
-      overflow: hidden;
-      text-overflow: ellipsis;
       cursor: pointer;
-      line-height: 1.5;
+      line-height: 1.4;
       border-right: 3px solid currentColor;
+      transition: opacity 0.12s;
     }
+    .session-pill:hover { opacity: 0.82; }
     .session-pill .sp-time {
-      font-size: 10px;
-      font-weight: 800;
-      opacity: 0.85;
-      display: block;
-      font-family: 'Rubik','Heebo',sans-serif;
+      font-size: 10px; font-weight: 900; opacity: 0.8;
+      display: block; font-family: 'Rubik','Heebo',sans-serif; letter-spacing: 0.02em;
     }
     .session-pill .sp-name {
-      display: block;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .session-pill.more {
-      font-size: 10px;
-      color: var(--text-muted);
-      background: none;
-      padding: 0 3px;
-      font-style: italic;
-      border-right: none;
+      display: block; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
     }
 
-    /* Day detail panel */
+    /* ── Day Panel ── */
     .day-panel {
       background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow);
+      border: 2px solid var(--accent);
+      border-radius: 18px;
+      padding: 0;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 32px rgba(108,71,245,0.12);
       display: none;
+      overflow: hidden;
+      animation: slideDown 0.2s ease;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
     .day-panel.open { display: block; }
     .day-panel-header {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-      gap: 10px;
+      padding: 16px 22px;
+      background: linear-gradient(135deg, #f5f2ff, #ede9ff);
+      border-bottom: 1.5px solid var(--border);
+      flex-wrap: wrap; gap: 10px;
     }
     .day-panel-date {
-      font-size: 20px;
-      font-weight: 900;
+      font-size: 22px; font-weight: 900;
       font-family: 'Frank Ruhl Libre','Heebo',serif;
+      color: var(--accent);
     }
+    #day-panel-sessions { padding: 14px 22px 18px; }
+
+    /* ── Session Rows ── */
     .session-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 11px 14px;
-      border-radius: 10px;
-      margin-bottom: 8px;
-      border: 1.5px solid var(--border);
-      background: var(--surface);
-      cursor: pointer;
-      transition: box-shadow 0.15s;
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-radius: 12px; margin-bottom: 8px;
+      border: 1.5px solid var(--border); background: var(--surface);
+      cursor: pointer; transition: all 0.15s;
     }
-    .session-row:hover { box-shadow: var(--shadow-hover); }
-    .session-type-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    .session-row:hover { box-shadow: 0 4px 20px rgba(108,71,245,0.10); border-color: var(--border-glow); transform: translateX(-2px); }
     .session-row-time {
-      font-size: 14px;
-      font-weight: 800;
-      color: var(--text);
-      min-width: 90px;
-      font-family: 'Rubik','Heebo',sans-serif;
+      font-size: 14px; font-weight: 900; color: var(--text);
+      min-width: 95px; font-family: 'Rubik','Heebo',sans-serif;
+      background: var(--surface2); border-radius: 8px;
+      padding: 4px 8px; text-align: center;
     }
-    .session-row-client { font-size: 15px; font-weight: 700; flex: 1; }
-    .session-row-type { font-size: 12px; color: var(--text-muted); }
+    .session-row-client { font-size: 15px; font-weight: 800; flex: 1; }
+    .session-row-type { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
     .session-row-dur { font-size: 13px; font-weight: 800; color: var(--accent); }
 
+    /* ── Legend ── */
     .ses-legend {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
     }
     .ses-legend-item {
-      display: flex; align-items: center; gap: 5px;
+      display: flex; align-items: center; gap: 6px;
       font-size: 12px; font-weight: 700; color: var(--text-muted);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 10px;
     }
-    .ses-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .ses-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
     @media (max-width: 700px) {
       .cal-stats-strip { grid-template-columns: 1fr 1fr; }
-      .cal-cell { min-height: 60px; padding: 4px 3px; }
-      .cal-date-num { font-size: 11px; width: 20px; height: 20px; line-height: 20px; }
-      .session-pill { font-size: 8px; padding: 1px 3px; }
+      .cal-cell { min-height: 70px; padding: 5px 4px; }
+      .cal-date-num { font-size: 11px; width: 22px; height: 22px; }
+      .session-pill { font-size: 9px; padding: 2px 4px; }
+      .session-pill .sp-name { display: none; }
     }
 
   </style>
@@ -4325,12 +4327,12 @@ function renderSessionCal() {
       return eDate === dateStr && e.start?.dateTime && !appGcalIds.has(e.id);
     }).sort((a,b) => (a.start.dateTime||'').localeCompare(b.start.dateTime||''));
     const allPills = [...daySes.map(s => ({type:'ses', s})), ...dayGcal.map(e => ({type:'gcal', e}))];
-    const maxShow  = 2;
-    const pillsHtml = allPills.slice(0, maxShow).map(item => {
+    // הצג את כל האירועים — ללא הגבלה
+    const pillsHtml = allPills.map(item => {
       if (item.type === 'ses') {
         const s = item.s;
         const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
-        const struck = s.status === 'cancelled' ? 'opacity:0.45;' : '';
+        const struck = s.status === 'cancelled' ? 'opacity:0.4;' : '';
         return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="event.stopPropagation();openSessionModal('${s.date}','${s.id}')"><span class="sp-time">${s.startTime}–${s.endTime}</span><span class="sp-name">${s.clientName || s.type}</span></span>`;
       } else {
         const e = item.e;
@@ -4338,11 +4340,10 @@ function renderSessionCal() {
         const en = e.end?.dateTime?.split('T')[1]?.slice(0,5) || '';
         const title = e.summary || 'גוגל';
         const evAttr = JSON.stringify({summary:e.summary||'',startDT:e.start?.dateTime||'',endDT:e.end?.dateTime||''}).replace(/"/g,'&quot;');
-        return `<span class="session-pill" style="background:#e8f0fe;color:#1a73e8;border:1px solid #c5d8fb" onclick="event.stopPropagation();importGcalEvent(${evAttr})"><span class="sp-time">${st}${en?'–'+en:''}</span><span class="sp-name">${title}</span></span>`;
+        return `<span class="session-pill" style="background:#e8f0fe;color:#1a73e8;border-right:3px solid #1a73e8" onclick="event.stopPropagation();importGcalEvent(${evAttr})"><span class="sp-time">${st}${en?'–'+en:''}</span><span class="sp-name">${title}</span></span>`;
       }
     }).join('');
-    const totalCount = allPills.length;
-    const moreHtml = totalCount > maxShow ? `<span class="session-pill more">+${totalCount - maxShow} עוד</span>` : '';
+    const moreHtml = '';
     const dayHrsTotal = daySes.filter(s => s.status!=='cancelled').reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
     const hrsTag = dayHrsTotal > 0 && daySes.length > 0
       ? `<div style="position:absolute;top:4px;left:4px;font-size:9px;font-weight:800;color:var(--text-muted)">${dayHrsTotal % 1 === 0 ? dayHrsTotal : dayHrsTotal.toFixed(1)}ש׳</div>`
@@ -4398,43 +4399,42 @@ function renderSessionCal() {
         const sessionsHtml = daySessions.map(s => {
           const info   = SES_TYPES[s.type] || SES_TYPES['אחר'];
           const dur    = sesDurationLabel(s.startTime, s.endTime);
-          const struck = s.status === 'cancelled' ? 'opacity:0.5;' : '';
-          const statusBadge = s.status === 'completed'
-            ? `<span class="badge badge-green">✅ הושלם</span>`
-            : s.status === 'cancelled'
-            ? `<span class="badge badge-gray">❌ בוטל</span>`
-            : `<span class="badge badge-purple">📅 מתוכנן</span>`;
+          const isCanc = s.status === 'cancelled';
+          const isComp = s.status === 'completed';
+          const statusBadge = isComp
+            ? `<span style="background:#d1fae5;color:#15803d;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap">✅ הושלם</span>`
+            : isCanc
+            ? `<span style="background:#f3f4f6;color:#6b7280;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap">❌ בוטל</span>`
+            : `<span style="background:var(--accent-light);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap">📅 מתוכנן</span>`;
           return `
-            <div class="session-row" style="${struck}margin-bottom:6px" onclick="openSessionModal('${s.date}','${s.id}')">
-              <div style="width:4px;height:40px;border-radius:2px;flex-shrink:0;background:${info.color}"></div>
-              <div class="session-row-time">${s.startTime}–${s.endTime}</div>
+            <div class="session-row" style="${isCanc?'opacity:0.55;':''}" onclick="openSessionModal('${s.date}','${s.id}')">
+              <div style="width:5px;min-height:48px;border-radius:3px;flex-shrink:0;background:${info.color}"></div>
+              <div class="session-row-time">${s.startTime}<br><span style="font-size:11px;opacity:0.6">${s.endTime}</span></div>
               <div style="flex:1;min-width:0">
                 <div class="session-row-client">${s.clientName || '—'}</div>
-                <div class="session-row-type">${info.label}${dur ? ' · ' + dur : ''}</div>
+                <div class="session-row-type">${info.label}${dur ? ' · <b>' + dur + '</b>' : ''}</div>
               </div>
               ${statusBadge}
-              ${s.status !== 'completed'
-                ? `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;background:#d1fae5;color:#15803d">✓ סיום</button>`
+              ${!isComp && !isCanc
+                ? `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#d1fae5;color:#15803d;white-space:nowrap">✓ סיום</button>`
                 : ''}
-              <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 6px">×</button>
+              <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:#ccc;cursor:pointer;font-size:20px;padding:2px 6px;line-height:1" title="מחק">×</button>
             </div>`;
         }).join('');
 
         return `
-          <div style="margin-bottom:18px">
-            <div style="display:flex;align-items:center;gap:10px;padding:8px 16px 6px;border-bottom:2px solid ${isToday ? 'var(--accent)' : 'var(--border)'}">
-              <div style="width:36px;height:36px;border-radius:10px;background:${isToday ? 'var(--accent)' : 'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:${isToday ? '#fff' : 'var(--text)'}">
+          <div style="margin-bottom:24px">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 4px 10px;border-bottom:2px solid ${isToday ? 'var(--accent)' : 'var(--border)'}">
+              <div style="width:42px;height:42px;border-radius:12px;background:${isToday ? 'var(--accent)' : 'var(--surface3)'};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:${isToday ? '#fff' : 'var(--text)'};box-shadow:${isToday?'0 2px 12px rgba(108,71,245,0.3)':'none'};flex-shrink:0">
                 ${dayNum}
               </div>
-              <div>
-                <div style="font-size:16px;font-weight:900;color:${isToday ? 'var(--accent)' : 'var(--text)'};font-family:'Frank Ruhl Libre','Heebo',serif">${dayName}${isToday ? ' — היום' : ''}</div>
-                <div style="font-size:12px;color:var(--text-muted);font-weight:700">${monthName} ${dayNum}${hrsLabel ? ' · ' + hrsLabel : ''}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:17px;font-weight:900;color:${isToday ? 'var(--accent)' : 'var(--text)'};font-family:'Frank Ruhl Libre','Heebo',serif">${dayName}${isToday ? ' ← היום' : ''}</div>
+                <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-top:1px">${monthName} ${dayNum}${hrsLabel ? ' · ' + hrsLabel : ''}</div>
               </div>
-              <div style="margin-right:auto">
-                <button onclick="openSessionModal('${date}')" style="border:1.5px solid var(--border);border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--text)">+ סשן</button>
-              </div>
+              <button onclick="openSessionModal('${date}')" style="border:1.5px solid var(--accent);border-radius:9px;padding:5px 14px;font-size:12px;font-weight:800;cursor:pointer;background:var(--accent-light);color:var(--accent);white-space:nowrap">+ סשן</button>
             </div>
-            <div style="padding:8px 4px 0">${sessionsHtml}</div>
+            <div style="padding:10px 0 0">${sessionsHtml}</div>
           </div>`;
       }).join('');
     }
