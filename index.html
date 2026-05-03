@@ -2204,39 +2204,28 @@ function initFirebase() {
         const cloudData = snapshot.val();
 
         if (_isFirstSync) {
-          // טעינה ראשונה — מיזוג חכם: ענן + מקומי
+          // טעינה ראשונה — הענן הוא האמת המוחלטת.
+          // אם יש נתונים בענן → קח אותם (מחיקות נשמרות!).
+          // אם אין ענן → העלה את הנתונים המקומיים.
           ALL_KEYS.forEach(key => {
-            const localRaw  = localStorage.getItem('s_' + key);
-            const localVal  = localRaw ? JSON.parse(localRaw) : null;
-            const cloudVal  = cloudData ? cloudData[key] : null;
+            const localRaw = localStorage.getItem('s_' + key);
+            const localVal = localRaw ? JSON.parse(localRaw) : null;
+            const cloudVal = cloudData ? cloudData[key] : null;
 
-            const hasLocal  = localVal && (Array.isArray(localVal) ? localVal.length > 0 : Object.keys(localVal).length > 0);
-            const hasCloud  = cloudVal && (Array.isArray(cloudVal) ? cloudVal.length > 0 : Object.keys(cloudVal).length > 0);
+            const hasCloud = cloudVal && (Array.isArray(cloudVal) ? cloudVal.length > 0 : Object.keys(cloudVal).length > 0);
+            const hasLocal = localVal && (Array.isArray(localVal) ? localVal.length > 0 : Object.keys(localVal).length > 0);
 
-            if (hasCloud && hasLocal) {
-              // שניהם קיימים — מיזוג לפי id (הענן גובר על כפולות)
-              if (Array.isArray(cloudVal) && Array.isArray(localVal)) {
-                const cloudIds = new Set(cloudVal.map(i => i.id));
-                const merged  = [...cloudVal, ...localVal.filter(i => !cloudIds.has(i.id))];
-                localStorage.setItem('s_' + key, JSON.stringify(merged));
-                firebaseDB.ref('studio_data/' + key).set(merged);
-              } else {
-                // אובייקט — מיזוג, הענן גובר
-                const merged = Object.assign({}, localVal, cloudVal);
-                localStorage.setItem('s_' + key, JSON.stringify(merged));
-                firebaseDB.ref('studio_data/' + key).set(merged);
-              }
-            } else if (hasCloud) {
-              // יש רק בענן — קח מהענן
+            if (hasCloud) {
+              // ענן קיים — הוא מנצח תמיד (כולל מחיקות)
               localStorage.setItem('s_' + key, JSON.stringify(cloudVal));
             } else if (hasLocal) {
-              // יש רק מקומית — העלה לענן
+              // אין ענן — העלה את הנתונים המקומיים
               firebaseDB.ref('studio_data/' + key).set(localVal);
             }
           });
           _isFirstSync = false;
           firebaseReady = true;
-          console.log('Firebase synced + merged ✓');
+          console.log('Firebase synced ✓ (cloud is source of truth)');
           resolve();
         } else {
           // עדכון בזמן אמת ממכשיר אחר — עדכן תצוגה
