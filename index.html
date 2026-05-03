@@ -1551,15 +1551,16 @@
     <div id="gcal-bar-disconnected" style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;box-shadow:var(--shadow)">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="width:36px;height:36px;background:linear-gradient(135deg,#4285f4,#0f9d58);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📅</div>
-        <div style="flex:1;min-width:160px">
+        <div style="flex:1;min-width:120px">
           <div style="font-size:14px;font-weight:800;color:var(--text)">סנכרון עם גוגל קלנדר</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:1px">חבר כדי שסשנים ייווצרו גם ביומן גוגל שלך</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:1px" id="gcal-bar-sub">חבר כדי שסשנים ייווצרו גם ביומן גוגל</div>
         </div>
+        <!-- input מוצג רק אם אין Client ID שמור -->
         <input id="gcal-client-id" type="text" placeholder="Client ID מגוגל קלאוד..."
-          style="flex:2;min-width:200px;border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface2);outline:none"
+          style="flex:2;min-width:180px;border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface2);outline:none"
           onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
           oninput="localStorage.setItem('gcal_client_id',this.value)" />
-        <button onclick="connectGoogle()" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;white-space:nowrap">🔗 התחבר</button>
+        <button onclick="connectGoogle()" id="gcal-connect-btn" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;white-space:nowrap">🔗 התחבר עם גוגל</button>
       </div>
     </div>
 
@@ -4317,14 +4318,31 @@ function renderSessionCal() {
     const isToday   = today.getFullYear()===curYear && today.getMonth()===curMonth && today.getDate()===day;
     const isSel     = _selDay === dateStr;
     const daySes    = (byDate[dateStr] || []).sort((a,b) => a.startTime.localeCompare(b.startTime));
-    const maxShow   = 2;
-    const pillsHtml = daySes.slice(0, maxShow).map(s => {
-      const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
-      const struck = s.status === 'cancelled' ? 'opacity:0.45;' : '';
-      const dur = sesDurationLabel(s.startTime, s.endTime);
-      return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="event.stopPropagation();openSessionModal('${s.date}','${s.id}')"><span class="sp-time">${s.startTime}–${s.endTime}</span><span class="sp-name">${s.clientName || s.type}</span></span>`;
+    // אירועי גוגל שאין להם סשן מתאים באפליקציה
+    const appGcalIds = new Set(daySes.map(s => s.gcalEventId).filter(Boolean));
+    const dayGcal = _gcalEventsCache.filter(e => {
+      const eDate = (e.start?.dateTime || e.start?.date || '').split('T')[0];
+      return eDate === dateStr && e.start?.dateTime && !appGcalIds.has(e.id);
+    }).sort((a,b) => (a.start.dateTime||'').localeCompare(b.start.dateTime||''));
+    const allPills = [...daySes.map(s => ({type:'ses', s})), ...dayGcal.map(e => ({type:'gcal', e}))];
+    const maxShow  = 2;
+    const pillsHtml = allPills.slice(0, maxShow).map(item => {
+      if (item.type === 'ses') {
+        const s = item.s;
+        const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
+        const struck = s.status === 'cancelled' ? 'opacity:0.45;' : '';
+        return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="event.stopPropagation();openSessionModal('${s.date}','${s.id}')"><span class="sp-time">${s.startTime}–${s.endTime}</span><span class="sp-name">${s.clientName || s.type}</span></span>`;
+      } else {
+        const e = item.e;
+        const st = e.start.dateTime.split('T')[1]?.slice(0,5) || '';
+        const en = e.end?.dateTime?.split('T')[1]?.slice(0,5) || '';
+        const title = e.summary || 'גוגל';
+        const evAttr = JSON.stringify({summary:e.summary||'',startDT:e.start?.dateTime||'',endDT:e.end?.dateTime||''}).replace(/"/g,'&quot;');
+        return `<span class="session-pill" style="background:#e8f0fe;color:#1a73e8;border:1px solid #c5d8fb" onclick="event.stopPropagation();importGcalEvent(${evAttr})"><span class="sp-time">${st}${en?'–'+en:''}</span><span class="sp-name">${title}</span></span>`;
+      }
     }).join('');
-    const moreHtml = daySes.length > maxShow ? `<span class="session-pill more">+${daySes.length - maxShow} עוד</span>` : '';
+    const totalCount = allPills.length;
+    const moreHtml = totalCount > maxShow ? `<span class="session-pill more">+${totalCount - maxShow} עוד</span>` : '';
     const dayHrsTotal = daySes.filter(s => s.status!=='cancelled').reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
     const hrsTag = dayHrsTotal > 0 && daySes.length > 0
       ? `<div style="position:absolute;top:4px;left:4px;font-size:9px;font-weight:800;color:var(--text-muted)">${dayHrsTotal % 1 === 0 ? dayHrsTotal : dayHrsTotal.toFixed(1)}ש׳</div>`
@@ -4701,18 +4719,14 @@ let _gcalToken = null;
 let _gcalUser = null;
 let _gcalOAuthClient = null;
 let _gcalAutoRefreshTimer = null;
+let _gcalEventsCache = []; // אירועי גוגל האחרונים — לשימוש בלוח השנה
 
 function gcalInitPage() {
   const saved = localStorage.getItem('gcal_client_id') || '';
   const el = document.getElementById('gcal-client-id');
   if (el && saved) el.value = saved;
   gcalUpdateUI();
-  if (_gcalToken) {
-    fetchGoogleEvents();
-  } else if (saved) {
-    // נסה להתחבר שקט בלי popup
-    gcalSilentReconnect();
-  }
+  if (_gcalToken) fetchGoogleEvents();
 }
 
 // התחברות שקטה — אם גוגל זוכר את ההרשאה, אין popup
@@ -4761,6 +4775,22 @@ function gcalUpdateUI() {
   barOn.style.display  = connected ? 'block' : 'none';
   if (txt) txt.textContent = _gcalUser ? '· ' + _gcalUser : '';
   if (evSec) evSec.style.display = connected ? 'block' : 'none';
+
+  // כשמנותק: אם יש Client ID שמור → הסתר input, הצג רק כפתור נקי
+  if (!connected) {
+    const hasCid = !!localStorage.getItem('gcal_client_id');
+    const input  = document.getElementById('gcal-client-id');
+    const btn    = document.getElementById('gcal-connect-btn');
+    const sub    = document.getElementById('gcal-bar-sub');
+    if (input) input.style.display = hasCid ? 'none' : 'block';
+    if (btn)   btn.textContent = hasCid ? '🔗 התחבר עם גוגל' : '🔗 התחבר';
+    if (sub && hasCid) sub.textContent = _gcalUser
+      ? ('מנותק מ‑' + _gcalUser + ' — לחץ להתחבר מחדש')
+      : 'לחץ להתחבר עם גוגל';
+  }
+
+  // עדכן לוח שנה כדי לשלב/להסיר אירועי גוגל
+  renderSessionCal();
 }
 
 function connectGoogle() {
@@ -4773,9 +4803,11 @@ function connectGoogle() {
     return;
   }
 
+  const savedHint = localStorage.getItem('gcal_user_email') || '';
   _gcalOAuthClient = google.accounts.oauth2.initTokenClient({
     client_id: clientId,
     scope: 'https://www.googleapis.com/auth/calendar.events',
+    login_hint: savedHint, // מונע בחירת חשבון אם כבר התחברת
     callback: (response) => {
       if (response.error) {
         toast('❌ שגיאה: ' + (response.error_description || response.error));
@@ -4848,7 +4880,9 @@ function fetchGoogleEvents(silent) {
     .then(data => {
       if (btn) { btn.textContent = '🔄 רענן'; btn.disabled = false; }
       const items = data.items || [];
-      syncGcalToSessions(items); // עדכן סשנים שהשתנו בגוגל
+      _gcalEventsCache = items; // שמור לשימוש בלוח השנה
+      syncGcalToSessions(items);
+      renderSessionCal(); // רענן לוח עם אירועי גוגל
       renderGcalEvents(items);
     })
     .catch(err => {
