@@ -1450,7 +1450,7 @@
         <div class="card-icon">⏳</div>
         <div class="card-label">צפוי להתקבל החודש</div>
         <div class="card-value purple" id="i-expected">₪0</div>
-        <div class="card-sub" id="i-expected-count">0 ממתינים</div>
+        <div class="card-sub" id="i-expected-count">סה"כ הכנסות החודש</div>
       </div>
       <div class="card" style="border-color:var(--green-border);background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
         <div class="card-icon">✅</div>
@@ -1464,11 +1464,11 @@
         <div class="card-value blue" id="i-future-profit">₪0</div>
         <div class="card-sub" id="i-future-profit-sub">הכל מינוס הוצאות</div>
       </div>
-      <div class="card">
-        <div class="card-icon">📈</div>
-        <div class="card-label">רווח נקי החודש בפועל</div>
+      <div class="card" style="border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fef3c7)">
+        <div class="card-icon">🏦</div>
+        <div class="card-label">בנק העסק החודש</div>
         <div class="card-value" id="i-net-profit">₪0</div>
-        <div class="card-sub">שולם פחות הוצאות</div>
+        <div class="card-sub" id="i-net-profit-sub">שולם פחות הוצאות ששולמו</div>
       </div>
     </div>
 
@@ -1533,18 +1533,18 @@
     <!-- כרטיס נשאר לך -->
     <div id="e-balance-card" style="border-radius:var(--radius);padding:22px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;box-shadow:var(--shadow);border:2px solid var(--border)">
       <div>
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.10em;color:var(--text-muted);margin-bottom:6px">נשאר לך החודש</div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.10em;color:var(--text-muted);margin-bottom:6px;font-family:'Rubik','Heebo',sans-serif">🏦 בנק העסק החודש</div>
         <div id="e-balance" style="font-size:52px;font-weight:900;line-height:1;letter-spacing:-0.04em">₪0</div>
         <div id="e-balance-sub" style="font-size:14px;font-weight:700;margin-top:8px;color:var(--text-muted)"></div>
       </div>
       <div style="display:flex;gap:28px;flex-wrap:wrap">
         <div style="text-align:center">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">הכנסות</div>
+          <div style="font-size:10px;color:var(--text-muted);font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">נכנס (שולם)</div>
           <div id="e-inc-ref" style="font-size:22px;font-weight:900;color:var(--green)">₪0</div>
         </div>
         <div style="font-size:26px;color:var(--text-muted);align-self:center">−</div>
         <div style="text-align:center">
-          <div style="font-size:10px;color:var(--text-muted);font-weight:900;text-transform:uppercase;letter-spacing:.10em;margin-bottom:3px">הוצאות</div>
+          <div style="font-size:10px;color:var(--text-muted);font-weight:900;text-transform:uppercase;letter-spacing:.10em;margin-bottom:3px">יצא (שולם)</div>
           <div id="e-exp-ref" style="font-size:22px;font-weight:900;color:var(--red)">₪0</div>
         </div>
         <div style="font-size:26px;color:var(--text-muted);align-self:center">=</div>
@@ -2416,14 +2416,18 @@ function renderIncome() {
   const totalPaid     = paid.reduce((s,i) => s + Number(i.amount), 0);
   const totalNotPaid  = notPaid.reduce((s,i) => s + Number(i.amount), 0);
 
-  // צפוי מתוכניות תשלום
+  // תשלומים מתוכניות — מחלק לשולמו + לא שולמו
   const pendingInst = [];
+  let paidInstTotal = 0;
   plans.forEach(plan => {
     plan.payments.forEach(p => {
-      if (p.paid) return;
       const d = new Date(p.dueDate);
       if (d.getFullYear() !== curYear || d.getMonth() !== curMonth) return;
       if (cf && plan.clientId !== cf) return;
+      if (p.paid) {
+        paidInstTotal += Number(p.amount);
+        return;
+      }
       const desc = `${plan.project} — תשלום ${p.index} מתוך ${plan.count}`;
       if (search && !(desc.toLowerCase().includes(search) || (plan.clientName||'').toLowerCase().includes(search))) return;
       pendingInst.push({ planId: plan.id, paymentId: p.id, dueDate: p.dueDate,
@@ -2433,31 +2437,42 @@ function renderIncome() {
   });
 
   const totalPendingInst = pendingInst.reduce((s,p) => s + Number(p.amount), 0);
-  const totalExpected    = totalNotPaid + totalPendingInst;
+  // "צפוי להתקבל" = הכל החודש: שולם + לא שולם + כל התשלומים
+  const totalAllExpected = totalPaid + totalNotPaid + paidInstTotal + totalPendingInst;
+  // "התקבל בפועל" = רק שולם
+  const totalExpected    = totalNotPaid + totalPendingInst; // נשאר לגבות (לצורך חישובים)
 
-  // רווח נקי החודש (שולם בפועל פחות הוצאות)
-  const monthExpensesForNet = load('expenses').filter(e => inCurMonth(e.date)).reduce((s,e) => s + Number(e.amount), 0);
-  const netProfit = totalPaid - monthExpensesForNet;
-  const netEl = document.getElementById('i-net-profit');
-  if (netEl) {
-    netEl.textContent = (netProfit < 0 ? '-' : '') + fmtMoney(Math.abs(netProfit));
-    netEl.className = 'card-value ' + (netProfit >= 0 ? 'green' : 'red');
+  // "בנק העסק" = הכנסות ששולמו פחות הוצאות ששולמו בלבד
+  const paidExpenses    = load('expenses').filter(e => inCurMonth(e.date) && e.paid).reduce((s,e) => s + Number(e.amount), 0);
+  const curMonthKeyInc  = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+  const paidRecAmt      = load('recurring_expenses').filter(r => {
+    if (r.startMonth > curMonthKeyInc || (r.endMonth && r.endMonth < curMonthKeyInc)) return false;
+    return r.paidMonths && r.paidMonths[curMonthKeyInc];
+  }).reduce((s,r) => s + Number(r.amount), 0);
+  const bankBalance     = totalPaid - paidExpenses - paidRecAmt;
+  const bankEl          = document.getElementById('i-net-profit');
+  if (bankEl) {
+    bankEl.textContent = (bankBalance < 0 ? '-' : '') + fmtMoney(Math.abs(bankBalance));
+    bankEl.className   = 'card-value ' + (bankBalance >= 0 ? 'orange' : 'red');
   }
+  const bankSub = document.getElementById('i-net-profit-sub');
+  if (bankSub) bankSub.textContent = `${fmtMoney(totalPaid)} נכנס − ${fmtMoney(paidExpenses + paidRecAmt)} יצא`;
 
-  // רווח נקי עתידי החודש (הכל — שולם + ממתין + תשלומים — פחות הוצאות)
-  const futureProfit = totalPaid + totalExpected - monthExpensesForNet;
+  // "רווח נקי עתידי" = הכל צפוי (שולם + ממתין + תשלומים) פחות כל הוצאות החודש
+  const monthExpensesTotal = load('expenses').filter(e => inCurMonth(e.date)).reduce((s,e) => s + Number(e.amount), 0);
+  const futureProfit = totalAllExpected - monthExpensesTotal;
   const futureEl = document.getElementById('i-future-profit');
   if (futureEl) {
     futureEl.textContent = (futureProfit < 0 ? '-' : '') + fmtMoney(Math.abs(futureProfit));
     futureEl.className = 'card-value ' + (futureProfit >= 0 ? 'blue' : 'red');
   }
   const futureSub = document.getElementById('i-future-profit-sub');
-  if (futureSub) futureSub.textContent = `${fmtMoney(totalPaid + totalExpected)} צפוי פחות ${fmtMoney(monthExpensesForNet)} הוצאות`;
+  if (futureSub) futureSub.textContent = `${fmtMoney(totalAllExpected)} צפוי פחות ${fmtMoney(monthExpensesTotal)} הוצאות`;
 
   document.getElementById('i-total').textContent          = fmtMoney(totalPaid);
   document.getElementById('i-count').textContent          = paid.length + ' עסקאות שולמו';
-  document.getElementById('i-expected').textContent       = fmtMoney(totalExpected);
-  document.getElementById('i-expected-count').textContent = (notPaid.length + pendingInst.length) + ' ממתינים';
+  document.getElementById('i-expected').textContent       = fmtMoney(totalAllExpected);
+  document.getElementById('i-expected-count').textContent = `${monthEntries.length + pendingInst.length} פריטים החודש`;
 
   // מיני לוח שנה
   renderMiniCal(income, load('expenses'));
@@ -2689,33 +2704,32 @@ function renderExpenses() {
   const totalIncome   = income.reduce((s,i) => s + Number(i.amount), 0);
   const netProfit     = totalIncome - totalExpenses;
 
-  // הוצאות החודש בלבד לכרטיס הנשאר — כולל חוזרות
-  const monthExpenses = allExpenses.filter(e => inCurMonth(e.date)).reduce((s,e)=>s+Number(e.amount),0) + recurringMonthTotal;
-  const monthIncTotal = monthIncome.reduce((s,i)=>s+Number(i.amount),0);
-  let expectedInst = 0;
-  plans.forEach(plan => plan.payments.forEach(p => {
-    if (p.paid) return;
-    const d = new Date(p.dueDate);
-    if (d.getFullYear()===curYear && d.getMonth()===curMonth) expectedInst += p.amount;
-  }));
-  const monthIncWithInst = monthIncTotal + expectedInst;
-  const balance = monthIncWithInst - monthExpenses;
-  const isPos   = balance >= 0;
+  // ── כרטיס "בנק העסק" — רק מה שנכנס ויצא בפועל (שולם) ──
+  const paidIncAmt  = monthIncome.filter(i => (i.status||'paid') === 'paid').reduce((s,i) => s + Number(i.amount), 0);
+  const paidExpAmt  = allExpenses.filter(e => inCurMonth(e.date) && e.paid).reduce((s,e) => s + Number(e.amount), 0);
+  const paidRecAmt  = activeRecurring.filter(r => r.paidMonths && r.paidMonths[curMonthKey]).reduce((s,r) => s + Number(r.amount), 0);
+  const totalPaidOut = paidExpAmt + paidRecAmt;
+  const balance      = paidIncAmt - totalPaidOut;
+  const isPos        = balance >= 0;
 
-  // ── כרטיס נשאר ──
+  // גם עבור תצוגה "כמה עוד ממתין"
+  const unpaidExpAmt   = allExpenses.filter(e => inCurMonth(e.date) && !e.paid).reduce((s,e) => s + Number(e.amount), 0);
+  const unpaidRecAmt   = activeRecurring.filter(r => !(r.paidMonths && r.paidMonths[curMonthKey])).reduce((s,r) => s + Number(r.amount), 0);
+  const totalUnpaidOut = unpaidExpAmt + unpaidRecAmt;
+
   const card = document.getElementById('e-balance-card');
   if (card) {
-    card.style.background   = isPos ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fff5f5,#fee2e2)';
-    card.style.borderColor  = isPos ? 'var(--green-border)' : '#fca5a5';
-    document.getElementById('e-balance').textContent        = (isPos?'':'-') + fmtMoney(balance);
-    document.getElementById('e-balance').style.color        = isPos ? 'var(--green)' : 'var(--red)';
-    document.getElementById('e-balance-small').textContent  = (isPos?'':'-') + fmtMoney(balance);
-    document.getElementById('e-balance-small').style.color  = isPos ? 'var(--green)' : 'var(--red)';
-    document.getElementById('e-inc-ref').textContent        = fmtMoney(monthIncWithInst);
-    document.getElementById('e-exp-ref').textContent        = fmtMoney(monthExpenses);
-    document.getElementById('e-balance-sub').textContent    = expectedInst > 0
-      ? `כולל ${fmtMoney(expectedInst)} צפוי מתוכניות תשלום`
-      : 'זה הסכום שישאר לך החודש אחרי הוצאות';
+    card.style.background   = isPos ? 'linear-gradient(135deg,#fffbeb,#fef3c7)' : 'linear-gradient(135deg,#fff5f5,#fee2e2)';
+    card.style.borderColor  = isPos ? '#fde68a' : '#fca5a5';
+    document.getElementById('e-balance').textContent        = (isPos?'':'-') + fmtMoney(Math.abs(balance));
+    document.getElementById('e-balance').style.color        = isPos ? 'var(--orange)' : 'var(--red)';
+    document.getElementById('e-balance-small').textContent  = (isPos?'':'-') + fmtMoney(Math.abs(balance));
+    document.getElementById('e-balance-small').style.color  = isPos ? 'var(--orange)' : 'var(--red)';
+    document.getElementById('e-inc-ref').textContent        = fmtMoney(paidIncAmt);
+    document.getElementById('e-exp-ref').textContent        = fmtMoney(totalPaidOut);
+    document.getElementById('e-balance-sub').textContent    = totalUnpaidOut > 0
+      ? `עוד ${fmtMoney(totalUnpaidOut)} ממתין לתשלום החודש`
+      : 'כל ההוצאות שולמו החודש 🎉';
   }
 
   document.getElementById('e-total-inc').textContent = fmtMoney(totalIncome);
@@ -2763,24 +2777,28 @@ function renderExpenses() {
       const pct        = inc.amount > 0 ? Math.min(100, Math.round((totalExp/inc.amount)*100)) : 0;
 
       html += `
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${inc.description}</div>
-              <div style="font-size:13px;color:var(--text-muted)">${inc.clientName||fmtDate(inc.date)}</div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:10px">
+          <div style="margin-bottom:8px">
+            <div style="font-size:16px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${inc.description}</div>
+            <div style="font-size:13px;color:var(--text-muted)">${inc.clientName||''} ${inc.clientName && inc.date ? '·' : ''} ${fmtDate(inc.date)}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:stretch;margin-bottom:10px">
+            <div style="flex:1;text-align:center;background:var(--green-light);border-radius:8px;padding:7px 6px">
+              <div style="font-size:10px;color:var(--green);font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">הכנסה</div>
+              <div style="font-size:16px;font-weight:900;color:var(--green)">${fmtMoney(inc.amount)}</div>
             </div>
-            <div style="display:flex;gap:12px;align-items:center;flex-shrink:0">
-              <div style="text-align:center">
-                <div style="font-size:11px;color:var(--text-muted);font-weight:700">הוצאות</div>
-                <div style="font-size:15px;font-weight:800;color:var(--red)">-${fmtMoney(totalExp)}</div>
-              </div>
-              <div style="text-align:center">
-                <div style="font-size:11px;color:var(--text-muted);font-weight:700">נשאר</div>
-                <div style="font-size:15px;font-weight:800;color:${netPos?'var(--green)':'var(--red)'}">${netPos?'':'-'}${fmtMoney(Math.abs(net))}</div>
-              </div>
+            <div style="font-size:18px;color:var(--text-muted);align-self:center">−</div>
+            <div style="flex:1;text-align:center;background:var(--red-light);border-radius:8px;padding:7px 6px">
+              <div style="font-size:10px;color:var(--red);font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">הוצאות</div>
+              <div style="font-size:16px;font-weight:900;color:var(--red)">${fmtMoney(totalExp)}</div>
+            </div>
+            <div style="font-size:18px;color:var(--text-muted);align-self:center">=</div>
+            <div style="flex:1;text-align:center;background:${netPos?'var(--green-light)':'var(--red-light)'};border-radius:8px;padding:7px 6px;border:2px solid ${netPos?'var(--green-border)':'#fca5a5'}">
+              <div style="font-size:10px;color:${netPos?'var(--green)':'var(--red)'};font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">נשאר</div>
+              <div style="font-size:16px;font-weight:900;color:${netPos?'var(--green)':'var(--red)'}">${netPos?'':'-'}${fmtMoney(Math.abs(net))}</div>
             </div>
           </div>
-          <div style="height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:8px">
+          <div style="height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-bottom:8px">
             <div style="height:100%;border-radius:2px;background:${pct>=80?'var(--red)':pct>=50?'var(--orange)':'var(--accent)'};width:${pct}%"></div>
           </div>
           <div>${expensesTableHtml(projExps)}</div>
@@ -3496,16 +3514,17 @@ function renderPendingBox() {
   const setW = (id, pct) => { const el = document.getElementById(id); if (el) el.style.width = pct + '%'; };
 
   set('pending-income-amt', fmtMoney(totalPending));
-  set('pending-income-sub', totalPending === 0 ? 'הכל גבית החודש 🎉' :
-    [unpaidInc.length > 0 ? `${unpaidInc.length} הכנסות` : '',
-     pendingInstCount > 0 ? `${pendingInstCount} תשלומים` : ''].filter(Boolean).join(' + ') + ' ממתינים החודש');
+  set('pending-income-sub', totalPending === 0
+    ? `הכל גבית החודש 🎉 — סה"כ ${fmtMoney(monthTotal)}`
+    : `מתוך ${fmtMoney(monthTotal)} צפוי החודש`);
   set('pending-income-pct', incPct + '% גבוי');
   setW('pending-income-bar', incPct);
 
   const totalUnpaidExpCount = unpaidExp.length + unpaidRec.length;
   set('pending-expenses-amt', fmtMoney(unpaidExpAmt));
-  set('pending-expenses-sub', totalUnpaidExpCount === 0 ? 'הכל שולם החודש 🎉' :
-    [unpaidExp.length > 0 ? `${unpaidExp.length} הוצאות` : '', unpaidRec.length > 0 ? `${unpaidRec.length} קבועות` : ''].filter(Boolean).join(' + ') + ' ממתינות');
+  set('pending-expenses-sub', totalUnpaidExpCount === 0
+    ? `הכל שולם החודש 🎉 — סה"כ ${fmtMoney(totalExpMonth)}`
+    : `מתוך ${fmtMoney(totalExpMonth)} הוצאות החודש`);
   set('pending-expenses-pct', expPct + '% שולם');
   setW('pending-expenses-bar', expPct);
 }
