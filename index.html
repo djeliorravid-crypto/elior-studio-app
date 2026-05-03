@@ -1517,8 +1517,7 @@
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
     <a onclick="showPage('projects')" data-page="projects"><span class="nav-icon">🎵</span> פרויקטים</a>
-    <a onclick="showPage('sessions')" data-page="sessions"><span class="nav-icon">🗓️</span> יומן סשנים</a>
-    <a onclick="showPage('gcal')" data-page="gcal"><span class="nav-icon">📅</span> גוגל קלנדר</a>
+    <a onclick="showPage('gcal')" data-page="gcal"><span class="nav-icon">📅</span> יומן סשנים</a>
     <a onclick="showPage('dashboard')" data-page="dashboard"><span class="nav-icon">📊</span> סטטיסטיקה</a>
   </nav>
   <div class="sidebar-footer">
@@ -1534,10 +1533,10 @@
 
 <main class="main">
 
-  <!-- ===== SESSIONS ===== -->
-  <div class="page" id="page-sessions">
+  <!-- ===== UNIFIED CALENDAR (יומן + גוגל) ===== -->
+  <div class="page" id="page-gcal">
     <div class="page-header">
-      <div><h2>🗓️ יומן סשנים</h2><p id="ses-page-sub">כל הסשנים שלך במקום אחד</p></div>
+      <div><h2>📅 יומן סשנים</h2><p id="ses-page-sub">כל הסשנים שלך במקום אחד</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="month-selector">
           <button onclick="changeMonth(-1)">›</button>
@@ -1545,6 +1544,36 @@
           <button onclick="changeMonth(1)">‹</button>
         </div>
         <button class="btn btn-primary" onclick="openSessionModal(null)">+ סשן חדש</button>
+      </div>
+    </div>
+
+    <!-- Google Connection Bar -->
+    <div id="gcal-bar-disconnected" style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#4285f4,#0f9d58);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📅</div>
+        <div style="flex:1;min-width:160px">
+          <div style="font-size:14px;font-weight:800;color:var(--text)">סנכרון עם גוגל קלנדר</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:1px">חבר כדי שסשנים ייווצרו גם ביומן גוגל שלך</div>
+        </div>
+        <input id="gcal-client-id" type="text" placeholder="Client ID מגוגל קלאוד..."
+          style="flex:2;min-width:200px;border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface2);outline:none"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+          oninput="localStorage.setItem('gcal_client_id',this.value)" />
+        <button onclick="connectGoogle()" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;white-space:nowrap">🔗 התחבר</button>
+      </div>
+    </div>
+
+    <div id="gcal-bar-connected" style="display:none;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid var(--green-border);border-radius:12px;padding:12px 18px;margin-bottom:16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div id="gcal-status-dot" style="width:12px;height:12px;border-radius:50%;background:#16a34a;flex-shrink:0;box-shadow:0 0 8px rgba(22,163,74,0.5)"></div>
+        <div style="flex:1">
+          <span style="font-size:14px;font-weight:800;color:var(--green)">מחובר לגוגל קלנדר</span>
+          <span id="gcal-status-text" style="font-size:12px;color:var(--text-muted);margin-right:8px"></span>
+        </div>
+        <button onclick="fetchGoogleEvents()" id="gcal-refresh-btn"
+          style="background:#fff;color:var(--green);border:1.5px solid var(--green-border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">🔄 רענן</button>
+        <button onclick="disconnectGoogle()"
+          style="background:none;color:var(--text-muted);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif">🔌 התנתק</button>
       </div>
     </div>
 
@@ -1622,74 +1651,16 @@
       </div>
       <div id="ses-list-body" style="padding:0 4px 8px"></div>
     </div>
-  </div>
 
-  <!-- ===== GOOGLE CALENDAR ===== -->
-  <div class="page" id="page-gcal">
-    <div class="page-header">
-      <div><h2>📅 גוגל קלנדר</h2><p>סנכרון עם יומן גוגל שלך</p></div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <div class="month-selector">
-          <button onclick="changeMonth(-1)">›</button>
-          <span class="month-label" id="lbl-gcal"></span>
-          <button onclick="changeMonth(1)">‹</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Connection Card -->
-    <div class="card" style="max-width:520px;margin-bottom:24px">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
-        <div style="width:52px;height:52px;background:linear-gradient(135deg,#4285f4,#0f9d58);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">📅</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:18px;font-weight:900;color:var(--text);font-family:'Frank Ruhl Libre','Heebo',serif">חיבור יומן גוגל</div>
-          <div id="gcal-status-text" style="font-size:13px;color:var(--text-muted);margin-top:2px">לא מחובר</div>
-        </div>
-        <div id="gcal-status-dot" style="width:14px;height:14px;border-radius:50%;background:#dc2626;flex-shrink:0;box-shadow:0 0 8px rgba(220,38,38,0.5)"></div>
-      </div>
-
-      <div id="gcal-setup-area">
-        <div style="margin-bottom:12px">
-          <label style="font-size:12px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;font-family:'Rubik','Heebo',sans-serif;display:block;margin-bottom:7px">🔑 Client ID מגוגל קלאוד</label>
-          <input id="gcal-client-id" type="text" placeholder="xxxxxxxxxx.apps.googleusercontent.com"
-            style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:13px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface2);outline:none;transition:border-color 0.2s"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-            oninput="localStorage.setItem('gcal_client_id',this.value)" />
-        </div>
-        <button onclick="connectGoogle()" id="gcal-connect-btn"
-          style="width:100%;background:#4285f4;color:#fff;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;transition:background 0.2s;letter-spacing:0.02em"
-          onmouseover="this.style.background='#3367d6'" onmouseout="this.style.background='#4285f4'">
-          🔗 התחבר עם גוגל
-        </button>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:12px;line-height:1.7;background:var(--surface2);border-radius:10px;padding:12px">
-          <b>איך מקבלים Client ID?</b><br>
-          1. <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">Google Cloud Console</a> ← צור פרויקט חדש<br>
-          2. APIs &amp; Services ← Enable APIs ← חפש <b>Google Calendar API</b> ← Enable<br>
-          3. Credentials ← Create Credentials ← OAuth Client ID ← Web application<br>
-          4. Authorized JS origins: הוסף <code style="background:#eee;padding:1px 4px;border-radius:4px">https://djeliorravid-crypto.github.io</code><br>
-          5. העתק את ה-Client ID לכאן
-        </div>
-      </div>
-
-      <div id="gcal-disconnect-area" style="display:none;gap:10px;flex-wrap:wrap">
-        <button onclick="fetchGoogleEvents()" id="gcal-refresh-btn"
-          style="background:var(--accent-light);color:var(--accent);border:1.5px solid var(--accent);border-radius:10px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;transition:all 0.2s">
-          🔄 רענן אירועים
-        </button>
-        <button onclick="disconnectGoogle()"
-          style="background:var(--red-light);color:var(--red);border:1.5px solid #fca5a5;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">
-          🔌 התנתק
-        </button>
-      </div>
-    </div>
-
-    <!-- Events list -->
+    <!-- Google Calendar events (when connected) -->
     <div id="gcal-events-section" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <h3 id="gcal-events-title" style="font-size:20px;font-weight:900;color:#f0f0f5;font-family:'Frank Ruhl Libre','Heebo',serif"></h3>
-        <span id="gcal-events-count" style="background:var(--accent-light);color:var(--accent);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:800"></span>
+      <div class="table-card" style="margin-top:8px">
+        <div class="table-header">
+          <h3 id="gcal-events-title">📅 אירועים מגוגל קלנדר</h3>
+          <span id="gcal-events-count" style="background:var(--accent-light);color:var(--accent);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:800"></span>
+        </div>
+        <div id="gcal-events-list" style="padding:0 4px 8px"></div>
       </div>
-      <div id="gcal-events-list"></div>
     </div>
   </div>
 
@@ -2379,7 +2350,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, projects:4, sessions:5, gcal:6, dashboard:7};
+  const map = {income:0, expenses:1, installments:2, profiles:3, projects:4, gcal:5, dashboard:6};
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
@@ -2398,7 +2369,7 @@ function changeMonth(dir) {
 
 function setMonthLabels() {
   const lbl = MONTHS_HE[curMonth] + ' ' + curYear;
-  ['lbl-dash','lbl-income','lbl-expenses','lbl-sessions','lbl-gcal'].forEach(id => {
+  ['lbl-dash','lbl-income','lbl-expenses','lbl-sessions'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = lbl;
   });
@@ -4186,6 +4157,8 @@ function saveSession() {
   closeModal('session');
   renderSessionCal();
   toast('✓ סשן נשמר');
+  // סנכרון לגוגל קלנדר (רק סשנים חדשים, לא עריכות)
+  if (!editId && _gcalToken) createGcalEvent(obj);
 }
 
 function deleteSession(id) {
@@ -4710,9 +4683,9 @@ initFirebase().then(() => refreshAll());
 let _gcalToken = null;
 let _gcalUser = null;
 let _gcalOAuthClient = null;
+let _gcalAutoRefreshTimer = null;
 
 function gcalInitPage() {
-  // Restore saved Client ID
   const saved = localStorage.getItem('gcal_client_id') || '';
   const el = document.getElementById('gcal-client-id');
   if (el && saved) el.value = saved;
@@ -4722,18 +4695,15 @@ function gcalInitPage() {
 
 function gcalUpdateUI() {
   const connected = !!_gcalToken;
-  const dot = document.getElementById('gcal-status-dot');
-  const txt = document.getElementById('gcal-status-text');
-  const setup = document.getElementById('gcal-setup-area');
-  const disconn = document.getElementById('gcal-disconnect-area');
-  const evSec = document.getElementById('gcal-events-section');
-  if (!dot) return;
-  dot.style.background = connected ? '#16a34a' : '#dc2626';
-  dot.style.boxShadow = connected ? '0 0 8px rgba(22,163,74,0.6)' : '0 0 8px rgba(220,38,38,0.5)';
-  txt.textContent = connected ? ('מחובר' + (_gcalUser ? ' כ‑' + _gcalUser : '') ) : 'לא מחובר';
-  setup.style.display = connected ? 'none' : 'block';
-  disconn.style.display = connected ? 'flex' : 'none';
-  evSec.style.display = connected ? 'block' : 'none';
+  const barOff = document.getElementById('gcal-bar-disconnected');
+  const barOn  = document.getElementById('gcal-bar-connected');
+  const txt    = document.getElementById('gcal-status-text');
+  const evSec  = document.getElementById('gcal-events-section');
+  if (!barOff) return;
+  barOff.style.display = connected ? 'none' : 'block';
+  barOn.style.display  = connected ? 'block' : 'none';
+  if (txt) txt.textContent = _gcalUser ? '· ' + _gcalUser : '';
+  if (evSec) evSec.style.display = connected ? 'block' : 'none';
 }
 
 function connectGoogle() {
@@ -4748,24 +4718,25 @@ function connectGoogle() {
 
   _gcalOAuthClient = google.accounts.oauth2.initTokenClient({
     client_id: clientId,
-    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    scope: 'https://www.googleapis.com/auth/calendar.events',
     callback: (response) => {
       if (response.error) {
         toast('❌ שגיאה: ' + (response.error_description || response.error));
         return;
       }
       _gcalToken = response.access_token;
-      // Fetch user info for display
       fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: { Authorization: 'Bearer ' + _gcalToken }
       }).then(r => r.json()).then(info => {
         _gcalUser = info.email || info.name || '';
         gcalUpdateUI();
         fetchGoogleEvents();
+        gcalStartAutoRefresh();
         toast('✅ מחובר לגוגל קלנדר!');
       }).catch(() => {
         gcalUpdateUI();
         fetchGoogleEvents();
+        gcalStartAutoRefresh();
       });
     }
   });
@@ -4779,16 +4750,29 @@ function disconnectGoogle() {
   }
   _gcalToken = null;
   _gcalUser = null;
+  gcalStopAutoRefresh();
   const list = document.getElementById('gcal-events-list');
   if (list) list.innerHTML = '';
   gcalUpdateUI();
   toast('🔌 התנתקת מגוגל קלנדר');
 }
 
-function fetchGoogleEvents() {
+function gcalStartAutoRefresh() {
+  gcalStopAutoRefresh();
+  // רענון אוטומטי כל 2 דקות
+  _gcalAutoRefreshTimer = setInterval(() => {
+    if (_gcalToken) fetchGoogleEvents(true); // silent=true (ללא הודעות)
+  }, 2 * 60 * 1000);
+}
+
+function gcalStopAutoRefresh() {
+  if (_gcalAutoRefreshTimer) { clearInterval(_gcalAutoRefreshTimer); _gcalAutoRefreshTimer = null; }
+}
+
+function fetchGoogleEvents(silent) {
   if (!_gcalToken) return;
   const btn = document.getElementById('gcal-refresh-btn');
-  if (btn) { btn.textContent = '⏳ טוען...'; btn.disabled = true; }
+  if (btn && !silent) { btn.textContent = '⏳'; btn.disabled = true; }
 
   const start = new Date(curYear, curMonth, 1).toISOString();
   const end   = new Date(curYear, curMonth + 1, 0, 23, 59, 59).toISOString();
@@ -4803,13 +4787,37 @@ function fetchGoogleEvents() {
       return r.json();
     })
     .then(data => {
-      if (btn) { btn.textContent = '🔄 רענן אירועים'; btn.disabled = false; }
+      if (btn) { btn.textContent = '🔄 רענן'; btn.disabled = false; }
       renderGcalEvents(data.items || []);
     })
     .catch(err => {
-      if (btn) { btn.textContent = '🔄 רענן אירועים'; btn.disabled = false; }
-      toast('❌ ' + err.message);
+      if (btn) { btn.textContent = '🔄 רענן'; btn.disabled = false; }
+      if (!silent) toast('❌ ' + err.message);
     });
+}
+
+// יצירת אירוע בגוגל קלנדר
+async function createGcalEvent(session) {
+  if (!_gcalToken) return;
+  try {
+    const summary = (SES_TYPES[session.type]?.label || session.type)
+      + (session.clientName ? ' — ' + session.clientName : '');
+    const body = {
+      summary,
+      description: session.notes || '',
+      start: { dateTime: session.date + 'T' + session.startTime + ':00', timeZone: 'Asia/Jerusalem' },
+      end:   { dateTime: session.date + 'T' + session.endTime   + ':00', timeZone: 'Asia/Jerusalem' },
+    };
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + _gcalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (res.ok) {
+      setTimeout(() => fetchGoogleEvents(true), 1500); // רענן אחרי הוספה
+      toast('📅 נוסף גם לגוגל קלנדר!');
+    }
+  } catch(e) {}
 }
 
 const GCAL_COLORS = ['','#ac725e','#d06b64','#f83a22','#fa573c','#ff7537','#ffad46','#42d692','#16a765','#7bd148','#b3dc6c','#fbe983','#fad165','#92e1c0','#9fe1e7','#9fc6e7','#4986e7','#9a9cff','#b99aff','#c2c2c2'];
