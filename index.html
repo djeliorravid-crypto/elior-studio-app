@@ -4685,8 +4685,13 @@ if ('serviceWorker' in navigator) {
 // ===== STARTUP – sync from cloud then render =====
 initFirebase().then(() => {
   refreshAll();
-  // חיבור שקט לגוגל — רק אם יש אימייל שמור (= כבר התחבר בעבר)
-  if (localStorage.getItem('gcal_user_email')) {
+  // שחזר טוקן גוגל שמור אם עדיין תקף
+  if (gcalLoadToken()) {
+    _gcalUser = localStorage.getItem('gcal_user_email') || '';
+    gcalUpdateUI();
+    setTimeout(() => { fetchGoogleEvents(true); gcalStartAutoRefresh(); }, 1500);
+  } else if (localStorage.getItem('gcal_user_email')) {
+    // טוקן פג — נסה שקט
     setTimeout(gcalSilentReconnect, 2000);
   }
 });
@@ -4721,46 +4726,64 @@ let _gcalOAuthClient = null;
 let _gcalAutoRefreshTimer = null;
 let _gcalEventsCache = []; // אירועי גוגל האחרונים — לשימוש בלוח השנה
 
+// ── שמירת/טעינת טוקן מ-localStorage ──
+function gcalSaveToken(token) {
+  _gcalToken = token;
+  localStorage.setItem('gcal_token', token);
+  localStorage.setItem('gcal_token_exp', String(Date.now() + 55 * 60 * 1000)); // תקף 55 דקות
+}
+function gcalLoadToken() {
+  const token = localStorage.getItem('gcal_token');
+  const exp   = parseInt(localStorage.getItem('gcal_token_exp') || '0');
+  if (token && Date.now() < exp) { _gcalToken = token; return true; }
+  return false;
+}
+function gcalClearToken() {
+  _gcalToken = null;
+  localStorage.removeItem('gcal_token');
+  localStorage.removeItem('gcal_token_exp');
+}
+
 function gcalInitPage() {
   const saved = localStorage.getItem('gcal_client_id') || '';
   const el = document.getElementById('gcal-client-id');
   if (el && saved) el.value = saved;
-  gcalUpdateUI();
-  if (_gcalToken) fetchGoogleEvents();
+  // נסה לטעון טוקן שמור
+  if (gcalLoadToken()) {
+    _gcalUser = localStorage.getItem('gcal_user_email') || '';
+    gcalUpdateUI();
+    fetchGoogleEvents(true);
+    gcalStartAutoRefresh();
+  } else {
+    gcalUpdateUI();
+  }
 }
 
-// התחברות שקטה — אם גוגל זוכר את ההרשאה, אין popup
+// התחברות שקטה — ניסיון ברקע בלי popup
 function gcalSilentReconnect() {
   const clientId = localStorage.getItem('gcal_client_id');
   const hint     = localStorage.getItem('gcal_user_email') || '';
-  if (!clientId || !hint) return; // בלי hint — לא ניתן לחבר בשקט
+  if (!clientId || !hint) return;
   if (typeof google === 'undefined' || !google.accounts) {
-    setTimeout(gcalSilentReconnect, 1200);
-    return;
+    setTimeout(gcalSilentReconnect, 1200); return;
   }
-  let _silentDone = false;
   try {
-    const client = google.accounts.oauth2.initTokenClient({
+    google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: 'https://www.googleapis.com/auth/calendar.events',
-      prompt: 'none',      // none = אסור להציג UI — אם נכשל, קבל שגיאה שקטה
+      prompt: 'none',
       login_hint: hint,
       callback: (response) => {
-        _silentDone = true;
         if (!response.error && response.access_token) {
-          _gcalToken = response.access_token;
-          _gcalUser  = hint;
+          gcalSaveToken(response.access_token);
+          _gcalUser = hint;
           gcalUpdateUI();
           fetchGoogleEvents(true);
           gcalStartAutoRefresh();
         }
-        // אם response.error === 'interaction_required' — המשתמש צריך ללחוץ בעצמו
-        // לא מציגים popup אוטומטי
+        // interaction_required → נכשל שקט, המשתמש יצטרך ללחוץ פעם אחת
       }
-    });
-    client.requestAccessToken({ prompt: 'none', login_hint: hint });
-    // safety: אם אחרי 5 שניות אין תשובה — לא עושים כלום
-    setTimeout(() => { if (!_silentDone) {} }, 5000);
+    }).requestAccessToken({ prompt: 'none', login_hint: hint });
   } catch(e) {}
 }
 
@@ -4813,12 +4836,12 @@ function connectGoogle() {
         toast('❌ שגיאה: ' + (response.error_description || response.error));
         return;
       }
-      _gcalToken = response.access_token;
+      gcalSaveToken(response.access_token);
       fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: { Authorization: 'Bearer ' + _gcalToken }
       }).then(r => r.json()).then(info => {
         _gcalUser = info.email || info.name || '';
-        localStorage.setItem('gcal_user_email', info.email || ''); // שמור לחיבור שקט עתידי
+        localStorage.setItem('gcal_user_email', info.email || '');
         gcalUpdateUI();
         fetchGoogleEvents();
         gcalStartAutoRefresh();
@@ -4838,7 +4861,7 @@ function disconnectGoogle() {
   if (_gcalToken && typeof google !== 'undefined') {
     try { google.accounts.oauth2.revoke(_gcalToken, () => {}); } catch(e) {}
   }
-  _gcalToken = null;
+  gcalClearToken();
   _gcalUser = null;
   localStorage.removeItem('gcal_user_email');
   gcalStopAutoRefresh();
@@ -4850,10 +4873,16 @@ function disconnectGoogle() {
 
 function gcalStartAutoRefresh() {
   gcalStopAutoRefresh();
-  // רענון אוטומטי כל 30 שניות
+  // רענון אירועים כל 30 שניות
   _gcalAutoRefreshTimer = setInterval(() => {
     if (_gcalToken) fetchGoogleEvents(true);
   }, 30 * 1000);
+  // חידוש טוקן שקט 2 דקות לפני תפוגה
+  const exp = parseInt(localStorage.getItem('gcal_token_exp') || '0');
+  const msLeft = exp - Date.now() - 2 * 60 * 1000;
+  if (msLeft > 0) {
+    setTimeout(() => gcalSilentReconnect(), msLeft);
+  }
 }
 
 function gcalStopAutoRefresh() {
@@ -4874,7 +4903,7 @@ function fetchGoogleEvents(silent) {
 
   fetch(url, { headers: { Authorization: 'Bearer ' + _gcalToken } })
     .then(r => {
-      if (r.status === 401) { _gcalToken = null; gcalUpdateUI(); gcalSilentReconnect(); throw new Error('מתחבר מחדש...'); }
+      if (r.status === 401) { gcalClearToken(); gcalUpdateUI(); gcalSilentReconnect(); throw new Error('מתחדש...'); }
       return r.json();
     })
     .then(data => {
