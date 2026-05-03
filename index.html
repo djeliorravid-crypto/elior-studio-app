@@ -4892,16 +4892,21 @@ function gcalStopAutoRefresh() {
 function fetchGoogleEvents(silent) {
   if (!_gcalToken) return;
   const btn = document.getElementById('gcal-refresh-btn');
-  if (btn && !silent) { btn.textContent = '⏳'; btn.disabled = true; }
+  if (btn && !silent) { btn.textContent = '⏳ ...'; btn.disabled = true; }
 
   const start = new Date(curYear, curMonth, 1).toISOString();
   const end   = new Date(curYear, curMonth + 1, 0, 23, 59, 59).toISOString();
   const url   = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'
     + '?timeMin=' + encodeURIComponent(start)
     + '&timeMax=' + encodeURIComponent(end)
-    + '&singleEvents=true&orderBy=startTime&maxResults=250';
+    + '&singleEvents=true&orderBy=startTime&maxResults=250'
+    + '&fields=items(id,summary,description,start,end,colorId,location,extendedProperties)'
+    + '&_=' + Date.now(); // מונע קאש
 
-  fetch(url, { headers: { Authorization: 'Bearer ' + _gcalToken } })
+  fetch(url, {
+    headers: { Authorization: 'Bearer ' + _gcalToken },
+    cache: 'no-store'   // מונע קאש בדפדפן
+  })
     .then(r => {
       if (r.status === 401) { gcalClearToken(); gcalUpdateUI(); gcalSilentReconnect(); throw new Error('מתחדש...'); }
       return r.json();
@@ -4909,10 +4914,11 @@ function fetchGoogleEvents(silent) {
     .then(data => {
       if (btn) { btn.textContent = '🔄 רענן'; btn.disabled = false; }
       const items = data.items || [];
-      _gcalEventsCache = items; // שמור לשימוש בלוח השנה
+      _gcalEventsCache = items;
       syncGcalToSessions(items);
-      renderSessionCal(); // רענן לוח עם אירועי גוגל
+      renderSessionCal();
       renderGcalEvents(items);
+      if (!silent) toast('✓ יומן גוגל עודכן');
     })
     .catch(err => {
       if (btn) { btn.textContent = '🔄 רענן'; btn.disabled = false; }
@@ -4929,6 +4935,8 @@ function _gcalBody(session) {
     description: session.notes || '',
     start: { dateTime: session.date + 'T' + session.startTime + ':00', timeZone: 'Asia/Jerusalem' },
     end:   { dateTime: session.date + 'T' + session.endTime   + ':00', timeZone: 'Asia/Jerusalem' },
+    // שמור את מזהה הסשן פנימי — לסנכרון חזרה
+    extendedProperties: { private: { appSessionId: session.id } }
   };
 }
 
@@ -4988,20 +4996,25 @@ function syncGcalToSessions(gcalEvents) {
   sessions.forEach(s => {
     let ge = null;
 
-    if (s.gcalEventId) {
-      // חיפוש לפי מזהה — הכי מדויק
+    // 1. מדויק ביותר: extendedProperties.private.appSessionId שמכיל את ה-ID שלנו
+    if (!ge) {
+      ge = gcalEvents.find(e => e.extendedProperties?.private?.appSessionId === s.id);
+      if (ge && ge.id !== s.gcalEventId) { s.gcalEventId = ge.id; changed = true; }
+    }
+
+    // 2. לפי gcalEventId שמור
+    if (!ge && s.gcalEventId) {
       ge = gcalEvents.find(e => e.id === s.gcalEventId);
     }
 
+    // 3. fallback: לפי תאריך + שעת התחלה (לסשנים ישנים)
     if (!ge && s.date && s.startTime) {
-      // fallback: חיפוש לפי תאריך + שעת התחלה (לסשנים ישנים בלי gcalEventId)
       ge = gcalEvents.find(e => {
         if (!e.start?.dateTime) return false;
         const eDate  = e.start.dateTime.split('T')[0];
         const eStart = e.start.dateTime.split('T')[1]?.slice(0,5);
         return eDate === s.date && eStart === s.startTime;
       });
-      // שמור את ה-ID למעתה
       if (ge) { s.gcalEventId = ge.id; changed = true; }
     }
 
