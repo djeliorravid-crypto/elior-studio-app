@@ -2661,18 +2661,14 @@ function renderExpenses() {
 
   let html = '';
 
-  // ── כרטיס לכל הכנסה (פרויקט) ──
-  if (income.length === 0) {
-    html += `<div class="empty-state"><div class="ei">💡</div><p>הוסף הכנסות תחילה — כל הכנסה תהפוך לפרויקט שניתן לשייך אליו הוצאות</p></div>`;
+  // ── כרטיס לכל פרויקט שיש בו הוצאות בלבד ──
+  const projectsWithExpenses = income.filter(inc => (byProject[inc.id]||[]).length > 0)
+    .sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  if (projectsWithExpenses.length === 0) {
+    html += `<div class="empty-state"><div class="ei">📂</div><p>אין פרויקטים עם הוצאות עדיין — הוסף הוצאה חדשה למעלה</p></div>`;
   } else {
-    // sort: with expenses first, then by date desc
-    const sortedIncome = [...income].sort((a,b) => {
-      const aHas = (byProject[a.id]||[]).length > 0 ? 1 : 0;
-      const bHas = (byProject[b.id]||[]).length > 0 ? 1 : 0;
-      if (bHas !== aHas) return bHas - aHas;
-      return new Date(b.date) - new Date(a.date);
-    });
-    sortedIncome.forEach(inc => {
+    projectsWithExpenses.forEach(inc => {
       const projExps   = byProject[inc.id] || [];
       const totalExp   = projExps.reduce((s,e) => s+Number(e.amount), 0);
       const net        = Number(inc.amount) - totalExp;
@@ -2701,7 +2697,6 @@ function renderExpenses() {
                 <div style="font-size:10px;color:var(--text-muted);font-weight:700;margin-bottom:2px">נשאר</div>
                 <div style="font-size:16px;font-weight:800;color:${netPos?'var(--green)':'var(--red)'}">${netPos?'':'-'}${fmtMoney(net)}</div>
               </div>
-              <button class="btn btn-primary btn-sm" onclick="openExpenseForProject('${inc.id}')">+ הוסף הוצאה</button>
             </div>
           </div>
           ${totalExp > 0 ? `
