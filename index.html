@@ -1193,7 +1193,179 @@
       .stat-ytd-val { font-size: 20px; }
       .stat-insights-row { grid-template-columns: 1fr 1fr; }
       .stat-two-col { grid-template-columns: 1fr; }
+    }
 
+    /* ===== SESSIONS CALENDAR ===== */
+    .cal-stats-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .cal-stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .cal-stat-icon { font-size: 22px; margin-bottom: 6px; }
+    .cal-stat-val { font-size: 26px; font-weight: 900; letter-spacing: -0.03em; }
+    .cal-stat-lbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-top: 3px; font-family: 'Rubik','Heebo',sans-serif; }
+
+    .cal-wrap {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .cal-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      border-bottom: 1.5px solid var(--border);
+    }
+    .cal-dow {
+      padding: 10px 4px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+      font-family: 'Rubik','Heebo',sans-serif;
+    }
+    .cal-dow.weekend { color: var(--accent); }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+    .cal-cell {
+      min-height: 88px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 5px 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+      vertical-align: top;
+    }
+    .cal-cell:nth-child(7n+1) { border-right: none; }
+    .cal-cell:hover { background: var(--surface2); }
+    .cal-cell.today {
+      background: linear-gradient(135deg,#faf8ff,#f3f0ff);
+      border-color: var(--accent) !important;
+      box-shadow: inset 0 0 0 1.5px var(--accent);
+    }
+    .cal-cell.other-month .cal-date-num { opacity: 0.3; }
+    .cal-cell.other-month { background: var(--surface2); }
+    .cal-cell.selected { background: var(--accent-light); }
+    .cal-date-num {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      text-align: center;
+      border-radius: 50%;
+      margin-bottom: 3px;
+    }
+    .cal-cell.today .cal-date-num {
+      background: var(--accent);
+      color: #fff;
+    }
+    .session-pill {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 4px;
+      padding: 2px 5px;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+    .session-pill.more {
+      font-size: 9px;
+      color: var(--text-muted);
+      background: none;
+      padding: 0 3px;
+      font-style: italic;
+    }
+
+    /* Day detail panel */
+    .day-panel {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      display: none;
+    }
+    .day-panel.open { display: block; }
+    .day-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .day-panel-date {
+      font-size: 20px;
+      font-weight: 900;
+      font-family: 'Frank Ruhl Libre','Heebo',serif;
+    }
+    .session-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      transition: box-shadow 0.15s;
+    }
+    .session-row:hover { box-shadow: var(--shadow-hover); }
+    .session-type-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .session-row-time {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      min-width: 90px;
+      font-family: 'Rubik','Heebo',sans-serif;
+    }
+    .session-row-client { font-size: 15px; font-weight: 700; flex: 1; }
+    .session-row-type { font-size: 12px; color: var(--text-muted); }
+    .session-row-dur { font-size: 13px; font-weight: 800; color: var(--accent); }
+
+    .ses-legend {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+    }
+    .ses-legend-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 700; color: var(--text-muted);
+    }
+    .ses-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    @media (max-width: 700px) {
+      .cal-stats-strip { grid-template-columns: 1fr 1fr; }
+      .cal-cell { min-height: 60px; padding: 4px 3px; }
+      .cal-date-num { font-size: 11px; width: 20px; height: 20px; line-height: 20px; }
+      .session-pill { font-size: 8px; padding: 1px 3px; }
     }
 
   </style>
@@ -1329,6 +1501,7 @@
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
     <a onclick="showPage('projects')" data-page="projects"><span class="nav-icon">🎵</span> פרויקטים</a>
+    <a onclick="showPage('sessions')" data-page="sessions"><span class="nav-icon">🗓️</span> יומן סשנים</a>
     <a onclick="showPage('dashboard')" data-page="dashboard"><span class="nav-icon">📊</span> סטטיסטיקה</a>
   </nav>
   <div class="sidebar-footer">
@@ -1343,6 +1516,79 @@
 </aside>
 
 <main class="main">
+
+  <!-- ===== SESSIONS ===== -->
+  <div class="page" id="page-sessions">
+    <div class="page-header">
+      <div><h2>🗓️ יומן סשנים</h2><p>כל הסשנים שלך במקום אחד</p></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="month-selector">
+          <button onclick="changeMonth(-1)">›</button>
+          <span class="month-label" id="lbl-sessions"></span>
+          <button onclick="changeMonth(1)">‹</button>
+        </div>
+        <button class="btn btn-primary" onclick="openSessionModal(null)">+ סשן חדש</button>
+      </div>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="cal-stats-strip">
+      <div class="cal-stat-card" style="border-color:#ddd6fe;background:linear-gradient(135deg,#faf8ff,#f3f0ff)">
+        <div class="cal-stat-icon">🎤</div>
+        <div class="cal-stat-val purple" id="ses-stat-count">0</div>
+        <div class="cal-stat-lbl">סשנים החודש</div>
+      </div>
+      <div class="cal-stat-card" style="border-color:#bfdbfe;background:linear-gradient(135deg,#eff6ff,#dbeafe)">
+        <div class="cal-stat-icon">⏱️</div>
+        <div class="cal-stat-val blue" id="ses-stat-hours">0</div>
+        <div class="cal-stat-lbl">שעות סה"כ</div>
+      </div>
+      <div class="cal-stat-card" style="border-color:var(--green-border);background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
+        <div class="cal-stat-icon">👥</div>
+        <div class="cal-stat-val green" id="ses-stat-clients">0</div>
+        <div class="cal-stat-lbl">לקוחות פעילים</div>
+      </div>
+      <div class="cal-stat-card">
+        <div class="cal-stat-icon">📏</div>
+        <div class="cal-stat-val" id="ses-stat-avg">0</div>
+        <div class="cal-stat-lbl">ממוצע שעות לסשן</div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="ses-legend" id="ses-legend"></div>
+
+    <!-- Calendar -->
+    <div class="cal-wrap">
+      <div class="cal-header">
+        <div class="cal-dow weekend">ש׳</div>
+        <div class="cal-dow">א׳</div>
+        <div class="cal-dow">ב׳</div>
+        <div class="cal-dow">ג׳</div>
+        <div class="cal-dow">ד׳</div>
+        <div class="cal-dow">ה׳</div>
+        <div class="cal-dow weekend">ו׳</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <!-- Day detail panel -->
+    <div class="day-panel" id="day-panel">
+      <div class="day-panel-header">
+        <div class="day-panel-date" id="day-panel-title">יום נבחר</div>
+        <button class="btn btn-primary btn-sm" id="day-panel-add-btn">+ סשן ליום זה</button>
+      </div>
+      <div id="day-panel-sessions"></div>
+    </div>
+
+    <!-- Sessions list (month) -->
+    <div class="table-card">
+      <div class="table-header">
+        <h3>📋 כל הסשנים החודש</h3>
+      </div>
+      <div id="ses-list-body" style="padding:0 4px 8px"></div>
+    </div>
+  </div>
 
   <!-- ===== DASHBOARD ===== -->
   <div class="page" id="page-dashboard">
@@ -1776,6 +2022,52 @@
   </div>
 </div>
 
+<!-- ===== MODAL — SESSION ===== -->
+<div class="modal-overlay" id="modal-session">
+  <div class="modal">
+    <h3 id="ses-modal-title">🎤 סשן חדש</h3>
+    <input type="hidden" id="ses-edit-id" />
+    <div class="form-row">
+      <div class="form-group"><label>תאריך *</label><input type="date" id="ses-date"/></div>
+      <div class="form-group"><label>לקוח</label>
+        <select id="ses-client">
+          <option value="">— ללא לקוח —</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>שעת התחלה *</label><input type="time" id="ses-start" value="10:00"/></div>
+      <div class="form-group"><label>שעת סיום *</label><input type="time" id="ses-end" value="12:00"/></div>
+    </div>
+    <div id="ses-duration-display" style="background:var(--accent-light);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:15px;font-weight:800;color:var(--accent);display:none">
+      ⏱️ משך: <span id="ses-dur-text"></span>
+    </div>
+    <div class="form-group">
+      <label>סוג סשן *</label>
+      <select id="ses-type">
+        <option value="הקלטה">🎙️ הקלטה</option>
+        <option value="מיקס ומאסטרינג">🎚️ מיקס ומאסטרינג</option>
+        <option value="הפקה מוזיקלית">🎵 הפקה מוזיקלית</option>
+        <option value="עריכה">✂️ עריכה</option>
+        <option value="פגישה">🤝 פגישה</option>
+        <option value="אחר">📌 אחר</option>
+      </select>
+    </div>
+    <div class="form-group"><label>סטטוס</label>
+      <select id="ses-status">
+        <option value="scheduled">📅 מתוכנן</option>
+        <option value="completed">✅ הושלם</option>
+        <option value="cancelled">❌ בוטל</option>
+      </select>
+    </div>
+    <div class="form-group"><label>הערות</label><textarea id="ses-notes" placeholder="פרטים נוספים על הסשן..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveSession()">✓ שמור סשן</button>
+      <button class="btn btn-ghost" onclick="closeModal('session')">ביטול</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <div class="congrats-popup" id="congrats-popup">
   <span class="cp-emoji">🎉</span>
@@ -1881,7 +2173,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions'];
 
 function pushAllToCloud() {
   if (!firebaseDB) return;
@@ -1961,7 +2253,7 @@ function changeMonth(dir) {
 
 function setMonthLabels() {
   const lbl = MONTHS_HE[curMonth] + ' ' + curYear;
-  ['lbl-dash','lbl-income','lbl-expenses'].forEach(id => {
+  ['lbl-dash','lbl-income','lbl-expenses','lbl-sessions'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = lbl;
   });
@@ -3462,6 +3754,349 @@ function toggleProjectDone(incomeId) {
 }
 
 // ===== REFRESH ALL =====
+// ===========================
+// ===== SESSIONS CALENDAR ===
+// ===========================
+
+const SES_TYPES = {
+  'הקלטה':          { color: '#16a34a', bg: '#dcfce7', label: '🎙️ הקלטה' },
+  'מיקס ומאסטרינג': { color: '#2563eb', bg: '#dbeafe', label: '🎚️ מיקס' },
+  'הפקה מוזיקלית':  { color: '#7c3aed', bg: '#ede9fe', label: '🎵 הפקה' },
+  'עריכה':          { color: '#d97706', bg: '#fef3c7', label: '✂️ עריכה' },
+  'פגישה':          { color: '#0891b2', bg: '#cffafe', label: '🤝 פגישה' },
+  'אחר':            { color: '#6b7280', bg: '#f3f4f6', label: '📌 אחר'   },
+};
+
+function sesDurationHours(start, end) {
+  if (!start || !end) return 0;
+  const [sh,sm] = start.split(':').map(Number);
+  const [eh,em] = end.split(':').map(Number);
+  const mins = (eh*60+em) - (sh*60+sm);
+  return Math.max(0, mins / 60);
+}
+
+function sesDurationLabel(start, end) {
+  const hrs = sesDurationHours(start, end);
+  if (hrs <= 0) return '';
+  const h = Math.floor(hrs);
+  const m = Math.round((hrs - h) * 60);
+  return h > 0 ? (m > 0 ? `${h}ש׳ ${m}ד׳` : `${h} שעות`) : `${m} דקות`;
+}
+
+let _selDay = null; // "YYYY-MM-DD"
+
+function openSessionModal(date, editId) {
+  const clients = load('clients');
+  const sel = document.getElementById('ses-client');
+  sel.innerHTML = '<option value="">— ללא לקוח —</option>';
+  clients.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.name;
+    sel.appendChild(o);
+  });
+
+  document.getElementById('ses-edit-id').value = editId || '';
+
+  if (editId) {
+    const sessions = load('sessions');
+    const s = sessions.find(x => x.id === editId);
+    if (!s) return;
+    document.getElementById('ses-modal-title').textContent = '✏️ עריכת סשן';
+    document.getElementById('ses-date').value   = s.date;
+    document.getElementById('ses-start').value  = s.startTime;
+    document.getElementById('ses-end').value    = s.endTime;
+    document.getElementById('ses-type').value   = s.type;
+    document.getElementById('ses-status').value = s.status || 'scheduled';
+    document.getElementById('ses-notes').value  = s.notes || '';
+    document.getElementById('ses-client').value = s.clientId || '';
+  } else {
+    document.getElementById('ses-modal-title').textContent = '🎤 סשן חדש';
+    const today = date || new Date().toISOString().slice(0,10);
+    document.getElementById('ses-date').value   = today;
+    document.getElementById('ses-start').value  = '10:00';
+    document.getElementById('ses-end').value    = '12:00';
+    document.getElementById('ses-type').value   = 'הקלטה';
+    document.getElementById('ses-status').value = 'scheduled';
+    document.getElementById('ses-notes').value  = '';
+    document.getElementById('ses-client').value = '';
+  }
+
+  updateSesDuration();
+  document.getElementById('modal-session').classList.add('open');
+  document.getElementById('ses-start').addEventListener('change', updateSesDuration);
+  document.getElementById('ses-end').addEventListener('change', updateSesDuration);
+}
+
+function updateSesDuration() {
+  const s = document.getElementById('ses-start').value;
+  const e = document.getElementById('ses-end').value;
+  const label = sesDurationLabel(s, e);
+  const box   = document.getElementById('ses-duration-display');
+  if (label) {
+    document.getElementById('ses-dur-text').textContent = label;
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function saveSession() {
+  const date      = document.getElementById('ses-date').value;
+  const startTime = document.getElementById('ses-start').value;
+  const endTime   = document.getElementById('ses-end').value;
+  const type      = document.getElementById('ses-type').value;
+  if (!date || !startTime || !endTime) { toast('נא למלא שדות חובה'); return; }
+
+  const clientId   = document.getElementById('ses-client').value;
+  const clients    = load('clients');
+  const client     = clients.find(c => c.id === clientId);
+  const sessions   = load('sessions');
+  const editId     = document.getElementById('ses-edit-id').value;
+
+  const obj = {
+    id:          editId || genId(),
+    date, startTime, endTime, type,
+    clientId:    clientId || '',
+    clientName:  client ? client.name : '',
+    status:      document.getElementById('ses-status').value,
+    notes:       document.getElementById('ses-notes').value.trim(),
+  };
+
+  if (editId) {
+    const idx = sessions.findIndex(s => s.id === editId);
+    if (idx !== -1) sessions[idx] = obj; else sessions.push(obj);
+  } else {
+    sessions.push(obj);
+  }
+
+  save('sessions', sessions);
+  closeModal('session');
+  renderSessionCal();
+  toast('✓ סשן נשמר');
+}
+
+function deleteSession(id) {
+  const sessions = load('sessions').filter(s => s.id !== id);
+  save('sessions', sessions);
+  renderSessionCal();
+  toast('סשן נמחק');
+}
+
+function setSessionStatus(id, status) {
+  const sessions = load('sessions');
+  const s = sessions.find(x => x.id === id);
+  if (s) { s.status = status; save('sessions', sessions); renderSessionCal(); }
+}
+
+function renderSessionCal() {
+  const allSessions = load('sessions');
+  const monthKey    = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+
+  // filter current month
+  const monthSes = allSessions.filter(s => s.date && s.date.startsWith(monthKey));
+  const activeSes = monthSes.filter(s => s.status !== 'cancelled');
+
+  // ── stats ──
+  const totalHrs   = activeSes.reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
+  const uniqueCli  = new Set(activeSes.filter(s => s.clientId).map(s => s.clientId)).size;
+  const avgHrs     = activeSes.length ? (totalHrs / activeSes.length) : 0;
+
+  const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setEl('ses-stat-count',   activeSes.length);
+  setEl('ses-stat-hours',   totalHrs % 1 === 0 ? totalHrs : totalHrs.toFixed(1));
+  setEl('ses-stat-clients', uniqueCli);
+  setEl('ses-stat-avg',     avgHrs % 1 === 0 ? avgHrs : avgHrs.toFixed(1));
+
+  // update month label
+  const lblEl = document.getElementById('lbl-sessions');
+  if (lblEl) lblEl.textContent = new Date(curYear, curMonth, 1).toLocaleDateString('he-IL', { month:'long', year:'numeric' });
+
+  // ── legend ──
+  const legendEl = document.getElementById('ses-legend');
+  if (legendEl) {
+    const usedTypes = [...new Set(monthSes.map(s => s.type))];
+    legendEl.innerHTML = usedTypes.map(t => {
+      const info = SES_TYPES[t] || SES_TYPES['אחר'];
+      return `<div class="ses-legend-item">
+        <div class="ses-legend-dot" style="background:${info.color}"></div>
+        <span>${info.label}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ── calendar grid ──
+  const grid = document.getElementById('cal-grid');
+  if (!grid) return;
+
+  const today    = new Date();
+  const firstDay = new Date(curYear, curMonth, 1);
+  // Israel week starts Sunday (0). day() returns 0=Sun…6=Sat
+  let startDow = firstDay.getDay(); // 0=Sun
+  // We display: Sat(6) Sun(0) Mon(1)... Fri(5) — rearranging: col0=Sat col1=Sun...col6=Fri
+  // Actually our header is ש א ב ג ד ה ו = Sat Sun Mon Tue Wed Thu Fri
+  // So Sat=col0, Sun=col1, Mon=col2... Fri=col6
+  // Remap: col = (dow + 1) % 7 where dow: 0=Sun→col1, 6=Sat→col0
+  const dowToCol = d => (d + 1) % 7;
+  const startCol = dowToCol(startDow);
+  const daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
+  const daysInPrev  = new Date(curYear, curMonth, 0).getDate();
+
+  // group sessions by date
+  const byDate = {};
+  allSessions.forEach(s => {
+    if (!byDate[s.date]) byDate[s.date] = [];
+    byDate[s.date].push(s);
+  });
+
+  let cells = '';
+  // prev month padding
+  for (let i = 0; i < startCol; i++) {
+    const d = daysInPrev - startCol + 1 + i;
+    const prevMonth = String(curMonth).padStart(2,'0');
+    const prevYear  = curMonth === 0 ? curYear - 1 : curYear;
+    const pm        = curMonth === 0 ? 12 : curMonth;
+    const dateStr   = `${prevYear}-${String(pm).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cells += `<div class="cal-cell other-month" onclick="selectCalDay('${dateStr}')">
+      <div class="cal-date-num">${d}</div>
+    </div>`;
+  }
+
+  // current month days
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr   = `${curYear}-${monthKey.slice(5)}-${String(day).padStart(2,'0')}`;
+    const isToday   = today.getFullYear()===curYear && today.getMonth()===curMonth && today.getDate()===day;
+    const isSel     = _selDay === dateStr;
+    const daySes    = (byDate[dateStr] || []).sort((a,b) => a.startTime.localeCompare(b.startTime));
+    const maxShow   = 2;
+    const pillsHtml = daySes.slice(0, maxShow).map(s => {
+      const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
+      const struck = s.status === 'cancelled' ? 'text-decoration:line-through;opacity:0.5;' : '';
+      return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="event.stopPropagation();openSessionModal('${s.date}','${s.id}')">${s.clientName || s.type}</span>`;
+    }).join('');
+    const moreHtml = daySes.length > maxShow ? `<span class="session-pill more">+${daySes.length - maxShow} עוד</span>` : '';
+
+    cells += `<div class="cal-cell${isToday?' today':''}${isSel?' selected':''}" onclick="selectCalDay('${dateStr}')">
+      <div class="cal-date-num">${day}</div>
+      ${pillsHtml}${moreHtml}
+    </div>`;
+  }
+
+  // next month padding
+  const totalCells = startCol + daysInMonth;
+  const remainder  = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let i = 1; i <= remainder; i++) {
+    const nm    = curMonth === 11 ? 1 : curMonth + 2;
+    const ny    = curMonth === 11 ? curYear + 1 : curYear;
+    const dateStr = `${ny}-${String(nm).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+    cells += `<div class="cal-cell other-month" onclick="selectCalDay('${dateStr}')">
+      <div class="cal-date-num">${i}</div>
+    </div>`;
+  }
+
+  grid.innerHTML = cells;
+
+  // ── sessions list (month) ──
+  const listEl = document.getElementById('ses-list-body');
+  if (listEl) {
+    if (monthSes.length === 0) {
+      listEl.innerHTML = `<div class="empty-state"><div class="ei">🗓️</div><p>אין סשנים החודש — לחץ "+ סשן חדש" כדי להתחיל</p></div>`;
+    } else {
+      const sorted = [...monthSes].sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+      listEl.innerHTML = sorted.map(s => {
+        const info   = SES_TYPES[s.type] || SES_TYPES['אחר'];
+        const dur    = sesDurationLabel(s.startTime, s.endTime);
+        const struck = s.status === 'cancelled' ? 'opacity:0.5;' : '';
+        const statusBadge = s.status === 'completed'
+          ? `<span class="badge badge-green">✅ הושלם</span>`
+          : s.status === 'cancelled'
+          ? `<span class="badge badge-gray">❌ בוטל</span>`
+          : `<span class="badge badge-purple">📅 מתוכנן</span>`;
+        return `
+          <div class="session-row" style="${struck}" onclick="openSessionModal('${s.date}','${s.id}')">
+            <div class="session-type-dot" style="background:${info.color}"></div>
+            <div class="session-row-time">${s.startTime}–${s.endTime}</div>
+            <div style="flex:1;min-width:0">
+              <div class="session-row-client">${s.clientName || '—'}</div>
+              <div class="session-row-type">${info.label} · ${fmtDate(s.date)}</div>
+            </div>
+            ${dur ? `<div class="session-row-dur">${dur}</div>` : ''}
+            ${statusBadge}
+            ${s.status !== 'completed'
+              ? `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;background:#d1fae5;color:#15803d">✓ סיום</button>`
+              : ''}
+            <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 6px">×</button>
+          </div>`;
+      }).join('');
+    }
+  }
+
+  // ── refresh selected day panel ──
+  if (_selDay) selectCalDay(_selDay, true);
+}
+
+function selectCalDay(dateStr, noToggle) {
+  // toggle: if same day clicked again, close panel
+  if (!noToggle && _selDay === dateStr) {
+    _selDay = null;
+    document.getElementById('day-panel').classList.remove('open');
+    renderSessionCal();
+    return;
+  }
+  _selDay = dateStr;
+
+  // highlight selected cell
+  document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected'));
+  const cells = document.querySelectorAll('.cal-cell');
+  cells.forEach(c => {
+    const onclick = c.getAttribute('onclick') || '';
+    if (onclick.includes(`'${dateStr}'`)) c.classList.add('selected');
+  });
+
+  const panel = document.getElementById('day-panel');
+  panel.classList.add('open');
+
+  // format date nicely
+  const d = new Date(dateStr + 'T12:00:00');
+  const dayName = d.toLocaleDateString('he-IL', { weekday:'long', day:'numeric', month:'long' });
+  document.getElementById('day-panel-title').textContent = dayName;
+
+  // add button for this day
+  const addBtn = document.getElementById('day-panel-add-btn');
+  addBtn.onclick = () => openSessionModal(dateStr);
+
+  // show sessions for this day
+  const daySes = load('sessions').filter(s => s.date === dateStr)
+    .sort((a,b) => a.startTime.localeCompare(b.startTime));
+  const cont = document.getElementById('day-panel-sessions');
+  if (daySes.length === 0) {
+    cont.innerHTML = `<div style="color:var(--text-muted);font-size:15px;padding:8px 0">אין סשנים ביום זה — לחץ "+ סשן ליום זה"</div>`;
+  } else {
+    cont.innerHTML = daySes.map(s => {
+      const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
+      const dur  = sesDurationLabel(s.startTime, s.endTime);
+      const statusBadge = s.status === 'completed'
+        ? `<span class="badge badge-green">✅ הושלם</span>`
+        : s.status === 'cancelled'
+        ? `<span class="badge badge-gray">❌ בוטל</span>`
+        : `<button onclick="setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#d1fae5;color:#15803d">✓ סיים סשן</button>`;
+      return `
+        <div class="session-row" onclick="openSessionModal('${s.date}','${s.id}')">
+          <div style="width:5px;height:48px;border-radius:3px;flex-shrink:0;background:${info.color}"></div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+              <span style="font-size:15px;font-weight:800">${s.clientName || '— ללא לקוח —'}</span>
+              <span style="font-size:13px;color:${info.color};font-weight:700">${info.label}</span>
+            </div>
+            <div style="font-size:13px;color:var(--text-muted)">${s.startTime}–${s.endTime}${dur?' · '+dur:''}</div>
+            ${s.notes ? `<div style="font-size:13px;color:var(--text-muted);margin-top:3px">${s.notes}</div>` : ''}
+          </div>
+          ${statusBadge}
+          <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 6px">×</button>
+        </div>`;
+    }).join('');
+  }
+}
+
 function renderPendingBox() {
   const income   = load('income');
   const expenses = load('expenses');
@@ -3537,6 +4172,7 @@ function refreshAll() {
   renderProfiles();
   renderInstallments();
   renderProjects();
+  renderSessionCal();
   populateClientFilter();
   renderPendingBox();
 }
