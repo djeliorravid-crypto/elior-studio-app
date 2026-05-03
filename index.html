@@ -4157,15 +4157,26 @@ function saveSession() {
   closeModal('session');
   renderSessionCal();
   toast('✓ סשן נשמר');
-  // סנכרון לגוגל קלנדר (רק סשנים חדשים, לא עריכות)
-  if (!editId && _gcalToken) createGcalEvent(obj);
+  // סנכרון לגוגל קלנדר
+  if (_gcalToken) {
+    if (editId) {
+      // עריכה — עדכן אירוע קיים
+      const existing = load('sessions').find(x => x.id === editId);
+      updateGcalEvent(existing || obj);
+    } else {
+      // חדש — צור אירוע
+      createGcalEvent(obj);
+    }
+  }
 }
 
 function deleteSession(id) {
-  const sessions = load('sessions').filter(s => s.id !== id);
-  save('sessions', sessions);
+  const all = load('sessions');
+  const target = all.find(s => s.id === id);
+  save('sessions', all.filter(s => s.id !== id));
   renderSessionCal();
   toast('סשן נמחק');
+  if (_gcalToken && target?.gcalEventId) deleteGcalEvent(target.gcalEventId);
 }
 
 function setSessionStatus(id, status) {
@@ -4654,7 +4665,11 @@ if ('serviceWorker' in navigator) {
 })();
 
 // ===== STARTUP – sync from cloud then render =====
-initFirebase().then(() => refreshAll());
+initFirebase().then(() => {
+  refreshAll();
+  // נסה להתחבר שקט לגוגל אם יש Client ID שמור
+  setTimeout(gcalSilentReconnect, 2000);
+});
 
 // בדיקת עדכון אוטומטית — כל פתיחה
 (function checkVersion() {
@@ -4690,7 +4705,45 @@ function gcalInitPage() {
   const el = document.getElementById('gcal-client-id');
   if (el && saved) el.value = saved;
   gcalUpdateUI();
-  if (_gcalToken) fetchGoogleEvents();
+  if (_gcalToken) {
+    fetchGoogleEvents();
+  } else if (saved) {
+    // נסה להתחבר שקט בלי popup
+    gcalSilentReconnect();
+  }
+}
+
+// התחברות שקטה — אם גוגל זוכר את ההרשאה, אין popup
+function gcalSilentReconnect() {
+  const clientId = localStorage.getItem('gcal_client_id');
+  if (!clientId) return;
+  if (typeof google === 'undefined' || !google.accounts) {
+    // ספרייה עוד נטענת — נסה שוב בעוד שנייה
+    setTimeout(gcalSilentReconnect, 1000);
+    return;
+  }
+  try {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'https://www.googleapis.com/auth/calendar.events',
+      prompt: '',
+      callback: (response) => {
+        if (!response.error && response.access_token) {
+          _gcalToken = response.access_token;
+          // שלוף פרטי משתמש
+          fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: 'Bearer ' + _gcalToken }
+          }).then(r => r.json()).then(info => {
+            _gcalUser = info.email || info.name || '';
+            gcalUpdateUI();
+            fetchGoogleEvents(true);
+            gcalStartAutoRefresh();
+          }).catch(() => { gcalUpdateUI(); fetchGoogleEvents(true); gcalStartAutoRefresh(); });
+        }
+      }
+    });
+    client.requestAccessToken({ prompt: '' });
+  } catch(e) {}
 }
 
 function gcalUpdateUI() {
@@ -4783,7 +4836,7 @@ function fetchGoogleEvents(silent) {
 
   fetch(url, { headers: { Authorization: 'Bearer ' + _gcalToken } })
     .then(r => {
-      if (r.status === 401) { disconnectGoogle(); throw new Error('פג תוקף — התחבר מחדש'); }
+      if (r.status === 401) { _gcalToken = null; gcalUpdateUI(); gcalSilentReconnect(); throw new Error('מתחבר מחדש...'); }
       return r.json();
     })
     .then(data => {
@@ -4796,27 +4849,61 @@ function fetchGoogleEvents(silent) {
     });
 }
 
-// יצירת אירוע בגוגל קלנדר
+// ── עזר: בניית גוף אירוע גוגל ──
+function _gcalBody(session) {
+  const summary = (SES_TYPES[session.type]?.label || session.type)
+    + (session.clientName ? ' — ' + session.clientName : '');
+  return {
+    summary,
+    description: session.notes || '',
+    start: { dateTime: session.date + 'T' + session.startTime + ':00', timeZone: 'Asia/Jerusalem' },
+    end:   { dateTime: session.date + 'T' + session.endTime   + ':00', timeZone: 'Asia/Jerusalem' },
+  };
+}
+
+// יצירת אירוע חדש בגוגל קלנדר + שמירת gcalEventId על הסשן
 async function createGcalEvent(session) {
   if (!_gcalToken) return;
   try {
-    const summary = (SES_TYPES[session.type]?.label || session.type)
-      + (session.clientName ? ' — ' + session.clientName : '');
-    const body = {
-      summary,
-      description: session.notes || '',
-      start: { dateTime: session.date + 'T' + session.startTime + ':00', timeZone: 'Asia/Jerusalem' },
-      end:   { dateTime: session.date + 'T' + session.endTime   + ':00', timeZone: 'Asia/Jerusalem' },
-    };
     const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + _gcalToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(_gcalBody(session))
     });
     if (res.ok) {
-      setTimeout(() => fetchGoogleEvents(true), 1500); // רענן אחרי הוספה
+      const created = await res.json();
+      // שמור את מזהה האירוע על הסשן
+      const sessions = load('sessions');
+      const s = sessions.find(x => x.id === session.id);
+      if (s) { s.gcalEventId = created.id; save('sessions', sessions); }
+      setTimeout(() => fetchGoogleEvents(true), 1200);
       toast('📅 נוסף גם לגוגל קלנדר!');
     }
+  } catch(e) {}
+}
+
+// עדכון אירוע קיים בגוגל קלנדר
+async function updateGcalEvent(session) {
+  if (!_gcalToken || !session.gcalEventId) return;
+  try {
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/' + session.gcalEventId, {
+      method: 'PUT',
+      headers: { Authorization: 'Bearer ' + _gcalToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(_gcalBody(session))
+    });
+    setTimeout(() => fetchGoogleEvents(true), 1200);
+  } catch(e) {}
+}
+
+// מחיקת אירוע מגוגל קלנדר
+async function deleteGcalEvent(gcalEventId) {
+  if (!_gcalToken || !gcalEventId) return;
+  try {
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/' + gcalEventId, {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + _gcalToken }
+    });
+    setTimeout(() => fetchGoogleEvents(true), 1200);
   } catch(e) {}
 }
 
