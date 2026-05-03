@@ -1534,7 +1534,7 @@
   <!-- ===== SESSIONS ===== -->
   <div class="page" id="page-sessions">
     <div class="page-header">
-      <div><h2>🗓️ יומן סשנים</h2><p>כל הסשנים שלך במקום אחד</p></div>
+      <div><h2>🗓️ יומן סשנים</h2><p id="ses-page-sub">כל הסשנים שלך במקום אחד</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="month-selector">
           <button onclick="changeMonth(-1)">›</button>
@@ -1543,6 +1543,17 @@
         </div>
         <button class="btn btn-primary" onclick="openSessionModal(null)">+ סשן חדש</button>
       </div>
+    </div>
+
+    <!-- Next session banner -->
+    <div id="next-ses-banner" style="display:none;border-radius:14px;padding:14px 20px;margin-bottom:16px;background:linear-gradient(135deg,#faf8ff,#f3f0ff);border:2px solid var(--accent);display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="font-size:28px">⏰</div>
+      <div style="flex:1">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-family:'Rubik','Heebo',sans-serif" id="next-ses-when"></div>
+        <div style="font-size:18px;font-weight:900;color:var(--text)" id="next-ses-who"></div>
+        <div style="font-size:13px;color:var(--text-muted)" id="next-ses-detail"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="next-ses-btn">פתח סשן</button>
     </div>
 
     <!-- Stats strip -->
@@ -1567,6 +1578,12 @@
         <div class="cal-stat-val" id="ses-stat-avg">0</div>
         <div class="cal-stat-lbl">ממוצע שעות לסשן</div>
       </div>
+    </div>
+
+    <!-- Week strip -->
+    <div id="week-strip" style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:16px;box-shadow:var(--shadow)">
+      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;font-family:'Rubik','Heebo',sans-serif">📆 השבוע</div>
+      <div id="week-strip-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
     </div>
 
     <!-- Legend -->
@@ -1687,6 +1704,17 @@
       <div id="recent-list">
         <div class="empty-state"><div class="ei">📭</div><p>אין פעולות עדיין</p></div>
       </div>
+    </div>
+
+    <!-- טבלת פירוט חודשי -->
+    <div class="table-card">
+      <div class="table-header">
+        <h3>📅 פירוט חודשי</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="stat-year-sel" onchange="renderDashboard()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--text);outline:none"></select>
+        </div>
+      </div>
+      <div id="stat-monthly-table"></div>
     </div>
 
   </div>
@@ -3071,9 +3099,10 @@ function renderExpenses() {
     return true;
   });
 
-  // כל ההכנסות מכל הזמנים (לא רק החודש) — כל אחת היא פרויקט
+  // הכנסות החודש בלבד
   const monthIncome = income.filter(i => inCurMonth(i.date));
-  const allExpenses = expenses; // הוצאות לא מוגבלות לחודש — משויכות לפרויקט
+  // הוצאות החודש בלבד (מסונכרן לחודש הנבחר)
+  const allExpenses = expenses.filter(e => inCurMonth(e.date));
 
   // הוצאות ממויינות לפי פרויקט (מיון עולה לפי תאריך)
   const byProject = {};
@@ -3083,10 +3112,10 @@ function renderExpenses() {
     byProject[key].push(e);
   });
 
-  // סה"כ הוצאות — כולל חוזרות של החודש הנוכחי
+  // סה"כ הוצאות החודש — כולל חוזרות
   const recurringMonthTotal = activeRecurring.reduce((s,r) => s + Number(r.amount), 0);
   const totalExpenses = allExpenses.reduce((s,e) => s + Number(e.amount), 0) + recurringMonthTotal;
-  const totalIncome   = income.reduce((s,i) => s + Number(i.amount), 0);
+  const totalIncome   = monthIncome.reduce((s,i) => s + Number(i.amount), 0);
   const netProfit     = totalIncome - totalExpenses;
 
   // ── כרטיס "בנק העסק" — רק מה שנכנס ויצא בפועל (שולם) ──
@@ -3390,6 +3419,65 @@ function renderDashboard() {
   }
   renderCats(income,    'var(--green)', 'stat-inc-cats');
   renderCats(expenses,  'var(--red)',   'stat-exp-cats');
+
+  // ── טבלת פירוט חודשי ──
+  const yearSel = document.getElementById('stat-year-sel');
+  const allYears = [...new Set([
+    ...income.map(i => new Date(i.date).getFullYear()),
+    ...expenses.map(e => new Date(e.date).getFullYear()),
+    thisYear
+  ])].sort((a,b) => b-a);
+  const selYear = yearSel ? (Number(yearSel.value) || thisYear) : thisYear;
+  if (yearSel && yearSel.innerHTML === '') {
+    yearSel.innerHTML = allYears.map(y => `<option value="${y}" ${y===selYear?'selected':''}>${y}</option>`).join('');
+  }
+  const monthlyEl = document.getElementById('stat-monthly-table');
+  if (monthlyEl) {
+    let yearInc = 0, yearExp = 0;
+    const rows = MONTHS_HE.map((mName, mi) => {
+      const mInc = income.filter(i => { const d=new Date(i.date); return d.getFullYear()===selYear && d.getMonth()===mi; });
+      const mExp = expenses.filter(e => { const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===mi; });
+      const incAmt = mInc.reduce((s,i) => s+Number(i.amount), 0);
+      const expAmt = mExp.reduce((s,e) => s+Number(e.amount), 0);
+      const net    = incAmt - expAmt;
+      yearInc += incAmt; yearExp += expAmt;
+      const isEmpty = incAmt === 0 && expAmt === 0;
+      const isCur   = mi === thisMonth && selYear === thisYear;
+      return { mName, mi, incAmt, expAmt, net, isEmpty, isCur, count: mInc.length };
+    });
+    const maxInc = Math.max(...rows.map(r => r.incAmt), 1);
+    monthlyEl.innerHTML = `
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th style="text-align:right">חודש</th>
+          <th style="text-align:right">הכנסות</th>
+          <th style="text-align:right">הוצאות</th>
+          <th style="text-align:right">רווח נקי</th>
+          <th style="text-align:right">מגמה</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr style="${r.isEmpty?'opacity:0.35':''}${r.isCur?';background:var(--accent-light);font-weight:800':''}" onclick="if(${r.isCur}){} else { curYear=${selYear}; curMonth=${r.mi}; refreshAll(); showPage('income'); }">
+              <td style="font-weight:${r.isCur?'900':'700'};color:${r.isCur?'var(--accent)':'var(--text)'};cursor:pointer">
+                ${r.isCur ? '▶ ' : ''}${r.mName}${r.isCur ? ' (עכשיו)' : ''}
+              </td>
+              <td style="color:var(--green);font-weight:800">${r.incAmt > 0 ? fmtMoney(r.incAmt) : '—'}</td>
+              <td style="color:var(--red);font-weight:800">${r.expAmt > 0 ? fmtMoney(r.expAmt) : '—'}</td>
+              <td style="font-weight:900;color:${r.net>0?'var(--green)':r.net<0?'var(--red)':'var(--text-muted)'}">${r.incAmt>0||r.expAmt>0 ? ((r.net<0?'-':'')+fmtMoney(Math.abs(r.net))) : '—'}</td>
+              <td style="min-width:80px">
+                ${r.incAmt > 0 ? `<div style="height:6px;background:var(--green-light);border-radius:3px;overflow:hidden"><div style="height:100%;background:var(--green);width:${Math.round((r.incAmt/maxInc)*100)}%;border-radius:3px"></div></div>` : ''}
+              </td>
+            </tr>`).join('')}
+          <tr style="border-top:2px solid var(--border);font-weight:900;background:var(--surface2)">
+            <td>סה"כ ${selYear}</td>
+            <td style="color:var(--green)">${fmtMoney(yearInc)}</td>
+            <td style="color:var(--red)">${fmtMoney(yearExp)}</td>
+            <td style="color:${yearInc-yearExp>=0?'var(--green)':'var(--red)'}">${(yearInc-yearExp<0?'-':'')+fmtMoney(Math.abs(yearInc-yearExp))}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>`;
+  }
 
   // ── פעולות אחרונות ──
   const allTx = [
@@ -4063,6 +4151,58 @@ function renderSessionCal() {
   const lblEl = document.getElementById('lbl-sessions');
   if (lblEl) lblEl.textContent = new Date(curYear, curMonth, 1).toLocaleDateString('he-IL', { month:'long', year:'numeric' });
 
+  // ── Next session banner ──
+  const todayStr = new Date().toISOString().slice(0,10);
+  const nowTime  = new Date().toTimeString().slice(0,5);
+  const upcoming = allSessions
+    .filter(s => s.status !== 'cancelled' && (s.date > todayStr || (s.date === todayStr && s.endTime > nowTime)))
+    .sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
+  const banner = document.getElementById('next-ses-banner');
+  if (banner && upcoming.length > 0) {
+    const ns = upcoming[0];
+    const nsDate = new Date(ns.date + 'T12:00:00');
+    const dayDiff = Math.round((nsDate - new Date(todayStr + 'T12:00:00')) / 86400000);
+    const whenLbl = dayDiff === 0 ? '🔴 היום' : dayDiff === 1 ? '🟡 מחר' : `📅 ${nsDate.toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long'})}`;
+    const info = SES_TYPES[ns.type] || SES_TYPES['אחר'];
+    document.getElementById('next-ses-when').textContent = whenLbl;
+    document.getElementById('next-ses-who').textContent = ns.clientName || '— ללא לקוח —';
+    document.getElementById('next-ses-detail').textContent = `${ns.startTime}–${ns.endTime} · ${info.label}${ns.notes ? ' · ' + ns.notes : ''}`;
+    document.getElementById('next-ses-btn').onclick = () => openSessionModal(ns.date, ns.id);
+    banner.style.display = 'flex';
+    banner.style.borderColor = dayDiff === 0 ? '#ef4444' : 'var(--accent)';
+    banner.style.background = dayDiff === 0 ? 'linear-gradient(135deg,#fff5f5,#fee2e2)' : 'linear-gradient(135deg,#faf8ff,#f3f0ff)';
+  } else if (banner) {
+    banner.style.display = 'none';
+  }
+
+  // ── Week strip ──
+  const weekStripEl = document.getElementById('week-strip-days');
+  if (weekStripEl) {
+    const todayDate   = new Date();
+    const todayDow    = todayDate.getDay(); // 0=Sun
+    const weekStart   = new Date(todayDate);
+    weekStart.setDate(todayDate.getDate() - todayDow); // rewind to Sunday
+    const DAY_NAMES = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+    weekStripEl.innerHTML = Array.from({length:7}, (_,i) => {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      const ds = d.toISOString().slice(0,10);
+      const isToday = ds === todayStr;
+      const daySes = allSessions.filter(s => s.date === ds && s.status !== 'cancelled');
+      const dayHrs = daySes.reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
+      const dotHtml = daySes.slice(0,3).map(s => {
+        const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
+        return `<div style="width:7px;height:7px;border-radius:50%;background:${info.color};flex-shrink:0"></div>`;
+      }).join('');
+      return `<div onclick="selectCalDay('${ds}')" style="text-align:center;padding:7px 4px;border-radius:10px;cursor:pointer;background:${isToday?'var(--accent)':'transparent'};transition:background .15s" class="week-strip-day">
+        <div style="font-size:11px;font-weight:800;color:${isToday?'#fff':'var(--text-muted)'};margin-bottom:4px">${DAY_NAMES[i]}</div>
+        <div style="font-size:15px;font-weight:900;color:${isToday?'#fff':'var(--text)'};">${d.getDate()}</div>
+        <div style="display:flex;gap:2px;justify-content:center;margin-top:4px;flex-wrap:wrap">${dotHtml}</div>
+        ${dayHrs > 0 ? `<div style="font-size:10px;color:${isToday?'rgba(255,255,255,0.8)':'var(--text-muted)'};margin-top:2px;font-weight:700">${dayHrs % 1 === 0 ? dayHrs : dayHrs.toFixed(1)}ש׳</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
   // ── legend ──
   const legendEl = document.getElementById('ses-legend');
   if (legendEl) {
@@ -4127,10 +4267,14 @@ function renderSessionCal() {
       return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="event.stopPropagation();openSessionModal('${s.date}','${s.id}')"><span class="sp-time">${s.startTime}${dur?' · '+dur:''}</span><span class="sp-name">${s.clientName || s.type}</span></span>`;
     }).join('');
     const moreHtml = daySes.length > maxShow ? `<span class="session-pill more">+${daySes.length - maxShow} עוד</span>` : '';
+    const dayHrsTotal = daySes.filter(s => s.status!=='cancelled').reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
+    const hrsTag = dayHrsTotal > 0 && daySes.length > 0
+      ? `<div style="position:absolute;top:4px;left:4px;font-size:9px;font-weight:800;color:var(--text-muted)">${dayHrsTotal % 1 === 0 ? dayHrsTotal : dayHrsTotal.toFixed(1)}ש׳</div>`
+      : '';
 
-    cells += `<div class="cal-cell${isToday?' today':''}${isSel?' selected':''}" onclick="selectCalDay('${dateStr}')">
+    cells += `<div class="cal-cell${isToday?' today':''}${isSel?' selected':''}" onclick="selectCalDay('${dateStr}')" style="position:relative">
       <div class="cal-date-num">${day}</div>
-      ${pillsHtml}${moreHtml}
+      ${pillsHtml}${moreHtml}${hrsTag}
     </div>`;
   }
 
