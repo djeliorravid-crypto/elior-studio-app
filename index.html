@@ -57,15 +57,23 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html {
+      scroll-behavior: smooth;
+      height: 100%;
+    }
+
     body {
       background: var(--bg);
       color: var(--text);
       font-family: 'Heebo', 'Segoe UI', Arial, sans-serif;
       font-weight: 600;
       font-size: 16px;
-      min-height: 100vh;
+      min-height: 100%;
+      height: 100%;
       direction: rtl;
       -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+      overscroll-behavior: none;        /* מונע bounce מיותר */
     }
 
     /* ===== SIDEBAR ===== */
@@ -125,6 +133,8 @@
     /* ===== MAIN ===== */
     .main {
       margin-right: var(--sidebar-w); flex: 1; padding: 28px 32px;
+      -webkit-overflow-scrolling: touch;
+      overflow-y: auto;
     }
 
     .page { display: none; }
@@ -983,6 +993,9 @@
         margin-right: 0;
         padding: calc(env(safe-area-inset-top) + 18px) 14px calc(72px + env(safe-area-inset-bottom));
         min-height: 100vh;
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
       }
 
       /* ===== כותרת עמוד ===== */
@@ -1372,6 +1385,7 @@
       padding: 12px 16px; border-radius: 12px; margin-bottom: 8px;
       border: 1.5px solid var(--border); background: var(--surface);
       cursor: pointer; transition: all 0.15s;
+      touch-action: pan-y;
     }
     .session-row:hover { box-shadow: 0 4px 20px rgba(108,71,245,0.10); border-color: var(--border-glow); transform: translateX(-2px); }
     .session-row-time {
