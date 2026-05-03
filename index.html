@@ -4134,15 +4134,16 @@ function renderSessionCal() {
 
   // filter current month
   const monthSes = allSessions.filter(s => s.date && s.date.startsWith(monthKey));
-  const activeSes = monthSes.filter(s => s.status !== 'cancelled');
+  const activeSes    = monthSes.filter(s => s.status !== 'cancelled');
+  const countedSes   = activeSes.filter(s => s.type !== 'אחר'); // "אחר" לא נספר בסטטיסטיקה
 
   // ── stats ──
-  const totalHrs   = activeSes.reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
-  const uniqueCli  = new Set(activeSes.filter(s => s.clientId).map(s => s.clientId)).size;
-  const avgHrs     = activeSes.length ? (totalHrs / activeSes.length) : 0;
+  const totalHrs   = countedSes.reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
+  const uniqueCli  = new Set(countedSes.filter(s => s.clientId).map(s => s.clientId)).size;
+  const avgHrs     = countedSes.length ? (totalHrs / countedSes.length) : 0;
 
   const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  setEl('ses-stat-count',   activeSes.length);
+  setEl('ses-stat-count',   countedSes.length);
   setEl('ses-stat-hours',   totalHrs % 1 === 0 ? totalHrs : totalHrs.toFixed(1));
   setEl('ses-stat-clients', uniqueCli);
   setEl('ses-stat-avg',     avgHrs % 1 === 0 ? avgHrs : avgHrs.toFixed(1));
@@ -4189,7 +4190,7 @@ function renderSessionCal() {
       const ds = d.toISOString().slice(0,10);
       const isToday = ds === todayStr;
       const daySes = allSessions.filter(s => s.date === ds && s.status !== 'cancelled');
-      const dayHrs = daySes.reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
+      const dayHrs = daySes.filter(s => s.type !== 'אחר').reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
       const dotHtml = daySes.slice(0,3).map(s => {
         const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
         return `<div style="width:7px;height:7px;border-radius:50%;background:${info.color};flex-shrink:0"></div>`;
@@ -4264,7 +4265,7 @@ function renderSessionCal() {
       const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
       const struck = s.status === 'cancelled' ? 'opacity:0.45;' : '';
       const dur = sesDurationLabel(s.startTime, s.endTime);
-      return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="event.stopPropagation();openSessionModal('${s.date}','${s.id}')"><span class="sp-time">${s.startTime}${dur?' · '+dur:''}</span><span class="sp-name">${s.clientName || s.type}</span></span>`;
+      return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="event.stopPropagation();openSessionModal('${s.date}','${s.id}')"><span class="sp-time">${s.startTime}–${s.endTime}</span><span class="sp-name">${s.clientName || s.type}</span></span>`;
     }).join('');
     const moreHtml = daySes.length > maxShow ? `<span class="session-pill more">+${daySes.length - maxShow} עוד</span>` : '';
     const dayHrsTotal = daySes.filter(s => s.status!=='cancelled').reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
