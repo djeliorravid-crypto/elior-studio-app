@@ -1633,56 +1633,8 @@
       </div>
     </div>
 
-    <!-- Week strip -->
-    <div id="week-strip" style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:16px;box-shadow:var(--shadow)">
-      <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;font-family:'Rubik','Heebo',sans-serif">📆 השבוע</div>
-      <div id="week-strip-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
-    </div>
-
-    <!-- Legend -->
-    <div class="ses-legend" id="ses-legend"></div>
-
-    <!-- Calendar -->
-    <div class="cal-wrap">
-      <div class="cal-header">
-        <div class="cal-dow">ראשון</div>
-        <div class="cal-dow">שני</div>
-        <div class="cal-dow">שלישי</div>
-        <div class="cal-dow">רביעי</div>
-        <div class="cal-dow">חמישי</div>
-        <div class="cal-dow">שישי</div>
-        <div class="cal-dow weekend">שבת</div>
-      </div>
-      <div class="cal-grid" id="cal-grid"></div>
-    </div>
-
-    <!-- Day detail panel -->
-    <div class="day-panel" id="day-panel">
-      <div class="day-panel-header">
-        <div class="day-panel-date" id="day-panel-title">יום נבחר</div>
-        <button class="btn btn-primary btn-sm" id="day-panel-add-btn">+ סשן ליום זה</button>
-      </div>
-      <div id="day-panel-sessions"></div>
-    </div>
-
-    <!-- Sessions list (month) -->
-    <div class="table-card">
-      <div class="table-header">
-        <h3>📋 כל הסשנים החודש</h3>
-      </div>
-      <div id="ses-list-body" style="padding:0 4px 8px"></div>
-    </div>
-
-    <!-- Google Calendar events (when connected) -->
-    <div id="gcal-events-section" style="display:none">
-      <div class="table-card" style="margin-top:8px">
-        <div class="table-header">
-          <h3 id="gcal-events-title">📅 אירועים מגוגל קלנדר</h3>
-          <span id="gcal-events-count" style="background:var(--accent-light);color:var(--accent);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:800"></span>
-        </div>
-        <div id="gcal-events-list" style="padding:0 4px 8px"></div>
-      </div>
-    </div>
+    <!-- Weekly list view -->
+    <div id="weekly-view" style="margin-top:4px"></div>
   </div>
 
   <!-- ===== DASHBOARD ===== -->
@@ -4390,209 +4342,219 @@ function renderSessionCal() {
     banner.style.display = 'none';
   }
 
-  // ── Week strip ──
-  const weekStripEl = document.getElementById('week-strip-days');
-  if (weekStripEl) {
-    const todayDate   = new Date();
-    const todayDow    = todayDate.getDay(); // 0=Sun
-    const weekStart   = new Date(todayDate);
-    weekStart.setDate(todayDate.getDate() - todayDow); // rewind to Sunday
-    const DAY_NAMES = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
-    weekStripEl.innerHTML = Array.from({length:7}, (_,i) => {
-      const d = new Date(weekStart);
-      d.setDate(weekStart.getDate() + i);
-      const ds = d.toISOString().slice(0,10);
-      const isToday = ds === todayStr;
-      const daySes = allSessions.filter(s => s.date === ds && s.status !== 'cancelled');
-      const dayHrs = daySes.filter(s => s.type !== 'אחר').reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
-      const dotHtml = daySes.slice(0,3).map(s => {
-        const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
-        return `<div style="width:7px;height:7px;border-radius:50%;background:${info.color};flex-shrink:0"></div>`;
-      }).join('');
-      return `<div onclick="selectCalDay('${ds}')" style="text-align:center;padding:7px 4px;border-radius:10px;cursor:pointer;background:${isToday?'var(--accent)':'transparent'};transition:background .15s" class="week-strip-day">
-        <div style="font-size:11px;font-weight:800;color:${isToday?'#fff':'var(--text-muted)'};margin-bottom:4px">${DAY_NAMES[i]}</div>
-        <div style="font-size:15px;font-weight:900;color:${isToday?'#fff':'var(--text)'};">${d.getDate()}</div>
-        <div style="display:flex;gap:2px;justify-content:center;margin-top:4px;flex-wrap:wrap">${dotHtml}</div>
-        ${dayHrs > 0 ? `<div style="font-size:10px;color:${isToday?'rgba(255,255,255,0.8)':'var(--text-muted)'};margin-top:2px;font-weight:700">${dayHrs % 1 === 0 ? dayHrs : dayHrs.toFixed(1)}ש׳</div>` : ''}
-      </div>`;
-    }).join('');
-  }
+  renderWeeklyView();
+}
 
-  // ── legend ──
-  const legendEl = document.getElementById('ses-legend');
-  if (legendEl) {
-    const usedTypes = [...new Set(monthSes.map(s => s.type))];
-    legendEl.innerHTML = usedTypes.map(t => {
-      const info = SES_TYPES[t] || SES_TYPES['אחר'];
-      return `<div class="ses-legend-item">
-        <div class="ses-legend-dot" style="background:${info.color}"></div>
-        <span>${info.label}</span>
-      </div>`;
-    }).join('');
-  }
+function renderWeeklyView() {
+  const container = document.getElementById('weekly-view');
+  if (!container) return;
 
-  // ── calendar grid ──
-  const grid = document.getElementById('cal-grid');
-  if (!grid) return;
+  const allSessions = load('sessions');
+  const today       = new Date();
+  const todayStr    = today.toISOString().slice(0,10);
+  const HE_DAYS     = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
 
-  const today    = new Date();
-  const firstDay = new Date(curYear, curMonth, 1);
-  // Israel week starts Sunday (0). day() returns 0=Sun…6=Sat
-  let startDow = firstDay.getDay(); // 0=Sun
-  // We display: Sat(6) Sun(0) Mon(1)... Fri(5) — rearranging: col0=Sat col1=Sun...col6=Fri
-  // Actually our header is ש א ב ג ד ה ו = Sat Sun Mon Tue Wed Thu Fri
-  // So Sat=col0, Sun=col1, Mon=col2... Fri=col6
-  // Remap: col = (dow + 1) % 7 where dow: 0=Sun→col1, 6=Sat→col0
-  const dowToCol = d => d; // 0=Sun→col0(right in RTL), 6=Sat→col6(left)
-  const startCol = dowToCol(startDow);
-  const daysInMonth = new Date(curYear, curMonth+1, 0).getDate();
-  const daysInPrev  = new Date(curYear, curMonth, 0).getDate();
-
-  // group sessions by date
-  const byDate = {};
-  allSessions.forEach(s => {
-    if (!byDate[s.date]) byDate[s.date] = [];
-    byDate[s.date].push(s);
+  // GCal events grouped by date
+  const gcalByDate = {};
+  _gcalEventsCache.forEach(e => {
+    if (e.status === 'cancelled' || !e.start?.dateTime) return;
+    const d = e.start.dateTime.split('T')[0];
+    if (!gcalByDate[d]) gcalByDate[d] = [];
+    gcalByDate[d].push(e);
   });
 
-  let cells = '';
-  // prev month padding
-  for (let i = 0; i < startCol; i++) {
-    const d = daysInPrev - startCol + 1 + i;
-    const prevMonth = String(curMonth).padStart(2,'0');
-    const prevYear  = curMonth === 0 ? curYear - 1 : curYear;
-    const pm        = curMonth === 0 ? 12 : curMonth;
-    const dateStr   = `${prevYear}-${String(pm).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    cells += `<div class="cal-cell other-month" onclick="selectCalDay('${dateStr}')">
-      <div class="cal-date-num">${d}</div>
-    </div>`;
+  // Sessions grouped by date
+  const sesByDate = {};
+  allSessions.forEach(s => {
+    if (!s.date || s.status === 'cancelled') return;
+    if (!sesByDate[s.date]) sesByDate[s.date] = [];
+    sesByDate[s.date].push(s);
+  });
+
+  // All days of displayed month
+  const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+  const allDays = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    allDays.push(`${curYear}-${String(curMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);
   }
 
-  // current month days
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr   = `${curYear}-${monthKey.slice(5)}-${String(day).padStart(2,'0')}`;
-    const isToday   = today.getFullYear()===curYear && today.getMonth()===curMonth && today.getDate()===day;
-    const isSel     = _selDay === dateStr;
-    const daySes    = (byDate[dateStr] || []).sort((a,b) => a.startTime.localeCompare(b.startTime));
-    // אירועי גוגל שאין להם סשן מתאים באפליקציה
+  // Week boundaries relative to today
+  const todayDow = today.getDay();
+  const thisWeekSun = new Date(today); thisWeekSun.setDate(today.getDate() - todayDow); thisWeekSun.setHours(0,0,0,0);
+  const nextWeekSun = new Date(thisWeekSun); nextWeekSun.setDate(thisWeekSun.getDate() + 7);
+  const weekAfterSun = new Date(thisWeekSun); weekAfterSun.setDate(thisWeekSun.getDate() + 14);
+
+  // Classify each day into a section
+  function sectionKey(dateStr) {
+    const d = new Date(dateStr + 'T12:00:00');
+    if (d >= thisWeekSun && d < nextWeekSun)  return 'this';
+    if (d >= nextWeekSun && d < weekAfterSun) return 'next';
+    if (d >= weekAfterSun)                    return 'rest';
+    return 'past';
+  }
+
+  const isCurrentMonth = (curYear === today.getFullYear() && curMonth === today.getMonth());
+
+  const SECTIONS = isCurrentMonth
+    ? [
+        { key:'this', label:'השבוע',        emoji:'📅' },
+        { key:'next', label:'שבוע הבא',      emoji:'📆' },
+        { key:'rest', label:'שאר החודש',     emoji:'🗓' },
+      ]
+    : (() => {
+        // past or future month: split into calendar weeks
+        const weeks = [];
+        let cur = null;
+        allDays.forEach(dateStr => {
+          const d = new Date(dateStr + 'T12:00:00');
+          if (d.getDay() === 0 || !cur) {
+            cur = { key: 'w' + weeks.length, label: `שבוע ${weeks.length + 1}`, emoji: '📅', days: [] };
+            weeks.push(cur);
+          }
+          cur.days.push(dateStr);
+        });
+        return weeks.map(w => ({ key: w.key, label: w.label, emoji: w.emoji, _days: w.days }));
+      })();
+
+  // Group days per section
+  const grouped = {};
+  SECTIONS.forEach(s => { grouped[s.key] = s._days || []; });
+  if (isCurrentMonth) {
+    allDays.forEach(dateStr => {
+      const k = sectionKey(dateStr);
+      if (grouped[k]) grouped[k].push(dateStr);
+    });
+  }
+
+  // ── Render ──
+  const fmtHrs = h => h % 1 === 0 ? h : h.toFixed(1);
+
+  function renderEventRow(dateStr, s) {
+    const info   = SES_TYPES[s.type] || SES_TYPES['אחר'];
+    const dur    = sesDurationLabel(s.startTime, s.endTime);
+    const isComp = s.status === 'completed';
+    return `
+      <div class="session-row" onclick="openSessionModal('${dateStr}','${s.id}')" style="align-items:center">
+        <div style="width:4px;min-height:54px;border-radius:2px;flex-shrink:0;background:${info.color}"></div>
+        <div style="min-width:48px;text-align:center;flex-shrink:0">
+          <div style="font-size:15px;font-weight:900;color:var(--text);font-family:'Rubik',sans-serif;line-height:1.2">${s.startTime}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:1px">${s.endTime}</div>
+        </div>
+        <div style="flex:1;min-width:0;padding:0 6px">
+          <div style="font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.clientName || '—'}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:1px">${info.label}${dur ? ' · ' + dur : ''}</div>
+        </div>
+        ${isComp
+          ? `<span style="background:#d1fae5;color:#15803d;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap;flex-shrink:0">✅ הושלם</span>`
+          : `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer;background:#d1fae5;color:#15803d;white-space:nowrap;flex-shrink:0;font-family:'Heebo',sans-serif">✓</button>
+             <button onclick="event.stopPropagation();setSessionStatus('${s.id}','cancelled')" style="border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer;background:#fee2e2;color:#dc2626;white-space:nowrap;flex-shrink:0;font-family:'Heebo',sans-serif">✕</button>`
+        }
+        <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:#d1d5db;cursor:pointer;font-size:20px;padding:2px 4px;line-height:1;flex-shrink:0" title="מחק">×</button>
+      </div>`;
+  }
+
+  function renderGcalRow(e) {
+    const st = e.start.dateTime.split('T')[1]?.slice(0,5) || '';
+    const en = e.end?.dateTime?.split('T')[1]?.slice(0,5) || '';
+    return `
+      <div class="session-row" onclick="showGcalPillMenu('${e.id}',event)" style="align-items:center;cursor:pointer">
+        <div style="width:4px;min-height:54px;border-radius:2px;flex-shrink:0;background:#1a73e8"></div>
+        <div style="min-width:48px;text-align:center;flex-shrink:0">
+          <div style="font-size:15px;font-weight:900;color:#1a73e8;font-family:'Rubik',sans-serif;line-height:1.2">${st}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:1px">${en}</div>
+        </div>
+        <div style="flex:1;min-width:0;padding:0 6px">
+          <div style="font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.summary || 'אירוע גוגל'}</div>
+          <div style="font-size:12px;color:#1a73e8;margin-top:1px">גוגל קלנדר</div>
+        </div>
+        <span style="background:#e8f0fe;color:#1a73e8;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap;flex-shrink:0">📅 גוגל</span>
+      </div>`;
+  }
+
+  function renderDayBlock(dateStr) {
+    const d      = new Date(dateStr + 'T12:00:00');
+    const isT    = dateStr === todayStr;
+    const isPast = dateStr < todayStr;
+    const dayNum = d.getDate();
+    const dayName = HE_DAYS[d.getDay()];
+    const monthName = MONTHS_HE[d.getMonth()];
+
+    const daySes = (sesByDate[dateStr] || []).slice().sort((a,b) => a.startTime.localeCompare(b.startTime));
     const appGcalIds = new Set(daySes.map(s => s.gcalEventId).filter(Boolean));
-    const dayGcal = _gcalEventsCache.filter(e => {
-      const eDate = (e.start?.dateTime || e.start?.date || '').split('T')[0];
-      return eDate === dateStr && e.start?.dateTime && !appGcalIds.has(e.id) && e.status !== 'cancelled';
-    }).sort((a,b) => (a.start.dateTime||'').localeCompare(b.start.dateTime||''));
-    const allPills = [...daySes.map(s => ({type:'ses', s})), ...dayGcal.map(e => ({type:'gcal', e}))];
-    // הצג את כל האירועים — ללא הגבלה
-    const pillsHtml = allPills.map(item => {
-      if (item.type === 'ses') {
-        const s = item.s;
-        const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
-        const struck = s.status === 'cancelled' ? 'opacity:0.4;' : '';
-        return `<span class="session-pill" style="background:${info.bg};color:${info.color};${struck}" onclick="showPillMenu('${s.id}',event)"><span class="sp-time">${s.startTime}</span><span class="sp-name">${s.clientName || info.label}</span></span>`;
-      } else {
-        const e = item.e;
-        const st = e.start.dateTime.split('T')[1]?.slice(0,5) || '';
-        const en = e.end?.dateTime?.split('T')[1]?.slice(0,5) || '';
-        const title = e.summary || 'גוגל';
-        return `<span class="session-pill" style="background:#e8f0fe;color:#1a73e8" onclick="showGcalPillMenu('${e.id}',event)"><span class="sp-time">${st}</span><span class="sp-name">${title}</span></span>`;
-      }
-    }).join('');
-    const moreHtml = '';
-    const dayHrsTotal = daySes.filter(s => s.status!=='cancelled').reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
-    const hrsTag = dayHrsTotal > 0 && daySes.length > 0
-      ? `<div style="position:absolute;top:4px;left:4px;font-size:9px;font-weight:800;color:var(--text-muted)">${dayHrsTotal % 1 === 0 ? dayHrsTotal : dayHrsTotal.toFixed(1)}ש׳</div>`
-      : '';
+    const dayGcal = (gcalByDate[dateStr] || []).filter(e => !appGcalIds.has(e.id))
+      .sort((a,b) => (a.start.dateTime||'').localeCompare(b.start.dateTime||''));
 
-    cells += `<div class="cal-cell${isToday?' today':''}${isSel?' selected':''}" onclick="selectCalDay('${dateStr}')" style="position:relative">
-      <div class="cal-date-num">${day}</div>
-      ${pillsHtml}${moreHtml}${hrsTag}
-    </div>`;
-  }
+    const totalEvents = daySes.length + dayGcal.length;
+    const dayHrs = daySes.filter(s => s.type !== 'אחר').reduce((acc,s) => acc + sesDurationHours(s.startTime, s.endTime), 0);
 
-  // next month padding
-  const totalCells = startCol + daysInMonth;
-  const remainder  = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-  for (let i = 1; i <= remainder; i++) {
-    const nm    = curMonth === 11 ? 1 : curMonth + 2;
-    const ny    = curMonth === 11 ? curYear + 1 : curYear;
-    const dateStr = `${ny}-${String(nm).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-    cells += `<div class="cal-cell other-month" onclick="selectCalDay('${dateStr}')">
-      <div class="cal-date-num">${i}</div>
-    </div>`;
-  }
+    const headerStyle = isPast && !isT ? 'opacity:0.55' : '';
+    const circleStyle = isT
+      ? 'background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(108,71,245,0.35)'
+      : isPast ? 'background:var(--surface3);color:var(--text-muted)' : 'background:var(--surface2);color:var(--text)';
 
-  grid.innerHTML = cells;
-
-  // ── sessions list (month) ──
-  const listEl = document.getElementById('ses-list-body');
-  if (listEl) {
-    if (monthSes.length === 0) {
-      listEl.innerHTML = `<div class="empty-state"><div class="ei">🗓️</div><p>אין סשנים החודש — לחץ "+ סשן חדש" כדי להתחיל</p></div>`;
-    } else {
-      const sorted = [...monthSes].sort((a,b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
-      const todayStr2 = new Date().toISOString().slice(0,10);
-      const HE_DAYS = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
-
-      // קיבוץ לפי תאריך
-      const byDay = {};
-      sorted.forEach(s => {
-        if (!byDay[s.date]) byDay[s.date] = [];
-        byDay[s.date].push(s);
-      });
-
-      listEl.innerHTML = Object.entries(byDay).map(([date, daySessions]) => {
-        const d       = new Date(date + 'T12:00:00');
-        const dayName = HE_DAYS[d.getDay()];
-        const dayNum  = d.getDate();
-        const monthName = MONTHS_HE[d.getMonth()];
-        const isToday   = date === todayStr2;
-        const dayHrs    = daySessions.filter(s => s.type !== 'אחר' && s.status !== 'cancelled')
-                            .reduce((s,x) => s + sesDurationHours(x.startTime, x.endTime), 0);
-        const hrsLabel  = dayHrs > 0 ? `${dayHrs % 1 === 0 ? dayHrs : dayHrs.toFixed(1)} שעות` : '';
-
-        const sessionsHtml = daySessions.map(s => {
-          const info   = SES_TYPES[s.type] || SES_TYPES['אחר'];
-          const dur    = sesDurationLabel(s.startTime, s.endTime);
-          const isComp = s.status === 'completed';
-          const statusBadge = isComp
-            ? `<span style="background:#d1fae5;color:#15803d;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap">✅ הושלם</span>`
-            : `<span style="background:var(--accent-light);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap">📅 מתוכנן</span>`;
-          return `
-            <div class="session-row" onclick="openSessionModal('${s.date}','${s.id}')">
-              <div style="width:5px;min-height:48px;border-radius:3px;flex-shrink:0;background:${info.color}"></div>
-              <div class="session-row-time">${s.startTime}<br><span style="font-size:11px;opacity:0.6">${s.endTime}</span></div>
-              <div style="flex:1;min-width:0">
-                <div class="session-row-client">${s.clientName || '—'}</div>
-                <div class="session-row-type">${info.label}${dur ? ' · <b>' + dur + '</b>' : ''}</div>
-              </div>
-              ${statusBadge}
-              ${!isComp ? `
-                <button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#d1fae5;color:#15803d;white-space:nowrap">✓ סיום</button>
-                <button onclick="event.stopPropagation();setSessionStatus('${s.id}','cancelled')" style="border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:800;cursor:pointer;background:#fee2e2;color:#dc2626;white-space:nowrap">✕ ביטול</button>
-              ` : ''}
-              <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:#ccc;cursor:pointer;font-size:20px;padding:2px 6px;line-height:1" title="מחק">×</button>
-            </div>`;
-        }).join('');
-
-        return `
-          <div style="margin-bottom:24px">
-            <div style="display:flex;align-items:center;gap:12px;padding:10px 4px 10px;border-bottom:2px solid ${isToday ? 'var(--accent)' : 'var(--border)'}">
-              <div style="width:42px;height:42px;border-radius:12px;background:${isToday ? 'var(--accent)' : 'var(--surface3)'};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:${isToday ? '#fff' : 'var(--text)'};box-shadow:${isToday?'0 2px 12px rgba(108,71,245,0.3)':'none'};flex-shrink:0">
-                ${dayNum}
-              </div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:17px;font-weight:900;color:${isToday ? 'var(--accent)' : 'var(--text)'};font-family:'Frank Ruhl Libre','Heebo',serif">${dayName}${isToday ? ' ← היום' : ''}</div>
-                <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-top:1px">${monthName} ${dayNum}${hrsLabel ? ' · ' + hrsLabel : ''}</div>
-              </div>
-              <button onclick="openSessionModal('${date}')" style="border:1.5px solid var(--accent);border-radius:9px;padding:5px 14px;font-size:12px;font-weight:800;cursor:pointer;background:var(--accent-light);color:var(--accent);white-space:nowrap">+ סשן</button>
+    let html = `
+      <div style="margin-bottom:${totalEvents > 0 ? '18px' : '6px'}">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;${headerStyle}">
+          <div style="width:40px;height:40px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;${circleStyle}">${dayNum}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:800;color:${isT ? 'var(--accent)' : 'var(--text)'};display:flex;align-items:center;gap:6px">
+              ${dayName}
+              ${isT ? '<span style="font-size:10px;background:var(--accent);color:#fff;border-radius:20px;padding:1px 8px">היום</span>' : ''}
             </div>
-            <div style="padding:10px 0 0">${sessionsHtml}</div>
-          </div>`;
-      }).join('');
+            <div style="font-size:11px;color:var(--text-muted);margin-top:1px">
+              ${dayNum} ${monthName}${dayHrs > 0 ? ' · ' + fmtHrs(dayHrs) + ' שעות' : ''}${totalEvents === 0 ? ' · אין אירועים' : ''}
+            </div>
+          </div>
+          <button onclick="openSessionModal('${dateStr}')" style="border:1.5px solid var(--accent);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:800;cursor:pointer;background:var(--accent-light);color:var(--accent);white-space:nowrap;font-family:'Heebo',sans-serif;flex-shrink:0">+ סשן</button>
+        </div>`;
+
+    if (totalEvents > 0) {
+      html += `<div style="margin-right:50px">`;
+      daySes.forEach(s => { html += renderEventRow(dateStr, s); });
+      dayGcal.forEach(e => { html += renderGcalRow(e); });
+      html += `</div>`;
     }
+
+    html += `</div>`;
+    return html;
   }
 
-  // ── refresh selected day panel ──
-  if (_selDay) selectCalDay(_selDay, true);
+  let finalHtml = '';
+
+  SECTIONS.forEach(sec => {
+    const days = grouped[sec.key] || [];
+    if (days.length === 0) return;
+
+    const f = new Date(days[0] + 'T12:00:00');
+    const l = new Date(days[days.length-1] + 'T12:00:00');
+    const dateRange = `${f.getDate()}–${l.getDate()} ${MONTHS_HE[l.getMonth()]}`;
+
+    const totalEventsInSection = days.reduce((acc, d) => {
+      const ses = (sesByDate[d] || []).length;
+      const appIds = new Set((sesByDate[d] || []).map(s => s.gcalEventId).filter(Boolean));
+      const gcal = (gcalByDate[d] || []).filter(e => !appIds.has(e.id)).length;
+      return acc + ses + gcal;
+    }, 0);
+
+    finalHtml += `
+      <div style="margin-bottom:32px">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px;padding-bottom:10px;border-bottom:2.5px solid var(--accent)">
+          <div style="font-size:19px;font-weight:900;color:var(--accent);font-family:'Frank Ruhl Libre','Heebo',serif">${sec.emoji} ${sec.label}</div>
+          <div style="font-size:12px;color:var(--text-muted);font-weight:700">${dateRange}</div>
+          ${totalEventsInSection > 0
+            ? `<div style="margin-right:auto;font-size:12px;color:var(--text-muted);font-weight:700">${totalEventsInSection} אירועים</div>`
+            : `<div style="margin-right:auto;font-size:12px;color:var(--text-muted);font-style:italic">אין אירועים</div>`
+          }
+        </div>
+        ${days.map(renderDayBlock).join('')}
+      </div>`;
+  });
+
+  if (!finalHtml) {
+    finalHtml = `<div class="empty-state"><div class="ei">🗓️</div><p>אין אירועים — לחץ "+ סשן חדש" כדי להתחיל</p></div>`;
+  }
+
+  container.innerHTML = finalHtml;
 }
 
 function selectCalDay(dateStr, noToggle) {
