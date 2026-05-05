@@ -2212,52 +2212,26 @@ function initFirebase() {
     firebase.initializeApp(firebaseConfig);
     firebaseDB = firebase.database();
 
-    // האזנה בזמן אמת — כל שינוי מכל מכשיר מתעדכן מיד
-    return new Promise(resolve => {
-      firebaseDB.ref('studio_data').on('value', snapshot => {
-        const cloudData = snapshot.val();
-
-        if (_isFirstSync) {
-          // טעינה ראשונה — הענן הוא האמת המוחלטת.
-          // אם יש נתונים בענן → קח אותם (מחיקות נשמרות!).
-          // אם אין ענן → העלה את הנתונים המקומיים.
-          ALL_KEYS.forEach(key => {
-            const localRaw = localStorage.getItem('s_' + key);
-            const localVal = localRaw ? JSON.parse(localRaw) : null;
-            const cloudVal = cloudData ? cloudData[key] : null;
-
-            const hasCloud = cloudVal && (Array.isArray(cloudVal) ? cloudVal.length > 0 : Object.keys(cloudVal).length > 0);
-            const hasLocal = localVal && (Array.isArray(localVal) ? localVal.length > 0 : Object.keys(localVal).length > 0);
-
-            if (hasCloud) {
-              // ענן קיים — הוא מנצח תמיד (כולל מחיקות)
-              localStorage.setItem('s_' + key, JSON.stringify(cloudVal));
-            } else if (hasLocal) {
-              // אין ענן — העלה את הנתונים המקומיים
-              firebaseDB.ref('studio_data/' + key).set(localVal);
-            }
-          });
-          _isFirstSync = false;
-          firebaseReady = true;
-          console.log('Firebase synced ✓ (cloud is source of truth)');
-          refreshAll();
-          resolve();
-        } else {
-          // עדכון בזמן אמת ממכשיר אחר — עדכן תצוגה
-          if (cloudData) {
-            ALL_KEYS.forEach(key => {
-              if (cloudData[key] !== undefined) {
-                localStorage.setItem('s_' + key, JSON.stringify(cloudData[key]));
-              }
-            });
-            refreshAll();
-            console.log('🔄 עדכון בזמן אמת מהענן');
-          }
+    // טעינה חד-פעמית בלבד — לא מאזין תמידי שמדרס שינויים
+    return firebaseDB.ref('studio_data').once('value').then(snapshot => {
+      const cloudData = snapshot.val();
+      ALL_KEYS.forEach(key => {
+        const localRaw = localStorage.getItem('s_' + key);
+        const localVal = localRaw ? JSON.parse(localRaw) : null;
+        const cloudVal = cloudData ? cloudData[key] : null;
+        const hasCloud = cloudVal && (Array.isArray(cloudVal) ? cloudVal.length > 0 : Object.keys(cloudVal).length > 0);
+        const hasLocal = localVal && (Array.isArray(localVal) ? localVal.length > 0 : Object.keys(localVal).length > 0);
+        if (hasCloud) {
+          localStorage.setItem('s_' + key, JSON.stringify(cloudVal));
+        } else if (hasLocal) {
+          firebaseDB.ref('studio_data/' + key).set(localVal);
         }
-      }, err => {
-        console.warn('Firebase listener failed:', err.message);
-        resolve();
       });
+      firebaseReady = true;
+      _isFirstSync = false;
+      console.log('Firebase loaded ✓');
+    }).catch(err => {
+      console.warn('Firebase load failed:', err.message);
     });
   } catch(e) {
     console.warn('Firebase init failed:', e.message);
@@ -2280,10 +2254,15 @@ function pushAllToCloud() {
 function syncKeyToCloud(key) {
   if (!firebaseDB) return;
   const v = localStorage.getItem('s_' + key);
-  if (v) {
-    firebaseDB.ref('studio_data/' + key).set(JSON.parse(v))
-      .catch(e => console.warn('Cloud key sync failed:', e.message));
-  }
+  if (!v) return;
+  const val = JSON.parse(v);
+  const attempt = (tries) => {
+    firebaseDB.ref('studio_data/' + key).set(val).catch(e => {
+      if (tries > 0) setTimeout(() => attempt(tries - 1), 1500);
+      else console.warn('Cloud sync failed after retries:', key, e.message);
+    });
+  };
+  attempt(3);
 }
 
 // ===== LOCAL STORAGE (+ CLOUD SYNC) =====
