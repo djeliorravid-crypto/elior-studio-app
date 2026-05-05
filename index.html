@@ -1780,7 +1780,6 @@
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
     <a onclick="showPage('projects')" data-page="projects"><span class="nav-icon">🎵</span> פרויקטים</a>
-    <a onclick="showPage('gcal')" data-page="gcal"><span class="nav-icon">📅</span> יומן</a>
     <a onclick="showPage('dashboard')" data-page="dashboard"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleCalc()" id="calc-nav-btn" style="margin-top:auto"><span class="nav-icon">🧮</span> מחשבון</a>
   </nav>
@@ -1801,8 +1800,8 @@
 
 <main class="main">
 
-  <!-- ===== UNIFIED CALENDAR (יומן + גוגל) ===== -->
-  <div class="page" id="page-gcal">
+  <!-- ===== UNIFIED CALENDAR (יומן + גוגל) — hidden, kept for gcal sync logic ===== -->
+  <div class="page" id="page-gcal" style="display:none!important">
     <div class="page-header">
       <div><h2>📅 יומן סשנים</h2><p id="ses-page-sub">כל הסשנים שלך במקום אחד</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -2677,7 +2676,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, projects:4, gcal:5, dashboard:6};
+  const map = {income:0, expenses:1, installments:2, profiles:3, projects:4, dashboard:5};
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
