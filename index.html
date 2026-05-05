@@ -3041,11 +3041,16 @@ function renderIncome() {
       <td style="color:var(--text-muted)">${fmtDate(p.dueDate)}</td>
       <td>${p.clientName || '<span style="color:var(--text-muted)">—</span>'}</td>
       <td style="color:var(--text-muted)">${p.description}</td>
-      <td><span class="badge ${p.overdue?'badge-red':'badge-purple'}">${p.overdue?'🔴 באיחור':'⏳ תשלומים'}</span></td>
-      <td style="color:var(--text-muted)">${fmtMoney(p.amount)}</td>
+      <td><span class="badge badge-purple">⏳ תשלומים</span></td>
+      <td style="font-weight:800;color:var(--green)">${fmtMoney(p.amount)}</td>
       <td>
-        <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700"
-          onclick="markPaymentPaid('${p.planId}','${p.paymentId}')">✅ שולם</button>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+          ${p.overdue
+            ? `<span class="badge badge-red">🔴 באיחור</span>`
+            : `<span class="badge badge-gray">טרם שולם</span>`}
+          <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700;padding:3px 9px"
+            onclick="markPaymentPaid('${p.planId}','${p.paymentId}')">✅ שולם</button>
+        </div>
       </td>
       <td></td>
     </tr>
@@ -3663,6 +3668,7 @@ function markPaymentPaid(planId, paymentId) {
 
   refreshAll();
 }
+
 
 function markPaymentUnpaid(planId, paymentId) {
   const plans = load('plans');
