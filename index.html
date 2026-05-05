@@ -54,6 +54,47 @@
       --sidebar-w:    220px;
       --tr-hover:     #fafbff;
       --input-bg:     #ffffff;
+
+      /* ── Semantic pill / button colors ── */
+      --pill-green-bg:    #d1fae5;
+      --pill-green-text:  #15803d;
+      --pill-red-bg:      #fee2e2;
+      --pill-red-text:    #dc2626;
+      --pill-cancel-bg:   #fff0f0;
+      --pill-cancel-text: #b91c1c;
+      --pill-purple-bg:   #f4f0ff;
+      --pill-purple-text: #6c47f5;
+      --pill-gcal-bg:     #e8f0fe;
+      --pill-gcal-text:   #1a73e8;
+
+      /* ── Row status backgrounds ── */
+      --row-paid-bg:     #f0fdf4;
+      --row-pending-bg:  #fafbff;
+      --row-overdue-bg:  #fff8f8;
+      --row-paid-exp-bg: #fff5f5;
+
+      /* ── Popup / floating menu ── */
+      --popup-bg:        #ffffff;
+      --popup-border:    rgba(0,0,0,0.07);
+      --popup-separator: #f0f0f0;
+      --popup-text:      #1a1a1a;
+      --popup-muted:     #888888;
+
+      /* ── GCal brand color ── */
+      --gcal-color:      #1a73e8;
+
+      /* ── Delete button ── */
+      --delete-btn-color: #d1d5db;
+
+      /* ── Balance card gradients (JS sets via class) ── */
+      --balance-pos-bg:     linear-gradient(135deg,#fffbeb,#fef3c7);
+      --balance-pos-border: #fde68a;
+      --balance-neg-bg:     linear-gradient(135deg,#fff5f5,#fee2e2);
+      --balance-neg-border: #fca5a5;
+
+      /* ── Banner backgrounds ── */
+      --banner-today-bg:    linear-gradient(135deg,#fff5f5,#fee2e2);
+      --banner-future-bg:   linear-gradient(135deg,#faf8ff,#f3f0ff);
     }
 
     /* ══════════════════════════════════════════
@@ -91,6 +132,47 @@
       --shadow-hover: 0 8px 36px rgba(0,0,0,0.65);
       --tr-hover:     #242426;
       --input-bg:     #2c2c2e;
+
+      /* ── Semantic pill / button colors — dark ── */
+      --pill-green-bg:    #0d2318;
+      --pill-green-text:  #30d158;
+      --pill-red-bg:      #270e0e;
+      --pill-red-text:    #ff6060;
+      --pill-cancel-bg:   #1a0808;
+      --pill-cancel-text: #ff4444;
+      --pill-purple-bg:   #221e35;
+      --pill-purple-text: #c4b5fd;
+      --pill-gcal-bg:     #0a1a2e;
+      --pill-gcal-text:   #4d9ef7;
+
+      /* ── Row status backgrounds — dark ── */
+      --row-paid-bg:     #0d2318;
+      --row-pending-bg:  #1c1c1e;
+      --row-overdue-bg:  #270e0e;
+      --row-paid-exp-bg: #270e0e;
+
+      /* ── Popup / floating menu — dark ── */
+      --popup-bg:        #1c1c1e;
+      --popup-border:    rgba(255,255,255,0.07);
+      --popup-separator: #3a3a3c;
+      --popup-text:      #f2f2f7;
+      --popup-muted:     #8e8e93;
+
+      /* ── GCal brand — muted for dark ── */
+      --gcal-color:      #4d9ef7;
+
+      /* ── Delete button ── */
+      --delete-btn-color: #636366;
+
+      /* ── Balance card gradients — dark ── */
+      --balance-pos-bg:     linear-gradient(135deg,#1f1a00,#2a2000);
+      --balance-pos-border: #4a2e00;
+      --balance-neg-bg:     linear-gradient(135deg,#1c0a0a,#270e0e);
+      --balance-neg-border: #5c1a1a;
+
+      /* ── Banner backgrounds — dark ── */
+      --banner-today-bg:    linear-gradient(135deg,#1c0a0a,#270e0e);
+      --banner-future-bg:   linear-gradient(135deg,#18153a,#1f1b3d);
     }
 
     /* ── Layout ── */
@@ -155,6 +237,10 @@
     [data-theme="dark"] [style*="linear-gradient(135deg,#fee2e2"] { background: #1c0a0a !important; border-color: #5c1a1a !important; }
     [data-theme="dark"] [style*="linear-gradient(135deg,#f0fdf4"],
     [data-theme="dark"] [style*="linear-gradient(135deg,#dcfce7"] { background: #0a1f0f !important; border-color: #1a5c2e !important; }
+    [data-theme="dark"] [style*="linear-gradient(135deg,#faf8ff"],
+    [data-theme="dark"] [style*="linear-gradient(135deg,#f3f0ff"] { background: #18153a !important; border-color: #3d3060 !important; }
+    [data-theme="dark"] [style*="linear-gradient(135deg,#eff6ff"],
+    [data-theme="dark"] [style*="linear-gradient(135deg,#dbeafe"] { background: #0a1529 !important; border-color: #1a3a5c !important; }
 
     /* ── Mini calendar ── */
     [data-theme="dark"] .mini-cal         { background: var(--surface); border-color: var(--border); }
@@ -166,6 +252,15 @@
     /* ── Warning banner ── */
     [data-theme="dark"] [style*="background:#fff3cd"] { background: #1f1400 !important; border-color: #4a2e00 !important; }
     [data-theme="dark"] [style*="background:#fff8e1"] { background: #1a1200 !important; }
+
+    /* ── GCal connected bar ── */
+    [data-theme="dark"] .gcal-connected-bar { background: linear-gradient(135deg,#0a1f0f,#0d2318) !important; }
+
+    /* ── Cards with hardcoded border-color ── */
+    [data-theme="dark"] [style*="border-color:#ddd6fe"] { border-color: #3d3060 !important; }
+    [data-theme="dark"] [style*="border-color:#bfdbfe"] { border-color: #1a3a5c !important; }
+    [data-theme="dark"] [style*="border-color:#fde68a"] { border-color: #4a2e00 !important; }
+    [data-theme="dark"] [style*="border-color:#fca5a5"] { border-color: #5c1a1a !important; }
 
     /* ── Search / misc ── */
     [data-theme="dark"] .search-bar       { background: var(--surface2); border-color: var(--border); }
@@ -1737,15 +1832,15 @@
       </div>
     </div>
 
-    <div id="gcal-bar-connected" style="display:none;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid var(--green-border);border-radius:12px;padding:12px 18px;margin-bottom:16px;box-shadow:var(--shadow)">
+    <div id="gcal-bar-connected" style="display:none;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid var(--green-border);border-radius:12px;padding:12px 18px;margin-bottom:16px;box-shadow:var(--shadow)" class="gcal-connected-bar">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div id="gcal-status-dot" style="width:12px;height:12px;border-radius:50%;background:#16a34a;flex-shrink:0;box-shadow:0 0 8px rgba(22,163,74,0.5)"></div>
+        <div id="gcal-status-dot" style="width:12px;height:12px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 8px rgba(22,163,74,0.5)"></div>
         <div style="flex:1">
           <span style="font-size:14px;font-weight:800;color:var(--green)">מחובר לגוגל קלנדר</span>
           <span id="gcal-status-text" style="font-size:12px;color:var(--text-muted);margin-right:8px"></span>
         </div>
         <button onclick="fetchGoogleEvents()" id="gcal-refresh-btn"
-          style="background:#fff;color:var(--green);border:1.5px solid var(--green-border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">🔄 רענן</button>
+          style="background:var(--surface);color:var(--green);border:1.5px solid var(--green-border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">🔄 רענן</button>
         <button onclick="disconnectGoogle()"
           style="background:none;color:var(--text-muted);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Heebo',sans-serif">🔌 התנתק</button>
       </div>
@@ -2211,7 +2306,7 @@
       <div class="form-group"><label>סכום כולל (₪) *</label><input type="number" id="pl-total" placeholder="0" min="0" oninput="calcInstallment()"/></div>
       <div class="form-group"><label>מספר תשלומים *</label><input type="number" id="pl-count" placeholder="0" min="1" max="60" oninput="calcInstallment()"/></div>
     </div>
-    <div class="form-group" style="background:var(--accent-light);border-radius:10px;padding:12px 14px;border:1.5px solid #ddd6fe">
+    <div class="form-group" style="background:var(--accent-light);border-radius:10px;padding:12px 14px;border:1.5px solid var(--border-glow)">
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:3px">כל תשלום יהיה:</div>
       <div id="pl-calc" style="font-size:20px;font-weight:800;color:var(--accent)">₪0</div>
     </div>
@@ -3202,15 +3297,15 @@ function renderIncome() {
         <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
           <span class="badge badge-gray">טרם שולם</span>
           <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700;padding:3px 9px" onclick="setIncomeStatus('${i.id}','paid')">✅ שולם</button>
-          <button class="btn btn-sm" style="background:#fee2e2;color:var(--red);font-weight:700;padding:3px 9px" onclick="setIncomeStatus('${i.id}','overdue')">🔴 באיחור</button>
+          <button class="btn btn-sm" style="background:var(--pill-red-bg);color:var(--pill-red-text);font-weight:700;padding:3px 9px" onclick="setIncomeStatus('${i.id}','overdue')">🔴 באיחור</button>
         </div>
       </td>`;
   }
 
   function rowStyle(i) {
     const st = i.status || 'pending';
-    if (st === 'overdue') return 'background:#fff8f8;border-right:3px solid var(--red)';
-    if (st !== 'paid')    return 'background:#fafbff;border-right:3px solid var(--accent)';
+    if (st === 'overdue') return 'background:var(--row-overdue-bg);border-right:3px solid var(--red)';
+    if (st !== 'paid')    return 'background:var(--row-pending-bg);border-right:3px solid var(--accent)';
     return '';
   }
 
@@ -3225,7 +3320,7 @@ function renderIncome() {
 
   const incomeRows = monthEntries.map(i => {
     const isPaid = (i.status||'pending') === 'paid';
-    const rowBg  = isPaid ? 'background:#f0fdf4;border-right:3px solid var(--green)' : rowStyle(i);
+    const rowBg  = isPaid ? 'background:var(--row-paid-bg);border-right:3px solid var(--green)' : rowStyle(i);
     return `
     <tr class="row-framed" style="${rowBg}">
       <td>${fmtDate(i.date)}</td>
@@ -3244,7 +3339,7 @@ function renderIncome() {
 
   // סקשן מידע בלבד — כל תשלומי התוכניות לחודש ללא כפתורים
   const planRows = planInstDisplay.map(p => `
-    <tr class="row-framed" style="background:#fafbff;opacity:0.85">
+    <tr class="row-framed" style="background:var(--row-pending-bg);opacity:0.85">
       <td style="color:var(--text-muted)">${fmtDate(p.dueDate)}</td>
       <td>${p.clientName || '—'}</td>
       <td style="color:var(--text-muted)">${p.description}</td>
@@ -3411,8 +3506,9 @@ function renderExpenses() {
 
   const card = document.getElementById('e-balance-card');
   if (card) {
-    card.style.background   = isPos ? 'linear-gradient(135deg,#fffbeb,#fef3c7)' : 'linear-gradient(135deg,#fff5f5,#fee2e2)';
-    card.style.borderColor  = isPos ? '#fde68a' : '#fca5a5';
+    const cs = getComputedStyle(document.documentElement);
+    card.style.background   = isPos ? cs.getPropertyValue('--balance-pos-bg').trim() : cs.getPropertyValue('--balance-neg-bg').trim();
+    card.style.borderColor  = isPos ? cs.getPropertyValue('--balance-pos-border').trim() : cs.getPropertyValue('--balance-neg-border').trim();
     document.getElementById('e-balance').textContent        = (isPos?'':'-') + fmtMoney(Math.abs(balance));
     document.getElementById('e-balance').style.color        = isPos ? 'var(--orange)' : 'var(--red)';
     document.getElementById('e-balance-small').textContent  = (isPos?'':'-') + fmtMoney(Math.abs(balance));
@@ -3447,7 +3543,7 @@ function renderExpenses() {
           <span class="badge ${catBadge[e.category]||'badge-orange'}" style="font-size:11px">${e.category}</span>
         </div>
         <span style="font-size:15px;font-weight:800;white-space:nowrap;${e.paid?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">-${fmtMoney(e.amount)}</span>
-        <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;${e.paid?'background:#d1fae5;color:#15803d':'background:var(--red-light);color:var(--red)'}">${e.paid?'✓':'שולם'}</button>
+        <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;${e.paid?'background:var(--pill-green-bg);color:var(--pill-green-text)':'background:var(--red-light);color:var(--red)'}">${e.paid?'✓':'שולם'}</button>
         <button onclick="deleteExpense('${e.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 4px">×</button>
       </div>`).join('');
   }
@@ -3479,14 +3575,14 @@ function renderExpenses() {
           </tr></thead>
           <tbody>
             ${sortedAll.map(e => `
-              <tr style="${e.paid ? 'background:#fff5f5;border-right:3px solid var(--red)' : ''}">
+              <tr style="${e.paid ? 'background:var(--row-paid-exp-bg);border-right:3px solid var(--red)' : ''}">
                 <td style="${e.paid?'color:var(--text-muted)':''}">${fmtDate(e.date)}</td>
                 <td>${e.projectName || '<span style="color:var(--text-muted)">כללי</span>'}</td>
                 <td>${e.description}</td>
                 <td><span class="badge ${catBadge[e.category]||'badge-orange'}">${e.category}</span></td>
                 <td style="font-weight:800;color:var(--red)">-${fmtMoney(e.amount)}</td>
                 <td style="white-space:nowrap">
-                  <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px;${e.paid?'background:#d1fae5;color:#15803d':'background:var(--red-light);color:var(--red)'}">${e.paid ? '✓ שולם' : 'שולם'}</button>
+                  <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px;${e.paid?'background:var(--pill-green-bg);color:var(--pill-green-text)':'background:var(--red-light);color:var(--red)'}">${e.paid ? '✓ שולם' : 'שולם'}</button>
                   <button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">🗑</button>
                 </td>
               </tr>
@@ -3525,7 +3621,7 @@ function renderExpenses() {
                 <td style="font-weight:800;${isPaidThisMonth?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">-${fmtMoney(r.amount)}</td>
                 <td style="color:var(--text-muted);font-size:14px">${r.startMonth}</td>
                 <td style="color:var(--text-muted);font-size:14px">${r.endMonth || '∞ ללא הגבלה'}</td>
-                <td>${isActive ? `<button onclick="toggleRecurringPaid('${r.id}')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;${isPaidThisMonth?'background:#d1fae5;color:#15803d':'background:var(--red-light);color:var(--red)'}">${isPaidThisMonth?'✓ שולם':'שולם'}</button>` : '<span style="color:var(--text-muted);font-size:14px">לא פעיל</span>'}</td>
+                <td>${isActive ? `<button onclick="toggleRecurringPaid('${r.id}')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;${isPaidThisMonth?'background:var(--pill-green-bg);color:var(--pill-green-text)':'background:var(--red-light);color:var(--red)'}">${isPaidThisMonth?'✓ שולם':'שולם'}</button>` : '<span style="color:var(--text-muted);font-size:14px">לא פעיל</span>'}</td>
                 <td><button class="btn btn-danger btn-sm" onclick="deleteRecurring('${r.id}')">🗑</button></td>
               </tr>`;
             }).join('')}
@@ -4413,40 +4509,55 @@ function showPillMenu(sesId, evt) {
 
   const menu = document.createElement('div');
   menu.id = 'pill-menu';
+  const _cs = getComputedStyle(document.documentElement);
+  const _popBg   = _cs.getPropertyValue('--popup-bg').trim();
+  const _popBord = _cs.getPropertyValue('--popup-border').trim();
+  const _popSep  = _cs.getPropertyValue('--popup-separator').trim();
+  const _popTxt  = _cs.getPropertyValue('--popup-text').trim();
+  const _popMut  = _cs.getPropertyValue('--popup-muted').trim();
+  const _pgBg    = _cs.getPropertyValue('--pill-purple-bg').trim();
+  const _pgTxt   = _cs.getPropertyValue('--pill-purple-text').trim();
+  const _grBg    = _cs.getPropertyValue('--pill-green-bg').trim();
+  const _grTxt   = _cs.getPropertyValue('--pill-green-text').trim();
+  const _rdBg    = _cs.getPropertyValue('--pill-red-bg').trim();
+  const _rdTxt   = _cs.getPropertyValue('--pill-red-text').trim();
+  const _cnBg    = _cs.getPropertyValue('--pill-cancel-bg').trim();
+  const _cnTxt   = _cs.getPropertyValue('--pill-cancel-text').trim();
+
   menu.style.cssText = `
-    position:fixed;z-index:9999;background:#fff;border-radius:16px;
+    position:fixed;z-index:9999;background:${_popBg};border-radius:16px;
     box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:14px 16px 12px;
     min-width:200px;direction:rtl;font-family:'Heebo',sans-serif;
-    border:1.5px solid rgba(0,0,0,0.07);
+    border:1.5px solid ${_popBord};
   `;
 
   menu.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1.5px solid #f0f0f0">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1.5px solid ${_popSep}">
       <div style="width:10px;height:10px;border-radius:50%;background:${info.color};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:800;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.clientName || info.label}</div>
-        <div style="font-size:11px;color:#888;margin-top:1px">${s.startTime}–${s.endTime}${dur ? ' · ' + dur : ''}</div>
+        <div style="font-size:13px;font-weight:800;color:${_popTxt};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.clientName || info.label}</div>
+        <div style="font-size:11px;color:${_popMut};margin-top:1px">${s.startTime}–${s.endTime}${dur ? ' · ' + dur : ''}</div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px">
       <button onclick="closePillMenu();openSessionModal('${s.date}','${s.id}')"
         style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
-               background:#f4f0ff;color:#6c47f5;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+               background:${_pgBg};color:${_pgTxt};text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
         <span>✏️</span><span>עריכה</span>
       </button>
       <button onclick="closePillMenu();setSessionStatus('${s.id}','completed')"
         style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
-               background:#d1fae5;color:#15803d;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+               background:${_grBg};color:${_grTxt};text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
         <span>✅</span><span>סמן כהושלם</span>
       </button>
       <button onclick="closePillMenu();setSessionStatus('${s.id}','cancelled')"
         style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
-               background:#fee2e2;color:#dc2626;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+               background:${_rdBg};color:${_rdTxt};text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
         <span>✕</span><span>ביטול וסגירה</span>
       </button>
       <button onclick="closePillMenu();deleteSession('${s.id}')"
         style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
-               background:#fff0f0;color:#b91c1c;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+               background:${_cnBg};color:${_cnTxt};text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
         <span>🗑</span><span>מחיקה</span>
       </button>
     </div>
@@ -4487,30 +4598,42 @@ function showGcalPillMenu(gcalId, evt) {
 
   const menu = document.createElement('div');
   menu.id = 'pill-menu';
+  const _gcs    = getComputedStyle(document.documentElement);
+  const _gPopBg  = _gcs.getPropertyValue('--popup-bg').trim();
+  const _gPopBrd = _gcs.getPropertyValue('--popup-border').trim();
+  const _gPopSep = _gcs.getPropertyValue('--popup-separator').trim();
+  const _gPopTxt = _gcs.getPropertyValue('--popup-text').trim();
+  const _gPopMut = _gcs.getPropertyValue('--popup-muted').trim();
+  const _gGcalC  = _gcs.getPropertyValue('--gcal-color').trim();
+  const _gPgBg   = _gcs.getPropertyValue('--pill-purple-bg').trim();
+  const _gPgTxt  = _gcs.getPropertyValue('--pill-purple-text').trim();
+  const _gCnBg   = _gcs.getPropertyValue('--pill-cancel-bg').trim();
+  const _gCnTxt  = _gcs.getPropertyValue('--pill-cancel-text').trim();
+
   menu.style.cssText = `
-    position:fixed;z-index:9999;background:#fff;border-radius:16px;
+    position:fixed;z-index:9999;background:${_gPopBg};border-radius:16px;
     box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:14px 16px 12px;
     min-width:200px;direction:rtl;font-family:'Heebo',sans-serif;
-    border:1.5px solid rgba(0,0,0,0.07);
+    border:1.5px solid ${_gPopBrd};
   `;
 
   menu.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1.5px solid #f0f0f0">
-      <div style="width:10px;height:10px;border-radius:50%;background:#1a73e8;flex-shrink:0"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1.5px solid ${_gPopSep}">
+      <div style="width:10px;height:10px;border-radius:50%;background:${_gGcalC};flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:800;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
-        <div style="font-size:11px;color:#888;margin-top:1px">${st}${en?'–'+en:''} · גוגל קלנדר</div>
+        <div style="font-size:13px;font-weight:800;color:${_gPopTxt};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${title}</div>
+        <div style="font-size:11px;color:${_gPopMut};margin-top:1px">${st}${en?'–'+en:''} · גוגל קלנדר</div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px">
       <button onclick="closePillMenu();importGcalEvent(${evJson.replace(/"/g,'&quot;')})"
         style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
-               background:#f4f0ff;color:#6c47f5;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+               background:${_gPgBg};color:${_gPgTxt};text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
         <span>📥</span><span>ייבא כסשן</span>
       </button>
       <button onclick="closePillMenu();if(confirm('למחוק את האירוע מגוגל קלנדר?')){deleteGcalEvent('${gcalId}');toast('🗑 נמחק מגוגל קלנדר')}"
         style="border:none;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;
-               background:#fff0f0;color:#b91c1c;text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
+               background:${_gCnBg};color:${_gCnTxt};text-align:right;font-family:'Heebo',sans-serif;display:flex;align-items:center;gap:8px">
         <span>🗑</span><span>מחק מגוגל קלנדר</span>
       </button>
     </div>
@@ -4594,8 +4717,9 @@ function renderSessionCal() {
     document.getElementById('next-ses-detail').textContent = `${ns.startTime}–${ns.endTime} · ${info.label}${ns.notes ? ' · ' + ns.notes : ''}`;
     document.getElementById('next-ses-btn').onclick = () => openSessionModal(ns.date, ns.id);
     banner.style.display = 'flex';
+    const _bcs = getComputedStyle(document.documentElement);
     banner.style.borderColor = dayDiff === 0 ? '#ef4444' : 'var(--accent)';
-    banner.style.background = dayDiff === 0 ? 'linear-gradient(135deg,#fff5f5,#fee2e2)' : 'linear-gradient(135deg,#faf8ff,#f3f0ff)';
+    banner.style.background = dayDiff === 0 ? _bcs.getPropertyValue('--banner-today-bg').trim() : _bcs.getPropertyValue('--banner-future-bg').trim();
   } else if (banner) {
     banner.style.display = 'none';
   }
@@ -4703,11 +4827,11 @@ function renderWeeklyView() {
           <div style="font-size:12px;color:var(--text-muted);margin-top:1px">${info.label}${dur ? ' · ' + dur : ''}</div>
         </div>
         ${isComp
-          ? `<span style="background:#d1fae5;color:#15803d;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap;flex-shrink:0">✅ הושלם</span>`
-          : `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer;background:#d1fae5;color:#15803d;white-space:nowrap;flex-shrink:0;font-family:'Heebo',sans-serif">✓</button>
-             <button onclick="event.stopPropagation();setSessionStatus('${s.id}','cancelled')" style="border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer;background:#fee2e2;color:#dc2626;white-space:nowrap;flex-shrink:0;font-family:'Heebo',sans-serif">✕</button>`
+          ? `<span style="background:var(--pill-green-bg);color:var(--pill-green-text);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap;flex-shrink:0">✅ הושלם</span>`
+          : `<button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer;background:var(--pill-green-bg);color:var(--pill-green-text);white-space:nowrap;flex-shrink:0;font-family:'Heebo',sans-serif">✓</button>
+             <button onclick="event.stopPropagation();setSessionStatus('${s.id}','cancelled')" style="border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer;background:var(--pill-red-bg);color:var(--pill-red-text);white-space:nowrap;flex-shrink:0;font-family:'Heebo',sans-serif">✕</button>`
         }
-        <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:#d1d5db;cursor:pointer;font-size:20px;padding:2px 4px;line-height:1;flex-shrink:0" title="מחק">×</button>
+        <button onclick="event.stopPropagation();deleteSession('${s.id}')" style="border:none;background:none;color:var(--delete-btn-color);cursor:pointer;font-size:20px;padding:2px 4px;line-height:1;flex-shrink:0" title="מחק">×</button>
       </div>`;
   }
 
@@ -4716,16 +4840,16 @@ function renderWeeklyView() {
     const en = e.end?.dateTime?.split('T')[1]?.slice(0,5) || '';
     return `
       <div class="session-row" onclick="showGcalPillMenu('${e.id}',event)" style="align-items:center;cursor:pointer">
-        <div style="width:4px;min-height:54px;border-radius:2px;flex-shrink:0;background:#1a73e8"></div>
+        <div style="width:4px;min-height:54px;border-radius:2px;flex-shrink:0;background:var(--gcal-color)"></div>
         <div style="min-width:48px;text-align:center;flex-shrink:0">
-          <div style="font-size:15px;font-weight:900;color:#1a73e8;font-family:'Rubik',sans-serif;line-height:1.2">${st}</div>
+          <div style="font-size:15px;font-weight:900;color:var(--gcal-color);font-family:'Rubik',sans-serif;line-height:1.2">${st}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:1px">${en}</div>
         </div>
         <div style="flex:1;min-width:0;padding:0 6px">
           <div style="font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.summary || 'אירוע גוגל'}</div>
-          <div style="font-size:12px;color:#1a73e8;margin-top:1px">גוגל קלנדר</div>
+          <div style="font-size:12px;color:var(--gcal-color);margin-top:1px">גוגל קלנדר</div>
         </div>
-        <span style="background:#e8f0fe;color:#1a73e8;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap;flex-shrink:0">📅 גוגל</span>
+        <span style="background:var(--pill-gcal-bg);color:var(--pill-gcal-text);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap;flex-shrink:0">📅 גוגל</span>
       </div>`;
   }
 
@@ -4860,8 +4984,8 @@ function selectCalDay(dateStr, noToggle) {
         : s.status === 'cancelled'
         ? `<span class="badge badge-gray">❌ בוטל</span>`
         : `<span style="display:flex;gap:6px">
-             <button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#d1fae5;color:#15803d">✓ סיום</button>
-             <button onclick="event.stopPropagation();setSessionStatus('${s.id}','cancelled')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#fee2e2;color:#dc2626">✕ ביטול</button>
+             <button onclick="event.stopPropagation();setSessionStatus('${s.id}','completed')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;background:var(--pill-green-bg);color:var(--pill-green-text)">✓ סיום</button>
+             <button onclick="event.stopPropagation();setSessionStatus('${s.id}','cancelled')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;background:var(--pill-red-bg);color:var(--pill-red-text)">✕ ביטול</button>
            </span>`;
       return `
         <div class="session-row" onclick="openSessionModal('${s.date}','${s.id}')">
