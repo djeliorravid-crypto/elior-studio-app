@@ -2204,6 +2204,7 @@ let firebaseReady = false;
 let _isFirstSync = true;
 
 function initFirebase() {
+  _loadPending(); // טען תור שמירה שנשאר מסשן קודם
   try {
     if (!firebase || firebaseConfig.apiKey === 'PASTE_YOUR_API_KEY_HERE') {
       console.warn('Firebase not configured – running in local-only mode');
@@ -2212,26 +2213,38 @@ function initFirebase() {
     firebase.initializeApp(firebaseConfig);
     firebaseDB = firebase.database();
 
-    // טעינה חד-פעמית בלבד — לא מאזין תמידי שמדרס שינויים
     return firebaseDB.ref('studio_data').once('value').then(snapshot => {
       const cloudData = snapshot.val();
       ALL_KEYS.forEach(key => {
-        const localRaw = localStorage.getItem('s_' + key);
-        const localVal = localRaw ? JSON.parse(localRaw) : null;
-        const cloudVal = cloudData ? cloudData[key] : null;
-        const hasCloud = cloudVal && (Array.isArray(cloudVal) ? cloudVal.length > 0 : Object.keys(cloudVal).length > 0);
-        const hasLocal = localVal && (Array.isArray(localVal) ? localVal.length > 0 : Object.keys(localVal).length > 0);
-        if (hasCloud) {
-          localStorage.setItem('s_' + key, JSON.stringify(cloudVal));
-        } else if (hasLocal) {
-          firebaseDB.ref('studio_data/' + key).set(localVal);
+        if (_pending[key]) {
+          // יש שינויים שלא הועלו מסשן קודם — הם חדשים יותר מהענן
+          // השתמש בהם מקומית ודחוף לענן
+          localStorage.setItem('s_' + key, JSON.stringify(_pending[key].data));
+          _pushKey(key);
+        } else {
+          // אין pending — הענן הוא האמת
+          const cloudVal = cloudData?.[key] ?? null;
+          const hasCloud = cloudVal && (Array.isArray(cloudVal) ? cloudVal.length > 0 : Object.keys(cloudVal).length > 0);
+          if (hasCloud) {
+            localStorage.setItem('s_' + key, JSON.stringify(cloudVal));
+          } else {
+            // אין ענן — העלה את המקומי
+            const localRaw = localStorage.getItem('s_' + key);
+            if (localRaw) {
+              const localVal = JSON.parse(localRaw);
+              if (localVal && (Array.isArray(localVal) ? localVal.length > 0 : Object.keys(localVal).length > 0)) {
+                _markDirty(key, localVal);
+                _pushKey(key);
+              }
+            }
+          }
         }
       });
       firebaseReady = true;
       _isFirstSync = false;
-      console.log('Firebase loaded ✓');
+      console.log('Firebase loaded ✓ pending:', Object.keys(_pending).length);
     }).catch(err => {
-      console.warn('Firebase load failed:', err.message);
+      console.warn('Firebase load failed — using local data:', err.message);
     });
   } catch(e) {
     console.warn('Firebase init failed:', e.message);
@@ -2241,37 +2254,65 @@ function initFirebase() {
 
 const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions'];
 
-function pushAllToCloud() {
-  if (!firebaseDB) return;
-  const data = {};
-  ALL_KEYS.forEach(k => {
-    const v = localStorage.getItem('s_' + k);
-    if (v) data[k] = JSON.parse(v);
-  });
-  firebaseDB.ref('studio_data').set(data).catch(e => console.warn('Cloud push failed:', e.message));
+// ===== SYNC ENGINE — תור שמירה עמיד =====
+// כל שמירה נכנסת לתור ב-localStorage.
+// לא תימחק עד שהענן מאשר קבלה.
+// כך אף שינוי לא יאבד גם אם האפליקציה נסגרת באמצע.
+
+let _pending = {};  // key → {data, ts}
+
+function _loadPending() {
+  try { _pending = JSON.parse(localStorage.getItem('_sync_pending') || '{}'); } catch(e) { _pending = {}; }
 }
 
-function syncKeyToCloud(key) {
-  if (!firebaseDB) return;
-  const v = localStorage.getItem('s_' + key);
-  if (!v) return;
-  const val = JSON.parse(v);
-  const attempt = (tries) => {
-    firebaseDB.ref('studio_data/' + key).set(val).catch(e => {
-      if (tries > 0) setTimeout(() => attempt(tries - 1), 1500);
-      else console.warn('Cloud sync failed after retries:', key, e.message);
-    });
-  };
-  attempt(3);
+function _savePending() {
+  try { localStorage.setItem('_sync_pending', JSON.stringify(_pending)); } catch(e) {}
 }
+
+function _markDirty(key, val) {
+  _pending[key] = { data: val, ts: Date.now() };
+  _savePending();
+}
+
+function _markClean(key) {
+  if (!_pending[key]) return;
+  delete _pending[key];
+  _savePending();
+}
+
+function _pushKey(key) {
+  if (!firebaseDB || !_pending[key]) return;
+  const snap = _pending[key];
+  firebaseDB.ref('studio_data/' + key).set(snap.data)
+    .then(() => { _markClean(key); })
+    .catch(() => { /* נשאר בתור, ינסה שוב */ });
+}
+
+function flushPending() {
+  Object.keys(_pending).forEach(k => _pushKey(k));
+}
+
+function pushAllToCloud() {
+  if (!firebaseDB) return;
+  ALL_KEYS.forEach(k => {
+    const v = localStorage.getItem('s_' + k);
+    if (v) { _markDirty(k, JSON.parse(v)); _pushKey(k); }
+  });
+}
+
+function syncKeyToCloud(key) { _pushKey(key); } // backward compat
 
 // ===== LOCAL STORAGE (+ CLOUD SYNC) =====
 const load = key => JSON.parse(localStorage.getItem('s_' + key) || '[]');
 
-const save = (key, val) => {
+function save(key, val) {
+  // 1. כתוב מקומית מיד — תמיד מצליח
   localStorage.setItem('s_' + key, JSON.stringify(val));
-  syncKeyToCloud(key);
-};
+  // 2. הוסף לתור ושמור בdisk — שורד סגירת אפליקציה
+  _markDirty(key, val);
+  // 3. נסה לדחוף לענן עכשיו
+  _pushKey(key);
+}
 
 const genId = () => 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
 
@@ -4797,42 +4838,42 @@ initFirebase().then(() => {
 
 // ── עקביות נתונים ──
 
-// 1. כשהאפליקציה חוזרת למסך — סנכרן מיד מהענן
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && firebaseDB) {
-    firebaseDB.ref('studio_data').once('value').then(snapshot => {
-      const cloudData = snapshot.val();
-      if (!cloudData) return;
-      let changed = false;
-      ALL_KEYS.forEach(key => {
-        if (cloudData[key] !== undefined) {
-          const cur = localStorage.getItem('s_' + key);
-          const next = JSON.stringify(cloudData[key]);
-          if (cur !== next) { localStorage.setItem('s_' + key, next); changed = true; }
-        }
-      });
-      if (changed) { refreshAll(); console.log('🔄 סנכרון בחזרה למסך'); }
-    }).catch(() => {});
-  }
-});
-
-// 2. סנכרון שקט כל 5 דקות — מגן מפני חוסר עקביות
-setInterval(() => {
-  if (!firebaseDB || document.visibilityState !== 'visible') return;
+function _syncFromCloud(reason) {
+  if (!firebaseDB) return;
+  // קודם שלח pending — אחר כך קח מהענן רק מה שאין pending עליו
+  flushPending();
   firebaseDB.ref('studio_data').once('value').then(snapshot => {
     const cloudData = snapshot.val();
     if (!cloudData) return;
     let changed = false;
     ALL_KEYS.forEach(key => {
-      if (cloudData[key] !== undefined) {
-        const cur = localStorage.getItem('s_' + key);
-        const next = JSON.stringify(cloudData[key]);
-        if (cur !== next) { localStorage.setItem('s_' + key, next); changed = true; }
-      }
+      if (_pending[key]) return; // יש שינוי מקומי — אל תדרוס!
+      if (cloudData[key] === undefined) return;
+      const cur  = localStorage.getItem('s_' + key);
+      const next = JSON.stringify(cloudData[key]);
+      if (cur !== next) { localStorage.setItem('s_' + key, next); changed = true; }
     });
-    if (changed) { refreshAll(); console.log('🔄 סנכרון תקופתי'); }
+    if (changed) { refreshAll(); console.log('🔄', reason); }
   }).catch(() => {});
-}, 5 * 60 * 1000);
+}
+
+// 1. כשחוזרים לאפליקציה — סנכרן מהענן (בלי לדרוס pending)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') _syncFromCloud('חזרה למסך');
+});
+
+// 2. כל 3 דקות — ריענון שקט
+setInterval(() => {
+  if (document.visibilityState === 'visible') _syncFromCloud('סנכרון תקופתי');
+}, 3 * 60 * 1000);
+
+// 3. כל 20 שניות — נסה לשלוח pending אם יש
+setInterval(() => {
+  if (document.visibilityState === 'visible' && Object.keys(_pending).length > 0) {
+    flushPending();
+    console.log('📤 שליחת pending:', Object.keys(_pending));
+  }
+}, 20 * 1000);
 
 // בדיקת עדכון אוטומטית — כל פתיחה
 (function checkVersion() {
