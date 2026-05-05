@@ -3178,10 +3178,10 @@ function renderExpenses() {
 
   // הכנסות החודש בלבד
   const monthIncome = income.filter(i => inCurMonth(i.date));
-  // הוצאות החודש בלבד (מסונכרן לחודש הנבחר)
+  // הוצאות החודש בלבד — רק מ"כל ההוצאות". הוצאות קבועות = תצוגה בלבד, לא נספרות בחישוב.
   const allExpenses = expenses.filter(e => inCurMonth(e.date));
 
-  // הוצאות ממויינות לפי פרויקט (מיון עולה לפי תאריך)
+  // הוצאות ממויינות לפי פרויקט
   const byProject = {};
   [...allExpenses].sort((a,b) => new Date(a.date)-new Date(b.date)).forEach(e => {
     const key = e.projectId || '__general__';
@@ -3189,24 +3189,21 @@ function renderExpenses() {
     byProject[key].push(e);
   });
 
-  // סה"כ הוצאות החודש — כולל חוזרות
-  const recurringMonthTotal = activeRecurring.reduce((s,r) => s + Number(r.amount), 0);
-  const totalExpenses = allExpenses.reduce((s,e) => s + Number(e.amount), 0) + recurringMonthTotal;
+  // סה"כ הוצאות החודש — רק מ"כל ההוצאות" (הוצאות קבועות הן תצוגה בלבד)
+  const totalExpenses = allExpenses.reduce((s,e) => s + Number(e.amount), 0);
   const totalIncome   = monthIncome.reduce((s,i) => s + Number(i.amount), 0);
   const netProfit     = totalIncome - totalExpenses;
 
   // ── כרטיס "בנק העסק" — רק מה שנכנס ויצא בפועל (שולם) ──
-  const paidIncAmt  = monthIncome.filter(i => (i.status||'pending') === 'paid').reduce((s,i) => s + Number(i.amount), 0);
-  const paidExpAmt  = allExpenses.filter(e => inCurMonth(e.date) && e.paid).reduce((s,e) => s + Number(e.amount), 0);
-  const paidRecAmt  = activeRecurring.filter(r => r.paidMonths && r.paidMonths[curMonthKey]).reduce((s,r) => s + Number(r.amount), 0);
-  const totalPaidOut = paidExpAmt + paidRecAmt;
+  const paidIncAmt   = monthIncome.filter(i => (i.status||'pending') === 'paid').reduce((s,i) => s + Number(i.amount), 0);
+  const paidExpAmt   = allExpenses.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0);
+  const totalPaidOut = paidExpAmt;
   const balance      = paidIncAmt - totalPaidOut;
   const isPos        = balance >= 0;
 
   // גם עבור תצוגה "כמה עוד ממתין"
-  const unpaidExpAmt   = allExpenses.filter(e => inCurMonth(e.date) && !e.paid).reduce((s,e) => s + Number(e.amount), 0);
-  const unpaidRecAmt   = activeRecurring.filter(r => !(r.paidMonths && r.paidMonths[curMonthKey])).reduce((s,r) => s + Number(r.amount), 0);
-  const totalUnpaidOut = unpaidExpAmt + unpaidRecAmt;
+  const unpaidExpAmt   = allExpenses.filter(e => !e.paid).reduce((s,e) => s + Number(e.amount), 0);
+  const totalUnpaidOut = unpaidExpAmt;
 
   const card = document.getElementById('e-balance-card');
   if (card) {
@@ -3341,7 +3338,7 @@ function renderExpenses() {
       <div class="table-card" style="margin-top:8px">
         <div class="table-header">
           <h3>🔁 הוצאות קבועות</h3>
-          <div style="font-size:15px;color:var(--text-muted)">חוזרות כל חודש אוטומטית</div>
+          <div style="font-size:13px;color:var(--text-muted)">תזכורת בלבד — לא נכנסות לחישוב הסכומים</div>
         </div>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr>
@@ -4723,10 +4720,11 @@ function renderPendingBox() {
   const paidRecAmt   = activeRec.filter(r => r.paidMonths && r.paidMonths[monthKey2]).reduce((s,r) => s + Number(r.amount), 0);
   const unpaidRecAmt = unpaidRec.reduce((s,r) => s + Number(r.amount), 0);
 
+  // הוצאות קבועות = תצוגה בלבד, לא נכנסות לחישוב
   const monthExp     = expenses.filter(e => inMonth(e.date));
   const unpaidExp    = monthExp.filter(e => !e.paid);
-  const paidExpAmt   = monthExp.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0) + paidRecAmt;
-  const unpaidExpAmt = unpaidExp.reduce((s,e) => s + Number(e.amount), 0) + unpaidRecAmt;
+  const paidExpAmt   = monthExp.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0);
+  const unpaidExpAmt = unpaidExp.reduce((s,e) => s + Number(e.amount), 0);
   const totalExpMonth = paidExpAmt + unpaidExpAmt;
   const expPct = totalExpMonth > 0 ? Math.round((paidExpAmt / totalExpMonth) * 100) : 0;
 
@@ -4741,7 +4739,7 @@ function renderPendingBox() {
   set('pending-income-pct', incPct + '% גבוי');
   setW('pending-income-bar', incPct);
 
-  const totalUnpaidExpCount = unpaidExp.length + unpaidRec.length;
+  const totalUnpaidExpCount = unpaidExp.length;
   set('pending-expenses-amt', fmtMoney(unpaidExpAmt));
   set('pending-expenses-sub', totalUnpaidExpCount === 0
     ? `הכל שולם החודש 🎉 — סה"כ ${fmtMoney(totalExpMonth)}`
