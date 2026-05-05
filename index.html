@@ -1898,7 +1898,7 @@
         <div class="stat-ytd-sub" id="stat-ytd-inc-n">0 עסקאות</div>
       </div>
       <div class="stat-ytd-cell">
-        <div class="stat-ytd-lbl">📤 הוצאות השנה</div>
+        <div class="stat-ytd-lbl">📤 הוצאות ששולמו השנה</div>
         <div class="stat-ytd-val red" id="stat-ytd-exp">₪0</div>
         <div class="stat-ytd-sub" id="stat-ytd-exp-n">0 עסקאות</div>
       </div>
@@ -3646,10 +3646,10 @@ function renderDashboard() {
   const isPaidInc = i => (i.status || 'pending') === 'paid';
 
   // ── שנה עד היום ──
-  // הכנסות = רק שולמו (מתאים ל-"התקבל בפועל" בדף ההכנסה)
-  // הוצאות = כל ההוצאות של השנה (מתאים ל-"כל ההוצאות" בדף ההוצאות)
+  // הכנסות = רק שולמו — מתאים ל-"התקבל בפועל" בדף ההכנסה
+  // הוצאות = רק שולמו — מתאים לבקשת המשתמש (מה שיצא בפועל מהבנק)
   const ytdInc  = allIncome.filter(i  => isPaidInc(i) && new Date(i.date).getFullYear() === thisYear);
-  const ytdExp  = allExpenses.filter(e => new Date(e.date).getFullYear() === thisYear);
+  const ytdExp  = allExpenses.filter(e => e.paid && new Date(e.date).getFullYear() === thisYear);
   const ytdIncTotal = ytdInc.reduce((s,i) => s + Number(i.amount), 0);
   const ytdExpTotal = ytdExp.reduce((s,e) => s + Number(e.amount), 0);
   const ytdProfit   = ytdIncTotal - ytdExpTotal;
@@ -3670,12 +3670,12 @@ function renderDashboard() {
     while (m < 0) { m += 12; y--; }
     last6months.push({ m, y, lbl: MONTHS_HE[m] });
   }
-  // הכנסות = שולמו בלבד; הוצאות = הכל
+  // הכנסות = שולמו בלבד; הוצאות = שולמו בלבד
   const inc6 = last6months.map(({m,y}) =>
     allIncome.filter(i => { const d=new Date(i.date); return isPaidInc(i) && d.getFullYear()===y && d.getMonth()===m; })
              .reduce((s,i) => s+Number(i.amount), 0));
   const exp6 = last6months.map(({m,y}) =>
-    allExpenses.filter(e => { const d=new Date(e.date); return d.getFullYear()===y && d.getMonth()===m; })
+    allExpenses.filter(e => { const d=new Date(e.date); return e.paid && d.getFullYear()===y && d.getMonth()===m; })
                .reduce((s,e) => s+Number(e.amount), 0));
 
   const avgInc = Math.round(inc6.reduce((s,v)=>s+v,0) / 6);
@@ -3688,7 +3688,7 @@ function renderDashboard() {
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     profitByMonth[key] = (profitByMonth[key] || 0) + Number(i.amount);
   });
-  allExpenses.forEach(e => {
+  allExpenses.filter(e => e.paid).forEach(e => {
     const d = new Date(e.date);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     profitByMonth[key] = (profitByMonth[key] || 0) - Number(e.amount);
@@ -3762,8 +3762,8 @@ function renderDashboard() {
           <div class="stat-cat-bar-wrap"><div class="stat-cat-bar" style="width:${Math.round((val/maxCat)*100)}%;background:${colorVar}"></div></div>
         </div>`).join('') + `</div>`;
   }
-  renderCats(allIncome.filter(isPaidInc), 'var(--green)', 'stat-inc-cats');
-  renderCats(allExpenses,                 'var(--red)',   'stat-exp-cats');
+  renderCats(allIncome.filter(isPaidInc),        'var(--green)', 'stat-inc-cats');
+  renderCats(allExpenses.filter(e => e.paid),    'var(--red)',   'stat-exp-cats');
 
   // ── טבלת פירוט חודשי ──
   const yearSel = document.getElementById('stat-year-sel');
@@ -3780,9 +3780,9 @@ function renderDashboard() {
   if (monthlyEl) {
     let yearInc = 0, yearExp = 0;
     const rows = MONTHS_HE.map((mName, mi) => {
-      // הכנסות = שולמו בלבד; הוצאות = הכל (מתאים לחישוב בדף ההוצאות)
+      // הכנסות = שולמו בלבד; הוצאות = שולמו בלבד
       const mInc = allIncome.filter(i => { const d=new Date(i.date); return isPaidInc(i) && d.getFullYear()===selYear && d.getMonth()===mi; });
-      const mExp = allExpenses.filter(e => { const d=new Date(e.date); return d.getFullYear()===selYear && d.getMonth()===mi; });
+      const mExp = allExpenses.filter(e => { const d=new Date(e.date); return e.paid && d.getFullYear()===selYear && d.getMonth()===mi; });
       const incAmt = mInc.reduce((s,i) => s+Number(i.amount), 0);
       const expAmt = mExp.reduce((s,e) => s+Number(e.amount), 0);
       const net    = incAmt - expAmt;
@@ -3797,7 +3797,7 @@ function renderDashboard() {
         <thead><tr>
           <th style="text-align:right">חודש</th>
           <th style="text-align:right">הכנסות שהתקבלו</th>
-          <th style="text-align:right">הוצאות</th>
+          <th style="text-align:right">הוצאות ששולמו</th>
           <th style="text-align:right">רווח נקי</th>
           <th style="text-align:right">מגמה</th>
         </tr></thead>
