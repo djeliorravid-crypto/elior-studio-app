@@ -53,7 +53,49 @@
       --sidebar-bg:   #ffffff;
       --sidebar-w:    220px;
       --tr-hover:     #fafbff;
+      --input-bg:     #ffffff;
     }
+
+    /* ══════════════ DARK MODE ══════════════ */
+    [data-theme="dark"] {
+      --bg:           #16171f;
+      --surface:      #1e2030;
+      --surface2:     #252840;
+      --surface3:     #2c2f4a;
+      --border:       #323557;
+      --border-glow:  rgba(139,109,255,0.30);
+      --accent:       #8b6dff;
+      --accent-light: #1f1a40;
+      --accent2:      #b39dff;
+      --accent-glow:  rgba(139,109,255,0.18);
+      --green:        #34d470;
+      --green-light:  #0b2218;
+      --green-border: #166534;
+      --red:          #ff6b6b;
+      --red-light:    #2d1215;
+      --orange:       #fb923c;
+      --text:         #e6e8f4;
+      --text-muted:   #8891b8;
+      --shadow:       0 2px 20px rgba(0,0,0,0.40);
+      --shadow-hover: 0 8px 36px rgba(0,0,0,0.55);
+      --tr-hover:     #252840;
+      --input-bg:     #252840;
+    }
+
+    /* ── Dark mode overrides — inline colors that use direct hex ── */
+    [data-theme="dark"] body       { background: var(--bg); }
+    [data-theme="dark"] .sidebar   { background: #111218; border-color: #252840; }
+    [data-theme="dark"] input, [data-theme="dark"] select, [data-theme="dark"] textarea {
+      background: var(--input-bg) !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+    [data-theme="dark"] th { background: var(--surface3); color: var(--text-muted); }
+    [data-theme="dark"] .card-value.orange { color: #fb923c; }
+    [data-theme="dark"] nav a { color: #9aa3cc; }
+    [data-theme="dark"] nav a:hover { color: var(--text); background: #252840; }
+    [data-theme="dark"] nav a.active { color: var(--accent2); background: var(--accent-light); }
+    [data-theme="dark"] .modal-box { background: var(--surface); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1570,6 +1612,10 @@
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;flex-direction:column;gap:6px">
+      <!-- Dark mode toggle -->
+      <button id="theme-toggle-btn" onclick="toggleTheme()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:flex;align-items:center;gap:6px">
+        <span id="theme-icon">🌙</span><span id="theme-label">מצב לילה</span>
+      </button>
       <button onclick="exportBackup()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right">📤 יצוא גיבוי</button>
       <label style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:block">
         📥 ייבוא גיבוי
@@ -5426,6 +5472,27 @@ function doLogin() {
     setTimeout(() => err.textContent = '', 2000);
   }
 }
+
+// ===== DARK MODE =====
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const icon  = document.getElementById('theme-icon');
+  const label = document.getElementById('theme-label');
+  if (icon)  icon.textContent  = dark ? '☀️' : '🌙';
+  if (label) label.textContent = dark ? 'מצב יום' : 'מצב לילה';
+}
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = !isDark;
+  localStorage.setItem('theme', next ? 'dark' : 'light');
+  applyTheme(next);
+}
+// הפעל בטעינה
+(function() {
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(saved ? saved === 'dark' : prefersDark);
+})();
 
 // ===== CALCULATOR =====
 let _calcExpr = '';
