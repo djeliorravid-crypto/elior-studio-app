@@ -3008,12 +3008,20 @@ function renderIncome() {
     return '';
   }
 
-  // מיון עולה לפי תאריך (הקרוב ביותר ראשון)
-  monthEntries.sort((a,b) => new Date(a.date) - new Date(b.date));
+  // מיון: לא שולמו/באיחור קודם, שולמו לסוף — בתוך כל קבוצה לפי תאריך
+  monthEntries.sort((a,b) => {
+    const aPaid = (a.status||'pending') === 'paid' ? 1 : 0;
+    const bPaid = (b.status||'pending') === 'paid' ? 1 : 0;
+    if (aPaid !== bPaid) return aPaid - bPaid;
+    return new Date(a.date) - new Date(b.date);
+  });
   pendingInst.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-  const incomeRows = monthEntries.map(i => `
-    <tr class="row-framed" style="${rowStyle(i)}">
+  const incomeRows = monthEntries.map(i => {
+    const isPaid = (i.status||'pending') === 'paid';
+    const rowBg  = isPaid ? 'background:#f0fdf4;border-right:3px solid var(--green)' : rowStyle(i);
+    return `
+    <tr class="row-framed" style="${rowBg}">
       <td>${fmtDate(i.date)}</td>
       <td>${i.clientName || '<span style="color:var(--text-muted)">—</span>'}</td>
       <td>${i.description}</td>
@@ -3026,7 +3034,7 @@ function renderIncome() {
       ${statusCell(i)}
       <td><button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')">🗑</button></td>
     </tr>
-  `).join('');
+  `; }).join('');
 
   const pendingRows = pendingInst.map(p => `
     <tr class="row-framed" style="background:${p.overdue?'#fff8f8':'#fafbff'};border-right:3px solid ${p.overdue?'var(--red)':'var(--accent)'}">
@@ -3244,7 +3252,12 @@ function renderExpenses() {
 
   // ── 📋 כל ההוצאות ──
   if (allExpenses.length > 0) {
-    const sortedAll = [...allExpenses].sort((a,b) => new Date(a.date)-new Date(b.date));
+    // שולמו לסוף, בתוך קבוצה לפי תאריך
+    const sortedAll = [...allExpenses].sort((a,b) => {
+      const aPaid = a.paid ? 1 : 0, bPaid = b.paid ? 1 : 0;
+      if (aPaid !== bPaid) return aPaid - bPaid;
+      return new Date(a.date) - new Date(b.date);
+    });
     html += `
       <div class="table-card" style="margin-top:8px">
         <div class="table-header">
@@ -3262,12 +3275,12 @@ function renderExpenses() {
           </tr></thead>
           <tbody>
             ${sortedAll.map(e => `
-              <tr style="${e.paid ? 'opacity:0.55;background:var(--surface2)' : ''}">
-                <td style="color:var(--text-muted);${e.paid?'text-decoration:line-through':''}">${fmtDate(e.date)}</td>
-                <td style="${e.paid?'text-decoration:line-through;color:var(--text-muted)':''}">${e.projectName || '<span style="color:var(--text-muted)">כללי</span>'}</td>
-                <td style="${e.paid?'text-decoration:line-through;color:var(--text-muted)':''}">${e.description}</td>
+              <tr style="${e.paid ? 'background:#fff5f5;border-right:3px solid var(--red)' : ''}">
+                <td style="${e.paid?'color:var(--text-muted)':''}">${fmtDate(e.date)}</td>
+                <td>${e.projectName || '<span style="color:var(--text-muted)">כללי</span>'}</td>
+                <td>${e.description}</td>
                 <td><span class="badge ${catBadge[e.category]||'badge-orange'}">${e.category}</span></td>
-                <td style="font-weight:800;${e.paid?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">-${fmtMoney(e.amount)}</td>
+                <td style="font-weight:800;color:var(--red)">-${fmtMoney(e.amount)}</td>
                 <td style="white-space:nowrap">
                   <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:8px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px;${e.paid?'background:#d1fae5;color:#15803d':'background:var(--red-light);color:var(--red)'}">${e.paid ? '✓ שולם' : 'שולם'}</button>
                   <button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">🗑</button>
