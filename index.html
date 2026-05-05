@@ -2200,8 +2200,43 @@ const firebaseConfig = {
 
 let firebaseDB = null;
 let firebaseReady = false;
-
 let _isFirstSync = true;
+
+// ── מיגרציה חד-פעמית — מתקנת נתונים ישנים ──
+function runMigrations() {
+  const migKey = 'migration_v1_status';
+  if (localStorage.getItem(migKey)) return; // כבר רץ
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  let changed = false;
+
+  // תיקון הכנסות ללא status
+  const income = load('income');
+  income.forEach(i => {
+    if (i.status === undefined || i.status === null || i.status === '') {
+      // תאריך עתידי = ממתין, עבר = שולם
+      i.status = i.date > todayStr ? 'pending' : 'paid';
+      changed = true;
+    }
+  });
+  if (changed) save('income', income);
+
+  // תיקון תוכניות תשלום — payment.paid חייב להיות boolean מפורש
+  changed = false;
+  const plans = load('plans');
+  plans.forEach(plan => {
+    (plan.payments || []).forEach(p => {
+      if (p.paid === undefined || p.paid === null) {
+        p.paid = false;
+        changed = true;
+      }
+    });
+  });
+  if (changed) save('plans', plans);
+
+  localStorage.setItem(migKey, '1');
+  console.log('✅ מיגרציה הושלמה');
+}
 
 function initFirebase() {
   _loadPending(); // טען תור שמירה שנשאר מסשן קודם
@@ -2242,6 +2277,7 @@ function initFirebase() {
       });
       firebaseReady = true;
       _isFirstSync = false;
+      runMigrations(); // תיקון נתונים ישנים
       console.log('Firebase loaded ✓ pending:', Object.keys(_pending).length);
     }).catch(err => {
       console.warn('Firebase load failed — using local data:', err.message);
@@ -2864,8 +2900,8 @@ function renderIncome() {
   });
 
   // התקבל בפועל = רק status:'paid' (או ישנות בלי status נחשבות כשולמו)
-  const paid    = monthEntries.filter(i => (i.status || 'paid') === 'paid');
-  const notPaid = monthEntries.filter(i => (i.status || 'paid') !== 'paid');
+  const paid    = monthEntries.filter(i => (i.status || 'pending') === 'paid');
+  const notPaid = monthEntries.filter(i => (i.status || 'pending') !== 'paid');
 
   const totalPaid     = paid.reduce((s,i) => s + Number(i.amount), 0);
   const totalNotPaid  = notPaid.reduce((s,i) => s + Number(i.amount), 0);
@@ -2942,7 +2978,7 @@ function renderIncome() {
   const catBadge = {'הקלטה':'badge-green','מיקס ומאסטרינג':'badge-blue','הפקה מוזיקלית':'badge-purple','עריכה':'badge-orange'};
 
   function statusCell(i) {
-    const st = i.status || 'paid';
+    const st = i.status || 'pending';
     if (st === 'paid') return `
       <td>
         <span class="badge badge-green" style="cursor:pointer" onclick="setIncomeStatus('${i.id}','pending')" title="לחץ לשינוי">✅ שולם</span>
@@ -2966,7 +3002,7 @@ function renderIncome() {
   }
 
   function rowStyle(i) {
-    const st = i.status || 'paid';
+    const st = i.status || 'pending';
     if (st === 'overdue') return 'background:#fff8f8;border-right:3px solid var(--red)';
     if (st !== 'paid')    return 'background:#fafbff;border-right:3px solid var(--accent)';
     return '';
@@ -3160,7 +3196,7 @@ function renderExpenses() {
   const netProfit     = totalIncome - totalExpenses;
 
   // ── כרטיס "בנק העסק" — רק מה שנכנס ויצא בפועל (שולם) ──
-  const paidIncAmt  = monthIncome.filter(i => (i.status||'paid') === 'paid').reduce((s,i) => s + Number(i.amount), 0);
+  const paidIncAmt  = monthIncome.filter(i => (i.status||'pending') === 'paid').reduce((s,i) => s + Number(i.amount), 0);
   const paidExpAmt  = allExpenses.filter(e => inCurMonth(e.date) && e.paid).reduce((s,e) => s + Number(e.amount), 0);
   const paidRecAmt  = activeRecurring.filter(r => r.paidMonths && r.paidMonths[curMonthKey]).reduce((s,r) => s + Number(r.amount), 0);
   const totalPaidOut = paidExpAmt + paidRecAmt;
@@ -4660,8 +4696,8 @@ function renderPendingBox() {
 
   // הכנסות החודש שלא שולמו
   const monthInc     = income.filter(i => inMonth(i.date));
-  const unpaidInc    = monthInc.filter(i => (i.status || 'paid') !== 'paid');
-  const paidInc      = monthInc.filter(i => (i.status || 'paid') === 'paid');
+  const unpaidInc    = monthInc.filter(i => (i.status || 'pending') !== 'paid');
+  const paidInc      = monthInc.filter(i => (i.status || 'pending') === 'paid');
   const unpaidIncAmt = unpaidInc.reduce((s,i) => s + Number(i.amount), 0);
   const paidIncAmt   = paidInc.reduce((s,i) => s + Number(i.amount), 0);
 
