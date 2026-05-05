@@ -2204,7 +2204,7 @@ let _isFirstSync = true;
 
 // ── מיגרציה חד-פעמית — מתקנת נתונים ישנים ──
 function runMigrations() {
-  const migKey = 'migration_v1_status';
+  const migKey = 'migration_v2_status'; // v2 = גם יוצר הכנסות מתוכניות קיימות
   if (localStorage.getItem(migKey)) return; // כבר רץ
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -2222,20 +2222,40 @@ function runMigrations() {
   if (changed) save('income', income);
 
   // תיקון תוכניות תשלום — payment.paid חייב להיות boolean מפורש
+  // + צור הכנסות ממתינות לתשלומים שעדיין אין להם incomeId
   changed = false;
   const plans = load('plans');
+  const incomeArr = load('income');
   plans.forEach(plan => {
     (plan.payments || []).forEach(p => {
-      if (p.paid === undefined || p.paid === null) {
-        p.paid = false;
+      if (p.paid === undefined || p.paid === null) { p.paid = false; changed = true; }
+      if (!p.incomeId) {
+        if (p.paid) {
+          // תשלום ששולם ואין לו incomeId — בדוק אם קיים כבר ברשימה לפי fromPlan
+          const existing = incomeArr.find(i => i.fromPlan === plan.id && i.fromPaymentId === p.id);
+          if (existing) { p.incomeId = existing.id; }
+          // אחרת אין מה ליצור — תשלום ישן שנמחק
+        } else {
+          // תשלום ממתין ללא הכנסה — צור עכשיו
+          const entry = {
+            id: genId(), date: p.dueDate, amount: p.amount,
+            clientId: plan.clientId || '', clientName: plan.clientName || '',
+            description: `${plan.project} — תשלום ${p.index} מתוך ${plan.count}`,
+            category: 'הפקה מוזיקלית', status: 'pending',
+            fromPlan: plan.id, fromPaymentId: p.id
+          };
+          p.incomeId = entry.id;
+          incomeArr.push(entry);
+        }
         changed = true;
       }
     });
   });
-  if (changed) save('plans', plans);
+  if (changed) { save('plans', plans); save('income', incomeArr); }
 
+  localStorage.setItem('migration_v1_status', '1'); // backward compat
   localStorage.setItem(migKey, '1');
-  console.log('✅ מיגרציה הושלמה');
+  console.log('✅ מיגרציה v2 הושלמה');
 }
 
 function initFirebase() {
@@ -2875,7 +2895,24 @@ function setIncomeStatus(id, status) {
   const entry = income.find(i => i.id === id);
   if (!entry) return;
   entry.status = status;
+  if (status === 'paid' && entry.date > new Date().toISOString().slice(0,10))
+    entry.date = new Date().toISOString().slice(0,10); // תאריך תשלום = היום
   save('income', income);
+
+  // סנכרן גם את תוכנית התשלום אם זו הכנסה מתוכנית
+  if (entry.fromPlan && entry.fromPaymentId) {
+    const plans = load('plans');
+    const plan = plans.find(p => p.id === entry.fromPlan);
+    if (plan) {
+      const payment = plan.payments.find(p => p.id === entry.fromPaymentId);
+      if (payment) {
+        payment.paid = (status === 'paid');
+        payment.paidDate = status === 'paid' ? entry.date : null;
+        save('plans', plans);
+      }
+    }
+  }
+
   if (status === 'paid') {
     const cp = document.getElementById('congrats-popup');
     cp.classList.add('show');
@@ -2906,28 +2943,23 @@ function renderIncome() {
   const totalPaid     = paid.reduce((s,i) => s + Number(i.amount), 0);
   const totalNotPaid  = notPaid.reduce((s,i) => s + Number(i.amount), 0);
 
-  // תשלומים מתוכניות — מחלק לשולמו + לא שולמו
-  const pendingInst = [];
-  let paidInstTotal = 0;
+  // תשלומים מתוכניות לחודש — מידע בלבד לתצוגה בתחתית הטבלה
+  const planInstDisplay = [];
   plans.forEach(plan => {
     plan.payments.forEach(p => {
       const d = new Date(p.dueDate);
       if (d.getFullYear() !== curYear || d.getMonth() !== curMonth) return;
-      if (cf && plan.clientId !== cf) return;
-      if (p.paid) {
-        paidInstTotal += Number(p.amount);
-        return;
-      }
-      const desc = `${plan.project} — תשלום ${p.index} מתוך ${plan.count}`;
-      if (search && !(desc.toLowerCase().includes(search) || (plan.clientName||'').toLowerCase().includes(search))) return;
-      pendingInst.push({ planId: plan.id, paymentId: p.id, dueDate: p.dueDate,
-        clientName: plan.clientName, description: desc,
-        amount: p.amount, overdue: d < today });
+      planInstDisplay.push({
+        dueDate: p.dueDate, clientName: plan.clientName,
+        description: `${plan.project} — תשלום ${p.index} מתוך ${plan.count}`,
+        amount: p.amount, paid: p.paid,
+        overdue: !p.paid && d < today
+      });
     });
   });
 
-  // תשלומים מתוכניות = תצוגה בלבד, לא נכנסים לחישוב (כשמסמנים שולם → נוסף להכנסות ונספר שם)
-  // "צפוי להתקבל" = רק הכנסות רגילות (שולם + לא שולם)
+  // תשלומי תוכניות כבר נמצאים ברשימת ההכנסות → נספרים שם אוטומטית
+  // "צפוי להתקבל" = כל הכנסות החודש (שולם + לא שולם)
   const totalAllExpected = totalPaid + totalNotPaid;
   // "נשאר לגבות"
   const totalExpected    = totalNotPaid;
@@ -3010,7 +3042,7 @@ function renderIncome() {
     if (aPaid !== bPaid) return aPaid - bPaid;
     return new Date(a.date) - new Date(b.date);
   });
-  pendingInst.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
+  planInstDisplay.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
 
   const incomeRows = monthEntries.map(i => {
     const isPaid = (i.status||'pending') === 'paid';
@@ -3027,35 +3059,28 @@ function renderIncome() {
         </span>
       </td>
       ${statusCell(i)}
-      <td><button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')">🗑</button></td>
+      <td>${i.fromPlan ? '' : `<button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')">🗑</button>`}</td>
     </tr>
   `; }).join('');
 
-  const pendingRows = pendingInst.map(p => `
-    <tr class="row-framed" style="background:${p.overdue?'#fff8f8':'#fafbff'};border-right:3px solid ${p.overdue?'var(--red)':'var(--accent)'}">
+  // סקשן מידע בלבד — כל תשלומי התוכניות לחודש ללא כפתורים
+  const planRows = planInstDisplay.map(p => `
+    <tr class="row-framed" style="background:#fafbff;opacity:0.85">
       <td style="color:var(--text-muted)">${fmtDate(p.dueDate)}</td>
-      <td>${p.clientName || '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td>${p.clientName || '—'}</td>
       <td style="color:var(--text-muted)">${p.description}</td>
       <td><span class="badge badge-purple">⏳ תשלומים</span></td>
       <td style="font-weight:800;color:var(--green)">${fmtMoney(p.amount)}</td>
-      <td>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-          ${p.overdue
-            ? `<span class="badge badge-red">🔴 באיחור</span>`
-            : `<span class="badge badge-gray">טרם שולם</span>`}
-          <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700;padding:3px 9px"
-            onclick="markPaymentPaid('${p.planId}','${p.paymentId}')">✅ שולם</button>
-        </div>
-      </td>
+      <td><span class="badge ${p.paid ? 'badge-green' : p.overdue ? 'badge-red' : 'badge-gray'}">${p.paid ? '✅ שולם' : p.overdue ? '🔴 באיחור' : 'טרם שולם'}</span></td>
       <td></td>
     </tr>
   `).join('');
 
-  tbody.innerHTML = incomeRows + (pendingInst.length ? `
+  tbody.innerHTML = incomeRows + (planInstDisplay.length ? `
     <tr><td colspan="7" style="padding:8px 16px;background:var(--surface2);font-size:13px;font-weight:700;color:var(--text-muted);letter-spacing:.05em">
-      🔁 תשלומים מתוכניות תשלום — תצוגה בלבד, לא נכנסים לחישוב
+      🔁 תשלומים מתוכניות — מידע בלבד
     </td></tr>
-    ${pendingRows}
+    ${planRows}
   ` : '');
 }
 
@@ -3603,9 +3628,9 @@ function savePlan() {
     incomeId: null
   }));
 
-  const plans = load('plans');
-  plans.push({
-    id: genId(),
+  const planId = genId();
+  const planObj = {
+    id: planId,
     project,
     clientId: clientId || '',
     clientName: client ? client.name : '',
@@ -3615,9 +3640,31 @@ function savePlan() {
     notes: document.getElementById('pl-notes').value.trim(),
     payments,
     createdAt: new Date().toISOString()
+  };
+
+  // צור הכנסה ממתינה לכל תשלום — כך יופיע ברשימת ההכנסות ויחושב בכל האתר
+  const income = load('income');
+  planObj.payments.forEach(p => {
+    const entry = {
+      id: genId(),
+      date: p.dueDate,
+      amount: p.amount,
+      clientId: clientId || '',
+      clientName: client ? client.name : '',
+      description: `${project} — תשלום ${p.index} מתוך ${count}`,
+      category: 'הפקה מוזיקלית',
+      status: 'pending',
+      fromPlan: planId,
+      fromPaymentId: p.id
+    };
+    p.incomeId = entry.id;
+    income.push(entry);
   });
 
+  const plans = load('plans');
+  plans.push(planObj);
   save('plans', plans);
+  save('income', income);
   closeModal('plan');
   toast('✓ תוכנית תשלום נוצרה');
   refreshAll();
@@ -3630,29 +3677,28 @@ function markPaymentPaid(planId, paymentId) {
   const payment = plan.payments.find(p => p.id === paymentId);
   if (!payment || payment.paid) return;
 
-  if (!confirm(`לסמן תשלום ${payment.index} (${fmtMoney(payment.amount)}) כשולם?\nיתווסף אוטומטית לדף ההכנסות.`)) return;
-
   const today = new Date().toISOString().split('T')[0];
   payment.paid = true;
   payment.paidDate = today;
 
-  // Auto-add to income
+  // עדכן את ערך ההכנסה הקיים ל"שולם"
   const income = load('income');
-  const incomeEntry = {
-    id: genId(),
-    date: today,
-    amount: payment.amount,
-    clientId: plan.clientId,
-    clientName: plan.clientName,
-    description: `${plan.project} — תשלום ${payment.index} מתוך ${plan.count}`,
-    category: 'הפקה מוזיקלית',
-    notes: `תוכנית תשלום: ${plan.project}`,
-    status: 'paid',
-    fromPlan: planId
-  };
-  payment.incomeId = incomeEntry.id;
-  income.push(incomeEntry);
-  income.sort((a,b) => new Date(b.date) - new Date(a.date));
+  const entry = income.find(i => i.id === payment.incomeId);
+  if (entry) {
+    entry.status = 'paid';
+    entry.date   = today;
+  } else {
+    // fallback — צור חדש אם לא קיים (תוכניות ישנות)
+    const newEntry = {
+      id: genId(), date: today, amount: payment.amount,
+      clientId: plan.clientId, clientName: plan.clientName,
+      description: `${plan.project} — תשלום ${payment.index} מתוך ${plan.count}`,
+      category: 'הפקה מוזיקלית', status: 'paid',
+      fromPlan: planId, fromPaymentId: paymentId
+    };
+    payment.incomeId = newEntry.id;
+    income.push(newEntry);
+  }
 
   save('plans', plans);
   save('income', income);
@@ -3660,7 +3706,6 @@ function markPaymentPaid(planId, paymentId) {
   const cp = document.getElementById('congrats-popup');
   cp.classList.add('show');
   setTimeout(() => cp.classList.remove('show'), 2000);
-
   refreshAll();
 }
 
@@ -3672,13 +3717,16 @@ function markPaymentUnpaid(planId, paymentId) {
   const payment = plan.payments.find(p => p.id === paymentId);
   if (!payment || !payment.paid) return;
 
-  // Remove from income
-  if (payment.incomeId) {
-    save('income', load('income').filter(i => i.id !== payment.incomeId));
+  // החזר את ערך ההכנסה ל"ממתין" עם תאריך הפירעון המקורי
+  const income = load('income');
+  const entry = income.find(i => i.id === payment.incomeId);
+  if (entry) {
+    entry.status = 'pending';
+    entry.date   = payment.dueDate;
+    save('income', income);
   }
   payment.paid = false;
   payment.paidDate = null;
-  payment.incomeId = null;
 
   save('plans', plans);
   toast('תשלום סומן כלא שולם');
@@ -3693,10 +3741,10 @@ function deletePlan(planId) {
     ? `למחוק את תוכנית "${plan.project}"?\n${paidCount} תשלומים ששולמו כבר יימחקו גם מדף ההכנסות.`
     : `למחוק את תוכנית "${plan.project}"?`;
   if (!confirm(msg)) return;
-  // מחק הכנסות שנוצרו מתשלומים ששולמו
-  const paidIncomeIds = plan.payments.filter(p => p.incomeId).map(p => p.incomeId);
-  if (paidIncomeIds.length > 0) {
-    save('income', load('income').filter(i => !paidIncomeIds.includes(i.id)));
+  // מחק את כל ערכי ההכנסה שנוצרו מהתוכנית (שולמו + ממתינים)
+  const planIncomeIds = plan.payments.filter(p => p.incomeId).map(p => p.incomeId);
+  if (planIncomeIds.length > 0) {
+    save('income', load('income').filter(i => !planIncomeIds.includes(i.id)));
   }
   save('plans', load('plans').filter(p => p.id !== planId));
   toast(`✅ תוכנית "${plan.project}" נמחקה`);
@@ -3822,83 +3870,65 @@ function renderMiniCal(incomeData, expensesData) {
 
   calTitle.textContent = MONTHS_HE[curMonth] + ' ' + curYear;
 
-  const todayObj  = new Date();
-  const todayStr  = todayObj.toISOString().slice(0,10);
+  const todayObj   = new Date(); todayObj.setHours(0,0,0,0);
+  const todayDay   = todayObj.getDate();
+  const isThisMonth = todayObj.getFullYear() === curYear && todayObj.getMonth() === curMonth;
 
-  // ── הכנסות רגילות לפי יום ──
-  const incByDay = {};
+  // ── מצא את היום הקרוב ביותר עם הכנסה ממתינה ──
+  const pendingIncDays = new Set();
+  incomeData.forEach(i => {
+    if (!inCurMonth(i.date) || (i.status||'pending') === 'paid') return;
+    const d = new Date(i.date); d.setHours(0,0,0,0);
+    if (!isThisMonth || d >= todayObj) pendingIncDays.add(new Date(i.date).getDate());
+  });
+  const nextIncDay = pendingIncDays.size > 0 ? Math.min(...pendingIncDays) : null;
+
+  // ── מצא את היום הקרוב ביותר עם הוצאה ממתינה ──
+  const pendingExpDays = new Set();
+  expensesData.forEach(e => {
+    if (!inCurMonth(e.date) || e.paid) return;
+    const d = new Date(e.date); d.setHours(0,0,0,0);
+    if (!isThisMonth || d >= todayObj) pendingExpDays.add(new Date(e.date).getDate());
+  });
+  const nextExpDay = pendingExpDays.size > 0 ? Math.min(...pendingExpDays) : null;
+
+  // ── tooltip מלא לכל יום ──
+  const incByDay = {}, expByDay = {};
   incomeData.forEach(i => {
     if (!inCurMonth(i.date)) return;
     const d = new Date(i.date).getDate();
     if (!incByDay[d]) incByDay[d] = [];
-    incByDay[d].push({ label: `${i.clientName || i.description}: ${fmtMoney(i.amount)}`, status: i.status || 'pending' });
+    incByDay[d].push(`${i.clientName || i.description}: ${fmtMoney(i.amount)}`);
   });
-
-  // ── תשלומים מתוכניות לפי יום (due date) ──
-  const plans = load('plans');
-  plans.forEach(plan => {
-    plan.payments.forEach(p => {
-      if (!p.dueDate) return;
-      const pd = new Date(p.dueDate);
-      if (pd.getFullYear() !== curYear || pd.getMonth() !== curMonth) return;
-      const d = pd.getDate();
-      if (!incByDay[d]) incByDay[d] = [];
-      const overdue = !p.paid && p.dueDate < todayStr;
-      incByDay[d].push({
-        label: `${plan.clientName} — תשלום ${p.index}: ${fmtMoney(p.amount)}`,
-        status: p.paid ? 'paid' : overdue ? 'overdue' : 'pending'
-      });
-    });
-  });
-
-  // ── הוצאות לפי יום ──
-  const expByDay = {};
   expensesData.forEach(e => {
     if (!inCurMonth(e.date)) return;
     const d = new Date(e.date).getDate();
     if (!expByDay[d]) expByDay[d] = [];
-    expByDay[d].push({ label: `${e.description}: ${fmtMoney(e.amount)}`, paid: e.paid });
+    expByDay[d].push(`${e.description}: ${fmtMoney(e.amount)}`);
   });
 
   const dayHeaders = ['א','ב','ג','ד','ה','ו','ש'];
   let html = dayHeaders.map(h => `<div class="mini-cal-header">${h}</div>`).join('');
 
-  const firstDay   = new Date(curYear, curMonth, 1).getDay();
+  const firstDay    = new Date(curYear, curMonth, 1).getDay();
   const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
-  const isCurrentMonth = todayObj.getFullYear() === curYear && todayObj.getMonth() === curMonth;
 
   for (let i = 0; i < firstDay; i++) html += `<div class="mini-cal-day empty"></div>`;
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const isToday  = isCurrentMonth && todayObj.getDate() === day;
-    const incItems = incByDay[day] || [];
-    const expItems = expByDay[day] || [];
-
+    const isToday = isThisMonth && todayDay === day;
     let dotsHtml = '';
 
-    // נקודה ירוקה = הכנסה ששולמה, כתומה = ממתינה, אדומה = באיחור
-    if (incItems.length > 0) {
-      const hasPaid    = incItems.some(i => i.status === 'paid');
-      const hasPending = incItems.some(i => i.status === 'pending');
-      const hasOverdue = incItems.some(i => i.status === 'overdue');
-      const dotColor   = hasOverdue ? 'var(--red)' : hasPending ? 'var(--orange)' : 'var(--green)';
-      const tooltip    = incItems.map(i => {
-        const icon = i.status==='paid' ? '✅' : i.status==='overdue' ? '🔴' : '🟡';
-        return `${icon} ${i.label}`;
-      }).join('<br>');
-      dotsHtml += `<span class="mc-dot" style="background:${dotColor}" onclick="onDotTap(this)">
-        <span class="mc-tooltip">${tooltip}</span>
-      </span>`;
+    // נקודה ירוקה רק על היום הקרוב ביותר עם הכנסה ממתינה
+    if (day === nextIncDay) {
+      const tip = (incByDay[day] || []).join('<br>');
+      dotsHtml += `<span class="mc-dot income" onclick="onDotTap(this)"><span class="mc-tooltip">💚 הכנסה קרובה<br>${tip}</span></span>`;
     }
 
-    // נקודה אדומה = הוצאה לא שולמה, ירוקה כהה = שולמה
-    if (expItems.length > 0) {
-      const allPaid  = expItems.every(e => e.paid);
-      const dotColor = allPaid ? '#16a34a' : 'var(--red)';
-      const tooltip  = expItems.map(e => `${e.paid ? '✓' : '🔴'} ${e.label}${e.paid ? ' (שולם)' : ''}`).join('<br>');
-      dotsHtml += `<span class="mc-dot" style="background:${dotColor};opacity:${allPaid?0.6:1}" onclick="onDotTap(this)">
-        <span class="mc-tooltip">${tooltip}</span>
-      </span>`;
+    // נקודה ירוקה (כתום) רק על היום הקרוב ביותר עם הוצאה ממתינה
+    if (day === nextExpDay) {
+      const tip = (expByDay[day] || []).join('<br>');
+      dotsHtml += `<span class="mc-dot" style="background:var(--orange)" onclick="onDotTap(this)"><span class="mc-tooltip">🔴 הוצאה קרובה<br>${tip}</span></span>`;
     }
 
     html += `
