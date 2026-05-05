@@ -3822,51 +3822,81 @@ function renderMiniCal(incomeData, expensesData) {
 
   calTitle.textContent = MONTHS_HE[curMonth] + ' ' + curYear;
 
-  // Build day->items maps for current month
+  const todayObj  = new Date();
+  const todayStr  = todayObj.toISOString().slice(0,10);
+
+  // ── הכנסות רגילות לפי יום ──
   const incByDay = {};
   incomeData.forEach(i => {
     if (!inCurMonth(i.date)) return;
     const d = new Date(i.date).getDate();
     if (!incByDay[d]) incByDay[d] = [];
-    incByDay[d].push(i);
+    incByDay[d].push({ label: `${i.clientName || i.description}: ${fmtMoney(i.amount)}`, status: i.status || 'pending' });
   });
 
+  // ── תשלומים מתוכניות לפי יום (due date) ──
+  const plans = load('plans');
+  plans.forEach(plan => {
+    plan.payments.forEach(p => {
+      if (!p.dueDate) return;
+      const pd = new Date(p.dueDate);
+      if (pd.getFullYear() !== curYear || pd.getMonth() !== curMonth) return;
+      const d = pd.getDate();
+      if (!incByDay[d]) incByDay[d] = [];
+      const overdue = !p.paid && p.dueDate < todayStr;
+      incByDay[d].push({
+        label: `${plan.clientName} — תשלום ${p.index}: ${fmtMoney(p.amount)}`,
+        status: p.paid ? 'paid' : overdue ? 'overdue' : 'pending'
+      });
+    });
+  });
+
+  // ── הוצאות לפי יום ──
   const expByDay = {};
   expensesData.forEach(e => {
     if (!inCurMonth(e.date)) return;
     const d = new Date(e.date).getDate();
     if (!expByDay[d]) expByDay[d] = [];
-    expByDay[d].push(e);
+    expByDay[d].push({ label: `${e.description}: ${fmtMoney(e.amount)}`, paid: e.paid });
   });
 
   const dayHeaders = ['א','ב','ג','ד','ה','ו','ש'];
   let html = dayHeaders.map(h => `<div class="mini-cal-header">${h}</div>`).join('');
 
-  const firstDay = new Date(curYear, curMonth, 1).getDay(); // 0=Sun
+  const firstDay   = new Date(curYear, curMonth, 1).getDay();
   const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
-  const today = new Date();
-  const isCurrentMonth = today.getFullYear() === curYear && today.getMonth() === curMonth;
+  const isCurrentMonth = todayObj.getFullYear() === curYear && todayObj.getMonth() === curMonth;
 
-  // empty cells before first day
-  for (let i = 0; i < firstDay; i++) {
-    html += `<div class="mini-cal-day empty"></div>`;
-  }
+  for (let i = 0; i < firstDay; i++) html += `<div class="mini-cal-day empty"></div>`;
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const isToday = isCurrentMonth && today.getDate() === day;
+    const isToday  = isCurrentMonth && todayObj.getDate() === day;
     const incItems = incByDay[day] || [];
     const expItems = expByDay[day] || [];
 
     let dotsHtml = '';
+
+    // נקודה ירוקה = הכנסה ששולמה, כתומה = ממתינה, אדומה = באיחור
     if (incItems.length > 0) {
-      const tooltip = incItems.map(i => `💚 ${i.description}: ${fmtMoney(i.amount)}`).join('<br>');
-      dotsHtml += `<span class="mc-dot income" onclick="onDotTap(this)">
+      const hasPaid    = incItems.some(i => i.status === 'paid');
+      const hasPending = incItems.some(i => i.status === 'pending');
+      const hasOverdue = incItems.some(i => i.status === 'overdue');
+      const dotColor   = hasOverdue ? 'var(--red)' : hasPending ? 'var(--orange)' : 'var(--green)';
+      const tooltip    = incItems.map(i => {
+        const icon = i.status==='paid' ? '✅' : i.status==='overdue' ? '🔴' : '🟡';
+        return `${icon} ${i.label}`;
+      }).join('<br>');
+      dotsHtml += `<span class="mc-dot" style="background:${dotColor}" onclick="onDotTap(this)">
         <span class="mc-tooltip">${tooltip}</span>
       </span>`;
     }
+
+    // נקודה אדומה = הוצאה לא שולמה, ירוקה כהה = שולמה
     if (expItems.length > 0) {
-      const tooltip = expItems.map(e => `${e.paid ? '✓' : '🔴'} ${e.description}: ${fmtMoney(e.amount)}${e.paid?' (שולם)':''}`).join('<br>');
-      dotsHtml += `<span class="mc-dot expense" onclick="onDotTap(this)">
+      const allPaid  = expItems.every(e => e.paid);
+      const dotColor = allPaid ? '#16a34a' : 'var(--red)';
+      const tooltip  = expItems.map(e => `${e.paid ? '✓' : '🔴'} ${e.label}${e.paid ? ' (שולם)' : ''}`).join('<br>');
+      dotsHtml += `<span class="mc-dot" style="background:${dotColor};opacity:${allPaid?0.6:1}" onclick="onDotTap(this)">
         <span class="mc-tooltip">${tooltip}</span>
       </span>`;
     }
