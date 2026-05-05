@@ -1444,6 +1444,11 @@
       .profile-detail-avatar { width: 70px; height: 70px; font-size: 28px; }
     }
 
+    /* ===== 3 תיבות מאוחדות — ריספונסיב ===== */
+    @media (max-width: 700px) {
+      .income-triple-grid { grid-template-columns: 1fr !important; }
+    }
+
     /* ===== מסך קטן מאוד ===== */
     @media (max-width: 380px) {
       .cards-grid { grid-template-columns: 1fr !important; }
@@ -2080,53 +2085,71 @@
       </div>
     </div>
 
-    <div class="cards-grid" style="margin-bottom:20px">
-      <div class="card" style="border-color:#ddd6fe;background:linear-gradient(135deg,#faf8ff,#f3f0ff)">
-        <div class="card-icon">⏳</div>
-        <div class="card-label">צפוי להתקבל החודש</div>
-        <div class="card-value purple" id="i-expected">₪0</div>
-        <div class="card-sub" id="i-expected-count">סה"כ הכנסות החודש</div>
-      </div>
-      <div class="card" style="border-color:var(--green-border);background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
-        <div class="card-icon">✅</div>
-        <div class="card-label">התקבל בפועל</div>
-        <div class="card-value green" id="i-total">₪0</div>
-        <div class="card-sub" id="i-count">0 עסקאות שולמו</div>
-      </div>
-      <div class="card" style="border-color:#bfdbfe;background:linear-gradient(135deg,#eff6ff,#dbeafe)">
-        <div class="card-icon">🔭</div>
-        <div class="card-label">רווח נקי עתידי החודש</div>
-        <div class="card-value blue" id="i-future-profit">₪0</div>
-        <div class="card-sub" id="i-future-profit-sub">הכל מינוס הוצאות</div>
-      </div>
-      <div class="card" style="border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fef3c7)">
-        <div class="card-icon">🏦</div>
-        <div class="card-label">בנק העסק החודש</div>
-        <div class="card-value" id="i-net-profit">₪0</div>
-        <div class="card-sub" id="i-net-profit-sub">שולם פחות הוצאות ששולמו</div>
-      </div>
-    </div>
+    <!-- 3 תיבות מאוחדות -->
+    <div class="income-triple-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
 
-    <!-- תיבת נשאר לגבות / לשלם -->
-    <div id="pending-summary-box" style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-      <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid var(--green-border);box-shadow:var(--shadow)">
-        <div style="font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-family:'Rubik','Heebo',sans-serif">💚 נשאר להכניס</div>
-        <div id="pending-income-amt" style="font-size:28px;font-weight:900;color:var(--green)">₪0</div>
-        <div id="pending-income-sub" style="font-size:14px;color:var(--text-muted);margin-top:4px;margin-bottom:10px">הכנסות שעדיין לא שולמו</div>
-        <div style="height:7px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden">
-          <div id="pending-income-bar" style="height:100%;border-radius:4px;background:var(--green);transition:width .5s;width:0%"></div>
+      <!-- תיבה 1: הכנסות החודש -->
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:14px">💰 הכנסות החודש</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:3px">⏳ צפוי להתקבל</div>
+            <div class="card-value purple" id="i-expected" style="font-size:26px;font-weight:900;margin:0">₪0</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px" id="i-expected-count"></div>
+          </div>
+          <div style="height:1px;background:var(--border)"></div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:3px">✅ התקבל בפועל</div>
+            <div class="card-value green" id="i-total" style="font-size:26px;font-weight:900;margin:0">₪0</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px" id="i-count"></div>
+          </div>
         </div>
-        <div id="pending-income-pct" style="font-size:13px;color:var(--green);font-weight:700;margin-top:5px">0% גבוי</div>
       </div>
-      <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#fff5f5,#fee2e2);border:2px solid #fca5a5;box-shadow:var(--shadow)">
-        <div style="font-size:13px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-family:'Rubik','Heebo',sans-serif">🔴 נשאר להוציא</div>
-        <div id="pending-expenses-amt" style="font-size:28px;font-weight:900;color:var(--red)">₪0</div>
-        <div id="pending-expenses-sub" style="font-size:14px;color:var(--text-muted);margin-top:4px;margin-bottom:10px">הוצאות שעדיין לא שולמו</div>
-        <div style="height:7px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden">
-          <div id="pending-expenses-bar" style="height:100%;border-radius:4px;background:var(--red);transition:width .5s;width:0%"></div>
+
+      <!-- תיבה 2: נשאר -->
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)" id="pending-summary-box">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:14px">⏳ נשאר</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:3px">💚 נשאר להכניס</div>
+            <div id="pending-income-amt" style="font-size:26px;font-weight:900;color:var(--green)">₪0</div>
+            <div style="height:5px;background:rgba(0,0,0,0.08);border-radius:3px;overflow:hidden;margin-top:6px">
+              <div id="pending-income-bar" style="height:100%;border-radius:3px;background:var(--green);transition:width .5s;width:0%"></div>
+            </div>
+            <div id="pending-income-pct" style="font-size:11px;color:var(--text-muted);font-weight:700;margin-top:3px">0% גבוי</div>
+            <div id="pending-income-sub" style="display:none"></div>
+          </div>
+          <div style="height:1px;background:var(--border)"></div>
+          <div>
+            <div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:3px">🔴 נשאר להוציא</div>
+            <div id="pending-expenses-amt" style="font-size:26px;font-weight:900;color:var(--red)">₪0</div>
+            <div style="height:5px;background:rgba(0,0,0,0.08);border-radius:3px;overflow:hidden;margin-top:6px">
+              <div id="pending-expenses-bar" style="height:100%;border-radius:3px;background:var(--red);transition:width .5s;width:0%"></div>
+            </div>
+            <div id="pending-expenses-pct" style="font-size:11px;color:var(--text-muted);font-weight:700;margin-top:3px">0% שולם</div>
+            <div id="pending-expenses-sub" style="display:none"></div>
+          </div>
         </div>
-        <div id="pending-expenses-pct" style="font-size:13px;color:var(--red);font-weight:700;margin-top:5px">0% שולם</div>
       </div>
+
+      <!-- תיבה 3: רווח -->
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow)">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:14px">📊 רווח</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:3px">🔭 רווח נקי עתידי</div>
+            <div class="card-value blue" id="i-future-profit" style="font-size:26px;font-weight:900;margin:0">₪0</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px" id="i-future-profit-sub"></div>
+          </div>
+          <div style="height:1px;background:var(--border)"></div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:3px">🏦 בנק העסק עכשיו</div>
+            <div class="card-value" id="i-net-profit" style="font-size:26px;font-weight:900;margin:0">₪0</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px" id="i-net-profit-sub"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="table-card">
