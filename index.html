@@ -271,6 +271,70 @@
     [data-theme="dark"] [style*="background:linear-gradient(135deg,#f0fdf4"] { background: #0a1f0f !important; }
     [data-theme="dark"] [style*="background:linear-gradient(135deg,#fff5f5"] { background: #1c0a0a !important; }
 
+    /* ===== יעד חודשי ===== */
+    .goal-bar-wrap {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .goal-bar-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+    }
+    .goal-bar-title { font-size: 14px; font-weight: 800; color: var(--text); }
+    .goal-bar-nums  { font-size: 13px; color: var(--text-muted); font-weight: 700; }
+    .goal-bar-pct   { font-size: 22px; font-weight: 900; }
+    .goal-bar-track {
+      height: 12px; background: var(--surface3); border-radius: 6px;
+      overflow: hidden; margin-bottom: 8px;
+    }
+    .goal-bar-fill  {
+      height: 100%; border-radius: 6px;
+      background: linear-gradient(90deg, var(--green), #22c55e);
+      transition: width .6s cubic-bezier(.4,0,.2,1);
+    }
+    .goal-bar-fill.over  { background: linear-gradient(90deg, #f59e0b, var(--orange)); }
+    .goal-bar-fill.danger{ background: linear-gradient(90deg, var(--red), #f87171); }
+    .goal-input-row {
+      display: flex; align-items: center; gap: 8px; margin-top: 10px;
+    }
+    .goal-input-row label { font-size: 12px; color: var(--text-muted); font-weight: 700; white-space: nowrap; }
+    .goal-input-row input {
+      width: 110px; padding: 6px 10px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 13px; font-weight: 700;
+      background: var(--input-bg); color: var(--text); text-align: center;
+      outline: none; font-family: 'Heebo', sans-serif;
+    }
+    .goal-input-row input:focus { border-color: var(--accent); }
+
+    /* ===== ציר זמן לקוח ===== */
+    .timeline { padding: 4px 0; }
+    .tl-item {
+      display: flex; gap: 14px; padding: 10px 0;
+      position: relative;
+    }
+    .tl-item:not(:last-child)::before {
+      content: ''; position: absolute;
+      right: 17px; top: 34px; bottom: -10px;
+      width: 2px; background: var(--border);
+    }
+    .tl-dot {
+      width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; z-index: 1;
+    }
+    .tl-dot.income-paid   { background: var(--green-light); color: var(--green); border: 2px solid var(--green-border); }
+    .tl-dot.income-pending{ background: var(--accent-light); color: var(--accent); border: 2px solid var(--border-glow); }
+    .tl-dot.income-overdue{ background: var(--red-light); color: var(--red); border: 2px solid var(--red); }
+    .tl-dot.project       { background: var(--surface3); color: var(--accent); border: 2px solid var(--border); }
+    .tl-dot.session       { background: var(--surface3); color: var(--orange); border: 2px solid var(--border); }
+    .tl-body { flex: 1; min-width: 0; padding-top: 4px; }
+    .tl-date { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-bottom: 2px; }
+    .tl-title{ font-size: 14px; font-weight: 800; color: var(--text); }
+    .tl-sub  { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .tl-amt  { font-size: 14px; font-weight: 900; color: var(--green); white-space: nowrap; }
+    .tl-amt.red { color: var(--red); }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html {
@@ -2023,6 +2087,26 @@
       </div>
     </div>
 
+    <!-- יעד חודשי -->
+    <div class="goal-bar-wrap" id="goal-bar-section">
+      <div class="goal-bar-top">
+        <div>
+          <div class="goal-bar-title">🎯 יעד חודשי</div>
+          <div class="goal-bar-nums" id="goal-bar-nums">₪0 מתוך ₪0</div>
+        </div>
+        <div class="goal-bar-pct" id="goal-bar-pct" style="color:var(--green)">0%</div>
+      </div>
+      <div class="goal-bar-track">
+        <div class="goal-bar-fill" id="goal-bar-fill" style="width:0%"></div>
+      </div>
+      <div class="goal-input-row">
+        <label>יעד חודשי:</label>
+        <input type="number" id="goal-input" placeholder="15000" min="0"
+          oninput="saveGoal(this.value)" />
+        <span id="goal-status-msg" style="font-size:12px;font-weight:700;color:var(--text-muted)"></span>
+      </div>
+    </div>
+
     <!-- תיבת נשאר לגבות / לשלם -->
     <div id="pending-summary-box" style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
       <div style="flex:1;min-width:140px;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid var(--green-border);box-shadow:var(--shadow)">
@@ -3000,17 +3084,28 @@ function fieldLabel(f) {
 
 function showProfileDetail(id) {
   currentDetailId = id;
-  const clients = load('clients');
-  const income = load('income');
+  const clients  = load('clients');
+  const income   = load('income');
+  const projects = load('projects');
+  const plans    = load('plans');
   const c = clients.find(x => x.id === id);
   if (!c) return;
 
   const idx = clients.indexOf(c);
   const avCls = c.active ? avClass(idx, false) : 'av-7';
+
+  // הכנסות של הלקוח (ללא תשלומי תוכניות כפולים)
   const clientIncome = income.filter(i => i.clientId === id);
-  const totalIncome = clientIncome.reduce((s,i) => s + Number(i.amount), 0);
-  const sessions = clientIncome.length;
-  const avgSession = sessions ? Math.round(totalIncome / sessions) : 0;
+  const paidIncome   = clientIncome.filter(i => (i.status||'pending') === 'paid');
+  const totalIncome  = paidIncome.reduce((s,i) => s + Number(i.amount), 0);
+  const totalExpected= clientIncome.reduce((s,i) => s + Number(i.amount), 0);
+  const txCount      = clientIncome.length;
+  const avgTx        = txCount ? Math.round(totalIncome / Math.max(paidIncome.length, 1)) : 0;
+
+  // פרויקטים של הלקוח
+  const clientProjects = projects.filter(p => p.clientId === id);
+  // תוכניות תשלום של הלקוח
+  const clientPlans = plans.filter(p => p.clientId === id);
 
   const detailAvatarHtml = `
     <label class="photo-edit-wrap" title="לחץ לשינוי תמונה" style="flex-shrink:0;cursor:pointer">
@@ -3052,9 +3147,12 @@ function showProfileDetail(id) {
     <div class="detail-section">
       <h3>📊 נתונים כלליים</h3>
       <div class="stats-row">
-        <div class="stat-box"><div class="stat-box-val">${fmtMoney(totalIncome)}</div><div class="stat-box-lbl">סה"כ הכנסות</div></div>
-        <div class="stat-box"><div class="stat-box-val">${sessions}</div><div class="stat-box-lbl">הזמנות</div></div>
-        <div class="stat-box"><div class="stat-box-val">${fmtMoney(avgSession)}</div><div class="stat-box-lbl">ממוצע להזמנה</div></div>
+        <div class="stat-box"><div class="stat-box-val">${fmtMoney(totalIncome)}</div><div class="stat-box-lbl">נכנס בפועל</div></div>
+        <div class="stat-box"><div class="stat-box-val">${fmtMoney(totalExpected)}</div><div class="stat-box-lbl">סה"כ צפוי</div></div>
+        <div class="stat-box"><div class="stat-box-val">${txCount}</div><div class="stat-box-lbl">עסקאות</div></div>
+        <div class="stat-box"><div class="stat-box-val">${fmtMoney(avgTx)}</div><div class="stat-box-lbl">ממוצע לעסקה</div></div>
+        ${clientPlans.length > 0 ? `<div class="stat-box"><div class="stat-box-val">${clientPlans.length}</div><div class="stat-box-lbl">תוכניות תשלום</div></div>` : ''}
+        ${clientProjects.length > 0 ? `<div class="stat-box"><div class="stat-box-val">${clientProjects.length}</div><div class="stat-box-lbl">פרויקטים</div></div>` : ''}
       </div>
     </div>
 
@@ -3071,30 +3169,84 @@ function showProfileDetail(id) {
       </div>
     </div>
 
-    <!-- income history -->
+    <!-- ציר זמן -->
     <div class="detail-section">
-      <h3>💰 היסטוריית הכנסות</h3>
-      ${clientIncome.length === 0
-        ? '<div style="color:var(--text-muted);font-size:14px">אין הכנסות עדיין</div>'
-        : `<table style="width:100%;border-collapse:collapse">
-            <thead><tr>
-              <th style="background:var(--surface2);padding:10px 14px;font-size:13px;color:var(--text-muted);text-align:right;font-weight:700">תאריך</th>
-              <th style="background:var(--surface2);padding:10px 14px;font-size:13px;color:var(--text-muted);text-align:right;font-weight:700">תיאור</th>
-              <th style="background:var(--surface2);padding:10px 14px;font-size:13px;color:var(--text-muted);text-align:right;font-weight:700">קטגוריה</th>
-              <th style="background:var(--surface2);padding:10px 14px;font-size:13px;color:var(--text-muted);text-align:right;font-weight:700">סכום</th>
-            </tr></thead>
-            <tbody>
-              ${clientIncome.map(i => `
-                <tr>
-                  <td style="padding:11px 14px;font-size:15px;border-bottom:1px solid var(--border);color:var(--text-muted)">${fmtDate(i.date)}</td>
-                  <td style="padding:11px 14px;font-size:15px;border-bottom:1px solid var(--border)">${i.description}</td>
-                  <td style="padding:11px 14px;font-size:15px;border-bottom:1px solid var(--border)"><span class="badge badge-purple">${i.category}</span></td>
-                  <td style="padding:11px 14px;font-size:15px;border-bottom:1px solid var(--border);font-weight:800;color:var(--green)">${fmtMoney(i.amount)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>`
-      }
+      <h3>📅 ציר זמן — כל האינטרקציות</h3>
+      ${(() => {
+        // איסוף כל האירועים
+        const events = [];
+
+        // הכנסות
+        clientIncome.forEach(i => {
+          const st = i.status || 'pending';
+          events.push({
+            date: i.date,
+            type: 'income',
+            dotClass: st === 'paid' ? 'income-paid' : st === 'overdue' ? 'income-overdue' : 'income-pending',
+            icon: st === 'paid' ? '✅' : st === 'overdue' ? '🔴' : '⏳',
+            title: i.description,
+            sub: i.category + (i.notes ? ' · ' + i.notes : ''),
+            badge: st === 'paid' ? 'badge-green' : st === 'overdue' ? 'badge-red' : 'badge-gray',
+            badgeLbl: st === 'paid' ? 'שולם' : st === 'overdue' ? 'באיחור' : 'ממתין',
+            amt: fmtMoney(i.amount),
+            amtClass: st === 'paid' ? '' : 'red'
+          });
+        });
+
+        // פרויקטים
+        clientProjects.forEach(p => {
+          events.push({
+            date: p.startDate || p.date || '',
+            type: 'project',
+            dotClass: 'project',
+            icon: '🎵',
+            title: p.name || p.title || 'פרויקט',
+            sub: p.status ? 'סטטוס: ' + p.status : '',
+            badge: 'badge-purple', badgeLbl: 'פרויקט',
+            amt: '', amtClass: ''
+          });
+        });
+
+        // תוכניות תשלום
+        clientPlans.forEach(plan => {
+          plan.payments.forEach(p => {
+            events.push({
+              date: p.dueDate,
+              type: 'plan',
+              dotClass: p.paid ? 'income-paid' : new Date(p.dueDate) < new Date() ? 'income-overdue' : 'income-pending',
+              icon: p.paid ? '✅' : '📋',
+              title: `${plan.project} — תשלום ${p.index}/${plan.count}`,
+              sub: 'תוכנית תשלום',
+              badge: p.paid ? 'badge-green' : 'badge-gray',
+              badgeLbl: p.paid ? 'שולם' : 'מתוכנית',
+              amt: fmtMoney(p.amount), amtClass: p.paid ? '' : 'red'
+            });
+          });
+        });
+
+        if (events.length === 0)
+          return '<div style="color:var(--text-muted);font-size:14px;padding:8px 0">אין פעילות עדיין</div>';
+
+        // מיון לפי תאריך — חדש ראשון
+        events.sort((a,b) => {
+          if (!a.date) return 1; if (!b.date) return -1;
+          return new Date(b.date) - new Date(a.date);
+        });
+
+        return `<div class="timeline">` + events.map(ev => `
+          <div class="tl-item">
+            <div class="tl-dot ${ev.dotClass}">${ev.icon}</div>
+            <div class="tl-body">
+              <div class="tl-date">${ev.date ? fmtDate(ev.date) : '—'}</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <div class="tl-title">${ev.title}</div>
+                <span class="badge ${ev.badge}" style="font-size:10px">${ev.badgeLbl}</span>
+                ${ev.amt ? `<div class="tl-amt ${ev.amtClass}">${ev.amt}</div>` : ''}
+              </div>
+              ${ev.sub ? `<div class="tl-sub">${ev.sub}</div>` : ''}
+            </div>
+          </div>`).join('') + `</div>`;
+      })()}
     </div>
   `;
 
@@ -3194,6 +3346,45 @@ function setIncomeStatus(id, status) {
   refreshAll();
 }
 
+function saveGoal(val) {
+  const n = parseFloat(val) || 0;
+  localStorage.setItem('monthlyGoal', n > 0 ? n : '');
+  renderIncome();
+}
+
+function renderGoalBar(paidAmt) {
+  const goal = parseFloat(localStorage.getItem('monthlyGoal')) || 0;
+  const inp  = document.getElementById('goal-input');
+  if (inp && !inp.value && goal) inp.value = goal;
+
+  const fill = document.getElementById('goal-bar-fill');
+  const pct  = document.getElementById('goal-bar-pct');
+  const nums = document.getElementById('goal-bar-nums');
+  const msg  = document.getElementById('goal-status-msg');
+  if (!fill) return;
+
+  if (!goal) {
+    fill.style.width = '0%';
+    pct.textContent  = '—';
+    nums.textContent = 'הגדר יעד חודשי';
+    msg.textContent  = '';
+    return;
+  }
+
+  const ratio   = Math.min(paidAmt / goal, 1);
+  const pctNum  = Math.round((paidAmt / goal) * 100);
+  fill.style.width = (ratio * 100) + '%';
+  fill.className   = 'goal-bar-fill' + (pctNum >= 100 ? ' over' : pctNum < 30 ? ' danger' : '');
+  pct.textContent  = pctNum + '%';
+  pct.style.color  = pctNum >= 100 ? 'var(--orange)' : pctNum < 30 ? 'var(--red)' : 'var(--green)';
+  nums.textContent = `${fmtMoney(paidAmt)} מתוך ${fmtMoney(goal)}`;
+  const remaining  = goal - paidAmt;
+  msg.textContent  = pctNum >= 100
+    ? `🎉 עברת את היעד ב-${fmtMoney(paidAmt - goal)}!`
+    : `נשאר ${fmtMoney(remaining)} להשלמת היעד`;
+  msg.style.color  = pctNum >= 100 ? 'var(--orange)' : 'var(--text-muted)';
+}
+
 function renderIncome() {
   const income = load('income');
   const plans  = load('plans');
@@ -3215,6 +3406,9 @@ function renderIncome() {
 
   const totalPaid     = paid.reduce((s,i) => s + Number(i.amount), 0);
   const totalNotPaid  = notPaid.reduce((s,i) => s + Number(i.amount), 0);
+
+  // יעד חודשי
+  renderGoalBar(totalPaid);
 
   // תשלומים מתוכניות לחודש — מידע בלבד לתצוגה בתחתית הטבלה
   const planInstDisplay = [];
@@ -3661,7 +3855,16 @@ function renderDashboard() {
   const profEl = document.getElementById('stat-ytd-profit');
   profEl.textContent  = (ytdProfit < 0 ? '-' : '') + fmtMoney(Math.abs(ytdProfit));
   profEl.className    = 'stat-ytd-val ' + (ytdProfit >= 0 ? 'green' : 'red');
-  document.getElementById('stat-ytd-profit-sub').textContent = `${thisYear} שנה עד היום`;
+  // זהה את החודש הראשון שיש בו נתונים השנה
+  const allDatesThisYear = [
+    ...ytdInc.map(i => new Date(i.date).getMonth()),
+    ...ytdExp.map(e => new Date(e.date).getMonth())
+  ];
+  const firstActiveMonth = allDatesThisYear.length > 0 ? Math.min(...allDatesThisYear) : thisMonth;
+  const rangeLabel = firstActiveMonth === thisMonth
+    ? MONTHS_HE[thisMonth] + ' ' + thisYear
+    : MONTHS_HE[firstActiveMonth] + '–' + MONTHS_HE[thisMonth] + ' ' + thisYear;
+  document.getElementById('stat-ytd-profit-sub').textContent = rangeLabel;
 
   // ── ממוצעים — 6 חודשים אחרונים ──
   const last6months = [];
