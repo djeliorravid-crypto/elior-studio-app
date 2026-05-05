@@ -5184,8 +5184,34 @@ if ('serviceWorker' in navigator) {
   } catch(e){}
 })();
 
+// ===== סימון אוטומטי כ"באיחור" =====
+// כל פעם שפותחים את האפליקציה — כל הכנסה שטרם שולמה ותאריכה עבר → מסומנת אוטומטית כ"באיחור"
+function autoMarkOverdue() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const income = load('income');
+  let changed = false;
+  income.forEach(i => {
+    if ((i.status || 'pending') !== 'pending') return;  // כבר שולם / כבר באיחור
+    const d = new Date(i.date); d.setHours(0,0,0,0);
+    if (d < today) { i.status = 'overdue'; changed = true; }
+  });
+  if (!changed) return;
+  save('income', income);
+
+  // סנכרן גם את תוכניות התשלום — אם יש תשלום מקושר
+  const plans = load('plans');
+  let plansChanged = false;
+  income.filter(i => i.status === 'overdue' && i.fromPlan && i.fromPaymentId).forEach(i => {
+    const plan = plans.find(p => p.id === i.fromPlan);
+    if (!plan) return;
+    const payment = plan.payments.find(p => p.id === i.fromPaymentId);
+    if (payment && !payment.paid) { /* status in plan stays unpaid — overdue shown via date check */ }
+  });
+}
+
 // ===== STARTUP – sync from cloud then render =====
 initFirebase().then(() => {
+  autoMarkOverdue();
   refreshAll();
   // שחזר טוקן גוגל שמור אם עדיין תקף
   if (gcalLoadToken()) {
@@ -5219,9 +5245,12 @@ function _syncFromCloud(reason) {
   }).catch(() => {});
 }
 
-// 1. כשחוזרים לאפליקציה — סנכרן מהענן (בלי לדרוס pending)
+// 1. כשחוזרים לאפליקציה — סנכרן מהענן + בדוק איחורים
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') _syncFromCloud('חזרה למסך');
+  if (document.visibilityState === 'visible') {
+    autoMarkOverdue();
+    _syncFromCloud('חזרה למסך');
+  }
 });
 
 // 2. כל 3 דקות — ריענון שקט
