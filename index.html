@@ -2060,6 +2060,26 @@
       </div>
     </div>
 
+    <!-- יעד חודשי -->
+    <div class="goal-bar-wrap" id="goal-bar-section">
+      <div class="goal-bar-top">
+        <div>
+          <div class="goal-bar-title">🎯 יעד חודשי</div>
+          <div class="goal-bar-nums" id="goal-bar-nums">₪0 מתוך ₪0</div>
+        </div>
+        <div class="goal-bar-pct" id="goal-bar-pct" style="color:var(--green)">0%</div>
+      </div>
+      <div class="goal-bar-track">
+        <div class="goal-bar-fill" id="goal-bar-fill" style="width:0%"></div>
+      </div>
+      <div class="goal-input-row">
+        <label>יעד חודשי:</label>
+        <input type="number" id="goal-input" placeholder="15000" min="0"
+          oninput="saveGoal(this.value)" />
+        <span id="goal-status-msg" style="font-size:12px;font-weight:700;color:var(--text-muted)"></span>
+      </div>
+    </div>
+
     <div class="cards-grid" style="margin-bottom:20px">
       <div class="card" style="border-color:#ddd6fe;background:linear-gradient(135deg,#faf8ff,#f3f0ff)">
         <div class="card-icon">⏳</div>
@@ -2084,26 +2104,6 @@
         <div class="card-label">בנק העסק החודש</div>
         <div class="card-value" id="i-net-profit">₪0</div>
         <div class="card-sub" id="i-net-profit-sub">שולם פחות הוצאות ששולמו</div>
-      </div>
-    </div>
-
-    <!-- יעד חודשי -->
-    <div class="goal-bar-wrap" id="goal-bar-section">
-      <div class="goal-bar-top">
-        <div>
-          <div class="goal-bar-title">🎯 יעד חודשי</div>
-          <div class="goal-bar-nums" id="goal-bar-nums">₪0 מתוך ₪0</div>
-        </div>
-        <div class="goal-bar-pct" id="goal-bar-pct" style="color:var(--green)">0%</div>
-      </div>
-      <div class="goal-bar-track">
-        <div class="goal-bar-fill" id="goal-bar-fill" style="width:0%"></div>
-      </div>
-      <div class="goal-input-row">
-        <label>יעד חודשי:</label>
-        <input type="number" id="goal-input" placeholder="15000" min="0"
-          oninput="saveGoal(this.value)" />
-        <span id="goal-status-msg" style="font-size:12px;font-weight:700;color:var(--text-muted)"></span>
       </div>
     </div>
 
