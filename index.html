@@ -2926,27 +2926,22 @@ function renderIncome() {
     });
   });
 
-  const totalPendingInst = pendingInst.reduce((s,p) => s + Number(p.amount), 0);
-  // "צפוי להתקבל" = הכל החודש: שולם + לא שולם + כל התשלומים
-  const totalAllExpected = totalPaid + totalNotPaid + paidInstTotal + totalPendingInst;
-  // "התקבל בפועל" = רק שולם
-  const totalExpected    = totalNotPaid + totalPendingInst; // נשאר לגבות (לצורך חישובים)
+  // תשלומים מתוכניות = תצוגה בלבד, לא נכנסים לחישוב (כשמסמנים שולם → נוסף להכנסות ונספר שם)
+  // "צפוי להתקבל" = רק הכנסות רגילות (שולם + לא שולם)
+  const totalAllExpected = totalPaid + totalNotPaid;
+  // "נשאר לגבות"
+  const totalExpected    = totalNotPaid;
 
   // "בנק העסק" = הכנסות ששולמו פחות הוצאות ששולמו בלבד
   const paidExpenses    = load('expenses').filter(e => inCurMonth(e.date) && e.paid).reduce((s,e) => s + Number(e.amount), 0);
-  const curMonthKeyInc  = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
-  const paidRecAmt      = load('recurring_expenses').filter(r => {
-    if (r.startMonth > curMonthKeyInc || (r.endMonth && r.endMonth < curMonthKeyInc)) return false;
-    return r.paidMonths && r.paidMonths[curMonthKeyInc];
-  }).reduce((s,r) => s + Number(r.amount), 0);
-  const bankBalance     = totalPaid - paidExpenses - paidRecAmt;
+  const bankBalance     = totalPaid - paidExpenses;
   const bankEl          = document.getElementById('i-net-profit');
   if (bankEl) {
     bankEl.textContent = (bankBalance < 0 ? '-' : '') + fmtMoney(Math.abs(bankBalance));
     bankEl.className   = 'card-value ' + (bankBalance >= 0 ? 'orange' : 'red');
   }
   const bankSub = document.getElementById('i-net-profit-sub');
-  if (bankSub) bankSub.textContent = `${fmtMoney(totalPaid)} נכנס − ${fmtMoney(paidExpenses + paidRecAmt)} יצא`;
+  if (bankSub) bankSub.textContent = `${fmtMoney(totalPaid)} נכנס − ${fmtMoney(paidExpenses)} יצא`;
 
   // "רווח נקי עתידי" = הכל צפוי (שולם + ממתין + תשלומים) פחות כל הוצאות החודש
   const monthExpensesTotal = load('expenses').filter(e => inCurMonth(e.date)).reduce((s,e) => s + Number(e.amount), 0);
@@ -2962,7 +2957,7 @@ function renderIncome() {
   document.getElementById('i-total').textContent          = fmtMoney(totalPaid);
   document.getElementById('i-count').textContent          = paid.length + ' עסקאות שולמו';
   document.getElementById('i-expected').textContent       = fmtMoney(totalAllExpected);
-  document.getElementById('i-expected-count').textContent = `${monthEntries.length + pendingInst.length} פריטים החודש`;
+  document.getElementById('i-expected-count').textContent = `${monthEntries.length} פריטים החודש`;
 
   // מיני לוח שנה
   renderMiniCal(income, load('expenses'));
@@ -2970,7 +2965,7 @@ function renderIncome() {
   const tbody = document.getElementById('i-tbody');
   if (!tbody) return;
 
-  if (monthEntries.length === 0 && pendingInst.length === 0) {
+  if (monthEntries.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="ei">💸</div><p>אין הכנסות לחודש זה</p></div></td></tr>`;
     return;
   }
@@ -3058,7 +3053,7 @@ function renderIncome() {
 
   tbody.innerHTML = incomeRows + (pendingInst.length ? `
     <tr><td colspan="7" style="padding:8px 16px;background:var(--surface2);font-size:13px;font-weight:700;color:var(--text-muted);letter-spacing:.05em">
-      תשלומים צפויים מתוכניות תשלום
+      🔁 תשלומים מתוכניות תשלום — תצוגה בלבד, לא נכנסים לחישוב
     </td></tr>
     ${pendingRows}
   ` : '');
@@ -4665,17 +4660,9 @@ function renderPendingBox() {
   const unpaidIncAmt = unpaidInc.reduce((s,i) => s + Number(i.amount), 0);
   const paidIncAmt   = paidInc.reduce((s,i) => s + Number(i.amount), 0);
 
-  // תשלומים מתוכניות שמועד פירעונם החודש ועדיין לא שולמו
-  let pendingInstAmt = 0, pendingInstCount = 0;
-  let paidInstAmt   = 0;
-  plans.forEach(plan => plan.payments.forEach(p => {
-    if (!inMonth(p.dueDate)) return;
-    if (p.paid) { paidInstAmt += Number(p.amount); }
-    else        { pendingInstAmt += Number(p.amount); pendingInstCount++; }
-  }));
-
-  const totalPending   = unpaidIncAmt + pendingInstAmt;
-  const totalCollected = paidIncAmt + paidInstAmt;
+  // תשלומים מתוכניות = תצוגה בלבד — כשמסמנים שולם הם נוספים להכנסות ונספרים שם
+  const totalPending   = unpaidIncAmt;
+  const totalCollected = paidIncAmt;
   const monthTotal     = totalPending + totalCollected;
   const incPct = monthTotal > 0 ? Math.round((totalCollected / monthTotal) * 100) : 0;
 
