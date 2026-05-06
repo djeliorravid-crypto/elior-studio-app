@@ -6292,6 +6292,8 @@ function showMusicPage(name) {
   document.getElementById('page-' + name)?.classList.add('active');
   document.querySelectorAll('#music-nav a').forEach(a => a.classList.remove('active'));
   document.querySelector(`#music-nav [data-mpage="${name}"]`)?.classList.add('active');
+  if (name === 'released') renderReleased();
+  if (name === 'sketches') renderSketches();
 }
 
 // ===== WAVEFORM PLAYER =====
