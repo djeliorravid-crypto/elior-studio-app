@@ -1457,6 +1457,12 @@
       .profiles-grid { grid-template-columns: 1fr !important; }
     }
 
+    /* כפתור דארק מוד — נראה רק במובייל */
+    .mobile-theme-nav { display: none; }
+    @media (max-width: 768px) {
+      .mobile-theme-nav { display: flex !important; }
+    }
+
     /* ===== STATISTICS PAGE ===== */
     .stat-ytd-strip {
       display: grid;
@@ -1848,9 +1854,9 @@
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
-    <a onclick="showPage('projects')" data-page="projects"><span class="nav-icon">🎵</span> פרויקטים</a>
     <a onclick="showPage('dashboard')" data-page="dashboard"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleCalc()" id="calc-nav-btn" style="margin-top:auto"><span class="nav-icon">🧮</span> מחשבון</a>
+    <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;flex-direction:column;gap:6px">
@@ -2284,20 +2290,6 @@
   </div>
 
   <!-- ===== PROJECTS ===== -->
-  <div class="page" id="page-projects">
-    <div class="page-header">
-      <div><h2>🎵 פרויקטים</h2><p>מעקב אחרי פרויקטי הפקה פעילים</p></div>
-    </div>
-    <!-- progress summary -->
-    <div id="proj-progress-section" style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:22px 26px;margin-bottom:24px;box-shadow:var(--shadow)">
-      <div style="font-size:14px;font-weight:700;color:var(--text-muted);margin-bottom:8px" id="proj-progress-label">0 מתוך 0 פרויקטים הושלמו</div>
-      <div class="proj-progress-bar">
-        <div class="proj-progress-fill" id="proj-progress-fill" style="width:0%"></div>
-      </div>
-    </div>
-    <div class="proj-grid" id="proj-grid"></div>
-  </div>
-
   <!-- ===== PROFILE DETAIL ===== -->
   <div class="page" id="page-profile-detail">
     <div class="detail-wrap">
@@ -2789,7 +2781,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, projects:4, dashboard:5};
+  const map = {income:0, expenses:1, installments:2, profiles:3, dashboard:4};
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
@@ -3377,12 +3369,13 @@ function setIncomeStatus(id, status) {
 
 function saveGoal(val) {
   const n = parseFloat(val) || 0;
-  localStorage.setItem('monthlyGoal', n > 0 ? n : '');
+  save('monthlyGoal', n > 0 ? n : 0);
   renderIncome();
 }
 
 function renderGoalBar(paidAmt) {
-  const goal = parseFloat(localStorage.getItem('monthlyGoal')) || 0;
+  const raw  = localStorage.getItem('s_monthlyGoal');
+  const goal = raw ? (parseFloat(JSON.parse(raw)) || 0) : 0;
   const inp  = document.getElementById('goal-input');
   if (inp && !inp.value && goal) inp.value = goal;
 
@@ -3707,23 +3700,27 @@ function renderExpenses() {
 
   // הכנסות החודש בלבד
   const monthIncome = income.filter(i => inCurMonth(i.date));
-  // הוצאות החודש בלבד — רק מ"כל ההוצאות". הוצאות קבועות = תצוגה בלבד, לא נספרות בחישוב.
+  // הוצאות החודש בלבד
   const allExpenses = expenses.filter(e => inCurMonth(e.date));
 
-  // סה"כ הוצאות החודש — רק מ"כל ההוצאות" (הוצאות קבועות הן תצוגה בלבד)
-  const totalExpenses = allExpenses.reduce((s,e) => s + Number(e.amount), 0);
+  // הוצאות קבועות — שולמו / לא שולמו החודש
+  const recurPaidAmt   = activeRecurring.filter(r => r.paidMonths && r.paidMonths[curMonthKey]).reduce((s,r) => s + Number(r.amount), 0);
+  const recurUnpaidAmt = activeRecurring.filter(r => !(r.paidMonths && r.paidMonths[curMonthKey])).reduce((s,r) => s + Number(r.amount), 0);
+
+  // סה"כ הוצאות החודש — כולל הוצאות קבועות
+  const totalExpenses = allExpenses.reduce((s,e) => s + Number(e.amount), 0) + recurPaidAmt + recurUnpaidAmt;
   const totalIncome   = monthIncome.reduce((s,i) => s + Number(i.amount), 0);
   const netProfit     = totalIncome - totalExpenses;
 
   // ── כרטיס "בנק העסק" — רק מה שנכנס ויצא בפועל (שולם) ──
   const paidIncAmt   = monthIncome.filter(i => (i.status||'pending') === 'paid').reduce((s,i) => s + Number(i.amount), 0);
-  const paidExpAmt   = allExpenses.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0);
+  const paidExpAmt   = allExpenses.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0) + recurPaidAmt;
   const totalPaidOut = paidExpAmt;
   const balance      = paidIncAmt - totalPaidOut;
   const isPos        = balance >= 0;
 
   // גם עבור תצוגה "כמה עוד ממתין"
-  const unpaidExpAmt   = allExpenses.filter(e => !e.paid).reduce((s,e) => s + Number(e.amount), 0);
+  const unpaidExpAmt   = allExpenses.filter(e => !e.paid).reduce((s,e) => s + Number(e.amount), 0) + recurUnpaidAmt;
   const totalUnpaidOut = unpaidExpAmt;
 
   const card = document.getElementById('e-balance-card');
@@ -3821,7 +3818,7 @@ function renderExpenses() {
       <div class="table-card" style="margin-top:8px">
         <div class="table-header">
           <h3>🔁 הוצאות קבועות</h3>
-          <div style="font-size:13px;color:var(--text-muted)">תזכורת בלבד — לא נכנסות לחישוב הסכומים</div>
+          <div style="font-size:13px;color:var(--text-muted)">נכנסות לחישוב הסכומים</div>
         </div>
         <table style="width:100%;border-collapse:collapse">
           <thead><tr>
@@ -5280,11 +5277,10 @@ function renderPendingBox() {
   const paidRecAmt   = activeRec.filter(r => r.paidMonths && r.paidMonths[monthKey2]).reduce((s,r) => s + Number(r.amount), 0);
   const unpaidRecAmt = unpaidRec.reduce((s,r) => s + Number(r.amount), 0);
 
-  // הוצאות קבועות = תצוגה בלבד, לא נכנסות לחישוב
   const monthExp     = expenses.filter(e => inMonth(e.date));
   const unpaidExp    = monthExp.filter(e => !e.paid);
-  const paidExpAmt   = monthExp.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0);
-  const unpaidExpAmt = unpaidExp.reduce((s,e) => s + Number(e.amount), 0);
+  const paidExpAmt   = monthExp.filter(e => e.paid).reduce((s,e) => s + Number(e.amount), 0) + paidRecAmt;
+  const unpaidExpAmt = unpaidExp.reduce((s,e) => s + Number(e.amount), 0) + unpaidRecAmt;
   const totalExpMonth = paidExpAmt + unpaidExpAmt;
   const expPct = totalExpMonth > 0 ? Math.round((paidExpAmt / totalExpMonth) * 100) : 0;
 
@@ -5299,7 +5295,7 @@ function renderPendingBox() {
   set('pending-income-pct', incPct + '% גבוי');
   setW('pending-income-bar', incPct);
 
-  const totalUnpaidExpCount = unpaidExp.length;
+  const totalUnpaidExpCount = unpaidExp.length + unpaidRec.length;
   set('pending-expenses-amt', fmtMoney(unpaidExpAmt));
   set('pending-expenses-sub', totalUnpaidExpCount === 0
     ? `הכל שולם החודש 🎉 — סה"כ ${fmtMoney(totalExpMonth)}`
@@ -5315,7 +5311,6 @@ function refreshAll() {
   renderExpenses();
   renderProfiles();
   renderInstallments();
-  renderProjects();
   renderSessionCal();
   populateClientFilter();
   renderPendingBox();
@@ -5955,6 +5950,10 @@ function applyTheme(dark) {
   const label = document.getElementById('theme-label');
   if (icon)  icon.textContent  = dark ? '☀️' : '🌙';
   if (label) label.textContent = dark ? 'מצב יום' : 'מצב לילה';
+  const mIcon  = document.getElementById('mobile-theme-icon');
+  const mLabel = document.getElementById('mobile-theme-label');
+  if (mIcon)  mIcon.textContent  = dark ? '☀️' : '🌙';
+  if (mLabel) mLabel.textContent = dark ? 'יום' : 'לילה';
 }
 function toggleTheme() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
