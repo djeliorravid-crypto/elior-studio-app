@@ -6615,28 +6615,69 @@ function uploadMusicAudio(event, type, id) {
   }).catch(err => { hideProgress(); toast('❌ שגיאה: ' + err.message); });
 }
 
+const _sketchWaves = {};
+
 async function playSketchInline(id) {
   const playerEl = document.getElementById('inline-player-' + id);
   const btn = document.getElementById('play-btn-' + id);
   if (!playerEl) return;
 
+  // Toggle off
   if (playerEl.style.display !== 'none') {
+    if (_sketchWaves[id]) { try { _sketchWaves[id].destroy(); } catch(e){} delete _sketchWaves[id]; }
     playerEl.style.display = 'none';
-    if (btn) btn.innerHTML = '▶';
     playerEl.innerHTML = '';
+    if (btn) btn.innerHTML = '▶';
     return;
   }
 
   const s = load('sketch_songs').find(x => x.id === id);
   if (!s?.audioUrl) return;
-
   let src = s.audioUrl;
   if (src.startsWith('local:')) src = await AudioDB.getURL(src.slice(6)) || '';
   if (!src) { toast('קובץ לא נמצא במכשיר זה'); return; }
 
-  playerEl.innerHTML = `<audio controls autoplay src="${src}" style="width:100%;height:36px"></audio>`;
+  playerEl.innerHTML = `
+    <div style="background:var(--card);border-radius:10px;padding:12px;border:1px solid var(--border)">
+      <div id="wave-inline-${id}" style="width:100%;height:60px"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+        <button id="wave-inline-btn-${id}" onclick="event.stopPropagation();_toggleSketchWave('${id}')" style="border:none;background:var(--accent);color:#fff;border-radius:50%;width:32px;height:32px;font-size:14px;cursor:pointer;flex-shrink:0">▶</button>
+        <span id="wave-inline-time-${id}" style="font-size:12px;color:var(--text-muted)">0:00</span>
+      </div>
+    </div>`;
   playerEl.style.display = 'block';
   if (btn) btn.innerHTML = '■';
+
+  const ws = WaveSurfer.create({
+    container: '#wave-inline-' + id,
+    waveColor: '#3d3d5c',
+    progressColor: '#e84393',
+    height: 60,
+    barWidth: 2,
+    barGap: 1,
+    barRadius: 2,
+    normalize: true,
+    interact: true,
+    url: src
+  });
+  _sketchWaves[id] = ws;
+  ws.on('ready', () => ws.play());
+  ws.on('audioprocess', t => {
+    const el = document.getElementById('wave-inline-time-' + id);
+    if (el) el.textContent = fmtAudioTime(t) + ' / ' + fmtAudioTime(ws.getDuration());
+  });
+  ws.on('finish', () => {
+    const b = document.getElementById('wave-inline-btn-' + id);
+    if (b) b.innerHTML = '▶';
+  });
+}
+
+function _toggleSketchWave(id) {
+  const ws = _sketchWaves[id];
+  if (!ws) return;
+  ws.playPause();
+  const b = document.getElementById('wave-inline-btn-' + id);
+  if (b) b.innerHTML = ws.isPlaying() ? '⏸' : '▶';
 }
 
 function quickDeleteMusic(type, id) {
