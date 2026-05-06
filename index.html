@@ -2686,7 +2686,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -3369,13 +3369,13 @@ function setIncomeStatus(id, status) {
 
 function saveGoal(val) {
   const n = parseFloat(val) || 0;
-  save('monthlyGoal', n > 0 ? n : 0);
+  save('monthlyGoal', {v: n > 0 ? n : 0});
   renderIncome();
 }
 
 function renderGoalBar(paidAmt) {
   const raw  = localStorage.getItem('s_monthlyGoal');
-  const goal = raw ? (parseFloat(JSON.parse(raw)) || 0) : 0;
+  const goal = raw ? (JSON.parse(raw)?.v || 0) : 0;
   const inp  = document.getElementById('goal-input');
   if (inp && !inp.value && goal) inp.value = goal;
 
