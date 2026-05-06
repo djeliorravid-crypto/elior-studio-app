@@ -6528,35 +6528,31 @@ function uploadMusicAudio(event, type, id) {
     updateMusicField(type, id, 'audioName', file.name);
     openMusicDetail(type, id); // show player right away
 
-    // Step 2: Upload to Firebase Storage in background for cross-device sync
-    if (!firebaseStorage) {
-      hideProgress();
-      toast('✅ נשמר — לסנכרון בין מכשירים יש להפעיל Firebase Storage');
-      return;
-    }
+    // Step 2: Upload to Cloudinary for cross-device sync
     setProgress('מעלה לענן... 0%');
-    const path = `audio/${type}/${id}/${Date.now()}_${file.name}`;
-    const uploadTask = firebaseStorage.ref(path).put(file);
-    uploadTask.on('state_changed',
-      snap => setProgress(`מעלה לענן... ${Math.round(snap.bytesTransferred/snap.totalBytes*100)}%`),
-      err => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'elior_studio');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://api.cloudinary.com/v1_1/dgnrvqa0s/auto/upload');
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) setProgress(`מעלה לענן... ${Math.round(e.loaded/e.total*100)}%`);
+    };
+    xhr.onload = () => {
+      const data = JSON.parse(xhr.responseText);
+      if (data.secure_url) {
+        updateMusicField(type, id, 'audioUrl',  data.secure_url);
+        AudioDB.remove(audioKey);
         hideProgress();
-        const msg = err.code === 'storage/unauthorized'
-          ? 'יש לעדכן חוקי Firebase Storage ל: allow read, write: if true'
-          : err.message;
-        toast(`⚠️ קובץ נשמר מקומית. שגיאת ענן: ${msg}`);
-      },
-      () => {
-        uploadTask.snapshot.ref.getDownloadURL().then(url => {
-          // Replace local URL with cloud URL — now works on all devices
-          updateMusicField(type, id, 'audioUrl',  url);
-          AudioDB.remove(audioKey); // no longer need local copy
-          hideProgress();
-          toast(`☁️ ${file.name} הועלה לענן — זמין בכל המכשירים`);
-          openMusicDetail(type, id);
-        }).catch(() => hideProgress());
+        toast(`☁️ ${file.name} הועלה לענן — זמין בכל המכשירים`);
+        openMusicDetail(type, id);
+      } else {
+        hideProgress();
+        toast('⚠️ קובץ נשמר מקומית. שגיאת ענן: ' + (data.error?.message || 'שגיאה'));
       }
-    );
+    };
+    xhr.onerror = () => { hideProgress(); toast('⚠️ קובץ נשמר מקומית. בדוק חיבור לאינטרנט'); };
+    xhr.send(formData);
   }).catch(err => { hideProgress(); toast('❌ שגיאה: ' + err.message); });
 }
 
