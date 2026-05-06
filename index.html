@@ -6414,6 +6414,7 @@ function _renderMusicList(type) {
       const uniqueSingers = Object.keys(singerCount).length;
       const withAudio = allItems.filter(s=>s.audioUrl).length;
 
+      const allSingers = Object.entries(singerCount).sort((a,b)=>b[1]-a[1]);
       statsEl.innerHTML = `
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:4px">
           <div class="table-card" style="padding:16px 20px;text-align:center">
@@ -6424,17 +6425,15 @@ function _renderMusicList(type) {
             <div style="font-size:28px;font-weight:900;color:var(--accent)">${uniqueSingers}</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:2px">זמרים שונים</div>
           </div>
-          <div class="table-card" style="padding:16px 20px;text-align:center">
-            <div style="font-size:28px;font-weight:900;color:var(--accent)">${withAudio}</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">עם קובץ אודיו 🎧</div>
-          </div>
-          <div class="table-card" style="padding:16px 20px">
-            <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">🏆 הכי הרבה שירים</div>
-            ${top3.map((([singer,count],i)=>`
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${i<2?'6px':'0'}">
-                <span style="font-size:13px;font-weight:${i===0?'800':'600'};color:${i===0?'var(--accent)':'var(--text)'}">${['🥇','🥈','🥉'][i]} ${singer}</span>
-                <span style="font-size:13px;font-weight:700;color:var(--text-muted)">${count}</span>
-              </div>`)).join('')}
+          <div class="table-card" style="padding:16px 20px;grid-column:span 2">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;font-weight:700">🏆 שירים לפי זמר</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
+              ${allSingers.map(([singer,count],i)=>`
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)">
+                  <span style="font-size:13px;font-weight:${i===0?'800':'500'};color:${i===0?'var(--accent)':i===1?'var(--text)':i===2?'var(--text)':'var(--text-muted)'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':''} ${singer}</span>
+                  <span style="font-size:13px;font-weight:700;color:var(--text-muted);margin-right:8px">${count}</span>
+                </div>`).join('')}
+            </div>
           </div>
         </div>`;
     }
