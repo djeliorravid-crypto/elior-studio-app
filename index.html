@@ -6367,19 +6367,47 @@ function openMusicModal(type) {
 
 function addMusicItem() {
   const type  = document.getElementById('music-modal-type')?.value || 'released';
-  const title = (document.getElementById('mf-title')?.value || '').trim();
+  let title = (document.getElementById('mf-title')?.value || '').trim();
   if (!title) { toast('נא להזין שם'); return; }
+  const singer = document.getElementById('mf-singer')?.value?.trim() || '';
+  let cowriters = document.getElementById('mf-cowriters')?.value?.trim() || '';
+
+  // Released songs: auto-prefix title with singer + ensure אליאור רביד is first cowriter
+  if (type === 'released') {
+    if (singer && !title.includes(' - ')) title = singer + ' - ' + title;
+    if (cowriters) {
+      const parts = cowriters.split(',').map(p => p.trim()).filter(Boolean);
+      const has = parts.some(p => p.includes('אליאור רביד'));
+      if (!has) parts.unshift('אליאור רביד');
+      else {
+        // move to front
+        const idx = parts.findIndex(p => p.includes('אליאור רביד'));
+        const e = parts.splice(idx, 1)[0];
+        parts.unshift(e);
+      }
+      cowriters = parts.join(', ');
+    } else {
+      cowriters = 'אליאור רביד';
+    }
+  }
+
   const key  = type === 'released' ? 'released_songs' : 'sketch_songs';
   const list = load(key);
-  list.unshift({
+  const newSong = {
     id: genId(), title,
-    cowriters: document.getElementById('mf-cowriters')?.value?.trim() || '',
+    cowriters,
     producer:  document.getElementById('mf-producer')?.value?.trim()  || '',
-    singer:    document.getElementById('mf-singer')?.value?.trim()    || '',
+    singer,
     text: '', notes: document.getElementById('mf-notes')?.value?.trim() || '',
     audioUrl: '', audioName: '',
     createdAt: new Date().toISOString()
-  });
+  };
+  // Released songs: auto-set YouTube search URL (search-based, since we can't fetch direct video ID from browser)
+  if (type === 'released') {
+    const bareTitle = title.includes(' - ') ? title.split(' - ').slice(1).join(' - ') : title;
+    newSong.youtubeUrl = ''; // empty = falls back to search URL in render
+  }
+  list.unshift(newSong);
   save(key, list);
   closeModal('music-add');
   type === 'released' ? renderReleased() : renderSketches();
