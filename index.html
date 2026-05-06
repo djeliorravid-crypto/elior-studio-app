@@ -6237,6 +6237,43 @@ function showMode(mode) {
   if (biz) refreshAll(); else renderReleased();
 }
 
+// ===== AUDIO LOCAL STORAGE (IndexedDB) =====
+const AudioDB = (() => {
+  let _db = null;
+  const open = () => new Promise((res, rej) => {
+    if (_db) return res(_db);
+    const req = indexedDB.open('elior_audio', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('files', {keyPath:'key'});
+    req.onsuccess = e => { _db = e.target.result; res(_db); };
+    req.onerror = rej;
+  });
+  return {
+    save: async (key, file) => {
+      const db = await open();
+      return new Promise((res, rej) => {
+        const tx = db.transaction('files','readwrite');
+        tx.objectStore('files').put({key, file, name: file.name});
+        tx.oncomplete = res; tx.onerror = rej;
+      });
+    },
+    getURL: async (key) => {
+      const db = await open();
+      return new Promise(res => {
+        const req = db.transaction('files','readonly').objectStore('files').get(key);
+        req.onsuccess = e => res(e.target.result ? URL.createObjectURL(e.target.result.file) : null);
+        req.onerror = () => res(null);
+      });
+    },
+    remove: async (key) => {
+      const db = await open();
+      return new Promise(res => {
+        const tx = db.transaction('files','readwrite');
+        tx.objectStore('files').delete(key); tx.oncomplete = res; tx.onerror = res;
+      });
+    }
+  };
+})();
+
 // ===== MUSIC =====
 let _curMusicType = 'released';
 let _curMusicId   = null;
@@ -6304,12 +6341,18 @@ function _renderMusicList(type) {
     </div>`).join('');
 }
 
-function openMusicDetail(type, id) {
+async function openMusicDetail(type, id) {
   _curMusicType = type;
   _curMusicId   = id;
   const key = type === 'released' ? 'released_songs' : 'sketch_songs';
   const s   = load(key).find(x => x.id === id);
   if (!s) return;
+
+  // Resolve local blob URL before rendering
+  let audioSrc = s.audioUrl || '';
+  if (audioSrc.startsWith('local:')) {
+    audioSrc = await AudioDB.getURL(audioSrc.slice(6)) || '';
+  }
 
   const backBtn = document.getElementById('music-detail-back');
   if (backBtn) backBtn.onclick = () => showMusicPage(type === 'released' ? 'released' : 'sketches');
@@ -6353,13 +6396,13 @@ function openMusicDetail(type, id) {
     <div class="table-card">
       <div class="table-header"><h3>🎧 קובץ אודיו</h3></div>
       <div style="padding:16px 20px">
-        ${s.audioUrl ? `
+        ${audioSrc ? `
           <div class="audio-track-row">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span style="font-weight:700;font-size:14px">🎵 ${s.audioName||'קובץ'}</span>
               <button onclick="removeMusicAudio('${type}','${id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px">×</button>
             </div>
-            <audio controls src="${s.audioUrl}" style="width:100%;margin-top:8px;height:36px"></audio>
+            <audio controls src="${audioSrc}" style="width:100%;margin-top:8px;height:36px"></audio>
           </div>` : '<p style="color:var(--text-muted);font-size:14px">אין קובץ אודיו עדיין</p>'}
         <label class="upload-zone" style="margin-top:12px;display:block">
           📁 ${s.audioUrl ? 'החלף קובץ' : 'העלה קובץ'} (MP3 / WAV / M4A)
@@ -6395,45 +6438,46 @@ function uploadMusicAudio(event, type, id) {
   event.target.value = '';
 
   const progEl = document.getElementById('music-upload-progress');
-  const setProgress = (txt) => { if (progEl) { progEl.style.display = 'block'; progEl.textContent = txt; } };
-  const hideProgress = () => { if (progEl) progEl.style.display = 'none'; };
+  const setProgress = txt => { if (progEl) { progEl.style.display='block'; progEl.textContent=txt; } };
+  const hideProgress = () => { if (progEl) progEl.style.display='none'; };
 
-  if (!firebaseStorage) {
-    toast('❌ Firebase Storage לא מוגדר — יש להפעיל Storage בקונסול Firebase ולהגדיר חוקי גישה');
-    return;
-  }
+  const audioKey = `${type}_${id}`;
 
-  setProgress(`מעלה את "${file.name}"... 0%`);
-
-  const path = `audio/${type}/${id}/${Date.now()}_${file.name}`;
-  const uploadTask = firebaseStorage.ref(path).put(file);
-
-  uploadTask.on('state_changed',
-    snap => {
-      const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
-      setProgress(`מעלה... ${pct}%`);
-    },
-    err => {
+  const saveLocal = () => {
+    setProgress(`שומר "${file.name}"...`);
+    AudioDB.save(audioKey, file).then(() => {
+      updateMusicField(type, id, 'audioUrl',  'local:' + audioKey);
+      updateMusicField(type, id, 'audioName', file.name);
       hideProgress();
-      toast('❌ שגיאה בהעלאה: ' + err.message);
-      console.error(err);
-    },
-    () => {
-      uploadTask.snapshot.ref.getDownloadURL().then(url => {
+      toast(`✅ ${file.name} נשמר`);
+      openMusicDetail(type, id);
+    }).catch(err => { hideProgress(); toast('❌ שגיאה: ' + err.message); });
+  };
+
+  if (firebaseStorage) {
+    setProgress(`מעלה "${file.name}"... 0%`);
+    const uploadTask = firebaseStorage.ref(`audio/${type}/${id}/${Date.now()}_${file.name}`).put(file);
+    uploadTask.on('state_changed',
+      snap => setProgress(`מעלה... ${Math.round(snap.bytesTransferred/snap.totalBytes*100)}%`),
+      () => saveLocal(),
+      () => uploadTask.snapshot.ref.getDownloadURL().then(url => {
         updateMusicField(type, id, 'audioUrl',  url);
         updateMusicField(type, id, 'audioName', file.name);
         hideProgress();
-        toast(`✅ ${file.name} הועלה בהצלחה`);
+        toast(`✅ ${file.name} הועלה`);
         openMusicDetail(type, id);
-      }).catch(err => {
-        hideProgress();
-        toast('❌ שגיאה בקבלת קישור: ' + err.message);
-      });
-    }
-  );
+      }).catch(() => saveLocal())
+    );
+  } else {
+    saveLocal();
+  }
 }
 
 function removeMusicAudio(type, id) {
+  const key = type === 'released' ? 'released_songs' : 'sketch_songs';
+  const items = load(key);
+  const s = items.find(x => x.id === id);
+  if (s?.audioUrl?.startsWith('local:')) AudioDB.remove(s.audioUrl.slice(6));
   updateMusicField(type, id, 'audioUrl',  '');
   updateMusicField(type, id, 'audioName', '');
   openMusicDetail(type, id);
