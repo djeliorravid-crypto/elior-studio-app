@@ -6446,16 +6446,19 @@ function _renderMusicList(type) {
     return;
   }
   listEl.innerHTML = items.map(s => `
-    <div class="song-card" onclick="openMusicDetail('${type}','${s.id}')">
-      <div class="song-card-avatar">${type==='released'?'🎵':'🎙'}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">${s.title}</div>
-        ${s.singer ? `<div style="font-size:13px;color:var(--text-muted)">זמר: ${s.singer}</div>` : ''}
-        ${s.producer ? `<div style="font-size:13px;color:var(--text-muted)">הפיק: ${s.producer}</div>` : ''}
-        ${s.cowriters ? `<div style="font-size:13px;color:var(--text-muted)">כתיבה: ${s.cowriters}</div>` : ''}
+    <div class="song-card" style="flex-wrap:wrap" onclick="openMusicDetail('${type}','${s.id}')">
+      <div style="display:flex;align-items:center;gap:12px;width:100%">
+        <div class="song-card-avatar">${type==='released'?'🎵':'🎙'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">${s.title}</div>
+          ${s.singer ? `<div style="font-size:13px;color:var(--text-muted)">זמר: ${s.singer}</div>` : ''}
+          ${s.producer ? `<div style="font-size:13px;color:var(--text-muted)">הפיק: ${s.producer}</div>` : ''}
+          ${s.cowriters ? `<div style="font-size:13px;color:var(--text-muted)">כתיבה: ${s.cowriters}</div>` : ''}
+        </div>
+        ${s.audioUrl && type==='sketches' ? `<button onclick="event.stopPropagation();playSketchInline('${s.id}')" id="play-btn-${s.id}" style="border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;padding:6px 10px;border-radius:8px;flex-shrink:0" title="נגן">▶</button>` : s.audioUrl ? `<span style="font-size:18px">🎧</span>` : ''}
+        <button onclick="event.stopPropagation();quickDeleteMusic('${type}','${s.id}')" style="border:none;background:none;color:#aaa;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;flex-shrink:0" title="מחק">×</button>
       </div>
-      ${s.audioUrl ? `<span style="font-size:18px" title="יש אודיו">🎧</span>` : ''}
-      <button onclick="event.stopPropagation();quickDeleteMusic('${type}','${s.id}')" style="border:none;background:none;color:#aaa;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;flex-shrink:0" title="מחק">×</button>
+      ${s.audioUrl && type==='sketches' ? `<div id="inline-player-${s.id}" style="width:100%;display:none;padding-top:10px" onclick="event.stopPropagation()"></div>` : ''}
     </div>`).join('');
 }
 
@@ -6610,6 +6613,30 @@ function uploadMusicAudio(event, type, id) {
     xhr.onerror = () => { hideProgress(); toast('⚠️ קובץ נשמר מקומית. בדוק חיבור לאינטרנט'); };
     xhr.send(formData);
   }).catch(err => { hideProgress(); toast('❌ שגיאה: ' + err.message); });
+}
+
+async function playSketchInline(id) {
+  const playerEl = document.getElementById('inline-player-' + id);
+  const btn = document.getElementById('play-btn-' + id);
+  if (!playerEl) return;
+
+  if (playerEl.style.display !== 'none') {
+    playerEl.style.display = 'none';
+    if (btn) btn.innerHTML = '▶';
+    playerEl.innerHTML = '';
+    return;
+  }
+
+  const s = load('sketch_songs').find(x => x.id === id);
+  if (!s?.audioUrl) return;
+
+  let src = s.audioUrl;
+  if (src.startsWith('local:')) src = await AudioDB.getURL(src.slice(6)) || '';
+  if (!src) { toast('קובץ לא נמצא במכשיר זה'); return; }
+
+  playerEl.innerHTML = `<audio controls autoplay src="${src}" style="width:100%;height:36px"></audio>`;
+  playerEl.style.display = 'block';
+  if (btn) btn.innerHTML = '■';
 }
 
 function quickDeleteMusic(type, id) {
