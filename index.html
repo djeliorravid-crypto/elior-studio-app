@@ -1899,8 +1899,8 @@
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
-    <a onclick="showPage('dashboard')" data-page="dashboard"><span class="nav-icon">📊</span> סטטיסטיקה</a>
-    <a onclick="showPage('tasks')" data-page="tasks" style="margin-top:auto"><span class="nav-icon">✅</span> משימות</a>
+    <a onclick="showPage('tasks')" data-page="tasks"><span class="nav-icon">✅</span> משימות</a>
+    <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
   <div class="sidebar-footer">
@@ -2862,7 +2862,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, dashboard:4, tasks:5};
+  const map = {income:0, expenses:1, installments:2, profiles:3, tasks:4, dashboard:5};
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
