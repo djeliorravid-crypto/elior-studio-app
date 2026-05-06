@@ -1463,6 +1463,40 @@
       .mobile-theme-nav { display: flex !important; }
     }
 
+    /* ===== TASKS PAGE ===== */
+    .task-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+      transition: opacity .2s;
+    }
+    .task-card.task-done { opacity: 0.5; }
+    .task-card.task-overdue { border-right: 3px solid var(--red); }
+    .task-title-text {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .task-done .task-title-text { text-decoration: line-through; color: var(--text-muted); }
+    .task-check {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--green);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background .15s, border-color .15s;
+    }
+    .task-check.checked { background: var(--green); border-color: var(--green); color: #fff; }
+    .task-check:hover { border-color: var(--green); }
+
     /* ===== STATISTICS PAGE ===== */
     .stat-ytd-strip {
       display: grid;
@@ -1866,7 +1900,7 @@
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
     <a onclick="showPage('dashboard')" data-page="dashboard"><span class="nav-icon">📊</span> סטטיסטיקה</a>
-    <a onclick="toggleCalc()" id="calc-nav-btn" style="margin-top:auto"><span class="nav-icon">🧮</span> מחשבון</a>
+    <a onclick="showPage('tasks')" data-page="tasks" style="margin-top:auto"><span class="nav-icon">✅</span> משימות</a>
     <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
   <div class="sidebar-footer">
@@ -2300,6 +2334,81 @@
     <div id="plans-list" style="display:flex;flex-direction:column;gap:18px"></div>
   </div>
 
+  <!-- ===== TASKS PAGE ===== -->
+  <div class="page" id="page-tasks">
+    <div class="page-header">
+      <div><h2>✅ משימות</h2><p>רשימת משימות ומעקב ביצוע</p></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary" onclick="toggleTaskForm()">+ משימה חדשה</button>
+      </div>
+    </div>
+
+    <!-- טופס הוספת משימה -->
+    <div id="task-form-wrap" style="display:none;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow)">
+      <div style="font-size:15px;font-weight:800;margin-bottom:14px">📝 משימה חדשה</div>
+      <div class="form-group"><label>כותרת *</label><input type="text" id="task-title" placeholder="מה צריך לעשות?" /></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>קטגוריה</label>
+          <select id="task-cat">
+            <option value="עסקי">עסקי</option>
+            <option value="אישי">אישי</option>
+            <option value="דחוף">דחוף</option>
+            <option value="אחר">אחר</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>עדיפות</label>
+          <select id="task-priority">
+            <option value="high">גבוה</option>
+            <option value="medium" selected>בינוני</option>
+            <option value="low">נמוך</option>
+          </select>
+        </div>
+        <div class="form-group"><label>תאריך יעד</label><input type="date" id="task-due" /></div>
+      </div>
+      <div class="form-group"><label>הערה / מה קורה</label><textarea id="task-notes" placeholder="עדכון סטטוס, פרטים..." style="min-height:60px"></textarea></div>
+      <div class="modal-actions" style="margin-top:4px">
+        <button class="btn btn-primary" onclick="addTask()">הוסף משימה</button>
+        <button class="btn btn-ghost" onclick="toggleTaskForm()">ביטול</button>
+      </div>
+    </div>
+
+    <!-- סטריפ סטטיסטיקות -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center;box-shadow:var(--shadow)">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">סה"כ</div>
+        <div id="task-stat-total" style="font-size:26px;font-weight:900;color:var(--text)">0</div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center;box-shadow:var(--shadow)">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">ממתין</div>
+        <div id="task-stat-pending" style="font-size:26px;font-weight:900;color:var(--accent)">0</div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center;box-shadow:var(--shadow)">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">בוצע</div>
+        <div id="task-stat-done" style="font-size:26px;font-weight:900;color:var(--green)">0</div>
+      </div>
+    </div>
+
+    <!-- פילטרים -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button id="tf-all"     class="btn btn-primary btn-sm" onclick="setTaskFilter('all')">הכל</button>
+      <button id="tf-pending" class="btn btn-ghost  btn-sm" onclick="setTaskFilter('pending')">ממתין</button>
+      <button id="tf-done"    class="btn btn-ghost  btn-sm" onclick="setTaskFilter('done')">בוצע</button>
+      <div style="margin-right:auto;display:flex;align-items:center;gap:6px">
+        <span style="font-size:12px;color:var(--text-muted);font-weight:600">מיון:</span>
+        <select id="task-sort" onchange="renderTasks()" style="font-size:12px;padding:4px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text)">
+          <option value="created">לפי יצירה</option>
+          <option value="priority">לפי עדיפות</option>
+          <option value="due">לפי תאריך יעד</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- רשימת משימות -->
+    <div id="tasks-list"></div>
+  </div>
+
   <!-- ===== PROJECTS ===== -->
   <!-- ===== PROFILE DETAIL ===== -->
   <div class="page" id="page-profile-detail">
@@ -2525,45 +2634,6 @@
   <div class="cp-text">כל הכבוד אחי!</div>
 </div>
 
-<!-- ══ מחשבון צף ══ -->
-<div id="calc-popup" style="
-  display:none;position:fixed;bottom:80px;left:20px;z-index:9999;
-  background:#1e1e2e;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,0.45);
-  width:240px;overflow:hidden;user-select:none;
-  font-family:'Heebo','Rubik',sans-serif;
-">
-  <!-- מסך -->
-  <div style="padding:16px 16px 8px;text-align:left">
-    <div id="calc-expr" style="font-size:12px;color:#888;min-height:16px;direction:ltr;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"> </div>
-    <div id="calc-display" style="font-size:32px;font-weight:700;color:#fff;direction:ltr;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2">0</div>
-  </div>
-  <!-- כפתורים -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#111;padding:1px">
-    <button onclick="calcBtn('AC')"  class="cbtn cbtn-fn" style="grid-column:span 2">AC</button>
-    <button onclick="calcBtn('%')"   class="cbtn cbtn-fn">%</button>
-    <button onclick="calcBtn('/')"   class="cbtn cbtn-op">÷</button>
-
-    <button onclick="calcBtn('7')"   class="cbtn">7</button>
-    <button onclick="calcBtn('8')"   class="cbtn">8</button>
-    <button onclick="calcBtn('9')"   class="cbtn">9</button>
-    <button onclick="calcBtn('*')"   class="cbtn cbtn-op">×</button>
-
-    <button onclick="calcBtn('4')"   class="cbtn">4</button>
-    <button onclick="calcBtn('5')"   class="cbtn">5</button>
-    <button onclick="calcBtn('6')"   class="cbtn">6</button>
-    <button onclick="calcBtn('-')"   class="cbtn cbtn-op">−</button>
-
-    <button onclick="calcBtn('1')"   class="cbtn">1</button>
-    <button onclick="calcBtn('2')"   class="cbtn">2</button>
-    <button onclick="calcBtn('3')"   class="cbtn">3</button>
-    <button onclick="calcBtn('+')"   class="cbtn cbtn-op" style="grid-row:span 2">+</button>
-
-    <button onclick="calcBtn('0')"   class="cbtn" style="grid-column:span 2">0</button>
-    <button onclick="calcBtn('.')"   class="cbtn">.</button>
-
-    <button onclick="calcBtn('=')"   class="cbtn cbtn-eq" style="grid-column:span 4">=</button>
-  </div>
-</div>
 
 <script>
 // ===== STATE =====
@@ -2697,7 +2767,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','tasks'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -2792,7 +2862,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, dashboard:4};
+  const map = {income:0, expenses:1, installments:2, profiles:3, dashboard:4, tasks:5};
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
@@ -5325,6 +5395,7 @@ function refreshAll() {
   renderSessionCal();
   populateClientFilter();
   renderPendingBox();
+  renderTasks();
 }
 
 // ===== גיבוי ושחזור =====
@@ -5979,94 +6050,117 @@ function toggleTheme() {
   applyTheme(saved ? saved === 'dark' : prefersDark);
 })();
 
-// ===== CALCULATOR =====
-let _calcExpr = '';
-let _calcResult = '0';
-let _calcJustEvaled = false;
+// ===== TASKS =====
+let _taskFilter = 'all';
 
-function toggleCalc() {
-  const el = document.getElementById('calc-popup');
-  if (!el) return;
-  const visible = el.style.display !== 'none';
-  el.style.display = visible ? 'none' : 'block';
+function toggleTaskForm() {
+  const w = document.getElementById('task-form-wrap');
+  if (!w) return;
+  const showing = w.style.display !== 'none';
+  w.style.display = showing ? 'none' : 'block';
+  if (!showing) setTimeout(() => document.getElementById('task-title')?.focus(), 50);
 }
 
-function calcBtn(val) {
-  const disp = document.getElementById('calc-display');
-  const expr = document.getElementById('calc-expr');
-
-  if (val === 'AC') {
-    _calcExpr = ''; _calcResult = '0'; _calcJustEvaled = false;
-    disp.textContent = '0'; expr.textContent = '';
-    return;
-  }
-  if (val === '=') {
-    try {
-      let e = _calcExpr.replace(/×/g,'*').replace(/÷/g,'/');
-      // handle % as /100
-      e = e.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
-      const r = Function('"use strict";return (' + e + ')')();
-      const rounded = parseFloat(r.toFixed(10));
-      expr.textContent = _calcExpr + ' =';
-      _calcResult = String(rounded);
-      disp.textContent = _calcResult;
-      _calcExpr = _calcResult;
-      _calcJustEvaled = true;
-    } catch { disp.textContent = 'שגיאה'; _calcExpr = ''; _calcJustEvaled = false; }
-    return;
-  }
-
-  const isOp = '+-*/'.includes(val) || val === '%';
-  if (_calcJustEvaled && !isOp) { _calcExpr = ''; _calcResult = '0'; }
-  _calcJustEvaled = false;
-
-  if (val === '.' && _calcExpr.split(/[\+\-\*\/]/).pop().includes('.')) return;
-  if (isOp && _calcExpr === '') return;
-
-  _calcExpr += val;
-  // Display symbol mapping
-  const displayExpr = _calcExpr.replace(/\*/g,'×').replace(/\//g,'÷');
-  expr.textContent = '';
-
-  // Show live calc if possible
-  try {
-    let e = _calcExpr.replace(/(\d+(?:\.\d+)?)%/g,'($1/100)');
-    const r = Function('"use strict";return (' + e + ')')();
-    disp.textContent = parseFloat(r.toFixed(10));
-  } catch {
-    disp.textContent = displayExpr;
-  }
+function addTask() {
+  const title = (document.getElementById('task-title')?.value || '').trim();
+  if (!title) { toast('נא להזין כותרת'); return; }
+  const tasks = load('tasks');
+  tasks.unshift({
+    id: genId(),
+    title,
+    notes:    (document.getElementById('task-notes')?.value  || '').trim(),
+    priority: document.getElementById('task-priority')?.value || 'medium',
+    dueDate:  document.getElementById('task-due')?.value     || '',
+    category: document.getElementById('task-cat')?.value     || 'אחר',
+    done:     false,
+    createdAt: new Date().toISOString()
+  });
+  save('tasks', tasks);
+  // reset form
+  ['task-title','task-notes','task-due'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const pri = document.getElementById('task-priority'); if (pri) pri.value = 'medium';
+  const cat = document.getElementById('task-cat');      if (cat) cat.value = 'עסקי';
+  toggleTaskForm();
+  renderTasks();
 }
 
-// סגור מחשבון בלחיצה מחוץ לו
-document.addEventListener('click', e => {
-  const popup = document.getElementById('calc-popup');
-  const btn   = document.getElementById('calc-nav-btn');
-  if (!popup || popup.style.display === 'none') return;
-  if (!popup.contains(e.target) && !btn.contains(e.target)) {
-    popup.style.display = 'none';
-  }
-});
+function toggleTaskDone(id) {
+  const tasks = load('tasks');
+  const t = tasks.find(t => t.id === id);
+  if (t) { t.done = !t.done; save('tasks', tasks); renderTasks(); }
+}
 
-// תמיכה במקלדת פיזית
-document.addEventListener('keydown', e => {
-  const popup = document.getElementById('calc-popup');
-  if (!popup || popup.style.display === 'none') return;
-  const key = e.key;
-  if ('0123456789'.includes(key)) calcBtn(key);
-  else if (key === '+') calcBtn('+');
-  else if (key === '-') calcBtn('-');
-  else if (key === '*') calcBtn('*');
-  else if (key === '/') { e.preventDefault(); calcBtn('/'); }
-  else if (key === '%') calcBtn('%');
-  else if (key === '.') calcBtn('.');
-  else if (key === 'Enter' || key === '=') calcBtn('=');
-  else if (key === 'Escape') popup.style.display = 'none';
-  else if (key === 'Backspace') {
-    _calcExpr = _calcExpr.slice(0,-1) || '';
-    document.getElementById('calc-display').textContent = _calcExpr || '0';
+function deleteTask(id) {
+  save('tasks', load('tasks').filter(t => t.id !== id));
+  renderTasks();
+}
+
+function setTaskFilter(f) {
+  _taskFilter = f;
+  ['all','pending','done'].forEach(k => {
+    const btn = document.getElementById('tf-' + k);
+    if (btn) { btn.className = 'btn btn-sm ' + (k === f ? 'btn-primary' : 'btn-ghost'); }
+  });
+  renderTasks();
+}
+
+function renderTasks() {
+  let tasks = load('tasks');
+  const total   = tasks.length;
+  const done    = tasks.filter(t => t.done).length;
+  const pending = total - done;
+  const setN = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setN('task-stat-total',   total);
+  setN('task-stat-pending', pending);
+  setN('task-stat-done',    done);
+
+  // filter
+  if (_taskFilter === 'pending') tasks = tasks.filter(t => !t.done);
+  else if (_taskFilter === 'done') tasks = tasks.filter(t => t.done);
+
+  // sort
+  const sortVal = document.getElementById('task-sort')?.value || 'created';
+  const prioOrder = {high:0, medium:1, low:2};
+  if (sortVal === 'priority') tasks.sort((a,b) => (prioOrder[a.priority]||1) - (prioOrder[b.priority]||1));
+  else if (sortVal === 'due') tasks.sort((a,b) => {
+    if (!a.dueDate && !b.dueDate) return 0;
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return a.dueDate.localeCompare(b.dueDate);
+  });
+
+  const prioBadge  = {high:'badge-red', medium:'badge-orange', low:'badge-green'};
+  const prioLabel  = {high:'גבוה', medium:'בינוני', low:'נמוך'};
+  const today = new Date().toISOString().slice(0,10);
+
+  const container = document.getElementById('tasks-list');
+  if (!container) return;
+
+  if (tasks.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="ei">✅</div><p>${_taskFilter === 'done' ? 'אין משימות שבוצעו' : _taskFilter === 'pending' ? 'אין משימות ממתינות' : 'אין משימות — לחץ + כדי להוסיף'}</p></div>`;
+    return;
   }
-});
+
+  container.innerHTML = tasks.map(t => {
+    const overdue = !t.done && t.dueDate && t.dueDate < today;
+    return `
+    <div class="task-card${t.done ? ' task-done' : ''}${overdue ? ' task-overdue' : ''}">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <button onclick="toggleTaskDone('${t.id}')" class="task-check${t.done ? ' checked' : ''}" title="${t.done ? 'בטל ביצוע' : 'סמן כבוצע'}">${t.done ? '✓' : ''}</button>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span class="task-title-text">${t.title}</span>
+            <span class="badge ${prioBadge[t.priority]||'badge-orange'}" style="font-size:11px">${prioLabel[t.priority]||t.priority}</span>
+            <span class="badge badge-purple" style="font-size:11px">${t.category}</span>
+            ${t.dueDate ? `<span style="font-size:12px;font-weight:600;${overdue ? 'color:var(--red)' : 'color:var(--text-muted)'}">📅 ${fmtDate(t.dueDate)}${overdue ? ' ⚠️' : ''}</span>` : ''}
+          </div>
+          ${t.notes ? `<div style="font-size:13px;color:var(--text-muted);margin-top:3px;line-height:1.4">${t.notes}</div>` : ''}
+        </div>
+        <button onclick="deleteTask('${t.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 4px;flex-shrink:0">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
 </script>
 </body>
 </html>
