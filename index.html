@@ -1457,6 +1457,11 @@
       .profiles-grid { grid-template-columns: 1fr !important; }
     }
 
+    @keyframes task-badge-blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.2; }
+    }
+
     /* כפתור דארק מוד — נראה רק במובייל */
     .mobile-theme-nav { display: none; }
     @media (max-width: 768px) {
@@ -1899,7 +1904,7 @@
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
-    <a onclick="showPage('tasks')" data-page="tasks"><span class="nav-icon">✅</span> משימות</a>
+    <a onclick="showPage('tasks')" data-page="tasks"><span class="nav-icon">✅</span> משימות<span id="task-nav-badge" style="display:none;margin-right:4px;background:#dc2626;color:#fff;font-size:10px;font-weight:900;border-radius:999px;padding:1px 6px;animation:task-badge-blink 1.2s ease-in-out infinite"></span></a>
     <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
@@ -6112,6 +6117,8 @@ function renderTasks() {
   const setN = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   setN('task-stat-total',   total);
   setN('task-stat-pending', pending);
+  const badge = document.getElementById('task-nav-badge');
+  if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? 'inline' : 'none'; }
   setN('task-stat-done',    done);
 
   // filter
