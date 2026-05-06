@@ -2597,7 +2597,11 @@
     <h3 id="music-modal-title">🎵 שיר חדש</h3>
     <input type="hidden" id="music-modal-type" value="released"/>
     <div class="form-group"><label>שם *</label><input type="text" id="mf-title" placeholder="שם השיר..."/></div>
-    <div class="form-group"><label>מי כתב / הפיק איתי</label><input type="text" id="mf-collabs" placeholder="שם, שם..."/></div>
+    <div id="mf-released-fields">
+      <div class="form-group"><label>מי כתב איתי</label><input type="text" id="mf-cowriters" placeholder="שמות..."/></div>
+      <div class="form-group"><label>מי הפיק</label><input type="text" id="mf-producer" placeholder="שם המפיק..."/></div>
+      <div class="form-group"><label>מי הזמר</label><input type="text" id="mf-singer" placeholder="שם הזמר..."/></div>
+    </div>
     <div class="form-group"><label>הערות</label><textarea id="mf-notes" placeholder="הערות, קונספט..."></textarea></div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="addMusicItem()">שמור</button>
@@ -6248,7 +6252,9 @@ function openMusicModal(type) {
   _curMusicType = type;
   document.getElementById('music-modal-type').value = type;
   document.getElementById('music-modal-title').textContent = type === 'released' ? '🎵 שיר חדש' : '🎙 סקיצה חדשה';
-  ['mf-title','mf-collabs','mf-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['mf-title','mf-cowriters','mf-producer','mf-singer','mf-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const relFields = document.getElementById('mf-released-fields');
+  if (relFields) relFields.style.display = type === 'released' ? '' : 'none';
   openModal('music-add');
 }
 
@@ -6260,7 +6266,9 @@ function addMusicItem() {
   const list = load(key);
   list.unshift({
     id: genId(), title,
-    collaborators: document.getElementById('mf-collabs')?.value?.trim() || '',
+    cowriters: document.getElementById('mf-cowriters')?.value?.trim() || '',
+    producer:  document.getElementById('mf-producer')?.value?.trim()  || '',
+    singer:    document.getElementById('mf-singer')?.value?.trim()    || '',
     text: '', notes: document.getElementById('mf-notes')?.value?.trim() || '',
     audioUrl: '', audioName: '',
     createdAt: new Date().toISOString()
@@ -6288,7 +6296,9 @@ function _renderMusicList(type) {
       <div class="song-card-avatar">${type==='released'?'🎵':'🎙'}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">${s.title}</div>
-        ${s.collaborators ? `<div style="font-size:13px;color:var(--text-muted)">עם: ${s.collaborators}</div>` : ''}
+        ${s.singer ? `<div style="font-size:13px;color:var(--text-muted)">זמר: ${s.singer}</div>` : ''}
+        ${s.producer ? `<div style="font-size:13px;color:var(--text-muted)">הפיק: ${s.producer}</div>` : ''}
+        ${s.cowriters ? `<div style="font-size:13px;color:var(--text-muted)">כתיבה: ${s.cowriters}</div>` : ''}
       </div>
       ${s.audioUrl ? `<span style="font-size:18px" title="יש אודיו">🎧</span>` : ''}
     </div>`).join('');
@@ -6317,10 +6327,19 @@ function openMusicDetail(type, id) {
           <label>שם</label>
           <input type="text" value="${s.title.replace(/"/g,'&quot;')}" onchange="updateMusicField('${type}','${id}','title',this.value)"/>
         </div>
+        ${type === 'released' ? `
         <div class="form-group" style="margin:0">
-          <label>מי כתב / הפיק איתי</label>
-          <input type="text" value="${(s.collaborators||'').replace(/"/g,'&quot;')}" placeholder="שם, שם..." onchange="updateMusicField('${type}','${id}','collaborators',this.value)"/>
+          <label>מי כתב איתי</label>
+          <input type="text" value="${(s.cowriters||'').replace(/"/g,'&quot;')}" placeholder="שמות..." onchange="updateMusicField('${type}','${id}','cowriters',this.value)"/>
         </div>
+        <div class="form-group" style="margin:0">
+          <label>מי הפיק</label>
+          <input type="text" value="${(s.producer||'').replace(/"/g,'&quot;')}" placeholder="שם המפיק..." onchange="updateMusicField('${type}','${id}','producer',this.value)"/>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>מי הזמר</label>
+          <input type="text" value="${(s.singer||'').replace(/"/g,'&quot;')}" placeholder="שם הזמר..." onchange="updateMusicField('${type}','${id}','singer',this.value)"/>
+        </div>` : ''}
         <div class="form-group" style="margin:0">
           <label>טקסט / מילים</label>
           <textarea style="min-height:120px" onchange="updateMusicField('${type}','${id}','text',this.value)">${s.text||''}</textarea>
@@ -6370,27 +6389,48 @@ function deleteMusicItem(type, id) {
   type === 'released' ? renderReleased() : renderSketches();
 }
 
-async function uploadMusicAudio(event, type, id) {
+function uploadMusicAudio(event, type, id) {
   const file = event.target.files?.[0];
   if (!file) return;
+  event.target.value = '';
+
   const progEl = document.getElementById('music-upload-progress');
-  if (progEl) { progEl.style.display = 'block'; progEl.textContent = `מעלה את ${file.name}...`; }
-  try {
-    if (!firebaseStorage) throw new Error('Storage לא מוגדר — הפעל Firebase Storage בקונסול');
-    const path = `audio/${type}/${id}/${Date.now()}_${file.name}`;
-    const snapshot = await firebaseStorage.ref(path).put(file);
-    const url = await snapshot.ref.getDownloadURL();
-    updateMusicField(type, id, 'audioUrl',  url);
-    updateMusicField(type, id, 'audioName', file.name);
-    toast(`✅ ${file.name} הועלה`);
-    openMusicDetail(type, id);
-  } catch(e) {
-    toast('שגיאה בהעלאה: ' + e.message);
-    console.error(e);
-  } finally {
-    if (progEl) progEl.style.display = 'none';
-    event.target.value = '';
+  const setProgress = (txt) => { if (progEl) { progEl.style.display = 'block'; progEl.textContent = txt; } };
+  const hideProgress = () => { if (progEl) progEl.style.display = 'none'; };
+
+  if (!firebaseStorage) {
+    toast('❌ Firebase Storage לא מוגדר — יש להפעיל Storage בקונסול Firebase ולהגדיר חוקי גישה');
+    return;
   }
+
+  setProgress(`מעלה את "${file.name}"... 0%`);
+
+  const path = `audio/${type}/${id}/${Date.now()}_${file.name}`;
+  const uploadTask = firebaseStorage.ref(path).put(file);
+
+  uploadTask.on('state_changed',
+    snap => {
+      const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+      setProgress(`מעלה... ${pct}%`);
+    },
+    err => {
+      hideProgress();
+      toast('❌ שגיאה בהעלאה: ' + err.message);
+      console.error(err);
+    },
+    () => {
+      uploadTask.snapshot.ref.getDownloadURL().then(url => {
+        updateMusicField(type, id, 'audioUrl',  url);
+        updateMusicField(type, id, 'audioName', file.name);
+        hideProgress();
+        toast(`✅ ${file.name} הועלה בהצלחה`);
+        openMusicDetail(type, id);
+      }).catch(err => {
+        hideProgress();
+        toast('❌ שגיאה בקבלת קישור: ' + err.message);
+      });
+    }
+  );
 }
 
 function removeMusicAudio(type, id) {
