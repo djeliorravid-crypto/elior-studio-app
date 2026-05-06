@@ -2572,6 +2572,11 @@
       <div><h2>🎵 שירים שיצאו</h2><p>כל השירים שיצאו לעולם</p></div>
       <button class="btn btn-primary" onclick="openMusicModal('released')">+ שיר חדש</button>
     </div>
+    <div style="margin-bottom:16px">
+      <select id="released-singer-filter" onchange="renderReleased()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:14px;width:100%;max-width:300px">
+        <option value="">כל הזמרים</option>
+      </select>
+    </div>
     <div id="released-list"></div>
   </div>
 
@@ -6387,7 +6392,20 @@ function _renderMusicList(type) {
   const key    = type === 'released' ? 'released_songs' : 'sketch_songs';
   const listEl = document.getElementById(type === 'released' ? 'released-list' : 'sketches-list');
   if (!listEl) return;
-  const items = load(key);
+  const allItems = load(key);
+
+  // Populate singer filter
+  if (type === 'released') {
+    const sel = document.getElementById('released-singer-filter');
+    if (sel) {
+      const current = sel.value;
+      const singers = [...new Set(allItems.map(s => s.singer).filter(Boolean))].sort();
+      sel.innerHTML = '<option value="">כל הזמרים</option>' + singers.map(s => `<option value="${s}"${s===current?' selected':''}>${s}</option>`).join('');
+    }
+  }
+
+  const filterVal = type === 'released' ? (document.getElementById('released-singer-filter')?.value || '') : '';
+  const items = filterVal ? allItems.filter(s => s.singer === filterVal) : allItems;
   if (items.length === 0) {
     listEl.innerHTML = `<div class="empty-state"><div class="ei">${type==='released'?'🎵':'🎙'}</div><p>אין ${type==='released'?'שירים':'סקיצות'} עדיין</p></div>`;
     return;
