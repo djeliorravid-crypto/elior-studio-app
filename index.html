@@ -20,6 +20,7 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
   <!-- Google Identity Services (for Google Calendar OAuth) -->
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- פונט Heebo — עברית פרמיום -->
@@ -1457,6 +1458,100 @@
       .profiles-grid { grid-template-columns: 1fr !important; }
     }
 
+    /* ===== MODE SELECTOR ===== */
+    #mode-screen {
+      position: fixed; inset: 0; z-index: 9998;
+      background: #f4f4f6;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 32px;
+    }
+    #mode-screen::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(108,71,245,0.04) 39px, rgba(108,71,245,0.04) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(108,71,245,0.04) 39px, rgba(108,71,245,0.04) 40px);
+    }
+    #mode-screen.hidden { display: none; }
+    .mode-screen-title {
+      position: relative; z-index: 1;
+      font-family: 'Frank Ruhl Libre', serif;
+      font-size: 22px; font-weight: 900; color: #1a1a2e;
+      letter-spacing: 0.02em;
+    }
+    .mode-cards-row { display: flex; gap: 20px; position: relative; z-index: 1; }
+    .mode-card {
+      background: #fff; border: 1.5px solid #e0dff5;
+      border-radius: 4px; padding: 40px 36px;
+      width: 200px; text-align: center; cursor: pointer;
+      box-shadow: 0 2px 24px rgba(108,71,245,0.08), 0 1px 4px rgba(0,0,0,0.06);
+      transition: transform .15s, box-shadow .15s, border-color .15s;
+      position: relative; overflow: hidden;
+    }
+    .mode-card::before {
+      content: ''; position: absolute; top: 0; right: 0; left: 0;
+      height: 4px; border-radius: 4px 4px 0 0;
+    }
+    .mode-card.business::before { background: linear-gradient(90deg,#6c47f5,#9b87f5); }
+    .mode-card.music::before    { background: linear-gradient(90deg,#e84393,#f97316); }
+    .mode-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(108,71,245,0.16); border-color: #c4b5fd; }
+    .mode-card.music:hover { border-color: #f9a8d4; box-shadow: 0 8px 32px rgba(232,67,147,0.16); }
+    .mode-card-icon  { font-size: 44px; margin-bottom: 14px; }
+    .mode-card-title { font-size: 18px; font-weight: 900; color: #1a1a2e; font-family: 'Frank Ruhl Libre', serif; }
+    .mode-card-sub   { font-size: 12px; color: #888; margin-top: 6px; font-weight: 500; }
+    @media (max-width: 500px) {
+      .mode-cards-row { flex-direction: column; gap: 16px; }
+      .mode-card { width: 240px; padding: 32px 28px; }
+    }
+
+    /* ===== MUSIC SECTION ===== */
+    #music-sidebar { display: none; }
+    #music-main    { display: none; }
+    .music-sidebar { background: #0f0f14 !important; border-color: #2a2a35 !important; }
+    .music-sidebar .sidebar-logo h1 { color: #fff; }
+    .music-sidebar .sidebar-logo p  { color: #888; }
+    .music-sidebar nav a { color: #888; }
+    .music-sidebar nav a.active { color: #f9a8d4; border-right-color: #e84393; background: #1e0d17; }
+    .music-sidebar nav a:hover { color: #fff; background: #1a1a24; }
+    .music-sidebar .sidebar-footer { border-color: #2a2a35; }
+    [data-theme="dark"] .music-sidebar { background: #08080d !important; }
+    .song-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+      margin-bottom: 12px; cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform .12s, box-shadow .12s;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .song-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+    .song-card-avatar {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg,#e84393,#f97316);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .song-status-pill {
+      display: inline-block; border-radius: 999px;
+      padding: 2px 10px; font-size: 11px; font-weight: 700;
+    }
+    .sp-idea       { background:#f3f0ff; color:#6c47f5; }
+    .sp-production { background:#fff7ed; color:#ea580c; }
+    .sp-mixing     { background:#fef9c3; color:#a16207; }
+    .sp-mastering  { background:#e0f2fe; color:#0369a1; }
+    .sp-done       { background:#dcfce7; color:#15803d; }
+    .audio-track-row {
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+    }
+    .audio-track-row audio { width: 100%; margin-top: 8px; height: 36px; }
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 12px;
+      padding: 24px; text-align: center; cursor: pointer;
+      color: var(--text-muted); font-size: 14px; font-weight: 600;
+      transition: border-color .2s, background .2s;
+    }
+    .upload-zone:hover { border-color: var(--accent); background: var(--accent-light); }
+
     @keyframes task-badge-blink {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0.2; }
@@ -1893,7 +1988,25 @@
   </div>
 </div>
 
-<aside class="sidebar">
+<!-- ===== MODE SELECTOR ===== -->
+<div id="mode-screen" class="hidden">
+  <div class="mode-screen-title">אליאור רביד — בחר מצב</div>
+  <div class="mode-cards-row">
+    <div class="mode-card business" onclick="chooseMode('business')">
+      <div class="mode-card-icon">💼</div>
+      <div class="mode-card-title">עסקי ואישי</div>
+      <div class="mode-card-sub">הכנסות · הוצאות · לקוחות · משימות</div>
+    </div>
+    <div class="mode-card music" onclick="chooseMode('music')">
+      <div class="mode-card-icon">🎵</div>
+      <div class="mode-card-title">סטודיו</div>
+      <div class="mode-card-sub">שירים · סקיצות · מיקסים · הפקה</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUSINESS SIDEBAR ===== -->
+<aside class="sidebar" id="business-sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon">🎚️</div>
     <h1>אליאור רביד</h1>
@@ -1914,6 +2027,7 @@
       <button id="theme-toggle-btn" onclick="toggleTheme()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:flex;align-items:center;gap:6px">
         <span id="theme-icon">🌙</span><span id="theme-label">מצב לילה</span>
       </button>
+      <button onclick="switchMode()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:flex;align-items:center;gap:6px">🎵<span>מצב סטודיו</span></button>
       <button onclick="exportBackup()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right">📤 יצוא גיבוי</button>
       <label style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:block">
         📥 ייבוא גיבוי
@@ -1923,7 +2037,7 @@
   </div>
 </aside>
 
-<main class="main">
+<main class="main" id="business-main">
 
   <!-- ===== UNIFIED CALENDAR (יומן + גוגל) — hidden, kept for gcal sync logic ===== -->
   <div class="page" id="page-gcal" style="display:none!important">
@@ -2428,6 +2542,107 @@
 
 </main>
 
+<!-- ===== MUSIC SIDEBAR ===== -->
+<aside class="sidebar music-sidebar" id="music-sidebar">
+  <div class="sidebar-logo" style="border-bottom:1px solid #2a2a35">
+    <h1 style="color:#fff">אליאור רביד</h1>
+    <p style="color:#888">סטודיו</p>
+  </div>
+  <nav id="music-nav">
+    <a class="active" onclick="showMusicPage('songs')" data-mpage="songs"><span class="nav-icon">🎵</span> שירים</a>
+  </nav>
+  <div class="sidebar-footer" style="border-top:1px solid #2a2a35">
+    <button onclick="switchMode()" style="background:#1a1a24;border:1.5px solid #2a2a35;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:#888;width:100%;text-align:right;display:flex;align-items:center;gap:6px">
+      <span>🔄</span><span>החלף מצב</span>
+    </button>
+  </div>
+</aside>
+
+<!-- ===== MUSIC MAIN ===== -->
+<main class="main" id="music-main">
+
+  <!-- ===== SONGS LIST ===== -->
+  <div class="page active" id="page-songs">
+    <div class="page-header">
+      <div><h2>🎵 שירים</h2><p>פרויקטי הפקה וסקיצות</p></div>
+      <button class="btn btn-primary" onclick="openAddSongModal()">+ שיר חדש</button>
+    </div>
+
+    <!-- stats strip -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">שירים</div>
+        <div id="ms-total" style="font-size:24px;font-weight:900;color:var(--text)">0</div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">בהפקה</div>
+        <div id="ms-inprod" style="font-size:24px;font-weight:900;color:#ea580c">0</div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">מיקס/מאסטר</div>
+        <div id="ms-mixing" style="font-size:24px;font-weight:900;color:#0369a1">0</div>
+      </div>
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">גמור</div>
+        <div id="ms-done" style="font-size:24px;font-weight:900;color:var(--green)">0</div>
+      </div>
+    </div>
+
+    <div id="songs-list"></div>
+  </div>
+
+  <!-- ===== SONG DETAIL ===== -->
+  <div class="page" id="page-song-detail">
+    <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <button class="btn btn-back" onclick="showMusicPage('songs')">← חזרה לשירים</button>
+      <button class="btn btn-danger btn-sm" id="song-delete-btn">🗑 מחיקת שיר</button>
+    </div>
+    <div id="song-detail-content"></div>
+  </div>
+
+</main>
+
+<!-- ===== ADD SONG MODAL ===== -->
+<div class="modal-overlay" id="modal-add-song">
+  <div class="modal">
+    <h3>🎵 שיר חדש</h3>
+    <div class="form-group"><label>שם השיר *</label><input type="text" id="new-song-title" placeholder="שם השיר..."/></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>סטטוס</label>
+        <select id="new-song-status">
+          <option value="idea">💡 רעיון</option>
+          <option value="production" selected>🎛 בהפקה</option>
+          <option value="mixing">🎚 מיקס</option>
+          <option value="mastering">💿 מאסטרינג</option>
+          <option value="done">✅ גמור</option>
+        </select>
+      </div>
+      <div class="form-group"><label>BPM</label><input type="number" id="new-song-bpm" placeholder="120" min="40" max="300"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>טונאליות</label>
+        <select id="new-song-key">
+          <option value="">לא ידוע</option>
+          <option>C</option><option>C#/Db</option><option>D</option><option>D#/Eb</option>
+          <option>E</option><option>F</option><option>F#/Gb</option><option>G</option>
+          <option>G#/Ab</option><option>A</option><option>A#/Bb</option><option>B</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>ז׳אנר</label>
+        <input type="text" id="new-song-genre" placeholder="פופ, ר&ב, היפ הופ..."/>
+      </div>
+    </div>
+    <div class="form-group"><label>הערות</label><textarea id="new-song-notes" placeholder="מה הקונספט? מה עוד צריך?"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="addSong()">צור שיר</button>
+      <button class="btn btn-ghost" onclick="closeModal('add-song')">ביטול</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== INCOME MODAL ===== -->
 <div class="modal-overlay" id="modal-income">
   <div class="modal">
@@ -2663,6 +2878,7 @@ const firebaseConfig = {
 };
 
 let firebaseDB = null;
+let firebaseStorage = null;
 let firebaseReady = false;
 let _isFirstSync = true;
 
@@ -2731,6 +2947,7 @@ function initFirebase() {
     }
     firebase.initializeApp(firebaseConfig);
     firebaseDB = firebase.database();
+    try { firebaseStorage = firebase.storage(); } catch(e) { console.warn('Storage init failed', e); }
 
     return firebaseDB.ref('studio_data').once('value').then(snapshot => {
       const cloudData = snapshot.val();
@@ -2772,7 +2989,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','tasks'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','tasks','songs'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -6021,12 +6238,273 @@ function doLogin() {
   if (val === PASS) {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('login-pass').value = '';
+    document.getElementById('mode-screen').classList.remove('hidden');
   } else {
     const err = document.getElementById('login-err');
     err.textContent = '❌ סיסמא שגויה';
     document.getElementById('login-pass').value = '';
     document.getElementById('login-pass').focus();
     setTimeout(() => err.textContent = '', 2000);
+  }
+}
+
+function chooseMode(mode) {
+  document.getElementById('mode-screen').classList.add('hidden');
+  showMode(mode);
+}
+
+function switchMode() {
+  document.getElementById('business-sidebar').style.display = 'none';
+  document.getElementById('business-main').style.display    = 'none';
+  document.getElementById('music-sidebar').style.display    = 'none';
+  document.getElementById('music-main').style.display       = 'none';
+  document.getElementById('mode-screen').classList.remove('hidden');
+}
+
+function showMode(mode) {
+  const biz = mode === 'business';
+  document.getElementById('business-sidebar').style.display = biz ? '' : 'none';
+  document.getElementById('business-main').style.display    = biz ? '' : 'none';
+  document.getElementById('music-sidebar').style.display    = biz ? 'none' : '';
+  document.getElementById('music-main').style.display       = biz ? 'none' : '';
+  localStorage.setItem('app_mode', mode);
+  if (biz) refreshAll(); else renderSongs();
+}
+
+// ===== MUSIC / SONGS =====
+let _curSongId = null;
+
+const SONG_STATUS_LABEL = {idea:'💡 רעיון', production:'🎛 בהפקה', mixing:'🎚 מיקס', mastering:'💿 מאסטרינג', done:'✅ גמור'};
+const SONG_STATUS_CLASS = {idea:'sp-idea', production:'sp-production', mixing:'sp-mixing', mastering:'sp-mastering', done:'sp-done'};
+
+function showMusicPage(name) {
+  document.querySelectorAll('#music-main .page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name)?.classList.add('active');
+  document.querySelectorAll('#music-nav a').forEach(a => a.classList.remove('active'));
+  document.querySelector(`#music-nav [data-mpage="${name}"]`)?.classList.add('active');
+}
+
+function openAddSongModal() { openModal('add-song'); }
+
+function addSong() {
+  const title = (document.getElementById('new-song-title')?.value || '').trim();
+  if (!title) { toast('נא להזין שם שיר'); return; }
+  const songs = load('songs');
+  const song = {
+    id: genId(),
+    title,
+    status:  document.getElementById('new-song-status')?.value  || 'production',
+    bpm:     document.getElementById('new-song-bpm')?.value     || '',
+    key:     document.getElementById('new-song-key')?.value     || '',
+    genre:   document.getElementById('new-song-genre')?.value   || '',
+    notes:   document.getElementById('new-song-notes')?.value   || '',
+    createdAt: new Date().toISOString(),
+    sketches: [],
+    mixVersions: []
+  };
+  songs.unshift(song);
+  save('songs', songs);
+  closeModal('add-song');
+  ['new-song-title','new-song-bpm','new-song-genre','new-song-notes'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderSongs();
+}
+
+function renderSongs() {
+  const songs = load('songs');
+  const setN = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setN('ms-total',  songs.length);
+  setN('ms-inprod', songs.filter(s => s.status === 'production').length);
+  setN('ms-mixing',  songs.filter(s => s.status === 'mixing' || s.status === 'mastering').length);
+  setN('ms-done',    songs.filter(s => s.status === 'done').length);
+
+  const list = document.getElementById('songs-list');
+  if (!list) return;
+  if (songs.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="ei">🎵</div><p>אין שירים עדיין — לחץ "+ שיר חדש" כדי להתחיל</p></div>`;
+    return;
+  }
+  list.innerHTML = songs.map(s => `
+    <div class="song-card" onclick="openSongDetail('${s.id}')">
+      <div class="song-card-avatar">🎵</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">${s.title}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span class="song-status-pill ${SONG_STATUS_CLASS[s.status]||'sp-idea'}">${SONG_STATUS_LABEL[s.status]||s.status}</span>
+          ${s.bpm   ? `<span style="font-size:12px;color:var(--text-muted);font-weight:600">${s.bpm} BPM</span>` : ''}
+          ${s.key   ? `<span style="font-size:12px;color:var(--text-muted);font-weight:600">🎹 ${s.key}</span>` : ''}
+          ${s.genre ? `<span style="font-size:12px;color:var(--text-muted);font-weight:600">${s.genre}</span>` : ''}
+        </div>
+      </div>
+      <div style="text-align:left;flex-shrink:0;font-size:12px;color:var(--text-muted)">
+        ${s.sketches?.length||0} סקיצות · ${s.mixVersions?.length||0} מיקסים
+      </div>
+    </div>`).join('');
+}
+
+function openSongDetail(id) {
+  _curSongId = id;
+  const songs = load('songs');
+  const s = songs.find(s => s.id === id);
+  if (!s) return;
+  const delBtn = document.getElementById('song-delete-btn');
+  if (delBtn) delBtn.onclick = () => deleteSong(id);
+
+  const statusOpts = Object.entries(SONG_STATUS_LABEL).map(([v,l]) =>
+    `<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('');
+  const keyOpts = ['','C','C#/Db','D','D#/Eb','E','F','F#/Gb','G','G#/Ab','A','A#/Bb','B']
+    .map(k => `<option ${s.key===k?'selected':''}>${k||'לא ידוע'}</option>`).join('');
+
+  const content = document.getElementById('song-detail-content');
+  if (!content) return;
+  content.innerHTML = `
+    <!-- metadata card -->
+    <div class="table-card" style="margin-bottom:20px">
+      <div class="table-header"><h3>🎵 ${s.title}</h3></div>
+      <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px">
+        <div class="form-group" style="margin:0">
+          <label>סטטוס</label>
+          <select onchange="updateSongField('${id}','status',this.value)">${statusOpts}</select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>BPM</label>
+          <input type="number" value="${s.bpm||''}" placeholder="120"
+            onchange="updateSongField('${id}','bpm',this.value)" min="40" max="300"/>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>טונאליות</label>
+          <select onchange="updateSongField('${id}','key',this.value)">${keyOpts}</select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>ז׳אנר</label>
+          <input type="text" value="${s.genre||''}" placeholder="פופ, ר&ב..."
+            onchange="updateSongField('${id}','genre',this.value)"/>
+        </div>
+      </div>
+      <div style="padding:0 20px 16px">
+        <div class="form-group" style="margin:0">
+          <label>הערות</label>
+          <textarea onchange="updateSongField('${id}','notes',this.value)"
+            style="min-height:70px">${s.notes||''}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- sketches -->
+    <div class="table-card" style="margin-bottom:20px">
+      <div class="table-header"><h3>🎙 סקיצות</h3></div>
+      <div style="padding:16px 20px">
+        ${(s.sketches||[]).map(sk => `
+          <div class="audio-track-row">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-weight:700;font-size:14px">🎙 ${sk.name}</span>
+              <button onclick="deleteAudioTrack('${id}','sketches','${sk.id}')"
+                style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px">×</button>
+            </div>
+            <audio controls src="${sk.url}" style="width:100%;margin-top:8px;height:36px"></audio>
+          </div>`).join('') || '<p style="color:var(--text-muted);font-size:14px">אין סקיצות עדיין</p>'}
+        <label class="upload-zone" style="margin-top:12px;display:block">
+          📁 העלה סקיצה (MP3 / WAV / M4A)
+          <input type="file" accept="audio/*" style="display:none"
+            onchange="uploadAudio(event,'${id}','sketches')"/>
+        </label>
+        <div id="upload-progress-sketches-${id}" style="font-size:13px;color:var(--accent);margin-top:6px;display:none">מעלה...</div>
+      </div>
+    </div>
+
+    <!-- mix versions -->
+    <div class="table-card">
+      <div class="table-header"><h3>🎛 גרסאות מיקס</h3></div>
+      <div style="padding:16px 20px">
+        ${(s.mixVersions||[]).map((mv,i) => `
+          <div class="audio-track-row">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-weight:700;font-size:14px">🎛 ${mv.name||'גרסה '+(i+1)}</span>
+              <input type="text" value="${mv.notes||''}" placeholder="הערות גרסה..."
+                onchange="updateMixNote('${id}','${mv.id}',this.value)"
+                style="flex:1;min-width:100px;font-size:13px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text)"/>
+              <button onclick="deleteAudioTrack('${id}','mixVersions','${mv.id}')"
+                style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px">×</button>
+            </div>
+            <audio controls src="${mv.url}" style="width:100%;margin-top:8px;height:36px"></audio>
+          </div>`).join('') || '<p style="color:var(--text-muted);font-size:14px">אין גרסאות מיקס עדיין</p>'}
+        <label class="upload-zone" style="margin-top:12px;display:block">
+          📁 העלה גרסת מיקס (MP3 / WAV)
+          <input type="file" accept="audio/*" style="display:none"
+            onchange="uploadAudio(event,'${id}','mixVersions')"/>
+        </label>
+        <div id="upload-progress-mix-${id}" style="font-size:13px;color:var(--accent);margin-top:6px;display:none">מעלה...</div>
+      </div>
+    </div>`;
+
+  showMusicPage('song-detail');
+}
+
+function updateSongField(id, field, value) {
+  const songs = load('songs');
+  const s = songs.find(s => s.id === id);
+  if (!s) return;
+  s[field] = value;
+  save('songs', songs);
+}
+
+function updateMixNote(songId, trackId, note) {
+  const songs = load('songs');
+  const s = songs.find(s => s.id === songId);
+  if (!s) return;
+  const mv = (s.mixVersions||[]).find(m => m.id === trackId);
+  if (mv) { mv.notes = note; save('songs', songs); }
+}
+
+function deleteAudioTrack(songId, type, trackId) {
+  const songs = load('songs');
+  const s = songs.find(s => s.id === songId);
+  if (!s) return;
+  s[type] = (s[type]||[]).filter(t => t.id !== trackId);
+  save('songs', songs);
+  openSongDetail(songId);
+}
+
+function deleteSong(id) {
+  if (!confirm('למחוק את השיר? הפעולה לא ניתנת לביטול')) return;
+  save('songs', load('songs').filter(s => s.id !== id));
+  showMusicPage('songs');
+  renderSongs();
+}
+
+async function uploadAudio(event, songId, type) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const progressId = `upload-progress-${type === 'sketches' ? 'sketches' : 'mix'}-${songId}`;
+  const progEl = document.getElementById(progressId);
+  if (progEl) { progEl.style.display = 'block'; progEl.textContent = `מעלה את ${file.name}...`; }
+
+  try {
+    if (!firebaseStorage) throw new Error('Storage לא מוגדר — הפעל Firebase Storage בקונסול');
+    const path = `audio/${songId}/${type}/${Date.now()}_${file.name}`;
+    const ref = firebaseStorage.ref(path);
+    const snapshot = await ref.put(file);
+    const url = await snapshot.ref.getDownloadURL();
+
+    const songs = load('songs');
+    const s = songs.find(s => s.id === songId);
+    if (!s) return;
+    if (!s[type]) s[type] = [];
+    const idx = s[type].length + 1;
+    s[type].push({
+      id: genId(), name: file.name, url,
+      size: file.size, uploadedAt: new Date().toISOString()
+    });
+    save('songs', songs);
+    toast(`✅ ${file.name} הועלה בהצלחה`);
+    openSongDetail(songId);
+  } catch(e) {
+    toast('שגיאה בהעלאה: ' + e.message);
+    console.error(e);
+  } finally {
+    if (progEl) progEl.style.display = 'none';
+    event.target.value = '';
   }
 }
 
