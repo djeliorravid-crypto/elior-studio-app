@@ -6402,6 +6402,7 @@ function _renderMusicList(type) {
         ${s.cowriters ? `<div style="font-size:13px;color:var(--text-muted)">כתיבה: ${s.cowriters}</div>` : ''}
       </div>
       ${s.audioUrl ? `<span style="font-size:18px" title="יש אודיו">🎧</span>` : ''}
+      <button onclick="event.stopPropagation();quickDeleteMusic('${type}','${s.id}')" style="border:none;background:none;color:#aaa;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;flex-shrink:0" title="מחק">×</button>
     </div>`).join('');
 }
 
@@ -6556,6 +6557,12 @@ function uploadMusicAudio(event, type, id) {
     xhr.onerror = () => { hideProgress(); toast('⚠️ קובץ נשמר מקומית. בדוק חיבור לאינטרנט'); };
     xhr.send(formData);
   }).catch(err => { hideProgress(); toast('❌ שגיאה: ' + err.message); });
+}
+
+function quickDeleteMusic(type, id) {
+  const key = type === 'released' ? 'released_songs' : 'sketch_songs';
+  save(key, load(key).filter(x => x.id !== id));
+  type === 'released' ? renderReleased() : renderSketches();
 }
 
 function removeMusicAudio(type, id) {
