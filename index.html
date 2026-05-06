@@ -2549,7 +2549,8 @@
     <p style="color:#888">סטודיו</p>
   </div>
   <nav id="music-nav">
-    <a class="active" onclick="showMusicPage('songs')" data-mpage="songs"><span class="nav-icon">🎵</span> שירים</a>
+    <a class="active" onclick="showMusicPage('released')" data-mpage="released"><span class="nav-icon">🎵</span> שירים שיצאו</a>
+    <a onclick="showMusicPage('sketches')" data-mpage="sketches"><span class="nav-icon">🎙</span> סקיצות</a>
   </nav>
   <div class="sidebar-footer" style="border-top:1px solid #2a2a35">
     <button onclick="switchMode()" style="background:#1a1a24;border:1.5px solid #2a2a35;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:#888;width:100%;text-align:right;display:flex;align-items:center;gap:6px">
@@ -2561,84 +2562,46 @@
 <!-- ===== MUSIC MAIN ===== -->
 <main class="main" id="music-main">
 
-  <!-- ===== SONGS LIST ===== -->
-  <div class="page active" id="page-songs">
+  <!-- שירים שיצאו -->
+  <div class="page active" id="page-released">
     <div class="page-header">
-      <div><h2>🎵 שירים</h2><p>פרויקטי הפקה וסקיצות</p></div>
-      <button class="btn btn-primary" onclick="openAddSongModal()">+ שיר חדש</button>
+      <div><h2>🎵 שירים שיצאו</h2><p>כל השירים שיצאו לעולם</p></div>
+      <button class="btn btn-primary" onclick="openMusicModal('released')">+ שיר חדש</button>
     </div>
-
-    <!-- stats strip -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)">
-        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">שירים</div>
-        <div id="ms-total" style="font-size:24px;font-weight:900;color:var(--text)">0</div>
-      </div>
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)">
-        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">בהפקה</div>
-        <div id="ms-inprod" style="font-size:24px;font-weight:900;color:#ea580c">0</div>
-      </div>
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)">
-        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">מיקס/מאסטר</div>
-        <div id="ms-mixing" style="font-size:24px;font-weight:900;color:#0369a1">0</div>
-      </div>
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;box-shadow:var(--shadow)">
-        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">גמור</div>
-        <div id="ms-done" style="font-size:24px;font-weight:900;color:var(--green)">0</div>
-      </div>
-    </div>
-
-    <div id="songs-list"></div>
+    <div id="released-list"></div>
   </div>
 
-  <!-- ===== SONG DETAIL ===== -->
-  <div class="page" id="page-song-detail">
-    <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-      <button class="btn btn-back" onclick="showMusicPage('songs')">← חזרה לשירים</button>
-      <button class="btn btn-danger btn-sm" id="song-delete-btn">🗑 מחיקת שיר</button>
+  <!-- סקיצות -->
+  <div class="page" id="page-sketches">
+    <div class="page-header">
+      <div><h2>🎙 סקיצות</h2><p>עבודות שעוד לא יצאו</p></div>
+      <button class="btn btn-primary" onclick="openMusicModal('sketches')">+ סקיצה חדשה</button>
     </div>
-    <div id="song-detail-content"></div>
+    <div id="sketches-list"></div>
+  </div>
+
+  <!-- דף פרטי שיר/סקיצה -->
+  <div class="page" id="page-music-detail">
+    <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <button class="btn btn-back" id="music-detail-back">← חזרה</button>
+      <button class="btn btn-danger btn-sm" id="music-detail-delete">🗑 מחיקה</button>
+    </div>
+    <div id="music-detail-content"></div>
   </div>
 
 </main>
 
-<!-- ===== ADD SONG MODAL ===== -->
-<div class="modal-overlay" id="modal-add-song">
+<!-- ===== MUSIC ADD MODAL ===== -->
+<div class="modal-overlay" id="modal-music-add">
   <div class="modal">
-    <h3>🎵 שיר חדש</h3>
-    <div class="form-group"><label>שם השיר *</label><input type="text" id="new-song-title" placeholder="שם השיר..."/></div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>סטטוס</label>
-        <select id="new-song-status">
-          <option value="idea">💡 רעיון</option>
-          <option value="production" selected>🎛 בהפקה</option>
-          <option value="mixing">🎚 מיקס</option>
-          <option value="mastering">💿 מאסטרינג</option>
-          <option value="done">✅ גמור</option>
-        </select>
-      </div>
-      <div class="form-group"><label>BPM</label><input type="number" id="new-song-bpm" placeholder="120" min="40" max="300"/></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>טונאליות</label>
-        <select id="new-song-key">
-          <option value="">לא ידוע</option>
-          <option>C</option><option>C#/Db</option><option>D</option><option>D#/Eb</option>
-          <option>E</option><option>F</option><option>F#/Gb</option><option>G</option>
-          <option>G#/Ab</option><option>A</option><option>A#/Bb</option><option>B</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>ז׳אנר</label>
-        <input type="text" id="new-song-genre" placeholder="פופ, ר&ב, היפ הופ..."/>
-      </div>
-    </div>
-    <div class="form-group"><label>הערות</label><textarea id="new-song-notes" placeholder="מה הקונספט? מה עוד צריך?"></textarea></div>
+    <h3 id="music-modal-title">🎵 שיר חדש</h3>
+    <input type="hidden" id="music-modal-type" value="released"/>
+    <div class="form-group"><label>שם *</label><input type="text" id="mf-title" placeholder="שם השיר..."/></div>
+    <div class="form-group"><label>מי כתב / הפיק איתי</label><input type="text" id="mf-collabs" placeholder="שם, שם..."/></div>
+    <div class="form-group"><label>הערות</label><textarea id="mf-notes" placeholder="הערות, קונספט..."></textarea></div>
     <div class="modal-actions">
-      <button class="btn btn-primary" onclick="addSong()">צור שיר</button>
-      <button class="btn btn-ghost" onclick="closeModal('add-song')">ביטול</button>
+      <button class="btn btn-primary" onclick="addMusicItem()">שמור</button>
+      <button class="btn btn-ghost" onclick="closeModal('music-add')">ביטול</button>
     </div>
   </div>
 </div>
@@ -2989,7 +2952,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','tasks','songs'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','tasks','released_songs','sketch_songs'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -6267,14 +6230,12 @@ function showMode(mode) {
   document.getElementById('music-sidebar').style.display    = biz ? 'none'  : 'flex';
   document.getElementById('music-main').style.display       = biz ? 'none'  : 'block';
   localStorage.setItem('app_mode', mode);
-  if (biz) refreshAll(); else renderSongs();
+  if (biz) refreshAll(); else renderReleased();
 }
 
-// ===== MUSIC / SONGS =====
-let _curSongId = null;
-
-const SONG_STATUS_LABEL = {idea:'💡 רעיון', production:'🎛 בהפקה', mixing:'🎚 מיקס', mastering:'💿 מאסטרינג', done:'✅ גמור'};
-const SONG_STATUS_CLASS = {idea:'sp-idea', production:'sp-production', mixing:'sp-mixing', mastering:'sp-mastering', done:'sp-done'};
+// ===== MUSIC =====
+let _curMusicType = 'released';
+let _curMusicId   = null;
 
 function showMusicPage(name) {
   document.querySelectorAll('#music-main .page').forEach(p => p.classList.remove('active'));
@@ -6283,221 +6244,146 @@ function showMusicPage(name) {
   document.querySelector(`#music-nav [data-mpage="${name}"]`)?.classList.add('active');
 }
 
-function openAddSongModal() { openModal('add-song'); }
-
-function addSong() {
-  const title = (document.getElementById('new-song-title')?.value || '').trim();
-  if (!title) { toast('נא להזין שם שיר'); return; }
-  const songs = load('songs');
-  const song = {
-    id: genId(),
-    title,
-    status:  document.getElementById('new-song-status')?.value  || 'production',
-    bpm:     document.getElementById('new-song-bpm')?.value     || '',
-    key:     document.getElementById('new-song-key')?.value     || '',
-    genre:   document.getElementById('new-song-genre')?.value   || '',
-    notes:   document.getElementById('new-song-notes')?.value   || '',
-    createdAt: new Date().toISOString(),
-    sketches: [],
-    mixVersions: []
-  };
-  songs.unshift(song);
-  save('songs', songs);
-  closeModal('add-song');
-  ['new-song-title','new-song-bpm','new-song-genre','new-song-notes'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  renderSongs();
+function openMusicModal(type) {
+  _curMusicType = type;
+  document.getElementById('music-modal-type').value = type;
+  document.getElementById('music-modal-title').textContent = type === 'released' ? '🎵 שיר חדש' : '🎙 סקיצה חדשה';
+  ['mf-title','mf-collabs','mf-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  openModal('music-add');
 }
 
-function renderSongs() {
-  const songs = load('songs');
-  const setN = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  setN('ms-total',  songs.length);
-  setN('ms-inprod', songs.filter(s => s.status === 'production').length);
-  setN('ms-mixing',  songs.filter(s => s.status === 'mixing' || s.status === 'mastering').length);
-  setN('ms-done',    songs.filter(s => s.status === 'done').length);
+function addMusicItem() {
+  const type  = document.getElementById('music-modal-type')?.value || 'released';
+  const title = (document.getElementById('mf-title')?.value || '').trim();
+  if (!title) { toast('נא להזין שם'); return; }
+  const key  = type === 'released' ? 'released_songs' : 'sketch_songs';
+  const list = load(key);
+  list.unshift({
+    id: genId(), title,
+    collaborators: document.getElementById('mf-collabs')?.value?.trim() || '',
+    text: '', notes: document.getElementById('mf-notes')?.value?.trim() || '',
+    audioUrl: '', audioName: '',
+    createdAt: new Date().toISOString()
+  });
+  save(key, list);
+  closeModal('music-add');
+  type === 'released' ? renderReleased() : renderSketches();
+  toast('נשמר ✅');
+}
 
-  const list = document.getElementById('songs-list');
-  if (!list) return;
-  if (songs.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="ei">🎵</div><p>אין שירים עדיין — לחץ "+ שיר חדש" כדי להתחיל</p></div>`;
+function renderReleased() { _renderMusicList('released'); }
+function renderSketches() { _renderMusicList('sketches'); }
+
+function _renderMusicList(type) {
+  const key    = type === 'released' ? 'released_songs' : 'sketch_songs';
+  const listEl = document.getElementById(type === 'released' ? 'released-list' : 'sketches-list');
+  if (!listEl) return;
+  const items = load(key);
+  if (items.length === 0) {
+    listEl.innerHTML = `<div class="empty-state"><div class="ei">${type==='released'?'🎵':'🎙'}</div><p>אין ${type==='released'?'שירים':'סקיצות'} עדיין</p></div>`;
     return;
   }
-  list.innerHTML = songs.map(s => `
-    <div class="song-card" onclick="openSongDetail('${s.id}')">
-      <div class="song-card-avatar">🎵</div>
+  listEl.innerHTML = items.map(s => `
+    <div class="song-card" onclick="openMusicDetail('${type}','${s.id}')">
+      <div class="song-card-avatar">${type==='released'?'🎵':'🎙'}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">${s.title}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <span class="song-status-pill ${SONG_STATUS_CLASS[s.status]||'sp-idea'}">${SONG_STATUS_LABEL[s.status]||s.status}</span>
-          ${s.bpm   ? `<span style="font-size:12px;color:var(--text-muted);font-weight:600">${s.bpm} BPM</span>` : ''}
-          ${s.key   ? `<span style="font-size:12px;color:var(--text-muted);font-weight:600">🎹 ${s.key}</span>` : ''}
-          ${s.genre ? `<span style="font-size:12px;color:var(--text-muted);font-weight:600">${s.genre}</span>` : ''}
-        </div>
+        ${s.collaborators ? `<div style="font-size:13px;color:var(--text-muted)">עם: ${s.collaborators}</div>` : ''}
       </div>
-      <div style="text-align:left;flex-shrink:0;font-size:12px;color:var(--text-muted)">
-        ${s.sketches?.length||0} סקיצות · ${s.mixVersions?.length||0} מיקסים
-      </div>
+      ${s.audioUrl ? `<span style="font-size:18px" title="יש אודיו">🎧</span>` : ''}
     </div>`).join('');
 }
 
-function openSongDetail(id) {
-  _curSongId = id;
-  const songs = load('songs');
-  const s = songs.find(s => s.id === id);
+function openMusicDetail(type, id) {
+  _curMusicType = type;
+  _curMusicId   = id;
+  const key = type === 'released' ? 'released_songs' : 'sketch_songs';
+  const s   = load(key).find(x => x.id === id);
   if (!s) return;
-  const delBtn = document.getElementById('song-delete-btn');
-  if (delBtn) delBtn.onclick = () => deleteSong(id);
 
-  const statusOpts = Object.entries(SONG_STATUS_LABEL).map(([v,l]) =>
-    `<option value="${v}" ${s.status===v?'selected':''}>${l}</option>`).join('');
-  const keyOpts = ['','C','C#/Db','D','D#/Eb','E','F','F#/Gb','G','G#/Ab','A','A#/Bb','B']
-    .map(k => `<option ${s.key===k?'selected':''}>${k||'לא ידוע'}</option>`).join('');
+  const backBtn = document.getElementById('music-detail-back');
+  if (backBtn) backBtn.onclick = () => showMusicPage(type === 'released' ? 'released' : 'sketches');
 
-  const content = document.getElementById('song-detail-content');
+  const delBtn = document.getElementById('music-detail-delete');
+  if (delBtn) delBtn.onclick = () => deleteMusicItem(type, id);
+
+  const content = document.getElementById('music-detail-content');
   if (!content) return;
   content.innerHTML = `
-    <!-- metadata card -->
     <div class="table-card" style="margin-bottom:20px">
-      <div class="table-header"><h3>🎵 ${s.title}</h3></div>
-      <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px">
+      <div class="table-header"><h3>${type==='released'?'🎵':'🎙'} ${s.title}</h3></div>
+      <div style="padding:16px 20px;display:grid;gap:14px">
         <div class="form-group" style="margin:0">
-          <label>סטטוס</label>
-          <select onchange="updateSongField('${id}','status',this.value)">${statusOpts}</select>
+          <label>שם</label>
+          <input type="text" value="${s.title.replace(/"/g,'&quot;')}" onchange="updateMusicField('${type}','${id}','title',this.value)"/>
         </div>
         <div class="form-group" style="margin:0">
-          <label>BPM</label>
-          <input type="number" value="${s.bpm||''}" placeholder="120"
-            onchange="updateSongField('${id}','bpm',this.value)" min="40" max="300"/>
+          <label>מי כתב / הפיק איתי</label>
+          <input type="text" value="${(s.collaborators||'').replace(/"/g,'&quot;')}" placeholder="שם, שם..." onchange="updateMusicField('${type}','${id}','collaborators',this.value)"/>
         </div>
         <div class="form-group" style="margin:0">
-          <label>טונאליות</label>
-          <select onchange="updateSongField('${id}','key',this.value)">${keyOpts}</select>
+          <label>טקסט / מילים</label>
+          <textarea style="min-height:120px" onchange="updateMusicField('${type}','${id}','text',this.value)">${s.text||''}</textarea>
         </div>
-        <div class="form-group" style="margin:0">
-          <label>ז׳אנר</label>
-          <input type="text" value="${s.genre||''}" placeholder="פופ, ר&ב..."
-            onchange="updateSongField('${id}','genre',this.value)"/>
-        </div>
-      </div>
-      <div style="padding:0 20px 16px">
         <div class="form-group" style="margin:0">
           <label>הערות</label>
-          <textarea onchange="updateSongField('${id}','notes',this.value)"
-            style="min-height:70px">${s.notes||''}</textarea>
+          <textarea onchange="updateMusicField('${type}','${id}','notes',this.value)">${s.notes||''}</textarea>
         </div>
       </div>
     </div>
-
-    <!-- sketches -->
-    <div class="table-card" style="margin-bottom:20px">
-      <div class="table-header"><h3>🎙 סקיצות</h3></div>
+    <div class="table-card">
+      <div class="table-header"><h3>🎧 קובץ אודיו</h3></div>
       <div style="padding:16px 20px">
-        ${(s.sketches||[]).map(sk => `
+        ${s.audioUrl ? `
           <div class="audio-track-row">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-weight:700;font-size:14px">🎙 ${sk.name}</span>
-              <button onclick="deleteAudioTrack('${id}','sketches','${sk.id}')"
-                style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px">×</button>
+              <span style="font-weight:700;font-size:14px">🎵 ${s.audioName||'קובץ'}</span>
+              <button onclick="removeMusicAudio('${type}','${id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px">×</button>
             </div>
-            <audio controls src="${sk.url}" style="width:100%;margin-top:8px;height:36px"></audio>
-          </div>`).join('') || '<p style="color:var(--text-muted);font-size:14px">אין סקיצות עדיין</p>'}
+            <audio controls src="${s.audioUrl}" style="width:100%;margin-top:8px;height:36px"></audio>
+          </div>` : '<p style="color:var(--text-muted);font-size:14px">אין קובץ אודיו עדיין</p>'}
         <label class="upload-zone" style="margin-top:12px;display:block">
-          📁 העלה סקיצה (MP3 / WAV / M4A)
-          <input type="file" accept="audio/*" style="display:none"
-            onchange="uploadAudio(event,'${id}','sketches')"/>
+          📁 ${s.audioUrl ? 'החלף קובץ' : 'העלה קובץ'} (MP3 / WAV / M4A)
+          <input type="file" accept="audio/*" style="display:none" onchange="uploadMusicAudio(event,'${type}','${id}')"/>
         </label>
-        <div id="upload-progress-sketches-${id}" style="font-size:13px;color:var(--accent);margin-top:6px;display:none">מעלה...</div>
-      </div>
-    </div>
-
-    <!-- mix versions -->
-    <div class="table-card">
-      <div class="table-header"><h3>🎛 גרסאות מיקס</h3></div>
-      <div style="padding:16px 20px">
-        ${(s.mixVersions||[]).map((mv,i) => `
-          <div class="audio-track-row">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-              <span style="font-weight:700;font-size:14px">🎛 ${mv.name||'גרסה '+(i+1)}</span>
-              <input type="text" value="${mv.notes||''}" placeholder="הערות גרסה..."
-                onchange="updateMixNote('${id}','${mv.id}',this.value)"
-                style="flex:1;min-width:100px;font-size:13px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text)"/>
-              <button onclick="deleteAudioTrack('${id}','mixVersions','${mv.id}')"
-                style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px">×</button>
-            </div>
-            <audio controls src="${mv.url}" style="width:100%;margin-top:8px;height:36px"></audio>
-          </div>`).join('') || '<p style="color:var(--text-muted);font-size:14px">אין גרסאות מיקס עדיין</p>'}
-        <label class="upload-zone" style="margin-top:12px;display:block">
-          📁 העלה גרסת מיקס (MP3 / WAV)
-          <input type="file" accept="audio/*" style="display:none"
-            onchange="uploadAudio(event,'${id}','mixVersions')"/>
-        </label>
-        <div id="upload-progress-mix-${id}" style="font-size:13px;color:var(--accent);margin-top:6px;display:none">מעלה...</div>
+        <div id="music-upload-progress" style="font-size:13px;color:var(--accent);margin-top:6px;display:none">מעלה...</div>
       </div>
     </div>`;
 
-  showMusicPage('song-detail');
+  showMusicPage('music-detail');
 }
 
-function updateSongField(id, field, value) {
-  const songs = load('songs');
-  const s = songs.find(s => s.id === id);
+function updateMusicField(type, id, field, value) {
+  const key   = type === 'released' ? 'released_songs' : 'sketch_songs';
+  const items = load(key);
+  const s     = items.find(x => x.id === id);
   if (!s) return;
   s[field] = value;
-  save('songs', songs);
+  save(key, items);
 }
 
-function updateMixNote(songId, trackId, note) {
-  const songs = load('songs');
-  const s = songs.find(s => s.id === songId);
-  if (!s) return;
-  const mv = (s.mixVersions||[]).find(m => m.id === trackId);
-  if (mv) { mv.notes = note; save('songs', songs); }
+function deleteMusicItem(type, id) {
+  if (!confirm('למחוק? הפעולה לא ניתנת לביטול')) return;
+  const key = type === 'released' ? 'released_songs' : 'sketch_songs';
+  save(key, load(key).filter(x => x.id !== id));
+  showMusicPage(type === 'released' ? 'released' : 'sketches');
+  type === 'released' ? renderReleased() : renderSketches();
 }
 
-function deleteAudioTrack(songId, type, trackId) {
-  const songs = load('songs');
-  const s = songs.find(s => s.id === songId);
-  if (!s) return;
-  s[type] = (s[type]||[]).filter(t => t.id !== trackId);
-  save('songs', songs);
-  openSongDetail(songId);
-}
-
-function deleteSong(id) {
-  if (!confirm('למחוק את השיר? הפעולה לא ניתנת לביטול')) return;
-  save('songs', load('songs').filter(s => s.id !== id));
-  showMusicPage('songs');
-  renderSongs();
-}
-
-async function uploadAudio(event, songId, type) {
+async function uploadMusicAudio(event, type, id) {
   const file = event.target.files?.[0];
   if (!file) return;
-  const progressId = `upload-progress-${type === 'sketches' ? 'sketches' : 'mix'}-${songId}`;
-  const progEl = document.getElementById(progressId);
+  const progEl = document.getElementById('music-upload-progress');
   if (progEl) { progEl.style.display = 'block'; progEl.textContent = `מעלה את ${file.name}...`; }
-
   try {
     if (!firebaseStorage) throw new Error('Storage לא מוגדר — הפעל Firebase Storage בקונסול');
-    const path = `audio/${songId}/${type}/${Date.now()}_${file.name}`;
-    const ref = firebaseStorage.ref(path);
-    const snapshot = await ref.put(file);
+    const path = `audio/${type}/${id}/${Date.now()}_${file.name}`;
+    const snapshot = await firebaseStorage.ref(path).put(file);
     const url = await snapshot.ref.getDownloadURL();
-
-    const songs = load('songs');
-    const s = songs.find(s => s.id === songId);
-    if (!s) return;
-    if (!s[type]) s[type] = [];
-    const idx = s[type].length + 1;
-    s[type].push({
-      id: genId(), name: file.name, url,
-      size: file.size, uploadedAt: new Date().toISOString()
-    });
-    save('songs', songs);
-    toast(`✅ ${file.name} הועלה בהצלחה`);
-    openSongDetail(songId);
+    updateMusicField(type, id, 'audioUrl',  url);
+    updateMusicField(type, id, 'audioName', file.name);
+    toast(`✅ ${file.name} הועלה`);
+    openMusicDetail(type, id);
   } catch(e) {
     toast('שגיאה בהעלאה: ' + e.message);
     console.error(e);
@@ -6505,6 +6391,12 @@ async function uploadAudio(event, songId, type) {
     if (progEl) progEl.style.display = 'none';
     event.target.value = '';
   }
+}
+
+function removeMusicAudio(type, id) {
+  updateMusicField(type, id, 'audioUrl',  '');
+  updateMusicField(type, id, 'audioName', '');
+  openMusicDetail(type, id);
 }
 
 // ===== DARK MODE =====
