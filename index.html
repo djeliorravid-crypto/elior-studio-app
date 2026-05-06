@@ -6254,19 +6254,18 @@ function chooseMode(mode) {
 }
 
 function switchMode() {
-  document.getElementById('business-sidebar').style.display = 'none';
-  document.getElementById('business-main').style.display    = 'none';
-  document.getElementById('music-sidebar').style.display    = 'none';
-  document.getElementById('music-main').style.display       = 'none';
+  ['business-sidebar','business-main','music-sidebar','music-main'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
   document.getElementById('mode-screen').classList.remove('hidden');
 }
 
 function showMode(mode) {
   const biz = mode === 'business';
-  document.getElementById('business-sidebar').style.display = biz ? '' : 'none';
-  document.getElementById('business-main').style.display    = biz ? '' : 'none';
-  document.getElementById('music-sidebar').style.display    = biz ? 'none' : '';
-  document.getElementById('music-main').style.display       = biz ? 'none' : '';
+  document.getElementById('business-sidebar').style.display = biz ? 'flex'  : 'none';
+  document.getElementById('business-main').style.display    = biz ? 'block' : 'none';
+  document.getElementById('music-sidebar').style.display    = biz ? 'none'  : 'flex';
+  document.getElementById('music-main').style.display       = biz ? 'none'  : 'block';
   localStorage.setItem('app_mode', mode);
   if (biz) refreshAll(); else renderSongs();
 }
