@@ -1733,95 +1733,109 @@
     justify-content: center;
     z-index: 9999;
     flex-direction: column;
-    background-image: url('studio-bg.jpg');
-    background-size: cover;
-    background-position: center;
+    background: #f4f4f6;
   }
   #login-screen::before {
     content: '';
     position: absolute;
     inset: 0;
-    backdrop-filter: blur(1px);
-    background: rgba(0,0,0,0.25);
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(108,71,245,0.04) 39px, rgba(108,71,245,0.04) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(108,71,245,0.04) 39px, rgba(108,71,245,0.04) 40px);
   }
   #login-screen.hidden { display: none; }
   .login-box {
     position: relative;
     z-index: 1;
-    background: rgba(0,0,0,0.45);
-    backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 28px;
-    padding: 48px 40px;
-    width: 320px;
-    max-width: 90vw;
+    background: #fff;
+    border: 1px solid #e0dff5;
+    border-radius: 4px;
+    padding: 52px 48px 44px;
+    width: 380px;
+    max-width: 92vw;
     text-align: center;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    box-shadow: 0 2px 24px rgba(108,71,245,0.08), 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .login-box::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #6c47f5, #9b87f5);
+    border-radius: 4px 4px 0 0;
   }
   .login-signature {
-    font-family: 'Great Vibes', cursive;
-    font-size: 58px;
-    color: #fff;
-    margin-bottom: 2px;
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 34px;
+    font-weight: 900;
+    color: #1a1a2e;
+    margin-bottom: 4px;
     line-height: 1.1;
-    text-shadow: 0 2px 20px rgba(0,0,0,0.6), 0 0 40px rgba(255,255,255,0.1);
-    letter-spacing: 1px;
+    letter-spacing: 0.02em;
   }
   .login-sub {
-    font-size: 16px;
-    color: rgba(255,255,255,0.6);
-    margin-bottom: 32px;
-    letter-spacing: 2px;
-    font-weight: 500;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 36px;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-top: 1px solid #ececec;
+    padding-top: 14px;
+    margin-top: 10px;
   }
   .login-label {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    color: rgba(255,255,255,0.6);
+    color: #555;
     text-align: right;
     margin-bottom: 8px;
     display: block;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
   .login-input {
     width: 100%;
-    padding: 14px 16px;
-    border-radius: 14px;
-    border: 1.5px solid rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.08);
-    color: #fff;
+    padding: 13px 16px;
+    border-radius: 4px;
+    border: 1.5px solid #d1d5db;
+    background: #fafafa;
+    color: #1a1a2e;
     font-size: 20px;
     font-weight: 700;
     text-align: center;
     letter-spacing: 6px;
     outline: none;
     box-sizing: border-box;
-    margin-bottom: 12px;
-    transition: border-color .2s;
+    margin-bottom: 14px;
+    transition: border-color .2s, box-shadow .2s;
     font-family: inherit;
   }
-  .login-input:focus { border-color: #6c47f5; }
-  .login-input::placeholder { letter-spacing: 2px; font-size: 14px; font-weight: 400; color: rgba(255,255,255,0.3); }
+  .login-input:focus { border-color: #6c47f5; box-shadow: 0 0 0 3px rgba(108,71,245,0.12); }
+  .login-input::placeholder { letter-spacing: 2px; font-size: 14px; font-weight: 400; color: #aaa; }
   .login-btn {
     width: 100%;
-    padding: 14px;
-    border-radius: 14px;
+    padding: 13px;
+    border-radius: 4px;
     border: none;
-    background: linear-gradient(135deg, #16a34a, #15803d);
+    background: #1a1a2e;
     color: #fff;
-    font-size: 16px;
-    font-weight: 800;
+    font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
-    margin-top: 4px;
-    box-shadow: 0 6px 20px rgba(22,163,74,0.45);
-    transition: opacity .2s, transform .1s;
+    margin-top: 2px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: background .2s, transform .1s;
     font-family: inherit;
   }
-  .login-btn:active { opacity: 0.85; transform: scale(0.98); }
+  .login-btn:hover { background: #6c47f5; }
+  .login-btn:active { opacity: 0.9; transform: scale(0.99); }
   .login-error {
-    color: #ff6b6b;
+    color: #dc2626;
     font-size: 13px;
     font-weight: 600;
-    margin-top: 10px;
+    margin-top: 12px;
     min-height: 18px;
   }
 </style>
@@ -1830,11 +1844,8 @@
 
 <!-- ===== LOGIN ===== -->
 <div id="login-screen">
-  <div style="position:absolute;top:80px;width:100%;z-index:1;text-align:center">
-    <div style="font-family:'Frank Ruhl Libre',serif;font-size:26px;font-weight:700;color:#fff;letter-spacing:2px;text-shadow:0 2px 16px rgba(0,0,0,0.8)">בשם השם נעשה ונצליח</div>
-  </div>
   <div class="login-box">
-    <div class="login-signature">Ravid</div>
+    <div class="login-signature">אליאור רביד</div>
     <div class="login-sub">ניהול חשבונות עסקי</div>
     <label class="login-label">סיסמא</label>
     <input class="login-input" type="password" id="login-pass" placeholder="הכנס סיסמא" onkeydown="if(event.key==='Enter')doLogin()" autofocus />
