@@ -1572,6 +1572,64 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
     @keyframes fadeIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+
+    .mini-player {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface);
+      border-top: 1.5px solid var(--border);
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.12);
+      padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      display: none; align-items: center; gap: 14px;
+      z-index: 998; backdrop-filter: blur(12px);
+      transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
+    }
+    .mini-player.active { display: flex; transform: translateY(0); }
+    .mini-player-thumb {
+      width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg,#e84393,#f97316);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; overflow: hidden;
+    }
+    .mini-player-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .mini-player-info { flex: 1; min-width: 0; }
+    .mini-player-title {
+      font-size: 14px; font-weight: 800; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .mini-player-meta { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-player-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .mini-btn {
+      border: none; background: var(--accent); color: #fff;
+      width: 38px; height: 38px; border-radius: 50%;
+      font-size: 16px; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(108,71,245,0.3);
+      transition: transform .15s;
+    }
+    .mini-btn:hover { transform: scale(1.08); }
+    .mini-time { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 80px; }
+    .mini-progress {
+      position: absolute; top: -1.5px; left: 0; right: 0; width: 100%;
+      height: 3px; -webkit-appearance: none; appearance: none;
+      background: var(--border); border: none; cursor: pointer; padding: 0; margin: 0;
+    }
+    .mini-progress::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--accent); cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .mini-progress::-moz-range-thumb {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--accent); cursor: pointer; border: none;
+    }
+    .mini-btn-close {
+      border: none; background: none; color: var(--text-muted);
+      font-size: 22px; cursor: pointer; padding: 4px 8px; line-height: 1;
+    }
+    @media (max-width: 600px) {
+      .mini-player-meta { display: none; }
+      .mini-time { display: none; }
+    }
     .song-status-pill {
       display: inline-block; border-radius: 999px;
       padding: 2px 10px; font-size: 11px; font-weight: 700;
@@ -2645,6 +2703,21 @@
   </div>
 
 </main>
+
+<!-- ===== PERSISTENT MINI PLAYER ===== -->
+<div id="mini-player" class="mini-player">
+  <div class="mini-player-thumb" id="mini-player-thumb">🎵</div>
+  <div class="mini-player-info">
+    <div class="mini-player-title" id="mini-player-title">—</div>
+    <div class="mini-player-meta" id="mini-player-meta"></div>
+  </div>
+  <div class="mini-player-controls">
+    <button class="mini-btn" onclick="miniPlayerToggle()" id="mini-btn-play">▶</button>
+    <span class="mini-time" id="mini-time">0:00 / 0:00</span>
+  </div>
+  <input type="range" id="mini-progress" class="mini-progress" min="0" max="100" value="0" oninput="miniSeek(this.value)"/>
+  <button class="mini-btn-close" onclick="miniPlayerClose()" title="סגור">×</button>
+</div>
 
 <!-- ===== MUSIC ADD MODAL ===== -->
 <div class="modal-overlay" id="modal-music-add">
@@ -6488,6 +6561,16 @@ function _renderMusicList(type) {
       const withAudio = allItems.filter(s=>s.audioUrl).length;
 
       const allSingers = Object.entries(singerCount).sort((a,b)=>b[1]-a[1]);
+
+      // Year distribution chart
+      const yearCount = {};
+      allItems.forEach(s => {
+        const y = s.createdAt ? new Date(s.createdAt).getFullYear() : null;
+        if (y) yearCount[y] = (yearCount[y]||0) + 1;
+      });
+      const years = Object.keys(yearCount).sort();
+      const maxYear = Math.max(...Object.values(yearCount), 1);
+
       statsEl.innerHTML = `
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:4px">
           <div class="table-card" style="padding:16px 20px;text-align:center">
@@ -6498,6 +6581,21 @@ function _renderMusicList(type) {
             <div style="font-size:28px;font-weight:900;color:var(--accent)">${uniqueSingers}</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:2px">זמרים שונים</div>
           </div>
+          ${years.length > 1 ? `
+          <div class="table-card" style="padding:16px 20px;grid-column:span 2">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;font-weight:700">📊 שירים לפי שנה</div>
+            <div style="display:flex;align-items:flex-end;gap:8px;height:90px">
+              ${years.map(y => {
+                const c = yearCount[y];
+                const h = (c/maxYear)*80;
+                return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+                  <div style="font-size:11px;font-weight:700;color:var(--accent)">${c}</div>
+                  <div style="width:100%;height:${h}px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:4px 4px 0 0;min-height:4px"></div>
+                  <div style="font-size:11px;color:var(--text-muted)">${y}</div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>` : ''}
           <div class="table-card" style="padding:16px 20px;grid-column:span 2">
             <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;font-weight:700">🏆 שירים לפי זמר</div>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">
@@ -6532,12 +6630,12 @@ function _renderMusicList(type) {
           ${s.singer ? `<div style="font-size:13px;color:var(--text-muted)">זמר: ${s.singer}</div>` : ''}
           ${s.producer ? `<div style="font-size:13px;color:var(--text-muted)">הפיק: ${s.producer}</div>` : ''}
           ${s.cowriters ? `<div style="font-size:13px;color:var(--text-muted)">כתיבה: ${s.cowriters}</div>` : ''}
+          ${s.playCount && type==='sketches' ? `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:3px">▶ ${s.playCount} השמעות</div>` : ''}
         </div>
         ${type==='released' ? `<a onclick="event.stopPropagation()" href="${s.youtubeUrl || ('https://www.youtube.com/results?search_query=' + encodeURIComponent((s.singer ? s.singer + ' ' : '') + (s.title.split(' - ').pop() || s.title)))}" target="_blank" style="background:#ff0000;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700;flex-shrink:0;display:inline-flex;align-items:center;gap:4px" title="${s.youtubeUrl ? 'נגן ביוטיוב' : 'חפש ביוטיוב'}">▶ YouTube</a>` : ''}
-        ${s.audioUrl && type==='sketches' ? `<button onclick="event.stopPropagation();playSketchInline('${s.id}')" id="play-btn-${s.id}" style="border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;padding:6px 10px;border-radius:8px;flex-shrink:0" title="נגן">▶</button>` : s.audioUrl && type!=='released' ? `<span style="font-size:18px">🎧</span>` : ''}
+        ${s.audioUrl && type==='sketches' ? `<button onclick="event.stopPropagation();playSketchInline('${s.id}')" id="play-btn-${s.id}" style="border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;padding:8px 12px;border-radius:50%;flex-shrink:0;width:38px;height:38px;box-shadow:0 4px 12px rgba(108,71,245,0.3)" title="נגן">${(_miniContext && _miniContext.type==='sketches' && _miniContext.id===s.id && !_miniAudio.paused) ? '⏸' : '▶'}</button>` : s.audioUrl && type!=='released' ? `<span style="font-size:18px">🎧</span>` : ''}
         <button onclick="event.stopPropagation();quickDeleteMusic('${type}','${s.id}')" style="border:none;background:none;color:#aaa;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;flex-shrink:0" title="מחק">×</button>
       </div>
-      ${s.audioUrl && type==='sketches' ? `<div id="inline-player-${s.id}" style="width:100%;display:none;padding-top:10px" onclick="event.stopPropagation()"></div>` : ''}
     </div>`).join('');
 }
 
@@ -6694,69 +6792,78 @@ function uploadMusicAudio(event, type, id) {
   }).catch(err => { hideProgress(); toast('❌ שגיאה: ' + err.message); });
 }
 
-const _sketchWaves = {};
+// ===== MINI PERSISTENT PLAYER =====
+const _miniAudio = new Audio();
+let _miniContext = null; // {type, id, title, singer, thumbUrl}
 
-async function playSketchInline(id) {
-  const playerEl = document.getElementById('inline-player-' + id);
-  const btn = document.getElementById('play-btn-' + id);
-  if (!playerEl) return;
+_miniAudio.addEventListener('timeupdate', () => {
+  const cur = _miniAudio.currentTime || 0;
+  const dur = _miniAudio.duration || 0;
+  const tEl = document.getElementById('mini-time');
+  const pEl = document.getElementById('mini-progress');
+  if (tEl) tEl.textContent = `${fmtAudioTime(cur)} / ${fmtAudioTime(dur)}`;
+  if (pEl && dur) pEl.value = (cur/dur)*100;
+});
+_miniAudio.addEventListener('play',  () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '⏸'; _refreshSketchPlayBtn(); });
+_miniAudio.addEventListener('pause', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '▶'; _refreshSketchPlayBtn(); });
+_miniAudio.addEventListener('ended', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '▶'; _refreshSketchPlayBtn(); });
 
-  // Toggle off
-  if (playerEl.style.display !== 'none') {
-    if (_sketchWaves[id]) { try { _sketchWaves[id].destroy(); } catch(e){} delete _sketchWaves[id]; }
-    playerEl.style.display = 'none';
-    playerEl.innerHTML = '';
-    if (btn) btn.innerHTML = '▶';
-    return;
-  }
+function _refreshSketchPlayBtn() {
+  if (!_miniContext) return;
+  const btn = document.getElementById('play-btn-' + _miniContext.id);
+  if (btn) btn.innerHTML = _miniAudio.paused ? '▶' : '⏸';
+}
 
-  const s = load('sketch_songs').find(x => x.id === id);
+async function playInMiniPlayer(type, id) {
+  const key = type === 'released' ? 'released_songs' : 'sketch_songs';
+  const s = load(key).find(x => x.id === id);
   if (!s?.audioUrl) return;
   let src = s.audioUrl;
   if (src.startsWith('local:')) src = await AudioDB.getURL(src.slice(6)) || '';
   if (!src) { toast('קובץ לא נמצא במכשיר זה'); return; }
 
-  playerEl.innerHTML = `
-    <div style="background:var(--card);border-radius:10px;padding:12px;border:1px solid var(--border)">
-      <div id="wave-inline-${id}" style="width:100%;height:60px"></div>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
-        <button id="wave-inline-btn-${id}" onclick="event.stopPropagation();_toggleSketchWave('${id}')" style="border:none;background:var(--accent);color:#fff;border-radius:50%;width:32px;height:32px;font-size:14px;cursor:pointer;flex-shrink:0">▶</button>
-        <span id="wave-inline-time-${id}" style="font-size:12px;color:var(--text-muted)">0:00</span>
-      </div>
-    </div>`;
-  playerEl.style.display = 'block';
-  if (btn) btn.innerHTML = '■';
+  // Play count
+  s.playCount = (s.playCount || 0) + 1;
+  const list = load(key);
+  const idx = list.findIndex(x => x.id === id);
+  if (idx >= 0) { list[idx].playCount = s.playCount; save(key, list); }
 
-  const ws = WaveSurfer.create({
-    container: '#wave-inline-' + id,
-    waveColor: '#3d3d5c',
-    progressColor: '#e84393',
-    height: 60,
-    barWidth: 2,
-    barGap: 1,
-    barRadius: 2,
-    normalize: true,
-    interact: true,
-    url: src
-  });
-  _sketchWaves[id] = ws;
-  ws.on('ready', () => ws.play());
-  ws.on('audioprocess', t => {
-    const el = document.getElementById('wave-inline-time-' + id);
-    if (el) el.textContent = fmtAudioTime(t) + ' / ' + fmtAudioTime(ws.getDuration());
-  });
-  ws.on('finish', () => {
-    const b = document.getElementById('wave-inline-btn-' + id);
-    if (b) b.innerHTML = '▶';
-  });
+  _miniContext = { type, id, title: s.title, singer: s.singer, ytId: s.youtubeUrl?.match(/[?&]v=([\w-]{11})/)?.[1] };
+  document.getElementById('mini-player-title').textContent = s.title;
+  document.getElementById('mini-player-meta').textContent = s.singer || '';
+  const thumb = document.getElementById('mini-player-thumb');
+  if (_miniContext.ytId) {
+    thumb.innerHTML = `<img src="https://i.ytimg.com/vi/${_miniContext.ytId}/mqdefault.jpg" alt=""/>`;
+  } else {
+    thumb.innerHTML = type === 'released' ? '🎵' : '🎙';
+  }
+  document.getElementById('mini-player').classList.add('active');
+  _miniAudio.src = src;
+  _miniAudio.play();
 }
 
-function _toggleSketchWave(id) {
-  const ws = _sketchWaves[id];
-  if (!ws) return;
-  ws.playPause();
-  const b = document.getElementById('wave-inline-btn-' + id);
-  if (b) b.innerHTML = ws.isPlaying() ? '⏸' : '▶';
+function miniPlayerToggle() {
+  if (_miniAudio.paused) _miniAudio.play(); else _miniAudio.pause();
+}
+function miniSeek(pct) {
+  if (_miniAudio.duration) _miniAudio.currentTime = (pct/100) * _miniAudio.duration;
+}
+function miniPlayerClose() {
+  _miniAudio.pause();
+  _miniAudio.src = '';
+  document.getElementById('mini-player').classList.remove('active');
+  _miniContext = null;
+}
+
+const _sketchWaves = {};
+
+async function playSketchInline(id) {
+  // If already playing this sketch in mini, toggle pause
+  if (_miniContext && _miniContext.type === 'sketches' && _miniContext.id === id) {
+    miniPlayerToggle();
+    return;
+  }
+  await playInMiniPlayer('sketches', id);
 }
 
 function quickDeleteMusic(type, id) {
