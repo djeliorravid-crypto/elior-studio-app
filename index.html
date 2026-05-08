@@ -445,6 +445,40 @@
     .sidebar-logo .logo-icon { display: none; }
     .sidebar-logo h1 { font-size: 21px; font-weight: 900; color: var(--text); letter-spacing: 0.01em; font-family: 'Frank Ruhl Libre', serif; line-height: 1.1; }
     .sidebar-logo p { font-size: 11px; color: var(--text-muted); margin-top: 5px; font-weight: 500; letter-spacing: 0.04em; }
+
+    /* ===== LOBBY BUTTON (sidebar logo) ===== */
+    .sidebar-logo.lobby-btn {
+      cursor: pointer;
+      transition: background .25s, padding .25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .sidebar-logo.lobby-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--accent-glow), transparent);
+      opacity: 0; transition: opacity .25s;
+      pointer-events: none;
+    }
+    .sidebar-logo.lobby-btn:hover::before { opacity: 1; }
+    .sidebar-logo.lobby-btn:hover h1 {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .sidebar-logo.lobby-btn:hover .lobby-back-arrow {
+      transform: translateX(-4px);
+      color: var(--accent);
+    }
+    .sidebar-logo.lobby-btn:active { transform: scale(.99); }
+    .lobby-btn-content { position: relative; z-index: 1; }
+    .lobby-back-arrow {
+      display: inline-block;
+      transition: transform .25s cubic-bezier(.4,0,.2,1), color .25s;
+      font-size: 13px;
+      margin-left: 2px;
+    }
     nav { flex: 1; padding: 10px 0; }
     nav a {
       display: flex; align-items: center; gap: 10px;
@@ -2407,10 +2441,11 @@
 
 <!-- ===== BUSINESS SIDEBAR ===== -->
 <aside class="sidebar" id="business-sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">🎚️</div>
-    <h1>אליאור רביד</h1>
-    <p>ניהול חשבונות</p>
+  <div class="sidebar-logo lobby-btn" onclick="switchMode()" title="חזרה ללובי">
+    <div class="lobby-btn-content">
+      <h1>אליאור רביד</h1>
+      <p><span class="lobby-back-arrow">←</span> חזרה ללובי</p>
+    </div>
   </div>
   <nav id="sidebar-nav">
     <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#16a34a;font-weight:900">+</span></span></span> הכנסות</a>
@@ -2959,9 +2994,11 @@
 
 <!-- ===== MUSIC SIDEBAR ===== -->
 <aside class="sidebar music-sidebar" id="music-sidebar">
-  <div class="sidebar-logo" style="border-bottom:1px solid #2a2a35">
-    <h1 style="color:#fff">אליאור רביד</h1>
-    <p style="color:#888">סטודיו</p>
+  <div class="sidebar-logo lobby-btn" style="border-bottom:1px solid #2a2a35" onclick="switchMode()" title="חזרה ללובי">
+    <div class="lobby-btn-content">
+      <h1 style="color:#fff">אליאור רביד</h1>
+      <p style="color:#888"><span class="lobby-back-arrow">←</span> חזרה ללובי</p>
+    </div>
   </div>
   <nav id="music-nav">
     <a class="active" onclick="showMusicPage('released')" data-mpage="released"><span class="nav-icon">🎵</span> שירים שיצאו</a>
