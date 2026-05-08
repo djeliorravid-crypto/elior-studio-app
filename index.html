@@ -642,6 +642,10 @@
 
     .btn-sm { padding: 5px 12px; font-size: 12px; }
 
+    @media (max-width: 720px) {
+      .insights-grid { grid-template-columns: 1fr !important; }
+    }
+
     /* ===== PREMIUM KPI CARDS — dashboard depth ===== */
     .income-triple-grid > div,
     .table-card {
@@ -2733,9 +2737,24 @@
       </table>
     </div>
 
-    <div class="mini-cal" id="mini-cal-container">
-      <div class="mini-cal-title" id="mini-cal-title"></div>
-      <div class="mini-cal-grid" id="mini-cal-grid"></div>
+    <!-- ===== INSIGHTS CARD ===== -->
+    <div class="insights-grid" style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:20px">
+
+      <!-- Top Clients -->
+      <div class="table-card" id="top-clients-card" style="padding:0">
+        <div class="table-header">
+          <h3>🏆 לקוחות מובילים החודש</h3>
+          <span style="font-size:12px;color:var(--text-muted);font-weight:700" id="top-clients-month"></span>
+        </div>
+        <div id="top-clients-list" style="padding:18px 20px"></div>
+      </div>
+
+      <!-- Trend & Insights -->
+      <div class="table-card" style="padding:0">
+        <div class="table-header"><h3>📈 מגמת הכנסות (6 חודשים)</h3></div>
+        <div id="income-trend-chart" style="padding:20px;display:flex;align-items:flex-end;gap:8px;height:160px"></div>
+      </div>
+
     </div>
   </div>
 
@@ -4164,8 +4183,9 @@ function renderIncome() {
   document.getElementById('i-expected').textContent       = fmtMoney(totalAllExpected);
   document.getElementById('i-expected-count').textContent = `${monthEntries.length} פריטים החודש`;
 
-  // מיני לוח שנה
-  renderMiniCal(income, load('expenses'));
+  // Insights: top clients + 6-month trend
+  renderTopClients(monthEntries);
+  renderIncomeTrend(income);
 
   const tbody = document.getElementById('i-tbody');
   if (!tbody) return;
@@ -5060,6 +5080,84 @@ function onDotTap(el) {
   const wasActive = el.classList.contains('active-tip');
   document.querySelectorAll('.mc-dot.active-tip').forEach(d => d.classList.remove('active-tip'));
   if (!wasActive) el.classList.add('active-tip');
+}
+
+function renderTopClients(monthEntries) {
+  const listEl = document.getElementById('top-clients-list');
+  const monthEl = document.getElementById('top-clients-month');
+  if (!listEl) return;
+
+  const monthName = new Date(_curYear, _curMonth-1, 1).toLocaleDateString('he-IL', {month:'long', year:'numeric'});
+  if (monthEl) monthEl.textContent = monthName;
+
+  const clients = load('clients');
+  const totals = {};
+  monthEntries.forEach(i => {
+    const cId = i.clientId || '__unknown__';
+    if (!totals[cId]) totals[cId] = { paid: 0, pending: 0, count: 0 };
+    if (i.paid) totals[cId].paid += +i.amount;
+    else        totals[cId].pending += +i.amount;
+    totals[cId].count++;
+  });
+
+  const ranked = Object.entries(totals).map(([cId, t]) => {
+    const c = clients.find(x => x.id === cId);
+    return { id: cId, name: c?.name || (cId === '__unknown__' ? 'לא ידוע' : 'לקוח נמחק'), photo: c?.photo, ...t, total: t.paid + t.pending };
+  }).sort((a,b) => b.total - a.total).slice(0, 5);
+
+  if (ranked.length === 0) {
+    listEl.innerHTML = `<div style="text-align:center;padding:30px 20px;color:var(--text-muted);font-size:13px">אין הכנסות החודש</div>`;
+    return;
+  }
+
+  const max = ranked[0].total || 1;
+  listEl.innerHTML = ranked.map((c, i) => {
+    const pct = (c.total / max) * 100;
+    const medal = ['🥇','🥈','🥉'][i] || `${i+1}.`;
+    return `
+      <div style="margin-bottom:${i<ranked.length-1?'14px':'0'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+            ${c.photo ? `<img src="${c.photo}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0"/>` : `<span style="font-size:14px;flex-shrink:0">${medal}</span>`}
+            <span style="font-size:14px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span>
+            <span style="font-size:11px;color:var(--text-muted);font-weight:600">${c.count} עסקאות</span>
+          </div>
+          <span style="font-size:14px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums">${fmtMoney(c.total)}</span>
+        </div>
+        <div style="height:8px;background:var(--surface3);border-radius:99px;overflow:hidden;position:relative">
+          ${c.paid > 0 ? `<div style="height:100%;width:${(c.paid/max)*100}%;background:linear-gradient(90deg,var(--green),#22c55e);border-radius:99px;position:absolute;right:0;top:0"></div>` : ''}
+          ${c.pending > 0 ? `<div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;position:absolute;right:0;top:0;opacity:0.4;z-index:-1"></div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderIncomeTrend(allIncome) {
+  const chartEl = document.getElementById('income-trend-chart');
+  if (!chartEl) return;
+
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(_curYear, _curMonth - 1 - i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth()+1, label: d.toLocaleDateString('he-IL', {month:'short'}), total: 0 });
+  }
+  allIncome.forEach(it => {
+    const d = new Date(it.date);
+    const m = months.find(x => x.year === d.getFullYear() && x.month === d.getMonth()+1);
+    if (m && it.paid) m.total += +it.amount;
+  });
+
+  const max = Math.max(...months.map(m => m.total), 1);
+  chartEl.innerHTML = months.map((m, i) => {
+    const h = (m.total / max) * 100;
+    const isCurrent = i === months.length - 1;
+    return `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;cursor:default" title="${m.label}: ${fmtMoney(m.total)}">
+        <div style="font-size:10px;font-weight:800;color:${isCurrent?'var(--accent)':'var(--text-muted)'};font-variant-numeric:tabular-nums">${m.total > 0 ? Math.round(m.total/1000)+'k' : ''}</div>
+        <div style="width:100%;max-width:32px;height:${h}%;min-height:4px;background:${isCurrent?'linear-gradient(180deg,var(--accent),var(--accent2))':'linear-gradient(180deg,var(--surface3),var(--border))'};border-radius:6px 6px 2px 2px;transition:height .8s cubic-bezier(.4,0,.2,1);${isCurrent?'box-shadow:0 4px 12px var(--accent-glow)':''}"></div>
+        <div style="font-size:11px;font-weight:${isCurrent?'800':'600'};color:${isCurrent?'var(--text)':'var(--text-muted)'}">${m.label}</div>
+      </div>`;
+  }).join('');
 }
 
 function renderMiniCal(incomeData, expensesData) {
