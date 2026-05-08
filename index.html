@@ -114,12 +114,12 @@
        DARK MODE — Professional Neutral Design
        ══════════════════════════════════════════ */
     [data-theme="dark"] {
-      /* ── Base surfaces — warm espresso/chocolate ── */
-      --bg:           #1c1410;
-      --surface:      #2a1f18;
-      --surface2:     #352920;
-      --surface3:     #46382e;
-      --border:       #5c4838;
+      /* ── Base surfaces — warm chocolate (lighter, richer) ── */
+      --bg:           #2a1f17;
+      --surface:      #3a2c22;
+      --surface2:     #46382e;
+      --surface3:     #54453a;
+      --border:       #6b5443;
       --border-glow:  rgba(212,165,116,0.22);
 
       /* ── Accent — cognac/tan gold ── */
@@ -200,17 +200,23 @@
     }
 
     /* ── Layout ── */
-    [data-theme="dark"] body      { background: var(--bg); }
-    [data-theme="dark"] .sidebar  { background: #1c1410 !important; border-color: #5c4838 !important; }
-    [data-theme="dark"] .main-content { background: var(--bg); }
+    [data-theme="dark"] body {
+      background:
+        radial-gradient(ellipse at top right, rgba(212,165,116,0.08), transparent 50%),
+        radial-gradient(ellipse at bottom left, rgba(160,108,72,0.06), transparent 50%),
+        var(--bg);
+      background-attachment: fixed;
+    }
+    [data-theme="dark"] .sidebar  { background: #221710 !important; border-color: #5c4838 !important; }
+    [data-theme="dark"] .main-content { background: transparent; }
 
     /* ── Nav ── */
-    [data-theme="dark"] nav a             { color: #8e8e93; }
-    [data-theme="dark"] nav a:hover       { color: var(--text); background: #242426; }
-    [data-theme="dark"] nav a.active      { color: #c4b5fd; background: #221e35; border-right-color: #9b87f5; }
+    [data-theme="dark"] nav a             { color: #b8a48a; }
+    [data-theme="dark"] nav a:hover       { color: var(--text); background: #46382e; }
+    [data-theme="dark"] nav a.active      { color: #e8c39f; background: #3a2a1c; border-right-color: #d4a574; }
     [data-theme="dark"] .sidebar-logo h1  { color: var(--text); }
     [data-theme="dark"] .sidebar-logo p   { color: var(--text-muted); }
-    [data-theme="dark"] .sidebar-footer   { border-color: #2c2c2e; }
+    [data-theme="dark"] .sidebar-footer   { border-color: #5c4838; }
 
     /* ── Inputs ── */
     [data-theme="dark"] input,
@@ -237,10 +243,10 @@
     [data-theme="dark"] .btn-secondary    { background: #46382e; color: var(--text); }
 
     /* ── Badges ── */
-    [data-theme="dark"] .badge-green  { background: #0d2318; color: #30d158; border-color: #1a5c2e; }
+    [data-theme="dark"] .badge-green  { background: #1c2a14; color: #a8c46a; border-color: #4a5f28; }
     [data-theme="dark"] .badge-red    { background: #270e0e; color: #ff6060; border-color: #5c1a1a; }
     [data-theme="dark"] .badge-orange { background: #251700; color: #ff9f0a; border-color: #4a2e00; }
-    [data-theme="dark"] .badge-purple { background: #221e35; color: #c4b5fd; border-color: #3d3060; }
+    [data-theme="dark"] .badge-purple { background: #3a2a1c; color: #e8c39f; border-color: #6b5538; }
     [data-theme="dark"] .badge-blue   { background: #0e1f35; color: #60a5fa; border-color: #1a3a5c; }
     [data-theme="dark"] .badge-gray   { background: #46382e; color: #b8a48a; border-color: #5c4838; }
 
