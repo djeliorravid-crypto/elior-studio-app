@@ -474,24 +474,44 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      margin-bottom: 28px;
+      margin-bottom: 32px;
       flex-wrap: wrap;
       gap: 14px;
+      padding-bottom: 4px;
     }
 
-    .page-header h2 { font-size: 32px; font-weight: 900; letter-spacing: -0.02em; color: #f0f0f5; text-shadow: 0 2px 8px rgba(0,0,0,0.5); font-family: 'Rubik', 'Heebo', sans-serif; }
-    .page-header p { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.65); margin-top: 4px; font-family: 'Heebo', sans-serif; }
+    .page-header h2 {
+      font-size: 38px; font-weight: 900;
+      letter-spacing: -0.035em; line-height: 1.05;
+      color: #f0f0f5;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      font-family: 'Rubik', 'Heebo', sans-serif;
+    }
+    .page-header p {
+      font-size: 15px; font-weight: 500;
+      color: rgba(255,255,255,0.55);
+      margin-top: 6px;
+      font-family: 'Heebo', sans-serif;
+      letter-spacing: -0.005em;
+    }
+    [data-theme="light"] .page-header h2 { color: var(--text); text-shadow: none; }
+    [data-theme="light"] .page-header p  { color: var(--text-muted); }
+    body:not([data-theme="dark"]) .page-header h2 { color: var(--text); text-shadow: none; }
+    body:not([data-theme="dark"]) .page-header p  { color: var(--text-muted); }
 
     /* ===== MONTH SELECTOR ===== */
     .month-selector {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: var(--surface2);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 6px 12px;
+      border-radius: 12px;
+      padding: 6px 6px;
+      box-shadow: var(--shadow);
+      transition: border-color .2s, box-shadow .2s;
     }
+    .month-selector:hover { border-color: var(--accent2); box-shadow: var(--shadow-md); }
 
     .month-selector button {
       background: none; border: none;
@@ -554,21 +574,22 @@
     .btn:focus-visible { outline: none; box-shadow: var(--ring-accent); }
 
     .btn-primary {
-      background: var(--accent);
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
       color: #fff;
-      font-weight: 700;
-      box-shadow:
-        0 1px 2px rgba(0,0,0,0.06),
-        0 4px 14px var(--accent-glow),
-        inset 0 1px 0 rgba(255,255,255,0.12);
-    }
-    .btn-primary:hover {
-      transform: translateY(-1.5px);
-      filter: brightness(1.06);
+      font-weight: 800;
+      padding: 11px 22px;
       box-shadow:
         0 1px 2px rgba(0,0,0,0.08),
-        0 8px 24px rgba(108,71,245,0.28),
-        inset 0 1px 0 rgba(255,255,255,0.15);
+        0 6px 18px rgba(108,71,245,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.20);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08) saturate(1.1);
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.1),
+        0 12px 32px rgba(108,71,245,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.25);
     }
 
     .btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
