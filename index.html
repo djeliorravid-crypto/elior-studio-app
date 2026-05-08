@@ -1800,14 +1800,14 @@
     /* ===== MUSIC SECTION ===== */
     #music-sidebar { display: none; }
     #music-main    { display: none; }
-    .music-sidebar { background: #0f0f14 !important; border-color: #2a2a35 !important; }
-    .music-sidebar .sidebar-logo h1 { color: #fff; }
-    .music-sidebar .sidebar-logo p  { color: #888; }
-    .music-sidebar nav a { color: #888; }
-    .music-sidebar nav a.active { color: #f9a8d4; border-right-color: #e84393; background: #1e0d17; }
-    .music-sidebar nav a:hover { color: #fff; background: #1a1a24; }
-    .music-sidebar .sidebar-footer { border-color: #2a2a35; }
-    [data-theme="dark"] .music-sidebar { background: #08080d !important; }
+    .music-sidebar { background: #221710 !important; border-color: #5c4838 !important; }
+    .music-sidebar .sidebar-logo h1 { color: var(--text); }
+    .music-sidebar .sidebar-logo p  { color: var(--text-muted); }
+    .music-sidebar nav a { color: var(--text-muted); }
+    .music-sidebar nav a.active { color: #e8c39f; border-right-color: var(--accent); background: #3a2a1c; }
+    .music-sidebar nav a:hover { color: var(--text); background: #46382e; }
+    .music-sidebar .sidebar-footer { border-color: #5c4838; }
+    [data-theme="dark"] .music-sidebar { background: #221710 !important; }
     .song-card {
       background: var(--surface); border: 1.5px solid var(--border);
       border-radius: var(--radius); padding: 16px 18px;
@@ -2994,10 +2994,10 @@
 
 <!-- ===== MUSIC SIDEBAR ===== -->
 <aside class="sidebar music-sidebar" id="music-sidebar">
-  <div class="sidebar-logo lobby-btn" style="border-bottom:1px solid #2a2a35" onclick="switchMode()" title="חזרה ללובי">
+  <div class="sidebar-logo lobby-btn" onclick="switchMode()" title="חזרה ללובי">
     <div class="lobby-btn-content">
-      <h1 style="color:#fff">אליאור רביד</h1>
-      <p style="color:#888"><span class="lobby-back-arrow">←</span> חזרה ללובי</p>
+      <h1>אליאור רביד</h1>
+      <p><span class="lobby-back-arrow">←</span> חזרה ללובי</p>
     </div>
   </div>
   <nav id="music-nav">
