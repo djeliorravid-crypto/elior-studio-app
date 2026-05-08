@@ -5087,7 +5087,7 @@ function renderTopClients(monthEntries) {
   const monthEl = document.getElementById('top-clients-month');
   if (!listEl) return;
 
-  const monthName = new Date(_curYear, _curMonth-1, 1).toLocaleDateString('he-IL', {month:'long', year:'numeric'});
+  const monthName = new Date(curYear, curMonth, 1).toLocaleDateString('he-IL', {month:'long', year:'numeric'});
   if (monthEl) monthEl.textContent = monthName;
 
   const clients = load('clients');
@@ -5138,12 +5138,12 @@ function renderIncomeTrend(allIncome) {
 
   const months = [];
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(_curYear, _curMonth - 1 - i, 1);
-    months.push({ year: d.getFullYear(), month: d.getMonth()+1, label: d.toLocaleDateString('he-IL', {month:'short'}), total: 0 });
+    const d = new Date(curYear, curMonth - i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleDateString('he-IL', {month:'short'}), total: 0 });
   }
   allIncome.forEach(it => {
     const d = new Date(it.date);
-    const m = months.find(x => x.year === d.getFullYear() && x.month === d.getMonth()+1);
+    const m = months.find(x => x.year === d.getFullYear() && x.month === d.getMonth());
     if (m && it.paid) m.total += +it.amount;
   });
 
