@@ -582,6 +582,40 @@
 
     .btn-sm { padding: 5px 12px; font-size: 12px; }
 
+    /* ===== PREMIUM KPI CARDS — dashboard depth ===== */
+    .income-triple-grid > div,
+    .table-card {
+      border: 1px solid var(--border) !important;
+      border-radius: 16px !important;
+      box-shadow: var(--shadow) !important;
+      transition: transform .3s cubic-bezier(.4,0,.2,1), box-shadow .3s, border-color .3s !important;
+      position: relative;
+    }
+    .income-triple-grid > div::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 60%);
+      border-radius: 16px;
+    }
+    [data-theme="dark"] .income-triple-grid > div::before {
+      background: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, transparent 60%);
+    }
+    .income-triple-grid > div:hover,
+    .table-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md) !important;
+      border-color: rgba(108,71,245,0.18) !important;
+    }
+    [data-theme="dark"] .income-triple-grid > div:hover,
+    [data-theme="dark"] .table-card:hover {
+      border-color: rgba(155,135,245,0.25) !important;
+    }
+    .income-triple-grid .card-value,
+    .income-triple-grid [id^="pending"][id$="-amt"],
+    .income-triple-grid [id^="i-"] {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.025em;
+    }
+
     /* ===== TABLE ===== */
     .table-card {
       background: var(--surface);
