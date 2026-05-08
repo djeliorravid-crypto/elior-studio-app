@@ -31,177 +31,177 @@
   <style>
     /* ===== צבעים ===== */
     :root {
-      --bg:           #2c2d32;
-      --surface:      #ffffff;
-      --surface2:     #f5f6fb;
-      --surface3:     #eef0f8;
-      --border:       #e2e5f0;
-      --border-glow:  rgba(108,71,245,0.18);
-      --accent:       #6c47f5;
-      --accent-light: #ede9ff;
-      --accent2:      #a78bfa;
-      --accent-glow:  rgba(108,71,245,0.10);
-      --green:        #16a34a;
-      --green-light:  #dcfce7;
-      --green-border: #86efac;
-      --red:          #dc2626;
-      --red-light:    #fee2e2;
-      --orange:       #d97706;
-      --text:         #1a1a2e;
-      --text-muted:   #6b7280;
+      --bg:           #2c2418;
+      --surface:      #fdfaf4;
+      --surface2:     #f5ede0;
+      --surface3:     #ede0cc;
+      --border:       #d6c5a8;
+      --border-glow:  rgba(160,108,72,0.18);
+      --accent:       #a06c48;
+      --accent-light: #f5e6d3;
+      --accent2:      #c89465;
+      --accent-glow:  rgba(160,108,72,0.12);
+      --green:        #5a7a2e;
+      --green-light:  #ecf2dc;
+      --green-border: #aabd7c;
+      --red:          #b8442e;
+      --red-light:    #fae5dd;
+      --orange:       #c47a2a;
+      --text:         #3e2820;
+      --text-muted:   #8a6e58;
       --radius:       14px;
       --shadow:
-        0 1px 2px rgba(15,18,42,0.04),
-        0 2px 8px rgba(15,18,42,0.04),
-        0 8px 24px rgba(15,18,42,0.04);
+        0 1px 2px rgba(60,40,28,0.05),
+        0 2px 8px rgba(60,40,28,0.05),
+        0 8px 24px rgba(60,40,28,0.05);
       --shadow-md:
-        0 1px 2px rgba(15,18,42,0.06),
-        0 4px 12px rgba(15,18,42,0.05),
-        0 12px 32px rgba(15,18,42,0.06);
+        0 1px 2px rgba(60,40,28,0.07),
+        0 4px 12px rgba(60,40,28,0.06),
+        0 12px 32px rgba(60,40,28,0.07);
       --shadow-hover:
-        0 1px 2px rgba(108,71,245,0.06),
-        0 8px 24px rgba(108,71,245,0.10),
-        0 16px 48px rgba(108,71,245,0.10);
-      --ring-accent: 0 0 0 3px rgba(108,71,245,0.18), 0 0 0 1px rgba(108,71,245,0.4);
-      --sidebar-bg:   #ffffff;
+        0 1px 2px rgba(160,108,72,0.06),
+        0 8px 24px rgba(160,108,72,0.12),
+        0 16px 48px rgba(160,108,72,0.12);
+      --ring-accent: 0 0 0 3px rgba(160,108,72,0.20), 0 0 0 1px rgba(160,108,72,0.45);
+      --sidebar-bg:   #fdfaf4;
       --sidebar-w:    220px;
-      --tr-hover:     #fafbff;
+      --tr-hover:     #faf3e8;
       --input-bg:     #ffffff;
 
       /* ── Semantic pill / button colors ── */
-      --pill-green-bg:    #d1fae5;
-      --pill-green-text:  #15803d;
-      --pill-red-bg:      #fee2e2;
-      --pill-red-text:    #dc2626;
-      --pill-cancel-bg:   #fff0f0;
-      --pill-cancel-text: #b91c1c;
-      --pill-purple-bg:   #f4f0ff;
-      --pill-purple-text: #6c47f5;
-      --pill-gcal-bg:     #e8f0fe;
-      --pill-gcal-text:   #1a73e8;
+      --pill-green-bg:    #ecf2dc;
+      --pill-green-text:  #5a7a2e;
+      --pill-red-bg:      #fae5dd;
+      --pill-red-text:    #b8442e;
+      --pill-cancel-bg:   #fae5dd;
+      --pill-cancel-text: #a03c28;
+      --pill-purple-bg:   #f5e6d3;
+      --pill-purple-text: #a06c48;
+      --pill-gcal-bg:     #e8e0d2;
+      --pill-gcal-text:   #6b5538;
 
       /* ── Row status backgrounds ── */
-      --row-paid-bg:     #f0fdf4;
-      --row-pending-bg:  #fafbff;
-      --row-overdue-bg:  #fff8f8;
-      --row-paid-exp-bg: #fff5f5;
+      --row-paid-bg:     #f4f8e8;
+      --row-pending-bg:  #faf3e8;
+      --row-overdue-bg:  #fbeae0;
+      --row-paid-exp-bg: #fbeae0;
 
       /* ── Popup / floating menu ── */
-      --popup-bg:        #ffffff;
-      --popup-border:    rgba(0,0,0,0.07);
-      --popup-separator: #f0f0f0;
-      --popup-text:      #1a1a1a;
-      --popup-muted:     #888888;
+      --popup-bg:        #fdfaf4;
+      --popup-border:    rgba(60,40,28,0.10);
+      --popup-separator: #ede0cc;
+      --popup-text:      #3e2820;
+      --popup-muted:     #8a6e58;
 
       /* ── GCal brand color ── */
-      --gcal-color:      #1a73e8;
+      --gcal-color:      #6b5538;
 
       /* ── Delete button ── */
-      --delete-btn-color: #d1d5db;
+      --delete-btn-color: #d6c5a8;
 
       /* ── Balance card gradients (JS sets via class) ── */
-      --balance-pos-bg:     linear-gradient(135deg,#fffbeb,#fef3c7);
-      --balance-pos-border: #fde68a;
-      --balance-neg-bg:     linear-gradient(135deg,#fff5f5,#fee2e2);
-      --balance-neg-border: #fca5a5;
+      --balance-pos-bg:     linear-gradient(135deg,#faf3e8,#f5e6d3);
+      --balance-pos-border: #d6c5a8;
+      --balance-neg-bg:     linear-gradient(135deg,#fbeae0,#fae5dd);
+      --balance-neg-border: #d4a08a;
 
       /* ── Banner backgrounds ── */
-      --banner-today-bg:    linear-gradient(135deg,#fff5f5,#fee2e2);
-      --banner-future-bg:   linear-gradient(135deg,#faf8ff,#f3f0ff);
+      --banner-today-bg:    linear-gradient(135deg,#fbeae0,#fae5dd);
+      --banner-future-bg:   linear-gradient(135deg,#faf3e8,#f5e6d3);
     }
 
     /* ══════════════════════════════════════════
        DARK MODE — Professional Neutral Design
        ══════════════════════════════════════════ */
     [data-theme="dark"] {
-      /* ── Base surfaces — neutral zinc, zero blue tint ── */
-      --bg:           #111113;
-      --surface:      #1c1c1e;
-      --surface2:     #242426;
-      --surface3:     #2c2c2e;
-      --border:       #3a3a3c;
-      --border-glow:  rgba(160,130,255,0.20);
+      /* ── Base surfaces — warm espresso/chocolate ── */
+      --bg:           #1c1410;
+      --surface:      #2a1f18;
+      --surface2:     #352920;
+      --surface3:     #46382e;
+      --border:       #5c4838;
+      --border-glow:  rgba(212,165,116,0.22);
 
-      /* ── Accent — purple on neutral = clean contrast ── */
-      --accent:       #9b87f5;
-      --accent-light: #221e35;
-      --accent2:      #c4b5fd;
-      --accent-glow:  rgba(155,135,245,0.15);
+      /* ── Accent — cognac/tan gold ── */
+      --accent:       #d4a574;
+      --accent-light: #3a2a1c;
+      --accent2:      #e8c39f;
+      --accent-glow:  rgba(212,165,116,0.18);
 
-      /* ── Semantic colors — slightly desaturated for dark bg ── */
-      --green:        #30d158;
-      --green-light:  #0d2318;
-      --green-border: #1a5c2e;
-      --red:          #ff6060;
-      --red-light:    #270e0e;
-      --orange:       #ff9f0a;
+      /* ── Semantic colors — earthy dark ── */
+      --green:        #a8c46a;
+      --green-light:  #1c2a14;
+      --green-border: #4a5f28;
+      --red:          #e8896a;
+      --red-light:    #2a1410;
+      --orange:       #e0a060;
 
       /* ── Text ── */
-      --text:         #f2f2f7;
-      --text-muted:   #8e8e93;
+      --text:         #f4ede0;
+      --text-muted:   #b8a48a;
 
       /* ── Effects ── */
       --shadow:
-        0 1px 2px rgba(0,0,0,0.4),
-        0 4px 16px rgba(0,0,0,0.35),
-        0 12px 40px rgba(0,0,0,0.3);
-      --shadow-md:
         0 1px 2px rgba(0,0,0,0.5),
-        0 6px 20px rgba(0,0,0,0.4),
-        0 16px 48px rgba(0,0,0,0.35);
+        0 4px 16px rgba(0,0,0,0.4),
+        0 12px 40px rgba(0,0,0,0.35);
+      --shadow-md:
+        0 1px 2px rgba(0,0,0,0.6),
+        0 6px 20px rgba(0,0,0,0.45),
+        0 16px 48px rgba(0,0,0,0.4);
       --shadow-hover:
         0 1px 2px rgba(0,0,0,0.5),
-        0 12px 32px rgba(155,135,245,0.18),
-        0 20px 60px rgba(0,0,0,0.4);
-      --ring-accent: 0 0 0 3px rgba(155,135,245,0.20), 0 0 0 1px rgba(155,135,245,0.5);
-      --tr-hover:     #242426;
-      --input-bg:     #2c2c2e;
+        0 12px 32px rgba(212,165,116,0.22),
+        0 20px 60px rgba(0,0,0,0.45);
+      --ring-accent: 0 0 0 3px rgba(212,165,116,0.22), 0 0 0 1px rgba(212,165,116,0.55);
+      --tr-hover:     #352920;
+      --input-bg:     #46382e;
 
-      /* ── Semantic pill / button colors — dark ── */
-      --pill-green-bg:    #0d2318;
-      --pill-green-text:  #30d158;
-      --pill-red-bg:      #270e0e;
-      --pill-red-text:    #ff6060;
-      --pill-cancel-bg:   #1a0808;
-      --pill-cancel-text: #ff4444;
-      --pill-purple-bg:   #221e35;
-      --pill-purple-text: #c4b5fd;
-      --pill-gcal-bg:     #0a1a2e;
-      --pill-gcal-text:   #4d9ef7;
+      /* ── Semantic pill / button colors — warm dark ── */
+      --pill-green-bg:    #1c2a14;
+      --pill-green-text:  #a8c46a;
+      --pill-red-bg:      #2a1410;
+      --pill-red-text:    #e8896a;
+      --pill-cancel-bg:   #2a1410;
+      --pill-cancel-text: #f0a080;
+      --pill-purple-bg:   #3a2a1c;
+      --pill-purple-text: #e8c39f;
+      --pill-gcal-bg:     #2c241a;
+      --pill-gcal-text:   #d4b890;
 
       /* ── Row status backgrounds — dark ── */
       --row-paid-bg:     #0d2318;
       --row-pending-bg:  #1c1c1e;
-      --row-overdue-bg:  #270e0e;
-      --row-paid-exp-bg: #270e0e;
+      --row-overdue-bg:  #2a1410;
+      --row-paid-exp-bg: #2a1410;
 
-      /* ── Popup / floating menu — dark ── */
-      --popup-bg:        #1c1c1e;
-      --popup-border:    rgba(255,255,255,0.07);
-      --popup-separator: #3a3a3c;
-      --popup-text:      #f2f2f7;
-      --popup-muted:     #8e8e93;
+      /* ── Popup / floating menu — dark warm ── */
+      --popup-bg:        #2a1f18;
+      --popup-border:    rgba(212,165,116,0.12);
+      --popup-separator: #5c4838;
+      --popup-text:      #f4ede0;
+      --popup-muted:     #b8a48a;
 
-      /* ── GCal brand — muted for dark ── */
-      --gcal-color:      #4d9ef7;
+      /* ── GCal brand — warm earthy ── */
+      --gcal-color:      #d4b890;
 
       /* ── Delete button ── */
-      --delete-btn-color: #636366;
+      --delete-btn-color: #6b5538;
 
-      /* ── Balance card gradients — dark ── */
-      --balance-pos-bg:     linear-gradient(135deg,#1f1a00,#2a2000);
-      --balance-pos-border: #4a2e00;
-      --balance-neg-bg:     linear-gradient(135deg,#1c0a0a,#270e0e);
-      --balance-neg-border: #5c1a1a;
+      /* ── Balance card gradients — warm dark ── */
+      --balance-pos-bg:     linear-gradient(135deg,#2a1f10,#3a2a18);
+      --balance-pos-border: #5c4828;
+      --balance-neg-bg:     linear-gradient(135deg,#2a1410,#3a1c14);
+      --balance-neg-border: #5c2a1c;
 
-      /* ── Banner backgrounds — dark ── */
-      --banner-today-bg:    linear-gradient(135deg,#1c0a0a,#270e0e);
-      --banner-future-bg:   linear-gradient(135deg,#18153a,#1f1b3d);
+      /* ── Banner backgrounds — warm dark ── */
+      --banner-today-bg:    linear-gradient(135deg,#2a1410,#3a1c14);
+      --banner-future-bg:   linear-gradient(135deg,#2a1f18,#3a2a20);
     }
 
     /* ── Layout ── */
     [data-theme="dark"] body      { background: var(--bg); }
-    [data-theme="dark"] .sidebar  { background: #0d0d0f !important; border-color: #2c2c2e !important; }
+    [data-theme="dark"] .sidebar  { background: #1c1410 !important; border-color: #5c4838 !important; }
     [data-theme="dark"] .main-content { background: var(--bg); }
 
     /* ── Nav ── */
@@ -234,7 +234,7 @@
 
     /* ── Buttons ── */
     [data-theme="dark"] .btn              { border-color: var(--border); }
-    [data-theme="dark"] .btn-secondary    { background: #2c2c2e; color: var(--text); }
+    [data-theme="dark"] .btn-secondary    { background: #46382e; color: var(--text); }
 
     /* ── Badges ── */
     [data-theme="dark"] .badge-green  { background: #0d2318; color: #30d158; border-color: #1a5c2e; }
@@ -242,7 +242,7 @@
     [data-theme="dark"] .badge-orange { background: #251700; color: #ff9f0a; border-color: #4a2e00; }
     [data-theme="dark"] .badge-purple { background: #221e35; color: #c4b5fd; border-color: #3d3060; }
     [data-theme="dark"] .badge-blue   { background: #0e1f35; color: #60a5fa; border-color: #1a3a5c; }
-    [data-theme="dark"] .badge-gray   { background: #2c2c2e; color: #8e8e93; border-color: #3a3a3c; }
+    [data-theme="dark"] .badge-gray   { background: #46382e; color: #b8a48a; border-color: #5c4838; }
 
     /* ── Row status backgrounds (override inline styles) ── */
     [data-theme="dark"] tr[style*="background:#f0fdf4"],
@@ -522,7 +522,7 @@
     .page-header h2 {
       font-size: 38px; font-weight: 900;
       letter-spacing: -0.035em; line-height: 1.05;
-      color: #f0f0f5;
+      color: #f4ede0;
       text-shadow: 0 2px 12px rgba(0,0,0,0.4);
       font-family: 'Rubik', 'Heebo', sans-serif;
     }
