@@ -731,9 +731,9 @@
 
     /* ── מסגרת שחורה לשורות — desktop בלבד ── */
     @media (min-width: 701px) {
-      .row-framed td { border-top: 1.5px solid #1a1a2e !important; border-bottom: 1.5px solid #1a1a2e !important; }
-      .row-framed td:first-child { border-right: 1.5px solid #1a1a2e !important; }
-      .row-framed td:last-child  { border-left:  1.5px solid #1a1a2e !important; }
+      .row-framed td { border-top: 1px solid var(--border) !important; border-bottom: 1px solid var(--border) !important; }
+      .row-framed td:first-child { border-right: 1px solid var(--border) !important; }
+      .row-framed td:last-child  { border-left:  1px solid var(--border) !important; }
     }
 
     /* ===== BADGE ===== */
@@ -4246,6 +4246,7 @@ function renderIncome() {
   const incomeRows = monthEntries.map(i => {
     const isPaid = (i.status||'pending') === 'paid';
     const rowBg  = isPaid ? 'background:var(--row-paid-bg);border-right:3px solid var(--green)' : rowStyle(i);
+    const amtColor = isPaid ? 'var(--green)' : 'var(--accent)';
     return `
     <tr class="row-framed" style="${rowBg}">
       <td>${fmtDate(i.date)}</td>
@@ -4253,7 +4254,7 @@ function renderIncome() {
       <td>${i.description}</td>
       <td><span class="badge ${catBadge[i.category]||'badge-purple'}">${i.category}</span></td>
       <td>
-        <span style="border:2px solid var(--green);border-radius:8px;padding:4px 10px;color:var(--green);font-weight:800;display:inline-block">
+        <span style="color:${amtColor};font-weight:900;font-size:16px;font-variant-numeric:tabular-nums;letter-spacing:-0.01em">
           ${fmtMoney(i.amount)}
         </span>
       </td>
