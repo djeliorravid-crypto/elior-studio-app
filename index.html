@@ -1643,7 +1643,7 @@
     /* ===== MODE SELECTOR ===== */
     #mode-screen {
       position: fixed; inset: 0; z-index: 9998;
-      background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #831843 100%);
+      background: linear-gradient(135deg, #1c1410 0%, #3e2820 50%, #5c3a28 100%);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 48px;
       overflow: hidden;
@@ -1652,11 +1652,11 @@
       content: '';
       position: absolute; inset: -50%;
       background:
-        radial-gradient(circle at 20% 30%, rgba(232,67,147,0.4), transparent 40%),
-        radial-gradient(circle at 80% 20%, rgba(108,71,245,0.4), transparent 40%),
-        radial-gradient(circle at 50% 80%, rgba(249,115,22,0.3), transparent 40%);
-      filter: blur(60px);
-      animation: bgFloat 20s ease-in-out infinite;
+        radial-gradient(circle at 20% 30%, rgba(212,165,116,0.28), transparent 45%),
+        radial-gradient(circle at 80% 20%, rgba(160,108,72,0.32), transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(180,135,70,0.22), transparent 45%);
+      filter: blur(70px);
+      animation: bgFloat 24s ease-in-out infinite;
     }
     @keyframes bgFloat {
       0%,100% { transform: translate(0,0) rotate(0deg); }
@@ -1719,8 +1719,8 @@
     }
     .mode-card:hover::before { opacity: 1; }
     .mode-card:hover::after  { opacity: 1; }
-    .mode-card.business:hover { box-shadow: 0 30px 80px rgba(108,71,245,0.5); }
-    .mode-card.music:hover    { box-shadow: 0 30px 80px rgba(232,67,147,0.5); }
+    .mode-card.business:hover { box-shadow: 0 30px 80px rgba(212,165,116,0.45); }
+    .mode-card.music:hover    { box-shadow: 0 30px 80px rgba(160,108,72,0.5); }
 
     .mode-card-glow {
       position: absolute; bottom: -40%; left: 50%; transform: translateX(-50%);
@@ -1728,8 +1728,8 @@
       filter: blur(40px); opacity: 0.6; transition: opacity .3s;
       pointer-events: none;
     }
-    .mode-card.business .mode-card-glow { background: linear-gradient(135deg,#6c47f5,#a78bfa); }
-    .mode-card.music    .mode-card-glow { background: linear-gradient(135deg,#e84393,#f97316); }
+    .mode-card.business .mode-card-glow { background: linear-gradient(135deg,#d4a574,#a06c48); }
+    .mode-card.music    .mode-card-glow { background: linear-gradient(135deg,#a06c48,#5c3a28); }
     .mode-card:hover .mode-card-glow { opacity: 1; }
 
     .mode-card-icon {
@@ -2221,18 +2221,18 @@
     justify-content: center;
     z-index: 9999;
     flex-direction: column;
-    background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #831843 100%);
+    background: linear-gradient(135deg, #1c1410 0%, #3e2820 50%, #5c3a28 100%);
     overflow: hidden;
   }
   #login-screen::before {
     content: '';
     position: absolute; inset: -50%;
     background:
-      radial-gradient(circle at 20% 30%, rgba(232,67,147,0.4), transparent 40%),
-      radial-gradient(circle at 80% 20%, rgba(108,71,245,0.4), transparent 40%),
-      radial-gradient(circle at 50% 80%, rgba(249,115,22,0.3), transparent 40%);
-    filter: blur(60px);
-    animation: bgFloat 22s ease-in-out infinite;
+      radial-gradient(circle at 20% 30%, rgba(212,165,116,0.3), transparent 45%),
+      radial-gradient(circle at 80% 20%, rgba(160,108,72,0.32), transparent 45%),
+      radial-gradient(circle at 50% 80%, rgba(180,135,70,0.22), transparent 45%);
+    filter: blur(70px);
+    animation: bgFloat 24s ease-in-out infinite;
   }
   #login-screen::after {
     content: '';
@@ -2328,7 +2328,7 @@
     padding: 15px;
     border-radius: 14px;
     border: none;
-    background: linear-gradient(135deg, #e84393 0%, #f97316 100%);
+    background: linear-gradient(135deg, #d4a574 0%, #a06c48 100%);
     color: #fff;
     font-size: 14px;
     font-weight: 800;
@@ -2340,16 +2340,16 @@
     font-family: inherit;
     box-shadow:
       0 1px 0 rgba(255,255,255,0.2) inset,
-      0 6px 20px rgba(232,67,147,0.45),
-      0 2px 8px rgba(0,0,0,0.2);
+      0 6px 20px rgba(212,165,116,0.4),
+      0 2px 8px rgba(0,0,0,0.25);
   }
   .login-btn:hover {
     transform: translateY(-2px);
-    filter: brightness(1.08) saturate(1.1);
+    filter: brightness(1.08) saturate(1.05);
     box-shadow:
       0 1px 0 rgba(255,255,255,0.25) inset,
-      0 12px 32px rgba(232,67,147,0.6),
-      0 4px 12px rgba(0,0,0,0.25);
+      0 12px 32px rgba(212,165,116,0.55),
+      0 4px 12px rgba(0,0,0,0.3);
   }
   .login-btn:active { transform: translateY(0); transition-duration: .08s; }
   .login-error {
