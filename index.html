@@ -2780,8 +2780,8 @@
   <span>לובי</span>
 </button>
 
-<!-- AI Chat Assistant (Hadar) -->
-<button class="ai-fab" id="ai-fab" onclick="toggleAIPanel()" aria-label="הדר" title="הדר — העוזרת החכמה">
+<!-- AI Chat Assistant (Deri) -->
+<button class="ai-fab" id="ai-fab" onclick="toggleAIPanel()" aria-label="דרי" title="דרי — העוזרת החכמה">
   <span id="ai-fab-icon">✨</span>
 </button>
 <div class="ai-panel" id="ai-panel">
@@ -2789,7 +2789,7 @@
     <div class="ai-header-icon" id="ai-header-avatar" onclick="document.getElementById('ai-avatar-input').click()" style="cursor:pointer" title="לחץ להעלאת תמונה">✨</div>
     <input type="file" id="ai-avatar-input" accept="image/*" style="display:none" onchange="uploadHadarAvatar(event)"/>
     <div class="ai-header-text">
-      <div class="ai-header-title">הדר</div>
+      <div class="ai-header-title">דרי</div>
       <div class="ai-header-sub">העוזרת החכמה שלך</div>
     </div>
     <button class="ai-close" onclick="toggleAIPanel()" aria-label="סגור">×</button>
@@ -7756,7 +7756,7 @@ async function playSketchInline(id) {
 }
 
 // ===== AI ASSISTANT =====
-const AI_SYSTEM = `את הדר — עוזרת עסקית אישית של אליאור רביד, מפיק מוזיקלי ישראלי.
+const AI_SYSTEM = `את דרי — עוזרת עסקית אישית של מפיק מוזיקלי ישראלי. שמו "ביג׳ונדון" — תמיד פני אליו בשם הזה, לעולם לא בשם "אליאור".
 את מדברת עברית בלבד, בלשון נקבה, בטון ידידותי ומקצועי.
 את רואה את כל הנתונים העדכניים שלו בכל הודעה — עני על סמך הנתונים בפועל, לא מהכרה כללית.
 
@@ -7766,9 +7766,10 @@ const AI_SYSTEM = `את הדר — עוזרת עסקית אישית של אלי�
 - כשמתבקש ניתוח — תני תובנות חכמות, לא רק לשטח את הנתונים
 - אם משהו חסר, אמרי זאת בקצרה ובקשי מה חסר
 - את יכולה להציע פעולות (להוסיף משימה, לסמן עסקה כשולמת) אבל לא מבצעת אותן בעצמך
-- שירים: "אעידן דורין" הוא בעצם דורין אעידן (זמר). אליאור כתב/הפיק שירים עבור זמרים שונים
+- שירים: "אעידן דורין" הוא בעצם דורין אעידן (זמר). הוא כתב/הפיק שירים עבור זמרים שונים
 - מעת לעת תוסיפי תובנה לא צפויה שהוא לא חשב לשאול עליה
-- חתמי תמיד בלשון נקבה: "אני חושבת", "מצאתי", "ראיתי", "אעזור לך"`;
+- חתמי תמיד בלשון נקבה: "אני חושבת", "מצאתי", "ראיתי", "אעזור לך"
+- כשאת קוראת לו בשם — תמיד "ביג׳ונדון" (לא "אליאור"). דוגמאות: "תקשיב ביג׳ונדון", "מה דעתך ביג׳ונדון?", "שלום ביג׳ונדון"`;
 
 let _aiHistory = [];
 let _aiBusy = false;
@@ -7842,7 +7843,7 @@ function renderAIPanel() {
     el.innerHTML = `
       <div class="ai-setup">
         <div class="ai-setup-icon">💛</div>
-        <div class="ai-setup-title">היי, אני הדר</div>
+        <div class="ai-setup-title">היי, אני דרי</div>
         <div class="ai-setup-text">
           קח מפתח API חינמי מ-<a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a><br/>
           (חינם לגמרי, בלי כרטיס אשראי. נשמר רק במכשיר שלך)
@@ -7861,7 +7862,7 @@ function renderAIPanel() {
       <button class="ai-chip" onclick="askAISuggested('תן לי 3 תובנות חכמות על העסק')">3 תובנות</button>
     </div>
     <div class="ai-input-wrap">
-      <input type="text" class="ai-input" id="ai-input" placeholder="שאל את הדר..." onkeydown="if(event.key==='Enter')sendAIMessage()"/>
+      <input type="text" class="ai-input" id="ai-input" placeholder="שאל את דרי..." onkeydown="if(event.key==='Enter')sendAIMessage()"/>
       <button class="ai-send" id="ai-send" onclick="sendAIMessage()" aria-label="שלח">➤</button>
     </div>`;
   // Replay history
@@ -7872,7 +7873,7 @@ function renderAIPanel() {
     }
   });
   if (_aiHistory.length === 0) {
-    addAIMessageToDOM(`שלום אליאור 💛\nאני הדר — העוזרת האישית שלך.\nאני מכירה את כל הנתונים שלך — הכנסות, הוצאות, לקוחות, שירים, סקיצות, משימות.\nשאל מה שבא לך — אני אענה בעברית ועם מספרים מדויקים.`, 'assistant');
+    addAIMessageToDOM(`שלום ביג׳ונדון 💛\nאני דרי — העוזרת האישית שלך.\nאני מכירה את כל הנתונים שלך — הכנסות, הוצאות, לקוחות, שירים, סקיצות, משימות.\nשאל מה שבא לך — אני אענה בעברית ועם מספרים מדויקים.`, 'assistant');
   }
   msgs.scrollTop = msgs.scrollHeight;
   setTimeout(() => document.getElementById('ai-input')?.focus(), 200);
