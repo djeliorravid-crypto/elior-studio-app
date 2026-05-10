@@ -809,6 +809,186 @@
       font-size: 15px;
     }
 
+    /* ===== AI CHAT ASSISTANT ===== */
+    .ai-fab {
+      position: fixed;
+      bottom: 24px;
+      left: 100px;
+      z-index: 499;
+      width: 60px; height: 60px; border-radius: 50%;
+      border: none; cursor: pointer;
+      background: linear-gradient(135deg, #d4a574, #8a5a32);
+      color: #fff; font-size: 26px;
+      box-shadow: 0 8px 24px rgba(212,165,116,0.5), 0 1px 0 rgba(255,255,255,0.2) inset;
+      transition: transform .25s cubic-bezier(.34,1.4,.64,1), box-shadow .25s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    @media (max-width: 768px) {
+      .ai-fab { bottom: 84px; left: 90px; width: 52px; height: 52px; font-size: 22px; }
+    }
+    .ai-fab:hover { transform: scale(1.08); box-shadow: 0 12px 32px rgba(212,165,116,0.6); }
+    .ai-fab::after {
+      content: ''; position: absolute; inset: 0; border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(212,165,116,0.3);
+      animation: aiPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes aiPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212,165,116,0.5); }
+      50% { box-shadow: 0 0 0 12px rgba(212,165,116,0); }
+    }
+
+    .ai-panel {
+      position: fixed; bottom: 0; left: 24px;
+      width: 420px; max-width: calc(100vw - 48px);
+      height: 600px; max-height: calc(100vh - 80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px 18px 0 0;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
+      z-index: 1001;
+      display: none;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.34,1.2,.64,1);
+      overflow: hidden;
+    }
+    .ai-panel.open { display: flex; transform: translateY(0); }
+    @media (max-width: 768px) {
+      .ai-panel { left: 0; right: 0; width: 100%; max-width: 100%; border-radius: 18px 18px 0 0; height: 80vh; max-height: 80vh; }
+    }
+    .ai-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+    }
+    .ai-header-icon {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, #d4a574, #8a5a32);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #fff;
+      box-shadow: 0 4px 12px rgba(212,165,116,0.3);
+    }
+    .ai-header-text { flex: 1; min-width: 0; }
+    .ai-header-title { font-size: 15px; font-weight: 900; color: var(--text); letter-spacing: -0.01em; }
+    .ai-header-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .ai-close {
+      border: none; background: none; color: var(--text-muted);
+      font-size: 22px; cursor: pointer; padding: 4px 8px; line-height: 1;
+      border-radius: 8px; transition: background .15s;
+    }
+    .ai-close:hover { background: var(--surface2); }
+
+    .ai-messages {
+      flex: 1; overflow-y: auto;
+      padding: 16px 14px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .ai-msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 14px; line-height: 1.5;
+      animation: msgIn .25s cubic-bezier(.4,0,.2,1);
+      word-wrap: break-word;
+    }
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .ai-msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-weight: 600;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+    .ai-msg.assistant {
+      align-self: flex-start;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-bottom-left-radius: 4px;
+      white-space: pre-wrap;
+    }
+    .ai-msg.assistant strong { color: var(--accent); font-weight: 800; }
+    .ai-msg.system { align-self: center; background: transparent; color: var(--text-muted); font-size: 12px; padding: 4px 12px; }
+    .ai-thinking {
+      align-self: flex-start;
+      padding: 14px 18px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 16px; border-bottom-left-radius: 4px;
+      display: flex; gap: 4px;
+    }
+    .ai-thinking span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      animation: thinkDot 1.4s ease-in-out infinite;
+    }
+    .ai-thinking span:nth-child(2) { animation-delay: 0.16s; }
+    .ai-thinking span:nth-child(3) { animation-delay: 0.32s; }
+    @keyframes thinkDot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    .ai-suggestions {
+      padding: 8px 14px 0;
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .ai-chip {
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 6px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 700; color: var(--text);
+      cursor: pointer; font-family: 'Heebo', inherit;
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+    .ai-chip:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); transform: translateY(-1px); }
+
+    .ai-input-wrap {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 8px;
+      background: var(--surface);
+    }
+    .ai-input {
+      flex: 1; padding: 11px 14px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: var(--surface2);
+      color: var(--text); font-size: 14px; font-weight: 600;
+      outline: none;
+      font-family: 'Heebo', inherit;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .ai-input:focus { border-color: var(--accent); box-shadow: var(--ring-accent); }
+    .ai-send {
+      border: none; cursor: pointer;
+      width: 42px; height: 42px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 18px;
+      box-shadow: 0 4px 12px var(--accent-glow);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .ai-send:hover { transform: scale(1.06); }
+    .ai-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .ai-setup {
+      padding: 24px; text-align: center;
+      flex: 1; display: flex; flex-direction: column; justify-content: center;
+    }
+    .ai-setup-icon { font-size: 48px; margin-bottom: 14px; }
+    .ai-setup-title { font-size: 18px; font-weight: 900; color: var(--text); margin-bottom: 6px; }
+    .ai-setup-text { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.6; }
+    .ai-setup input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: monospace; font-size: 13px; margin-bottom: 12px; direction: ltr; text-align: left; }
+    .ai-setup a { color: var(--accent); text-decoration: none; font-weight: 700; }
+
+    body:has(#login-screen:not(.hidden)) .ai-fab,
+    body:has(#mode-screen:not(.hidden)) .ai-fab,
+    body:has(#login-screen:not(.hidden)) .ai-panel,
+    body:has(#mode-screen:not(.hidden)) .ai-panel { display: none !important; }
+
     /* ===== PREMIUM KPI CARDS — dashboard depth ===== */
     .income-triple-grid > div,
     .table-card {
@@ -2581,6 +2761,20 @@
   <span style="font-size:13px">←</span>
   <span>לובי</span>
 </button>
+
+<!-- AI Chat Assistant -->
+<button class="ai-fab" id="ai-fab" onclick="toggleAIPanel()" aria-label="עוזר חכם" title="עוזר חכם">✨</button>
+<div class="ai-panel" id="ai-panel">
+  <div class="ai-header">
+    <div class="ai-header-icon">✨</div>
+    <div class="ai-header-text">
+      <div class="ai-header-title">העוזר החכם שלך</div>
+      <div class="ai-header-sub">שואל אותי על הנתונים שלך</div>
+    </div>
+    <button class="ai-close" onclick="toggleAIPanel()" aria-label="סגור">×</button>
+  </div>
+  <div id="ai-content"></div>
+</div>
 
 <!-- Floating Quick Add FAB -->
 <div class="fab-container" id="fab-container">
@@ -7538,6 +7732,261 @@ async function playSketchInline(id) {
     return;
   }
   await playInMiniPlayer('sketches', id);
+}
+
+// ===== AI ASSISTANT =====
+const AI_SYSTEM = `אתה עוזר עסקי אישי של אליאור רביד — מפיק מוזיקלי ישראלי.
+אתה מדבר עברית בלבד, בטון ידידותי ומקצועי.
+אתה רואה את כל הנתונים העדכניים שלו בכל הודעה — תענה על סמך הנתונים בפועל, לא מהכרה כללית.
+
+כללי תגובה:
+- היה תכל'תי, ישיר, ובלי מילים מיותרות
+- כשמדובר במספרים — תן מספרים מדויקים מהנתונים
+- כשמתבקש ניתוח — תן תובנות חכמות, לא רק לשטח את הנתונים
+- אם משהו חסר, אמור זאת בקצרה ובקש מה חסר
+- אתה יכול להציע פעולות (להוסיף משימה, לסמן עסקה כשולמת) אבל לא מבצע אותן בעצמך
+- שירים: "אעידן דורין" הוא בעצם דורין אעידן (זמר). אליאור כתב/הפיק שירים עבור זמרים שונים
+- מעת לעת תוסיף תובנה לא צפויה שהוא לא חשב לשאול עליה`;
+
+let _aiHistory = [];
+let _aiBusy = false;
+
+function getAIKey() { return localStorage.getItem('ai_api_key') || ''; }
+function setAIKey(k) { localStorage.setItem('ai_api_key', k); }
+
+function toggleAIPanel() {
+  const p = document.getElementById('ai-panel');
+  if (!p) return;
+  const opening = !p.classList.contains('open');
+  p.classList.toggle('open');
+  if (opening) renderAIPanel();
+}
+
+function renderAIPanel() {
+  const el = document.getElementById('ai-content');
+  if (!el) return;
+  if (!getAIKey()) {
+    el.innerHTML = `
+      <div class="ai-setup">
+        <div class="ai-setup-icon">🔑</div>
+        <div class="ai-setup-title">חיבור ראשוני</div>
+        <div class="ai-setup-text">
+          השג מפתח API מ-<a href="https://console.anthropic.com/settings/keys" target="_blank">Anthropic Console</a><br/>
+          זה נשמר רק במכשיר שלך — לא נשלח לשום מקום חוץ מ-Claude.
+        </div>
+        <input type="password" id="ai-key-input" placeholder="sk-ant-..." autocomplete="off"/>
+        <button class="btn btn-primary" onclick="saveAIKey()" style="width:100%">חבר</button>
+      </div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="ai-messages" id="ai-messages"></div>
+    <div class="ai-suggestions" id="ai-suggestions">
+      <button class="ai-chip" onclick="askAISuggested('מה היה החודש הכי טוב שלי?')">מה היה החודש הכי טוב?</button>
+      <button class="ai-chip" onclick="askAISuggested('מי הלקוחות הכי שילמו לי בסה״כ?')">לקוחות הכי משלמים</button>
+      <button class="ai-chip" onclick="askAISuggested('מי חייב לי כסף עכשיו?')">חייבים לי</button>
+      <button class="ai-chip" onclick="askAISuggested('תן לי 3 תובנות חכמות על העסק')">3 תובנות</button>
+    </div>
+    <div class="ai-input-wrap">
+      <input type="text" class="ai-input" id="ai-input" placeholder="שאל אותי כל דבר..." onkeydown="if(event.key==='Enter')sendAIMessage()"/>
+      <button class="ai-send" id="ai-send" onclick="sendAIMessage()" aria-label="שלח">➤</button>
+    </div>`;
+  // Replay history
+  const msgs = document.getElementById('ai-messages');
+  _aiHistory.forEach(m => {
+    if (m.role === 'user' || m.role === 'assistant') {
+      addAIMessageToDOM(m.content, m.role);
+    }
+  });
+  if (_aiHistory.length === 0) {
+    addAIMessageToDOM(`שלום אליאור 👋\nאני מכיר את כל הנתונים שלך — הכנסות, הוצאות, לקוחות, שירים, סקיצות, משימות.\nשאל מה שבא לך — אני אענה בעברית ועם מספרים מדויקים.`, 'assistant');
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+  setTimeout(() => document.getElementById('ai-input')?.focus(), 200);
+}
+
+function saveAIKey() {
+  const v = document.getElementById('ai-key-input')?.value?.trim();
+  if (!v || !v.startsWith('sk-')) { toast('מפתח לא תקין'); return; }
+  setAIKey(v);
+  renderAIPanel();
+}
+
+function addAIMessageToDOM(text, role) {
+  const msgs = document.getElementById('ai-messages');
+  if (!msgs) return;
+  const div = document.createElement('div');
+  div.className = 'ai-msg ' + role;
+  // Basic markdown-ish: **bold**
+  div.innerHTML = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function buildAIContext() {
+  const income = load('income');
+  const expenses = load('expenses');
+  const clients = load('clients');
+  const tasks = load('tasks');
+  const sessions = load('sessions');
+  const released = load('released_songs');
+  const sketches = load('sketch_songs');
+  const plans = load('plans');
+  const bank = JSON.parse(localStorage.getItem('s_bankDeposit') || 'null');
+  const monthlyGoal = JSON.parse(localStorage.getItem('s_monthlyGoal') || 'null');
+
+  const now = new Date();
+  const tDay = 86400000;
+
+  // Per-month income aggregates
+  const monthAgg = {};
+  income.forEach(i => {
+    const d = new Date(i.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if (!monthAgg[key]) monthAgg[key] = { paid: 0, pending: 0, count: 0 };
+    if ((i.status||'pending') === 'paid') monthAgg[key].paid += +i.amount;
+    else monthAgg[key].pending += +i.amount;
+    monthAgg[key].count++;
+  });
+
+  // Top clients (all-time)
+  const cAgg = {};
+  income.forEach(i => {
+    const cid = i.clientId || '_unknown';
+    if (!cAgg[cid]) cAgg[cid] = { paid: 0, pending: 0, count: 0 };
+    if ((i.status||'pending') === 'paid') cAgg[cid].paid += +i.amount;
+    else cAgg[cid].pending += +i.amount;
+    cAgg[cid].count++;
+  });
+  const topClients = Object.entries(cAgg).map(([cid, v]) => {
+    const c = clients.find(x => x.id === cid);
+    return { name: c?.name || (cid === '_unknown' ? 'לא ידוע' : 'נמחק'), ...v, total: v.paid + v.pending };
+  }).sort((a,b) => b.total - a.total).slice(0, 20);
+
+  // Overdue (pending older than 30 days)
+  const overdue = income.filter(i => (i.status||'pending') !== 'paid' && (now - new Date(i.date)) > 30 * tDay)
+    .map(i => ({ client: i.clientName || 'לא ידוע', amount: +i.amount, days: Math.floor((now - new Date(i.date)) / tDay), description: i.description }));
+
+  // Expense aggregates by category
+  const expCat = {};
+  expenses.forEach(e => {
+    const cat = e.category || 'אחר';
+    if (!expCat[cat]) expCat[cat] = { paid: 0, count: 0 };
+    expCat[cat].paid += +e.amount;
+    expCat[cat].count++;
+  });
+
+  // Songs by singer
+  const songsBySinger = {};
+  released.forEach(s => {
+    const k = s.singer || 'לא ידוע';
+    songsBySinger[k] = (songsBySinger[k] || 0) + 1;
+  });
+
+  // Open tasks
+  const openTasks = tasks.filter(t => !t.done).map(t => ({ title: t.title, due: t.dueDate, priority: t.priority }));
+
+  return {
+    today: now.toISOString().slice(0, 10),
+    summary: {
+      income_total_paid: income.filter(i => (i.status||'pending') === 'paid').reduce((a,b)=>a+(+b.amount||0), 0),
+      income_total_pending: income.filter(i => (i.status||'pending') !== 'paid').reduce((a,b)=>a+(+b.amount||0), 0),
+      expenses_total: expenses.reduce((a,b)=>a+(+b.amount||0), 0),
+      clients_count: clients.length,
+      released_songs_count: released.length,
+      sketches_count: sketches.length,
+      open_tasks: openTasks.length,
+      bank_deposit: bank?.amount ?? null,
+      monthly_goal: monthlyGoal?.v ?? null
+    },
+    income_by_month: monthAgg,
+    top_clients: topClients,
+    overdue,
+    expenses_by_category: expCat,
+    songs_by_singer: songsBySinger,
+    open_tasks_list: openTasks.slice(0, 30),
+    sample_recent_income: income.slice(-10).map(i => ({ date: i.date, client: i.clientName, amount: i.amount, status: i.status||'pending', description: i.description })),
+    sample_recent_expenses: expenses.slice(-10).map(e => ({ date: e.date, vendor: e.vendor, amount: e.amount, category: e.category })),
+    released_songs_list: released.map(s => ({ title: s.title, singer: s.singer, cowriters: s.cowriters }))
+  };
+}
+
+async function sendAIMessage() {
+  if (_aiBusy) return;
+  const inp = document.getElementById('ai-input');
+  const text = inp?.value?.trim();
+  if (!text) return;
+  inp.value = '';
+
+  _aiHistory.push({ role: 'user', content: text });
+  addAIMessageToDOM(text, 'user');
+
+  const msgs = document.getElementById('ai-messages');
+  const thinking = document.createElement('div');
+  thinking.className = 'ai-thinking';
+  thinking.id = 'ai-thinking';
+  thinking.innerHTML = '<span></span><span></span><span></span>';
+  msgs.appendChild(thinking);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  _aiBusy = true;
+  document.getElementById('ai-send')?.setAttribute('disabled', 'true');
+
+  try {
+    const context = buildAIContext();
+    const systemFull = AI_SYSTEM + '\n\n## הנתונים העדכניים של אליאור (JSON):\n```json\n' + JSON.stringify(context, null, 1) + '\n```';
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': getAIKey(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: systemFull,
+        messages: _aiHistory.slice(-20)
+      })
+    });
+
+    const data = await res.json();
+    document.getElementById('ai-thinking')?.remove();
+
+    if (!res.ok) {
+      const errMsg = data?.error?.message || `שגיאה (${res.status})`;
+      addAIMessageToDOM('⚠️ ' + errMsg, 'assistant');
+      // If auth error, clear key
+      if (res.status === 401) {
+        addAIMessageToDOM('המפתח שגוי. אפס אותו דרך הגדרות.', 'assistant');
+      }
+    } else {
+      const reply = data.content?.[0]?.text || '...';
+      _aiHistory.push({ role: 'assistant', content: reply });
+      addAIMessageToDOM(reply, 'assistant');
+    }
+  } catch(e) {
+    document.getElementById('ai-thinking')?.remove();
+    addAIMessageToDOM('⚠️ בעיית חיבור: ' + e.message, 'assistant');
+  } finally {
+    _aiBusy = false;
+    document.getElementById('ai-send')?.removeAttribute('disabled');
+  }
+}
+
+function askAISuggested(q) {
+  const inp = document.getElementById('ai-input');
+  if (inp) { inp.value = q; sendAIMessage(); }
+}
+
+function clearAIKey() {
+  localStorage.removeItem('ai_api_key');
+  _aiHistory = [];
+  renderAIPanel();
 }
 
 // ===== HOME DASHBOARD =====
