@@ -7756,7 +7756,31 @@ let _aiHistory = [];
 let _aiBusy = false;
 
 function getAIKey() { return localStorage.getItem('ai_api_key') || ''; }
-function setAIKey(k) { localStorage.setItem('ai_api_key', k); }
+function setAIKey(k) { localStorage.setItem('ai_api_key', k); localStorage.removeItem('gemini_model'); }
+
+async function discoverGeminiModel() {
+  const cached = localStorage.getItem('gemini_model');
+  if (cached) return cached;
+  // Query available models from the API
+  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(getAIKey()));
+  if (!res.ok) throw new Error('לא ניתן לטעון רשימת דגמים');
+  const data = await res.json();
+  const all = (data.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent'));
+  // Prefer flash models (faster + free), prefer newer
+  const preferred = [
+    /gemini-2\.5-flash$/, /gemini-2\.5-flash-/,
+    /gemini-2\.0-flash$/, /gemini-2\.0-flash-/,
+    /gemini-flash/,
+    /gemini-1\.5-flash$/, /gemini-1\.5-flash-/,
+    /flash/
+  ];
+  for (const re of preferred) {
+    const m = all.find(x => re.test(x.name));
+    if (m) { localStorage.setItem('gemini_model', m.name); return m.name; }
+  }
+  if (all[0]) { localStorage.setItem('gemini_model', all[0].name); return all[0].name; }
+  throw new Error('לא נמצאו דגמים זמינים במפתח זה');
+}
 
 function uploadHadarAvatar(event) {
   const file = event.target.files?.[0];
@@ -7975,7 +7999,10 @@ async function sendAIMessage() {
       parts: [{ text: m.content }]
     }));
 
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(getAIKey()), {
+    // Discover working model (cached after first success)
+    const model = await discoverGeminiModel();
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=` + encodeURIComponent(getAIKey()), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
