@@ -1440,6 +1440,38 @@
     }
 
     /* ===== MOBILE RESPONSIVE ===== */
+    /* Mobile lobby button — hidden on desktop */
+    #mobile-lobby-btn { display: none; }
+    @media (max-width: 768px) {
+      #mobile-lobby-btn {
+        display: inline-flex;
+        position: fixed;
+        top: calc(env(safe-area-inset-top) + 10px);
+        right: 12px;
+        z-index: 300;
+        align-items: center; gap: 4px;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #fff;
+        font-size: 12px; font-weight: 800;
+        font-family: 'Heebo', inherit;
+        cursor: pointer;
+        box-shadow: 0 6px 18px var(--accent-glow), 0 1px 0 rgba(255,255,255,0.15) inset;
+        transition: transform .2s cubic-bezier(.34,1.4,.64,1), box-shadow .2s;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        letter-spacing: 0.02em;
+      }
+      #mobile-lobby-btn:active {
+        transform: scale(.94);
+      }
+    }
+    /* Hide on login + mode-screen */
+    body:has(#login-screen:not(.hidden)) #mobile-lobby-btn,
+    body:has(#mode-screen:not(.hidden)) #mobile-lobby-btn { display: none !important; }
+
     @media (max-width: 768px) {
       :root { --sidebar-w: 0px; }
 
@@ -2404,6 +2436,12 @@
 </style>
 </head>
 <body>
+
+<!-- Mobile: floating back-to-lobby button -->
+<button id="mobile-lobby-btn" onclick="switchMode()" title="חזרה ללובי" aria-label="חזרה ללובי">
+  <span style="font-size:13px">←</span>
+  <span>לובי</span>
+</button>
 
 <!-- ===== LOGIN ===== -->
 <div id="login-screen">
