@@ -2690,6 +2690,23 @@
       </div>
     </div>
 
+    <!-- ===== BANK DEPOSIT (manual) ===== -->
+    <div id="bank-deposit-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;transition:box-shadow .3s">
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-glow) 0%,transparent 60%);pointer-events:none"></div>
+      <div style="position:relative;display:flex;align-items:center;gap:14px;flex:1;min-width:200px">
+        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 6px 18px var(--accent-glow)">🏦</div>
+        <div>
+          <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">פיקדון בבנק</div>
+          <div id="bank-deposit-amount" style="font-size:30px;font-weight:900;color:var(--accent);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1">₪0</div>
+          <div id="bank-deposit-updated" style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600"></div>
+        </div>
+      </div>
+      <div style="position:relative;display:flex;align-items:center;gap:8px">
+        <input type="number" id="bank-deposit-input" placeholder="הזן סכום..." style="padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:15px;font-weight:700;width:160px;text-align:left;outline:none;transition:border-color .2s,box-shadow .2s;font-family:'Heebo',inherit" oninput="this.style.borderColor='var(--accent)'"/>
+        <button class="btn btn-primary" onclick="saveBankDeposit()">עדכן</button>
+      </div>
+    </div>
+
     <!-- 3 תיבות מאוחדות -->
     <div class="income-triple-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px">
 
@@ -3433,7 +3450,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','tasks','released_songs','sketch_songs'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','released_songs','sketch_songs'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -4120,6 +4137,34 @@ function saveGoal(val) {
   renderIncome();
 }
 
+function saveBankDeposit() {
+  const inp = document.getElementById('bank-deposit-input');
+  const v = parseFloat(inp?.value);
+  if (isNaN(v)) { toast('נא להזין סכום'); return; }
+  save('bankDeposit', { amount: v, updatedAt: new Date().toISOString() });
+  if (inp) inp.value = '';
+  renderBankDeposit();
+  toast('✅ עודכן');
+}
+
+function renderBankDeposit() {
+  const raw = localStorage.getItem('s_bankDeposit');
+  const data = raw ? JSON.parse(raw) : null;
+  const amtEl = document.getElementById('bank-deposit-amount');
+  const updEl = document.getElementById('bank-deposit-updated');
+  if (!amtEl) return;
+  if (!data) {
+    amtEl.textContent = '₪0';
+    if (updEl) updEl.textContent = 'טרם עודכן';
+    return;
+  }
+  amtEl.textContent = fmtMoney(data.amount);
+  if (updEl && data.updatedAt) {
+    const d = new Date(data.updatedAt);
+    updEl.textContent = `עודכן ב-${d.toLocaleDateString('he-IL')} ${d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})}`;
+  }
+}
+
 function renderGoalBar(paidAmt) {
   const raw  = localStorage.getItem('s_monthlyGoal');
   const goal = raw ? (JSON.parse(raw)?.v || 0) : 0;
@@ -4227,9 +4272,10 @@ function renderIncome() {
   document.getElementById('i-expected').textContent       = fmtMoney(totalAllExpected);
   document.getElementById('i-expected-count').textContent = `${monthEntries.length} פריטים החודש`;
 
-  // Insights: top clients + 6-month trend
+  // Insights: top clients + 6-month trend + bank deposit
   renderTopClients(monthEntries);
   renderIncomeTrend(income);
+  renderBankDeposit();
 
   const tbody = document.getElementById('i-tbody');
   if (!tbody) return;
