@@ -2647,7 +2647,6 @@
     </div>
   </div>
   <nav id="sidebar-nav">
-    <a onclick="showPage('home')" data-page="home"><span class="nav-icon">🏠</span> בית</a>
     <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#16a34a;font-weight:900">+</span></span></span> הכנסות</a>
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
@@ -2673,38 +2672,6 @@
 </aside>
 
 <main class="main" id="business-main">
-
-  <!-- ===== HOME DASHBOARD ===== -->
-  <div class="page" id="page-home">
-    <div class="page-header">
-      <div><h2>🏠 ברוך הבא, אליאור</h2><p id="home-date" style="font-weight:500"></p></div>
-    </div>
-
-    <!-- Smart alerts banner -->
-    <div id="home-alerts" style="margin-bottom:20px"></div>
-
-    <!-- Today summary stat strip -->
-    <div id="home-today-strip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px"></div>
-
-    <!-- Quick actions -->
-    <div class="table-card" style="margin-bottom:22px">
-      <div class="table-header"><h3>⚡ פעולות מהירות</h3></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;padding:18px 20px">
-        <button class="qa-tile" onclick="quickAction('income')"><div class="qa-icon" style="background:linear-gradient(135deg,#5a7a2e,#7a9e3e)">💵</div><div>הכנסה חדשה</div></button>
-        <button class="qa-tile" onclick="quickAction('expense')"><div class="qa-icon" style="background:linear-gradient(135deg,#b8442e,#d4644a)">💸</div><div>הוצאה חדשה</div></button>
-        <button class="qa-tile" onclick="quickAction('task')"><div class="qa-icon" style="background:linear-gradient(135deg,#a06c48,#c89465)">✅</div><div>משימה חדשה</div></button>
-        <button class="qa-tile" onclick="quickAction('client')"><div class="qa-icon" style="background:linear-gradient(135deg,#6b5538,#8a7048)">👤</div><div>לקוח חדש</div></button>
-        <button class="qa-tile" onclick="switchMode()"><div class="qa-icon" style="background:linear-gradient(135deg,#3a2c1c,#5c4838)">🎵</div><div>סטודיו</div></button>
-        <button class="qa-tile" onclick="downloadBackup()"><div class="qa-icon" style="background:linear-gradient(135deg,#54453a,#6b5443)">💾</div><div>גיבוי</div></button>
-      </div>
-    </div>
-
-    <!-- Recent activity -->
-    <div class="table-card">
-      <div class="table-header"><h3>🕐 פעילות אחרונה</h3></div>
-      <div id="home-activity" style="padding:8px 0"></div>
-    </div>
-  </div>
 
   <!-- ===== UNIFIED CALENDAR (יומן + גוגל) — hidden, kept for gcal sync logic ===== -->
   <div class="page" id="page-gcal" style="display:none!important">
@@ -3777,13 +3744,12 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {home:0, income:1, expenses:2, installments:3, profiles:4, tasks:5, dashboard:6};
+  const map = {income:0, expenses:1, installments:2, profiles:3, tasks:4, dashboard:5};
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
   if (idx !== undefined) navLinks[idx]?.classList.add('active');
   if (name === 'gcal') { setTimeout(() => { gcalInitPage(); }, 50); }
-  if (name === 'home') renderHome();
   refreshAll();
 }
 
