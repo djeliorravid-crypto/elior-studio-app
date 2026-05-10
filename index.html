@@ -2762,14 +2762,17 @@
   <span>לובי</span>
 </button>
 
-<!-- AI Chat Assistant -->
-<button class="ai-fab" id="ai-fab" onclick="toggleAIPanel()" aria-label="עוזר חכם" title="עוזר חכם">✨</button>
+<!-- AI Chat Assistant (Hadar) -->
+<button class="ai-fab" id="ai-fab" onclick="toggleAIPanel()" aria-label="הדר" title="הדר — העוזרת החכמה">
+  <span id="ai-fab-icon">✨</span>
+</button>
 <div class="ai-panel" id="ai-panel">
   <div class="ai-header">
-    <div class="ai-header-icon">✨</div>
+    <div class="ai-header-icon" id="ai-header-avatar" onclick="document.getElementById('ai-avatar-input').click()" style="cursor:pointer" title="לחץ להעלאת תמונה">✨</div>
+    <input type="file" id="ai-avatar-input" accept="image/*" style="display:none" onchange="uploadHadarAvatar(event)"/>
     <div class="ai-header-text">
-      <div class="ai-header-title">העוזר החכם שלך</div>
-      <div class="ai-header-sub">שואל אותי על הנתונים שלך</div>
+      <div class="ai-header-title">הדר</div>
+      <div class="ai-header-sub">העוזרת החכמה שלך</div>
     </div>
     <button class="ai-close" onclick="toggleAIPanel()" aria-label="סגור">×</button>
   </div>
@@ -7735,24 +7738,52 @@ async function playSketchInline(id) {
 }
 
 // ===== AI ASSISTANT =====
-const AI_SYSTEM = `אתה עוזר עסקי אישי של אליאור רביד — מפיק מוזיקלי ישראלי.
-אתה מדבר עברית בלבד, בטון ידידותי ומקצועי.
-אתה רואה את כל הנתונים העדכניים שלו בכל הודעה — תענה על סמך הנתונים בפועל, לא מהכרה כללית.
+const AI_SYSTEM = `את הדר — עוזרת עסקית אישית של אליאור רביד, מפיק מוזיקלי ישראלי.
+את מדברת עברית בלבד, בלשון נקבה, בטון ידידותי ומקצועי.
+את רואה את כל הנתונים העדכניים שלו בכל הודעה — עני על סמך הנתונים בפועל, לא מהכרה כללית.
 
 כללי תגובה:
-- היה תכל'תי, ישיר, ובלי מילים מיותרות
-- כשמדובר במספרים — תן מספרים מדויקים מהנתונים
-- כשמתבקש ניתוח — תן תובנות חכמות, לא רק לשטח את הנתונים
-- אם משהו חסר, אמור זאת בקצרה ובקש מה חסר
-- אתה יכול להציע פעולות (להוסיף משימה, לסמן עסקה כשולמת) אבל לא מבצע אותן בעצמך
+- את תכל'תית, ישירה, ובלי מילים מיותרות
+- כשמדובר במספרים — תני מספרים מדויקים מהנתונים
+- כשמתבקש ניתוח — תני תובנות חכמות, לא רק לשטח את הנתונים
+- אם משהו חסר, אמרי זאת בקצרה ובקשי מה חסר
+- את יכולה להציע פעולות (להוסיף משימה, לסמן עסקה כשולמת) אבל לא מבצעת אותן בעצמך
 - שירים: "אעידן דורין" הוא בעצם דורין אעידן (זמר). אליאור כתב/הפיק שירים עבור זמרים שונים
-- מעת לעת תוסיף תובנה לא צפויה שהוא לא חשב לשאול עליה`;
+- מעת לעת תוסיפי תובנה לא צפויה שהוא לא חשב לשאול עליה
+- חתמי תמיד בלשון נקבה: "אני חושבת", "מצאתי", "ראיתי", "אעזור לך"`;
 
 let _aiHistory = [];
 let _aiBusy = false;
 
 function getAIKey() { return localStorage.getItem('ai_api_key') || ''; }
 function setAIKey(k) { localStorage.setItem('ai_api_key', k); }
+
+function uploadHadarAvatar(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    localStorage.setItem('hadar_avatar', e.target.result);
+    applyHadarAvatar();
+    toast('✅ תמונה עודכנה');
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyHadarAvatar() {
+  const src = localStorage.getItem('hadar_avatar');
+  const fabIcon = document.getElementById('ai-fab-icon');
+  const headerIcon = document.getElementById('ai-header-avatar');
+  if (src) {
+    if (fabIcon) fabIcon.innerHTML = `<img src="${src}" style="width:100%;height:100%;border-radius:50%;object-fit:cover"/>`;
+    if (headerIcon) headerIcon.innerHTML = `<img src="${src}" style="width:100%;height:100%;border-radius:50%;object-fit:cover"/>`;
+  } else {
+    if (fabIcon) fabIcon.textContent = '✨';
+    if (headerIcon) headerIcon.textContent = '✨';
+  }
+}
+// Apply on load
+setTimeout(applyHadarAvatar, 100);
 
 function toggleAIPanel() {
   const p = document.getElementById('ai-panel');
@@ -7768,14 +7799,14 @@ function renderAIPanel() {
   if (!getAIKey()) {
     el.innerHTML = `
       <div class="ai-setup">
-        <div class="ai-setup-icon">🔑</div>
-        <div class="ai-setup-title">חיבור ראשוני</div>
+        <div class="ai-setup-icon">💛</div>
+        <div class="ai-setup-title">היי, אני הדר</div>
         <div class="ai-setup-text">
-          השג מפתח API מ-<a href="https://console.anthropic.com/settings/keys" target="_blank">Anthropic Console</a><br/>
-          זה נשמר רק במכשיר שלך — לא נשלח לשום מקום חוץ מ-Claude.
+          כדי שאוכל לעזור — תכניס מפתח API מ-<a href="https://console.anthropic.com/settings/keys" target="_blank">Anthropic Console</a><br/>
+          הוא נשמר רק במכשיר שלך, אף אחד אחר לא רואה אותו.
         </div>
         <input type="password" id="ai-key-input" placeholder="sk-ant-..." autocomplete="off"/>
-        <button class="btn btn-primary" onclick="saveAIKey()" style="width:100%">חבר</button>
+        <button class="btn btn-primary" onclick="saveAIKey()" style="width:100%">חברי אותי</button>
       </div>`;
     return;
   }
@@ -7788,7 +7819,7 @@ function renderAIPanel() {
       <button class="ai-chip" onclick="askAISuggested('תן לי 3 תובנות חכמות על העסק')">3 תובנות</button>
     </div>
     <div class="ai-input-wrap">
-      <input type="text" class="ai-input" id="ai-input" placeholder="שאל אותי כל דבר..." onkeydown="if(event.key==='Enter')sendAIMessage()"/>
+      <input type="text" class="ai-input" id="ai-input" placeholder="שאל את הדר..." onkeydown="if(event.key==='Enter')sendAIMessage()"/>
       <button class="ai-send" id="ai-send" onclick="sendAIMessage()" aria-label="שלח">➤</button>
     </div>`;
   // Replay history
@@ -7799,7 +7830,7 @@ function renderAIPanel() {
     }
   });
   if (_aiHistory.length === 0) {
-    addAIMessageToDOM(`שלום אליאור 👋\nאני מכיר את כל הנתונים שלך — הכנסות, הוצאות, לקוחות, שירים, סקיצות, משימות.\nשאל מה שבא לך — אני אענה בעברית ועם מספרים מדויקים.`, 'assistant');
+    addAIMessageToDOM(`שלום אליאור 💛\nאני הדר — העוזרת האישית שלך.\nאני מכירה את כל הנתונים שלך — הכנסות, הוצאות, לקוחות, שירים, סקיצות, משימות.\nשאל מה שבא לך — אני אענה בעברית ועם מספרים מדויקים.`, 'assistant');
   }
   msgs.scrollTop = msgs.scrollHeight;
   setTimeout(() => document.getElementById('ai-input')?.focus(), 200);
