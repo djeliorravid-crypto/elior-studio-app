@@ -686,6 +686,129 @@
       .insights-grid { grid-template-columns: 1fr !important; }
     }
 
+    /* ===== HOME DASHBOARD ===== */
+    .qa-tile {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 18px 12px; border: 1px solid var(--border);
+      background: var(--surface); border-radius: 14px;
+      cursor: pointer; font-family: 'Heebo', inherit;
+      font-size: 13px; font-weight: 800; color: var(--text);
+      transition: transform .2s cubic-bezier(.34,1.2,.64,1), box-shadow .2s, border-color .2s;
+    }
+    .qa-tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--accent); }
+    .qa-tile:active { transform: translateY(-1px); }
+    .qa-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    /* Smart alerts */
+    .home-alert {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px; border-radius: 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      box-shadow: var(--shadow); margin-bottom: 8px;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .home-alert:hover { transform: translateX(-3px); box-shadow: var(--shadow-md); }
+    .home-alert.urgent { border-right: 3px solid var(--red); }
+    .home-alert.warn   { border-right: 3px solid var(--orange); }
+    .home-alert.info   { border-right: 3px solid var(--accent); }
+    .home-alert .alert-icon { font-size: 22px; flex-shrink: 0; }
+    .home-alert .alert-body { flex: 1; min-width: 0; }
+    .home-alert .alert-title { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+    .home-alert .alert-sub   { font-size: 12px; color: var(--text-muted); }
+    .home-alert button {
+      border: none; background: var(--accent-light); color: var(--accent);
+      padding: 6px 12px; border-radius: 8px;
+      font-size: 12px; font-weight: 800; cursor: pointer;
+      font-family: 'Heebo', inherit;
+    }
+
+    /* Today stat tile */
+    .today-tile {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 16px;
+      box-shadow: var(--shadow);
+      position: relative; overflow: hidden;
+      transition: box-shadow .2s, transform .2s, border-color .2s;
+    }
+    .today-tile::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--accent-glow), transparent 60%);
+      pointer-events: none;
+    }
+    .today-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--accent); }
+    .today-tile-label { font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+    .today-tile-value { font-size: 26px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1; }
+    .today-tile-sub   { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; }
+
+    /* Activity feed */
+    .activity-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item:hover { background: var(--tr-hover); }
+    .activity-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      flex-shrink: 0; box-shadow: 0 0 0 4px var(--surface);
+    }
+    .activity-text { flex: 1; min-width: 0; }
+    .activity-title { font-size: 14px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .activity-meta  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .activity-amt   { font-size: 14px; font-weight: 900; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+    /* Floating "+" FAB */
+    .fab-container {
+      position: fixed;
+      bottom: 24px; left: 24px;
+      z-index: 500;
+    }
+    @media (max-width: 768px) {
+      .fab-container { bottom: 84px; left: 16px; }
+    }
+    .fab-main {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 28px; font-weight: 400;
+      box-shadow: 0 8px 24px var(--accent-glow), 0 1px 0 rgba(255,255,255,0.15) inset;
+      transition: transform .25s cubic-bezier(.34,1.4,.64,1), box-shadow .25s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .fab-main:hover { transform: scale(1.06); box-shadow: 0 12px 32px var(--accent-glow); }
+    .fab-main.open { transform: rotate(45deg); }
+    .fab-menu {
+      position: absolute; bottom: 72px; left: 0;
+      display: flex; flex-direction: column; gap: 10px;
+      opacity: 0; pointer-events: none;
+      transform: translateY(10px) scale(.95);
+      transform-origin: bottom left;
+      transition: opacity .25s, transform .25s cubic-bezier(.34,1.4,.64,1);
+    }
+    .fab-menu.open { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+    .fab-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px 10px 14px;
+      border-radius: 30px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 13px; font-weight: 800;
+      cursor: pointer; font-family: 'Heebo', inherit;
+      box-shadow: var(--shadow);
+      transition: transform .15s, box-shadow .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .fab-item:hover { transform: translateX(-4px); border-color: var(--accent); box-shadow: var(--shadow-md); }
+    .fab-item-icon {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+
     /* ===== PREMIUM KPI CARDS — dashboard depth ===== */
     .income-triple-grid > div,
     .table-card {
@@ -1470,7 +1593,9 @@
     }
     /* Hide on login + mode-screen */
     body:has(#login-screen:not(.hidden)) #mobile-lobby-btn,
-    body:has(#mode-screen:not(.hidden)) #mobile-lobby-btn { display: none !important; }
+    body:has(#mode-screen:not(.hidden)) #mobile-lobby-btn,
+    body:has(#login-screen:not(.hidden)) .fab-container,
+    body:has(#mode-screen:not(.hidden)) .fab-container { display: none !important; }
 
     @media (max-width: 768px) {
       :root { --sidebar-w: 0px; }
@@ -2457,6 +2582,17 @@
   <span>לובי</span>
 </button>
 
+<!-- Floating Quick Add FAB -->
+<div class="fab-container" id="fab-container">
+  <div class="fab-menu" id="fab-menu">
+    <button class="fab-item" onclick="fabAction('income')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#5a7a2e,#7a9e3e)">💵</span> הכנסה</button>
+    <button class="fab-item" onclick="fabAction('expense')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#b8442e,#d4644a)">💸</span> הוצאה</button>
+    <button class="fab-item" onclick="fabAction('task')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#a06c48,#c89465)">✅</span> משימה</button>
+    <button class="fab-item" onclick="fabAction('client')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#6b5538,#8a7048)">👤</span> לקוח</button>
+  </div>
+  <button class="fab-main" id="fab-main" onclick="toggleFab()" aria-label="פעולה מהירה">+</button>
+</div>
+
 <!-- ===== LOGIN ===== -->
 <div id="login-screen">
   <div class="login-box">
@@ -2511,6 +2647,7 @@
     </div>
   </div>
   <nav id="sidebar-nav">
+    <a onclick="showPage('home')" data-page="home"><span class="nav-icon">🏠</span> בית</a>
     <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#16a34a;font-weight:900">+</span></span></span> הכנסות</a>
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
@@ -2536,6 +2673,38 @@
 </aside>
 
 <main class="main" id="business-main">
+
+  <!-- ===== HOME DASHBOARD ===== -->
+  <div class="page" id="page-home">
+    <div class="page-header">
+      <div><h2>🏠 ברוך הבא, אליאור</h2><p id="home-date" style="font-weight:500"></p></div>
+    </div>
+
+    <!-- Smart alerts banner -->
+    <div id="home-alerts" style="margin-bottom:20px"></div>
+
+    <!-- Today summary stat strip -->
+    <div id="home-today-strip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px"></div>
+
+    <!-- Quick actions -->
+    <div class="table-card" style="margin-bottom:22px">
+      <div class="table-header"><h3>⚡ פעולות מהירות</h3></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;padding:18px 20px">
+        <button class="qa-tile" onclick="quickAction('income')"><div class="qa-icon" style="background:linear-gradient(135deg,#5a7a2e,#7a9e3e)">💵</div><div>הכנסה חדשה</div></button>
+        <button class="qa-tile" onclick="quickAction('expense')"><div class="qa-icon" style="background:linear-gradient(135deg,#b8442e,#d4644a)">💸</div><div>הוצאה חדשה</div></button>
+        <button class="qa-tile" onclick="quickAction('task')"><div class="qa-icon" style="background:linear-gradient(135deg,#a06c48,#c89465)">✅</div><div>משימה חדשה</div></button>
+        <button class="qa-tile" onclick="quickAction('client')"><div class="qa-icon" style="background:linear-gradient(135deg,#6b5538,#8a7048)">👤</div><div>לקוח חדש</div></button>
+        <button class="qa-tile" onclick="switchMode()"><div class="qa-icon" style="background:linear-gradient(135deg,#3a2c1c,#5c4838)">🎵</div><div>סטודיו</div></button>
+        <button class="qa-tile" onclick="downloadBackup()"><div class="qa-icon" style="background:linear-gradient(135deg,#54453a,#6b5443)">💾</div><div>גיבוי</div></button>
+      </div>
+    </div>
+
+    <!-- Recent activity -->
+    <div class="table-card">
+      <div class="table-header"><h3>🕐 פעילות אחרונה</h3></div>
+      <div id="home-activity" style="padding:8px 0"></div>
+    </div>
+  </div>
 
   <!-- ===== UNIFIED CALENDAR (יומן + גוגל) — hidden, kept for gcal sync logic ===== -->
   <div class="page" id="page-gcal" style="display:none!important">
@@ -3608,12 +3777,13 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, tasks:4, dashboard:5};
+  const map = {home:0, income:1, expenses:2, installments:3, profiles:4, tasks:5, dashboard:6};
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
   if (idx !== undefined) navLinks[idx]?.classList.add('active');
   if (name === 'gcal') { setTimeout(() => { gcalInitPage(); }, 50); }
+  if (name === 'home') renderHome();
   refreshAll();
 }
 
@@ -7402,6 +7572,151 @@ async function playSketchInline(id) {
     return;
   }
   await playInMiniPlayer('sketches', id);
+}
+
+// ===== HOME DASHBOARD =====
+function renderHome() {
+  const dateEl = document.getElementById('home-date');
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString('he-IL', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  const income   = load('income');
+  const expenses = load('expenses');
+  const tasks    = load('tasks');
+  const clients  = load('clients');
+
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${now.getMonth()}`;
+  const inMonth = (d) => { const x = new Date(d); return `${x.getFullYear()}-${x.getMonth()}` === ym; };
+  const today = now.toDateString();
+  const dayMs = 86400000;
+
+  // Today summary tiles
+  const monthIncome  = income.filter(i => inMonth(i.date) && (i.status||'pending') === 'paid').reduce((a,b)=>a+(+b.amount||0), 0);
+  const pendingIncome = income.filter(i => (i.status||'pending') !== 'paid').reduce((a,b)=>a+(+b.amount||0), 0);
+  const openTasks    = tasks.filter(t => !t.done).length;
+  const todayTasks   = tasks.filter(t => !t.done && t.dueDate && new Date(t.dueDate).toDateString() === today).length;
+  const bankRaw = localStorage.getItem('s_bankDeposit');
+  const bank = bankRaw ? (JSON.parse(bankRaw)?.amount || 0) : 0;
+
+  const stripEl = document.getElementById('home-today-strip');
+  if (stripEl) stripEl.innerHTML = `
+    <div class="today-tile"><div class="today-tile-label">הכנסות החודש</div><div class="today-tile-value" style="color:var(--green)">${fmtMoney(monthIncome)}</div><div class="today-tile-sub">${income.filter(i => inMonth(i.date)).length} עסקאות</div></div>
+    <div class="today-tile"><div class="today-tile-label">ממתין להכנסה</div><div class="today-tile-value" style="color:var(--accent)">${fmtMoney(pendingIncome)}</div><div class="today-tile-sub">${income.filter(i => (i.status||'pending')!=='paid').length} פתוחות</div></div>
+    <div class="today-tile"><div class="today-tile-label">פיקדון בבנק</div><div class="today-tile-value" style="color:var(--accent2)">${fmtMoney(bank)}</div><div class="today-tile-sub">עדכון ידני</div></div>
+    <div class="today-tile"><div class="today-tile-label">משימות פתוחות</div><div class="today-tile-value">${openTasks}</div><div class="today-tile-sub">${todayTasks} להיום</div></div>
+  `;
+
+  // Smart alerts
+  const alerts = [];
+
+  // Overdue income (>30 days unpaid)
+  income.forEach(i => {
+    if ((i.status||'pending') === 'paid') return;
+    const ageDays = Math.floor((now - new Date(i.date)) / dayMs);
+    if (ageDays > 30) {
+      alerts.push({type:'urgent', icon:'⏰', title:`${i.clientName||'לקוח'} חייב ${fmtMoney(i.amount)}`, sub:`חוב פתוח כבר ${ageDays} ימים`, action:'income'});
+    }
+  });
+
+  // Today tasks
+  if (todayTasks > 0) {
+    alerts.push({type:'warn', icon:'📌', title:`${todayTasks} משימות להיום`, sub:'הקלק כדי לראות', action:'tasks'});
+  }
+
+  // Bank deposit not updated in 30+ days
+  if (bankRaw) {
+    const updatedAt = new Date(JSON.parse(bankRaw).updatedAt);
+    const age = Math.floor((now - updatedAt) / dayMs);
+    if (age > 30) alerts.push({type:'info', icon:'🏦', title:'עדכן את הפיקדון בבנק', sub:`לא עודכן כבר ${age} ימים`, action:'income'});
+  } else {
+    alerts.push({type:'info', icon:'🏦', title:'עדכן פיקדון בבנק', sub:'הוסף את הסכום הנוכחי', action:'income'});
+  }
+
+  const alertsEl = document.getElementById('home-alerts');
+  if (alertsEl) {
+    if (alerts.length === 0) {
+      alertsEl.innerHTML = `<div class="home-alert info"><span class="alert-icon">✨</span><div class="alert-body"><div class="alert-title">הכל תחת שליטה</div><div class="alert-sub">אין התראות פעילות</div></div></div>`;
+    } else {
+      alertsEl.innerHTML = alerts.slice(0,4).map(a => `
+        <div class="home-alert ${a.type}" onclick="showPage('${a.action}')" style="cursor:pointer">
+          <span class="alert-icon">${a.icon}</span>
+          <div class="alert-body">
+            <div class="alert-title">${a.title}</div>
+            <div class="alert-sub">${a.sub}</div>
+          </div>
+          <button>פתח</button>
+        </div>`).join('');
+    }
+  }
+
+  // Activity feed
+  const recent = [];
+  income.forEach(i => recent.push({type:'income', date:i.date, title:i.description||'הכנסה', meta:i.clientName||'', amount:'+'+fmtMoney(i.amount), color:'var(--green)', page:'income'}));
+  expenses.forEach(e => recent.push({type:'expense', date:e.date, title:e.description||'הוצאה', meta:e.vendor||'', amount:'-'+fmtMoney(e.amount), color:'var(--red)', page:'expenses'}));
+  tasks.forEach(t => { if (t.createdAt) recent.push({type:'task', date:t.createdAt, title:t.title||'משימה', meta:t.done?'הושלמה':'פתוחה', amount:t.done?'✅':'•', color:'var(--accent)', page:'tasks'}); });
+  recent.sort((a,b) => new Date(b.date) - new Date(a.date));
+  const top = recent.slice(0, 8);
+
+  const actEl = document.getElementById('home-activity');
+  if (actEl) {
+    if (top.length === 0) {
+      actEl.innerHTML = `<div style="padding:30px 20px;text-align:center;color:var(--text-muted)">אין פעילות עדיין</div>`;
+    } else {
+      actEl.innerHTML = top.map(a => `
+        <div class="activity-item" onclick="showPage('${a.page}')" style="cursor:pointer">
+          <div class="activity-dot" style="background:${a.color}"></div>
+          <div class="activity-text">
+            <div class="activity-title">${a.title}</div>
+            <div class="activity-meta">${a.meta || ''} · ${new Date(a.date).toLocaleDateString('he-IL')}</div>
+          </div>
+          <div class="activity-amt" style="color:${a.color}">${a.amount}</div>
+        </div>`).join('');
+    }
+  }
+}
+
+// ===== FAB =====
+function toggleFab() {
+  document.getElementById('fab-main')?.classList.toggle('open');
+  document.getElementById('fab-menu')?.classList.toggle('open');
+}
+function fabAction(type) {
+  toggleFab();
+  setTimeout(() => quickAction(type), 100);
+}
+function quickAction(type) {
+  if (type === 'task') {
+    showPage('tasks');
+    setTimeout(() => {
+      const w = document.getElementById('task-form-wrap');
+      if (w && w.style.display === 'none') toggleTaskForm();
+    }, 200);
+  } else {
+    openModal(type);
+  }
+}
+
+// Close FAB menu on outside click
+document.addEventListener('click', e => {
+  const fab = document.getElementById('fab-container');
+  if (!fab) return;
+  if (!fab.contains(e.target) && document.getElementById('fab-menu')?.classList.contains('open')) {
+    toggleFab();
+  }
+});
+
+// ===== BACKUP / EXPORT =====
+function downloadBackup() {
+  const data = {};
+  ALL_KEYS.forEach(k => { try { data[k] = JSON.parse(localStorage.getItem('s_'+k) || 'null'); } catch(e){} });
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `elior-studio-backup-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('💾 גיבוי הורד');
 }
 
 function quickDeleteMusic(type, id) {
