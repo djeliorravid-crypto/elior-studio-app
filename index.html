@@ -7755,129 +7755,6 @@ async function playSketchInline(id) {
   await playInMiniPlayer('sketches', id);
 }
 
-// ===== DERI PUSH NOTIFICATIONS =====
-const NOTIF_KEY = 'deri_notifs_';
-
-function notifEnabled() { return Notification.permission === 'granted' && localStorage.getItem('deri_notifs_enabled') === 'yes'; }
-
-async function enableDeriNotifications() {
-  if (!('Notification' in window)) { toast('הדפדפן לא תומך בהתראות'); return; }
-  const perm = await Notification.requestPermission();
-  if (perm === 'granted') {
-    localStorage.setItem('deri_notifs_enabled', 'yes');
-    new Notification('דרי 🤍 מוכנה', { body: 'אעדכן אותך על דברים חשובים, ביג׳ונדון', icon: localStorage.getItem('hadar_avatar') || undefined });
-    toast('✅ התראות הופעלו');
-    renderAIPanel();
-    setTimeout(() => checkDeriNotifications(true), 2000);
-  } else {
-    toast('❌ ההתראות נדחו');
-  }
-}
-
-function disableDeriNotifications() {
-  localStorage.removeItem('deri_notifs_enabled');
-  toast('התראות כובו');
-  renderAIPanel();
-}
-
-function _lastNotif(key) {
-  const t = localStorage.getItem(NOTIF_KEY + key);
-  return t ? new Date(t) : null;
-}
-function _setLastNotif(key) { localStorage.setItem(NOTIF_KEY + key, new Date().toISOString()); }
-function _hoursSince(d) { return d ? (Date.now() - d.getTime()) / 36e5 : Infinity; }
-
-function _sendNotif(title, body, tag, action) {
-  if (!notifEnabled()) return;
-  const icon = localStorage.getItem('hadar_avatar') || undefined;
-  const n = new Notification(title, { body, tag, icon, requireInteraction: false });
-  n.onclick = () => {
-    window.focus();
-    if (action === 'income') showPage('income');
-    else if (action === 'tasks') showPage('tasks');
-    n.close();
-  };
-}
-
-function checkDeriNotifications(force) {
-  if (!notifEnabled()) return;
-  const now = new Date();
-  const hour = now.getHours();
-  const today = now.toDateString();
-
-  const income = load('income');
-  const tasks = load('tasks');
-
-  // 1) Morning greeting — once per day at 8-11 AM
-  if ((hour >= 8 && hour <= 11) || force) {
-    const last = _lastNotif('morning');
-    if (!last || last.toDateString() !== today) {
-      const todayTasks = tasks.filter(t => !t.done && t.dueDate && new Date(t.dueDate).toDateString() === today).length;
-      const pending = income.filter(i => (i.status||'pending') !== 'paid').length;
-      _sendNotif('בוקר טוב ביג׳ונדון 🌅',
-        `${todayTasks} משימות להיום · ${pending} עסקאות פתוחות`,
-        'morning', 'tasks');
-      _setLastNotif('morning');
-    }
-  }
-
-  // 2) Overdue income — once per 24h, picks oldest overdue
-  const overdue = income.filter(i => (i.status||'pending') !== 'paid')
-    .map(i => ({...i, days: Math.floor((now - new Date(i.date)) / 86400000)}))
-    .filter(i => i.days >= 30)
-    .sort((a,b) => b.days - a.days);
-  if (overdue.length > 0 && _hoursSince(_lastNotif('overdue')) >= 24) {
-    const o = overdue[0];
-    _sendNotif(`💰 חוב פתוח ${o.days} ימים`,
-      `${o.clientName || 'לקוח'} חייב ₪${(+o.amount).toLocaleString()}`,
-      'overdue', 'income');
-    _setLastNotif('overdue');
-  }
-
-  // 3) Monthly income milestone — when crossing record
-  const monthAgg = {};
-  income.forEach(i => {
-    if ((i.status||'pending') !== 'paid') return;
-    const d = new Date(i.date);
-    const k = `${d.getFullYear()}-${d.getMonth()}`;
-    monthAgg[k] = (monthAgg[k] || 0) + (+i.amount || 0);
-  });
-  const curKey = `${now.getFullYear()}-${now.getMonth()}`;
-  const curMonthTotal = monthAgg[curKey] || 0;
-  const prevMax = Math.max(0, ...Object.entries(monthAgg).filter(([k]) => k !== curKey).map(([_,v]) => v));
-  if (curMonthTotal > prevMax && prevMax > 0 && _hoursSince(_lastNotif('milestone-'+curKey)) >= 168) {
-    _sendNotif('🎉 שיא חודשי חדש!',
-      `עברת ₪${Math.round(curMonthTotal).toLocaleString()} החודש — הכי הרבה אי פעם, ביג׳ונדון`,
-      'milestone-'+curKey, 'income');
-    _setLastNotif('milestone-'+curKey);
-  }
-
-  // 4) Task due today — at 9am if any task due today
-  const dueToday = tasks.filter(t => !t.done && t.dueDate && new Date(t.dueDate).toDateString() === today);
-  if (dueToday.length > 0 && hour >= 9 && hour <= 10 && _hoursSince(_lastNotif('dueToday')) >= 20) {
-    _sendNotif(`📌 ${dueToday.length} ${dueToday.length === 1 ? 'משימה' : 'משימות'} להיום`,
-      dueToday.slice(0,3).map(t => '• ' + t.title).join('\n'),
-      'dueToday', 'tasks');
-    _setLastNotif('dueToday');
-  }
-
-  // 5) Friday weekly summary — Friday 14-17
-  if (now.getDay() === 5 && hour >= 14 && hour <= 17 && _hoursSince(_lastNotif('weekly')) >= 24*5) {
-    const weekStart = new Date(now);
-    weekStart.setDate(weekStart.getDate() - 7);
-    const weekIncome = income.filter(i => (i.status||'pending')==='paid' && new Date(i.date) >= weekStart)
-      .reduce((a,b) => a + (+b.amount || 0), 0);
-    _sendNotif('סיכום שבוע 📊',
-      `${Math.round(weekIncome).toLocaleString()}₪ נכנס השבוע. שבת שלום ביג׳ונדון`,
-      'weekly', 'income');
-    _setLastNotif('weekly');
-  }
-}
-
-// Check on load + every 5 minutes
-setTimeout(() => checkDeriNotifications(false), 3000);
-setInterval(() => checkDeriNotifications(false), 5 * 60 * 1000);
-
 // ===== AI ASSISTANT =====
 const AI_SYSTEM = `את דרי — עוזרת עסקית אישית של מפיק מוזיקלי ישראלי. שמו "ביג׳ונדון" — תמיד פני אליו בשם הזה, לעולם לא בשם "אליאור".
 את מדברת עברית בלבד, בלשון נקבה, בטון ידידותי ומקצועי.
@@ -7979,11 +7856,8 @@ function renderAIPanel() {
   el.innerHTML = `
     <div class="ai-messages" id="ai-messages"></div>
     <div class="ai-suggestions" id="ai-suggestions">
-      ${notifEnabled()
-        ? `<button class="ai-chip" onclick="disableDeriNotifications()" style="background:var(--accent-light);color:var(--accent);border-color:var(--accent)">🔔 התראות פעילות (כבה)</button>`
-        : `<button class="ai-chip" onclick="enableDeriNotifications()" style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-color:transparent">🔔 הפעל התראות</button>`}
-      <button class="ai-chip" onclick="askAISuggested('מה היה החודש הכי טוב שלי?')">החודש הכי טוב</button>
-      <button class="ai-chip" onclick="askAISuggested('מי הלקוחות הכי שילמו לי בסה״כ?')">לקוחות מובילים</button>
+      <button class="ai-chip" onclick="askAISuggested('מה היה החודש הכי טוב שלי?')">מה היה החודש הכי טוב?</button>
+      <button class="ai-chip" onclick="askAISuggested('מי הלקוחות הכי שילמו לי בסה״כ?')">לקוחות הכי משלמים</button>
       <button class="ai-chip" onclick="askAISuggested('מי חייב לי כסף עכשיו?')">חייבים לי</button>
       <button class="ai-chip" onclick="askAISuggested('תן לי 3 תובנות חכמות על העסק')">3 תובנות</button>
     </div>
