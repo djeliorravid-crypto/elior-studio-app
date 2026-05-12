@@ -3465,9 +3465,54 @@
     </div>
 
     <!-- פילטרים -->
-    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
       <button id="tf-pending" class="btn btn-primary btn-sm" onclick="setTaskFilter('pending')">לא בוצע</button>
       <button id="tf-done"    class="btn btn-ghost  btn-sm" onclick="setTaskFilter('done')">בוצע</button>
+      <button id="ntfy-toggle" class="btn btn-ghost btn-sm" onclick="openNtfySetup()" style="margin-right:auto">🔔 תזכורות לטלפון</button>
+    </div>
+
+    <!-- ===== NTFY SETUP MODAL ===== -->
+    <div class="modal-overlay" id="modal-ntfy">
+      <div class="modal" style="max-width:520px">
+        <h3>🔔 התראות לטלפון</h3>
+        <p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin-bottom:18px">
+          שעה לפני כל משימה — האייפון/אנדרואיד שלך יקבל התראה אמיתית, גם אם המסך נעול וגם אם האתר סגור.
+        </p>
+
+        <div style="background:var(--surface2);border-radius:12px;padding:16px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:900;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">שלב 1: התקן את האפליקציה</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <a class="btn btn-ghost btn-sm" target="_blank" href="https://apps.apple.com/us/app/ntfy/id1625396347" style="justify-content:center">📱 iPhone</a>
+            <a class="btn btn-ghost btn-sm" target="_blank" href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" style="justify-content:center">🤖 Android</a>
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border-radius:12px;padding:16px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:900;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">שלב 2: סרוק את הקוד הזה באפליקציית ntfy</div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <img id="ntfy-qr" alt="QR" style="width:120px;height:120px;border-radius:10px;background:#fff;padding:6px;flex-shrink:0"/>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">או תוסיף ידנית:</div>
+              <div id="ntfy-topic-url" style="font-size:12px;background:var(--surface);padding:8px 10px;border-radius:8px;font-family:monospace;word-break:break-all;direction:ltr;text-align:left"></div>
+              <button class="btn btn-ghost btn-sm" onclick="copyNtfyTopic()" style="margin-top:6px;width:100%">📋 העתק כתובת</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          <button class="btn btn-ghost btn-sm" onclick="sendNtfyTest()" style="flex:1">🧪 שלח התראת בדיקה</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetNtfyTopic()" style="flex:1">🔄 כתובת חדשה</button>
+        </div>
+
+        <div class="modal-actions" id="ntfy-actions">
+          <button class="btn btn-primary" onclick="confirmNtfySetup()" style="flex:1">✓ סיימתי, הפעל</button>
+          <button class="btn btn-ghost" onclick="closeModal('ntfy')">סגור</button>
+        </div>
+        <div class="modal-actions" id="ntfy-actions-active" style="display:none">
+          <button class="btn btn-danger" onclick="disableNtfy();closeModal('ntfy')" style="flex:1">כבה תזכורות</button>
+          <button class="btn btn-ghost" onclick="closeModal('ntfy')">סגור</button>
+        </div>
+      </div>
     </div>
 
     <!-- רשימת משימות -->
@@ -8357,6 +8402,135 @@ function toggleTheme() {
 let _taskFilter = 'pending';
 let _editingTaskId = null;
 
+// ===== NTFY PUSH NOTIFICATIONS (works when app closed/phone locked) =====
+function getNtfyTopic() { return localStorage.getItem('ntfy_topic') || ''; }
+function setNtfyTopic(t) { localStorage.setItem('ntfy_topic', t); }
+function isNtfyEnabled() { return !!getNtfyTopic() && localStorage.getItem('ntfy_enabled') === 'yes'; }
+function getScheduledMap() { try { return JSON.parse(localStorage.getItem('ntfy_scheduled') || '{}'); } catch(e) { return {}; } }
+function setScheduledMap(m) { localStorage.setItem('ntfy_scheduled', JSON.stringify(m)); }
+
+function genNtfyTopic() {
+  return 'elior-' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+}
+
+function openNtfySetup() {
+  if (!getNtfyTopic()) setNtfyTopic(genNtfyTopic());
+  refreshNtfyUI();
+  openModal('ntfy');
+}
+
+function refreshNtfyUI() {
+  const topic = getNtfyTopic();
+  const url = `https://ntfy.sh/${topic}`;
+  const urlEl = document.getElementById('ntfy-topic-url');
+  const qrEl  = document.getElementById('ntfy-qr');
+  if (urlEl) urlEl.textContent = url;
+  if (qrEl)  qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=8&data=${encodeURIComponent(url)}`;
+  // Update top button label
+  const btn = document.getElementById('ntfy-toggle');
+  if (btn) {
+    btn.innerHTML = isNtfyEnabled() ? '🔔 תזכורות פעילות' : '🔔 תזכורות לטלפון';
+    btn.classList.toggle('btn-primary', isNtfyEnabled());
+    btn.classList.toggle('btn-ghost', !isNtfyEnabled());
+  }
+  // Toggle action set in modal
+  const aSetup  = document.getElementById('ntfy-actions');
+  const aActive = document.getElementById('ntfy-actions-active');
+  if (aSetup && aActive) {
+    aSetup.style.display  = isNtfyEnabled() ? 'none' : 'flex';
+    aActive.style.display = isNtfyEnabled() ? 'flex' : 'none';
+  }
+}
+
+function copyNtfyTopic() {
+  const url = `https://ntfy.sh/${getNtfyTopic()}`;
+  navigator.clipboard?.writeText(url).then(() => toast('הועתק'));
+}
+
+function resetNtfyTopic() {
+  if (!confirm('ליצור כתובת חדשה? תצטרך להירשם מחדש באפליקציה.')) return;
+  setNtfyTopic(genNtfyTopic());
+  setScheduledMap({}); // reset scheduled state
+  refreshNtfyUI();
+  toast('כתובת חדשה נוצרה');
+}
+
+async function sendNtfyTest() {
+  try {
+    await fetch(`https://ntfy.sh/${getNtfyTopic()}`, {
+      method: 'POST',
+      headers: { 'Title': 'בדיקה מאליאור סטודיו', 'Tags': 'bell' },
+      body: '✅ ההתראות עובדות. אם קיבלת הודעה — הכל מוכן.'
+    });
+    toast('📤 נשלח — בדוק את הטלפון');
+  } catch(e) { toast('שגיאה בשליחה: ' + e.message); }
+}
+
+function confirmNtfySetup() {
+  localStorage.setItem('ntfy_enabled', 'yes');
+  closeModal('ntfy');
+  refreshNtfyUI();
+  scheduleAllUpcomingTasks();
+  toast('✅ תזכורות פעילות');
+}
+
+function disableNtfy() {
+  localStorage.removeItem('ntfy_enabled');
+  refreshNtfyUI();
+  toast('תזכורות כובו');
+}
+
+// Schedule notification for a single task — 1h before dueDate
+async function scheduleTaskNotification(task) {
+  if (!isNtfyEnabled() || !task.dueDate || task.done) return;
+  const topic = getNtfyTopic();
+  const due = new Date(task.dueDate);
+  const remind = new Date(due.getTime() - 60 * 60 * 1000); // 1h before
+  const now = new Date();
+  if (remind <= now) return; // past
+
+  // ntfy.sh free tier supports scheduling up to 3 days
+  const daysAhead = (remind - now) / 86400000;
+  if (daysAhead > 3) return; // will reschedule when closer
+
+  const scheduled = getScheduledMap();
+  const at = Math.floor(remind.getTime() / 1000);
+  // Already scheduled with same time? skip
+  if (scheduled[task.id] === at) return;
+
+  try {
+    const dueLocal = due.toLocaleString('he-IL', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+    await fetch(`https://ntfy.sh/${topic}`, {
+      method: 'POST',
+      headers: {
+        'Title': '⏰ עוד שעה — ' + task.title,
+        'At': String(at),
+        'Priority': 'high',
+        'Tags': 'alarm_clock'
+      },
+      body: `${task.title}\nיעד: ${dueLocal}${task.notes ? '\n\n' + task.notes : ''}`
+    });
+    scheduled[task.id] = at;
+    setScheduledMap(scheduled);
+  } catch(e) {
+    console.warn('ntfy schedule failed', e);
+  }
+}
+
+// Schedule all upcoming tasks (call on app load + after task changes)
+async function scheduleAllUpcomingTasks() {
+  if (!isNtfyEnabled()) return;
+  const tasks = load('tasks');
+  for (const t of tasks) {
+    await scheduleTaskNotification(t);
+  }
+}
+
+// Auto-schedule on load
+setTimeout(scheduleAllUpcomingTasks, 4000);
+// And every hour while app is open (for tasks coming into 3-day window)
+setInterval(scheduleAllUpcomingTasks, 60 * 60 * 1000);
+
 function toggleTaskForm() {
   const w = document.getElementById('task-form-wrap');
   if (!w) return;
@@ -8430,14 +8604,18 @@ function addTask() {
     category: document.getElementById('task-cat')?.value     || 'אחר'
   };
 
+  let savedTask;
   if (_editingTaskId) {
     const idx = tasks.findIndex(t => t.id === _editingTaskId);
-    if (idx >= 0) { Object.assign(tasks[idx], fields); }
+    if (idx >= 0) { Object.assign(tasks[idx], fields); savedTask = tasks[idx]; }
   } else {
-    tasks.unshift({ id: genId(), ...fields, done: false, createdAt: new Date().toISOString() });
+    savedTask = { id: genId(), ...fields, done: false, createdAt: new Date().toISOString() };
+    tasks.unshift(savedTask);
   }
   save('tasks', tasks);
-  toggleTaskForm(); // resets form + edit state
+  // Schedule push notification 1h before due (if enabled)
+  if (savedTask) scheduleTaskNotification(savedTask);
+  toggleTaskForm();
   renderTasks();
 }
 
