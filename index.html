@@ -2408,6 +2408,22 @@
       box-shadow: 0 0 0 3px var(--surface);
     }
 
+    .task-due-row {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 10px;
+    }
+    .task-due-row input[type="time"] {
+      text-align: center;
+      letter-spacing: 0.05em;
+      font-variant-numeric: tabular-nums;
+      direction: ltr;
+    }
+    .task-due-row input[type="date"] { direction: ltr; text-align: center; }
+    @media (max-width: 500px) {
+      .task-due-row { grid-template-columns: 1fr; }
+    }
+
     /* ===== STATISTICS PAGE ===== */
     .stat-ytd-strip {
       display: grid;
@@ -3413,7 +3429,7 @@
           </select>
         </div>
         <div class="form-group"><label>זמן יעד</label>
-          <div style="display:flex;gap:6px"><input type="date" id="task-due" style="flex:1"/><input type="time" id="task-due-time" value="18:00" style="width:100px"/></div>
+          <div class="task-due-row"><input type="date" id="task-due"/><input type="time" id="task-due-time" value="18:00"/></div>
         </div>
       </div>
       <div class="form-group">
