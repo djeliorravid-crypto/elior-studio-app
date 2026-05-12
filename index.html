@@ -8457,11 +8457,18 @@ function resetNtfyTopic() {
 
 async function sendNtfyTest() {
   try {
-    await fetch(`https://ntfy.sh/${getNtfyTopic()}`, {
+    const res = await fetch('https://ntfy.sh/', {
       method: 'POST',
-      headers: { 'Title': 'בדיקה מאליאור סטודיו', 'Tags': 'bell' },
-      body: '✅ ההתראות עובדות. אם קיבלת הודעה — הכל מוכן.'
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: getNtfyTopic(),
+        title: 'בדיקה מאליאור סטודיו',
+        message: '✅ ההתראות עובדות. אם קיבלת הודעה — הכל מוכן.',
+        priority: 4,
+        tags: ['bell']
+      })
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     toast('📤 נשלח — בדוק את הטלפון');
   } catch(e) { toast('שגיאה בשליחה: ' + e.message); }
 }
@@ -8500,16 +8507,19 @@ async function scheduleTaskNotification(task) {
 
   try {
     const dueLocal = due.toLocaleString('he-IL', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
-    await fetch(`https://ntfy.sh/${topic}`, {
+    const res = await fetch('https://ntfy.sh/', {
       method: 'POST',
-      headers: {
-        'Title': '⏰ עוד שעה — ' + task.title,
-        'At': String(at),
-        'Priority': 'high',
-        'Tags': 'alarm_clock'
-      },
-      body: `${task.title}\nיעד: ${dueLocal}${task.notes ? '\n\n' + task.notes : ''}`
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic,
+        title: '⏰ עוד שעה — ' + task.title,
+        message: `${task.title}\nיעד: ${dueLocal}${task.notes ? '\n\n' + task.notes : ''}`,
+        priority: 5,
+        tags: ['alarm_clock'],
+        delay: String(at) // unix timestamp (ntfy accepts in delay field)
+      })
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     scheduled[task.id] = at;
     setScheduledMap(scheduled);
   } catch(e) {
