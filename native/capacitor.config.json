@@ -1,0 +1,18 @@
+{
+  "appId": "com.eliorravid.studio",
+  "appName": "אליאור רביד",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always",
+    "scrollEnabled": true,
+    "backgroundColor": "#2a1f17"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#d4a574",
+      "sound": "default"
+    }
+  }
+}

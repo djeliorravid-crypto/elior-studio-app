@@ -8513,6 +8513,59 @@ function toggleTheme() {
 let _taskFilter = 'pending';
 let _editingTaskId = null;
 
+// ===== NATIVE NOTIFICATIONS (Capacitor — works in real iOS/Android app) =====
+const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
+async function requestNativeNotificationPermission() {
+  if (!IS_NATIVE) return false;
+  const { LocalNotifications } = Capacitor.Plugins;
+  const res = await LocalNotifications.requestPermissions();
+  return res.display === 'granted';
+}
+
+async function scheduleNativeTaskNotification(task) {
+  if (!IS_NATIVE || !task.dueDate || task.done) return;
+  const { LocalNotifications } = Capacitor.Plugins;
+  const due = new Date(task.dueDate);
+  const remind = new Date(due.getTime() - 60 * 60 * 1000);
+  if (remind <= new Date()) return;
+
+  // Use a stable numeric ID derived from task id
+  const numId = Math.abs(task.id.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0));
+  try {
+    // Cancel existing one if any
+    await LocalNotifications.cancel({ notifications: [{ id: numId }] }).catch(() => {});
+    await LocalNotifications.schedule({
+      notifications: [{
+        id: numId,
+        title: '⏰ עוד שעה — ' + task.title,
+        body: `יעד: ${due.toLocaleString('he-IL', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'})}${task.notes ? '\n' + task.notes : ''}`,
+        schedule: { at: remind, allowWhileIdle: true },
+        sound: 'default',
+        extra: { taskId: task.id }
+      }]
+    });
+  } catch(e) { console.warn('native schedule failed', e); }
+}
+
+async function cancelNativeTaskNotification(taskId) {
+  if (!IS_NATIVE) return;
+  const { LocalNotifications } = Capacitor.Plugins;
+  const numId = Math.abs(taskId.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0));
+  try { await LocalNotifications.cancel({ notifications: [{ id: numId }] }); } catch(e) {}
+}
+
+// On native app load — request permission
+if (IS_NATIVE) {
+  window.addEventListener('load', () => {
+    setTimeout(async () => {
+      await requestNativeNotificationPermission();
+      // Schedule existing pending tasks
+      load('tasks').forEach(t => scheduleNativeTaskNotification(t));
+    }, 2000);
+  });
+}
+
 // ===== NTFY PUSH NOTIFICATIONS (works when app closed/phone locked) =====
 function getNtfyTopic() { return localStorage.getItem('ntfy_topic') || ''; }
 function setNtfyTopic(t) { localStorage.setItem('ntfy_topic', t); }
@@ -8600,6 +8653,8 @@ function disableNtfy() {
 
 // Schedule notification for a single task — 1h before dueDate
 async function scheduleTaskNotification(task) {
+  // If running as native app — use native notifications (best!)
+  if (IS_NATIVE) { scheduleNativeTaskNotification(task); return; }
   if (!isNtfyEnabled() || !task.dueDate || task.done) return;
   const topic = getNtfyTopic();
   const due = new Date(task.dueDate);
@@ -8785,6 +8840,7 @@ function toggleTaskDone(id) {
 
 function deleteTask(id) {
   save('tasks', load('tasks').filter(t => t.id !== id));
+  cancelNativeTaskNotification(id);
   renderTasks();
 }
 

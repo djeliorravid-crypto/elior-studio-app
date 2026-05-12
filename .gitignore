@@ -1,0 +1,7 @@
+native/node_modules/
+native/www/
+native/ios/App/App/public/
+native/ios/App/Pods/
+native/ios/App/build/
+native/ios/App/App.xcodeproj/xcuserdata/
+native/ios/App/App.xcworkspace/xcuserdata/
