@@ -2330,19 +2330,23 @@
     /* ===== TASKS PAGE ===== */
     .task-card {
       background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 18px;
       margin-bottom: 10px;
       box-shadow: var(--shadow);
-      transition: opacity .2s;
+      transition: transform .2s cubic-bezier(.34,1.2,.64,1), box-shadow .2s, border-color .2s, opacity .2s;
+      position: relative;
     }
-    .task-card.task-done { opacity: 0.5; }
+    .task-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--accent2); }
+    .task-card.task-done { opacity: 0.55; }
     .task-card.task-overdue { border-right: 3px solid var(--red); }
+    .task-card.task-today { border-right: 3px solid var(--accent); background: linear-gradient(135deg, var(--surface) 0%, var(--accent-light) 200%); }
     .task-title-text {
       font-size: 15px;
       font-weight: 800;
       color: var(--text);
+      letter-spacing: -0.01em;
     }
     .task-done .task-title-text { text-decoration: line-through; color: var(--text-muted); }
     .task-check {
@@ -2356,10 +2360,53 @@
       color: var(--green);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
-      transition: background .15s, border-color .15s;
+      transition: background .15s, border-color .15s, transform .15s;
     }
     .task-check.checked { background: var(--green); border-color: var(--green); color: #fff; }
-    .task-check:hover { border-color: var(--green); }
+    .task-check:hover { border-color: var(--green); transform: scale(1.12); }
+
+    /* ===== TASK SECTIONS — premium grouping ===== */
+    .task-section { margin-bottom: 26px; }
+    .task-section-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 6px 4px 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .task-section-icon {
+      width: 32px; height: 32px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .task-section-title {
+      font-size: 13px; font-weight: 900;
+      color: var(--text);
+      letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .task-section-count {
+      background: var(--surface2);
+      color: var(--text-muted);
+      padding: 2px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .task-section.urgent .task-section-icon { background: linear-gradient(135deg,#b8442e,#d4644a); }
+    .task-section.urgent .task-section-title { color: var(--red); }
+    .task-section.today  .task-section-icon { background: linear-gradient(135deg,var(--accent),var(--accent2)); }
+    .task-section.today  .task-section-title { color: var(--accent); }
+    .task-section.soon   .task-section-icon { background: linear-gradient(135deg,#c47a2a,#e0a060); }
+    .task-section.week   .task-section-icon { background: linear-gradient(135deg,#6b5538,#8a7048); }
+    .task-section.later  .task-section-icon { background: linear-gradient(135deg,#54453a,#6b5443); }
+    .task-section.nodate .task-section-icon { background: linear-gradient(135deg,#3a2c22,#54453a); }
+    .task-section.done   .task-section-icon { background: linear-gradient(135deg,#5a7a2e,#7a9e3e); }
+    .task-section.done   .task-section-title { color: var(--green); }
+
+    .task-priority-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 3px var(--surface);
+    }
 
     /* ===== STATISTICS PAGE ===== */
     .stat-ytd-strip {
@@ -3402,17 +3449,9 @@
     </div>
 
     <!-- פילטרים -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
       <button id="tf-pending" class="btn btn-primary btn-sm" onclick="setTaskFilter('pending')">לא בוצע</button>
       <button id="tf-done"    class="btn btn-ghost  btn-sm" onclick="setTaskFilter('done')">בוצע</button>
-      <div style="margin-right:auto;display:flex;align-items:center;gap:6px">
-        <span style="font-size:12px;color:var(--text-muted);font-weight:600">מיון:</span>
-        <select id="task-sort" onchange="renderTasks()" style="font-size:12px;padding:4px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text)">
-          <option value="created">לפי יצירה</option>
-          <option value="priority">לפי עדיפות</option>
-          <option value="due">לפי תאריך יעד</option>
-        </select>
-      </div>
     </div>
 
     <!-- רשימת משימות -->
@@ -8446,63 +8485,139 @@ function setTaskFilter(f) {
 function renderTasks() {
   let tasks = load('tasks');
   const total   = tasks.length;
-  const done    = tasks.filter(t => t.done).length;
-  const pending = total - done;
+  const doneCnt = tasks.filter(t => t.done).length;
+  const pending = total - doneCnt;
   const setN = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   setN('task-stat-total',   total);
   setN('task-stat-pending', pending);
   const badge = document.getElementById('task-nav-badge');
   if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? 'inline' : 'none'; }
-  setN('task-stat-done',    done);
-
-  // filter
-  if (_taskFilter === 'pending') tasks = tasks.filter(t => !t.done);
-  else if (_taskFilter === 'done') tasks = tasks.filter(t => t.done);
-
-  // sort
-  const sortVal = document.getElementById('task-sort')?.value || 'created';
-  const prioOrder = {high:0, medium:1, low:2};
-  if (sortVal === 'priority') tasks.sort((a,b) => (prioOrder[a.priority]||1) - (prioOrder[b.priority]||1));
-  else if (sortVal === 'due') tasks.sort((a,b) => {
-    if (!a.dueDate && !b.dueDate) return 0;
-    if (!a.dueDate) return 1;
-    if (!b.dueDate) return -1;
-    return a.dueDate.localeCompare(b.dueDate);
-  });
-
-  const prioBadge  = {high:'badge-red', medium:'badge-orange', low:'badge-green'};
-  const prioLabel  = {high:'גבוה', medium:'בינוני', low:'נמוך'};
-  const today = new Date().toISOString().slice(0,10);
+  setN('task-stat-done',    doneCnt);
 
   const container = document.getElementById('tasks-list');
   if (!container) return;
 
-  if (tasks.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="ei">✅</div><p>${_taskFilter === 'done' ? 'אין משימות שבוצעו' : _taskFilter === 'pending' ? 'אין משימות ממתינות' : 'אין משימות — לחץ + כדי להוסיף'}</p></div>`;
+  const now = new Date();
+  const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
+  const endOfDay   = new Date(now); endOfDay.setHours(23,59,59,999);
+  const tomorrowEnd = new Date(startOfDay); tomorrowEnd.setDate(tomorrowEnd.getDate() + 1); tomorrowEnd.setHours(23,59,59,999);
+  const weekEnd     = new Date(startOfDay); weekEnd.setDate(weekEnd.getDate() + 7);
+
+  const prioOrder = {high:0, medium:1, low:2};
+  const prioColor = {high:'var(--red)', medium:'var(--orange)', low:'var(--green)'};
+  const prioLabel = {high:'גבוה', medium:'בינוני', low:'נמוך'};
+
+  // Sort helper: priority first, then by due date
+  function smartSort(a,b) {
+    const pa = prioOrder[a.priority] ?? 1;
+    const pb = prioOrder[b.priority] ?? 1;
+    if (pa !== pb) return pa - pb;
+    if (!a.dueDate && b.dueDate) return 1;
+    if (a.dueDate && !b.dueDate) return -1;
+    if (!a.dueDate && !b.dueDate) return 0;
+    return new Date(a.dueDate) - new Date(b.dueDate);
+  }
+
+  // Show only done tab
+  if (_taskFilter === 'done') {
+    const doneTasks = tasks.filter(t => t.done)
+      .sort((a,b) => new Date(b.dueDate || b.createdAt || 0) - new Date(a.dueDate || a.createdAt || 0));
+    if (doneTasks.length === 0) {
+      container.innerHTML = `<div class="empty-state"><div class="ei">✅</div><p>אין משימות שבוצעו עדיין</p></div>`;
+      return;
+    }
+    container.innerHTML = renderTaskSection({ kind:'done', icon:'✅', title:'משימות שבוצעו', tasks: doneTasks, prioColor, prioLabel });
     return;
   }
 
-  container.innerHTML = tasks.map(t => {
-    const overdue = !t.done && t.dueDate && new Date(t.dueDate) < new Date();
-    const cd = (!t.done && t.dueDate) ? fmtTaskCountdown(t.dueDate) : null;
-    return `
-    <div class="task-card${t.done ? ' task-done' : ''}${overdue ? ' task-overdue' : ''}" onclick="editTask('${t.id}')" style="cursor:pointer">
+  // Pending tasks — smart grouping
+  const pendingTasks = tasks.filter(t => !t.done);
+  if (pendingTasks.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="ei">🎯</div><p>אין משימות פתוחות — אתה אלוף, ביג׳ונדון</p></div>`;
+    return;
+  }
+
+  const groups = { overdue:[], today:[], tomorrow:[], week:[], later:[], noDate:[] };
+  pendingTasks.forEach(t => {
+    if (!t.dueDate) { groups.noDate.push(t); return; }
+    const d = new Date(t.dueDate);
+    if (d < now)            groups.overdue.push(t);
+    else if (d <= endOfDay) groups.today.push(t);
+    else if (d <= tomorrowEnd) groups.tomorrow.push(t);
+    else if (d <= weekEnd)  groups.week.push(t);
+    else                    groups.later.push(t);
+  });
+  Object.values(groups).forEach(arr => arr.sort(smartSort));
+
+  // Today summary banner
+  const todayDoneToday = tasks.filter(t => t.done && t.dueDate && new Date(t.dueDate) >= startOfDay && new Date(t.dueDate) <= endOfDay).length;
+  const totalToday = todayDoneToday + groups.today.length + groups.overdue.length;
+  let banner = '';
+  if (totalToday > 0) {
+    const pct = totalToday > 0 ? Math.round((todayDoneToday / totalToday) * 100) : 0;
+    banner = `
+      <div style="background:linear-gradient(135deg,var(--surface) 0%,var(--accent-light) 100%);border:1px solid var(--border-glow);border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 6px 18px var(--accent-glow)">🎯</div>
+        <div style="flex:1;min-width:160px">
+          <div style="font-size:13px;font-weight:900;color:var(--text);letter-spacing:-0.01em">המיקוד שלך להיום</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${todayDoneToday} מתוך ${totalToday} בוצעו ${groups.overdue.length > 0 ? `· <span style="color:var(--red);font-weight:800">${groups.overdue.length} באיחור</span>` : ''}</div>
+        </div>
+        <div style="font-size:26px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums">${pct}%</div>
+      </div>`;
+  }
+
+  // Build HTML for each section in priority order
+  const sections = [
+    { kind:'urgent',  key:'overdue',  icon:'🔥', title:'באיחור',          tasks: groups.overdue },
+    { kind:'today',   key:'today',    icon:'⚡', title:'להיום',            tasks: groups.today },
+    { kind:'soon',    key:'tomorrow', icon:'📅', title:'מחר',              tasks: groups.tomorrow },
+    { kind:'week',    key:'week',     icon:'📆', title:'השבוע',           tasks: groups.week },
+    { kind:'later',   key:'later',    icon:'🗓',  title:'בעוד שבועיים+',   tasks: groups.later },
+    { kind:'nodate',  key:'noDate',   icon:'📋', title:'ללא תאריך',       tasks: groups.noDate }
+  ];
+
+  container.innerHTML = banner + sections
+    .filter(s => s.tasks.length > 0)
+    .map(s => renderTaskSection({ ...s, prioColor, prioLabel }))
+    .join('');
+}
+
+function renderTaskSection({ kind, icon, title, tasks, prioColor, prioLabel }) {
+  if (tasks.length === 0) return '';
+  return `
+    <div class="task-section ${kind}">
+      <div class="task-section-header">
+        <div class="task-section-icon">${icon}</div>
+        <div class="task-section-title">${title}</div>
+        <div class="task-section-count">${tasks.length}</div>
+      </div>
+      ${tasks.map(t => renderTaskCard(t, kind, prioColor, prioLabel)).join('')}
+    </div>`;
+}
+
+function renderTaskCard(t, sectionKind, prioColor, prioLabel) {
+  const overdue = sectionKind === 'urgent';
+  const todayClass = sectionKind === 'today' ? ' task-today' : '';
+  const cd = (!t.done && t.dueDate) ? fmtTaskCountdown(t.dueDate) : null;
+  return `
+    <div class="task-card${t.done ? ' task-done' : ''}${overdue ? ' task-overdue' : ''}${todayClass}" onclick="editTask('${t.id}')">
       <div style="display:flex;align-items:flex-start;gap:12px">
         <button onclick="event.stopPropagation();toggleTaskDone('${t.id}')" class="task-check${t.done ? ' checked' : ''}" title="${t.done ? 'בטל ביצוע' : 'סמן כבוצע'}">${t.done ? '✓' : ''}</button>
         <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+            <span class="task-priority-dot" style="background:${prioColor[t.priority]||'var(--orange)'}" title="עדיפות ${prioLabel[t.priority]||''}"></span>
             <span class="task-title-text">${t.title}</span>
-            <span class="badge ${prioBadge[t.priority]||'badge-orange'}" style="font-size:11px">${prioLabel[t.priority]||t.priority}</span>
-            <span class="badge badge-purple" style="font-size:11px">${t.category}</span>
-            ${t.dueDate ? `<span style="font-size:12px;font-weight:600;color:var(--text-muted)">📅 ${fmtDate(t.dueDate)}</span>` : ''}
+            ${t.category ? `<span class="badge badge-purple" style="font-size:10px">${t.category}</span>` : ''}
           </div>
-          ${cd ? `<div data-task-due="${t.dueDate}" style="font-size:13px;font-weight:800;color:${cd.color};margin-top:4px;font-variant-numeric:tabular-nums">${cd.text}</div>` : ''}
-          ${t.notes ? `<div style="font-size:13px;color:var(--text-muted);margin-top:3px;line-height:1.4">${t.notes}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px">
+            ${t.dueDate ? `<span style="font-size:11px;font-weight:700;color:var(--text-muted)">📅 ${fmtDate(t.dueDate)} ${(t.dueDate.split('T')[1]||'').substring(0,5)}</span>` : ''}
+            ${cd ? `<span data-task-due="${t.dueDate}" style="font-size:12px;font-weight:800;color:${cd.color};font-variant-numeric:tabular-nums">${cd.text}</span>` : ''}
+          </div>
+          ${t.notes ? `<div style="font-size:13px;color:var(--text-muted);margin-top:6px;line-height:1.4">${t.notes}</div>` : ''}
         </div>
-        <button onclick="event.stopPropagation();deleteTask('${t.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 4px;flex-shrink:0">×</button>
+        <button onclick="event.stopPropagation();deleteTask('${t.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 4px;flex-shrink:0;opacity:0.6;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">×</button>
       </div>
     </div>`;
-  }).join('');
 }
 
 // ===== DRAG & DROP AUDIO ON SKETCH/SONG DETAIL =====
