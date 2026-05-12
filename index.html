@@ -3824,27 +3824,42 @@ function initFirebase() {
     firebaseDB = firebase.database();
     try { firebaseStorage = firebase.storage(); } catch(e) { console.warn('Storage init failed', e); }
 
-    return firebaseDB.ref('studio_data').once('value').then(snapshot => {
-      const cloudData = snapshot.val();
+    return firebaseDB.ref().once('value').then(snapshot => {
+      const root = snapshot.val() || {};
+      const cloudData = root.studio_data || {};
+      const cloudMeta = root.studio_meta || {};
       ALL_KEYS.forEach(key => {
         if (_pending[key]) {
-          // יש שינויים שלא הועלו מסשן קודם — הם חדשים יותר מהענן
-          // השתמש בהם מקומית ודחוף לענן
+          // pending changes from previous session — newer than cloud
           localStorage.setItem('s_' + key, JSON.stringify(_pending[key].data));
+          if (_pending[key].ts) localStorage.setItem('s_' + key + '_ts', String(_pending[key].ts));
           _pushKey(key);
         } else {
-          // אין pending — הענן הוא האמת
-          const cloudVal = cloudData?.[key] ?? null;
+          const cloudVal = cloudData[key] ?? null;
           const hasCloud = cloudVal && (Array.isArray(cloudVal) ? cloudVal.length > 0 : Object.keys(cloudVal).length > 0);
+          const cloudTs = parseInt(cloudMeta[key] || '0', 10);
+          const localTs = parseInt(localStorage.getItem('s_' + key + '_ts') || '0', 10);
+
           if (hasCloud) {
-            localStorage.setItem('s_' + key, JSON.stringify(cloudVal));
+            // Use cloud only if it's newer OR if we don't have a local timestamp (first load)
+            if (cloudTs === 0 || localTs === 0 || cloudTs > localTs) {
+              localStorage.setItem('s_' + key, JSON.stringify(cloudVal));
+              if (cloudTs > 0) localStorage.setItem('s_' + key + '_ts', String(cloudTs));
+            }
+            // else: local is newer, push it back to cloud
+            else if (localTs > cloudTs) {
+              const localRaw = localStorage.getItem('s_' + key);
+              if (localRaw) { _pending[key] = { data: JSON.parse(localRaw), ts: localTs }; _savePending(); _pushKey(key); }
+            }
           } else {
             // אין ענן — העלה את המקומי
             const localRaw = localStorage.getItem('s_' + key);
             if (localRaw) {
               const localVal = JSON.parse(localRaw);
               if (localVal && (Array.isArray(localVal) ? localVal.length > 0 : Object.keys(localVal).length > 0)) {
-                _markDirty(key, localVal);
+                const ts = localTs || Date.now();
+                _pending[key] = { data: localVal, ts };
+                _savePending();
                 _pushKey(key);
               }
             }
@@ -3853,7 +3868,7 @@ function initFirebase() {
       });
       firebaseReady = true;
       _isFirstSync = false;
-      runMigrations(); // תיקון נתונים ישנים
+      runMigrations();
       console.log('Firebase loaded ✓ pending:', Object.keys(_pending).length);
     }).catch(err => {
       console.warn('Firebase load failed — using local data:', err.message);
@@ -3895,8 +3910,17 @@ function _markClean(key) {
 function _pushKey(key) {
   if (!firebaseDB || !_pending[key]) return;
   const snap = _pending[key];
-  firebaseDB.ref('studio_data/' + key).set(snap.data)
-    .then(() => { _markClean(key); })
+  const ts = snap.ts || Date.now();
+  // Push data + timestamp atomically so other devices know how fresh this is
+  const updates = {};
+  updates['studio_data/' + key] = snap.data;
+  updates['studio_meta/' + key] = ts;
+  firebaseDB.ref().update(updates)
+    .then(() => {
+      // Delay clearing pending by 8 seconds — Firebase replication takes time
+      // and we don't want a stale cloud read to overwrite our fresh local write
+      setTimeout(() => _markClean(key), 8000);
+    })
     .catch(() => { /* נשאר בתור, ינסה שוב */ });
 }
 
@@ -3918,10 +3942,13 @@ function syncKeyToCloud(key) { _pushKey(key); } // backward compat
 const load = key => JSON.parse(localStorage.getItem('s_' + key) || '[]');
 
 function save(key, val) {
+  const ts = Date.now();
   // 1. כתוב מקומית מיד — תמיד מצליח
   localStorage.setItem('s_' + key, JSON.stringify(val));
+  localStorage.setItem('s_' + key + '_ts', String(ts));
   // 2. הוסף לתור ושמור בdisk — שורד סגירת אפליקציה
-  _markDirty(key, val);
+  _pending[key] = { data: val, ts };
+  _savePending();
   // 3. נסה לדחוף לענן עכשיו
   _pushKey(key);
 }
@@ -6745,16 +6772,26 @@ function _syncFromCloud(reason) {
   if (!firebaseDB) return;
   // קודם שלח pending — אחר כך קח מהענן רק מה שאין pending עליו
   flushPending();
-  firebaseDB.ref('studio_data').once('value').then(snapshot => {
-    const cloudData = snapshot.val();
-    if (!cloudData) return;
+  firebaseDB.ref().once('value').then(snapshot => {
+    const root = snapshot.val() || {};
+    const cloudData = root.studio_data || {};
+    const cloudMeta = root.studio_meta || {};
     let changed = false;
     ALL_KEYS.forEach(key => {
       if (_pending[key]) return; // יש שינוי מקומי — אל תדרוס!
       if (cloudData[key] === undefined) return;
+      const localTs = parseInt(localStorage.getItem('s_' + key + '_ts') || '0', 10);
+      const cloudTs = parseInt(cloudMeta[key] || '0', 10);
+      // Use cloud only if it's strictly newer than local
+      // (covers replication lag + protects local changes)
+      if (cloudTs > 0 && localTs > 0 && cloudTs <= localTs) return;
       const cur  = localStorage.getItem('s_' + key);
       const next = JSON.stringify(cloudData[key]);
-      if (cur !== next) { localStorage.setItem('s_' + key, next); changed = true; }
+      if (cur !== next) {
+        localStorage.setItem('s_' + key, next);
+        if (cloudTs > 0) localStorage.setItem('s_' + key + '_ts', String(cloudTs));
+        changed = true;
+      }
     });
     if (changed) { refreshAll(); console.log('🔄', reason); }
   }).catch(() => {});
