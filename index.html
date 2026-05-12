@@ -8513,6 +8513,51 @@ function toggleTheme() {
 let _taskFilter = 'pending';
 let _editingTaskId = null;
 
+// ===== CALENDAR EXPORT (works on any iPhone/Android without setup) =====
+// Generate an .ics calendar event that the OS opens natively.
+// User taps "Add" — iPhone Calendar handles the 1h-before reminder natively.
+function exportTaskToCalendar(taskId) {
+  const task = load('tasks').find(t => t.id === taskId);
+  if (!task || !task.dueDate) { toast('המשימה חייבת תאריך יעד'); return; }
+  const due = new Date(task.dueDate);
+  const end = new Date(due.getTime() + 30 * 60 * 1000); // 30 min duration
+  const fmt = d => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  const esc = s => (s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Elior Studio//Tasks//HE',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${task.id}@elior-studio`,
+    `DTSTAMP:${fmt(new Date())}`,
+    `DTSTART:${fmt(due)}`,
+    `DTEND:${fmt(end)}`,
+    `SUMMARY:${esc(task.title)}`,
+    task.notes ? `DESCRIPTION:${esc(task.notes)}` : '',
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:${esc(task.title)}`,
+    'TRIGGER:-PT1H',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].filter(Boolean).join('\r\n');
+
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `task-${task.id}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('📅 נשלח ללוח השנה');
+}
+
 // ===== NATIVE NOTIFICATIONS (Capacitor — works in real iOS/Android app) =====
 const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 
@@ -8652,24 +8697,24 @@ function disableNtfy() {
 }
 
 // Schedule notification for a single task — 1h before dueDate
-async function scheduleTaskNotification(task) {
+async function scheduleTaskNotification(task, verbose) {
   // If running as native app — use native notifications (best!)
   if (IS_NATIVE) { scheduleNativeTaskNotification(task); return; }
-  if (!isNtfyEnabled() || !task.dueDate || task.done) return;
+  if (!isNtfyEnabled()) { if (verbose) toast('⚠️ תזכורות לא מופעלות'); return; }
+  if (!task.dueDate) { if (verbose) toast('⚠️ אין תאריך יעד'); return; }
+  if (task.done) return;
   const topic = getNtfyTopic();
   const due = new Date(task.dueDate);
   const remind = new Date(due.getTime() - 60 * 60 * 1000); // 1h before
   const now = new Date();
-  if (remind <= now) return; // past
+  if (remind <= now) { if (verbose) toast('⚠️ זמן ההתראה כבר עבר'); return; }
 
-  // ntfy.sh free tier supports scheduling up to 3 days
   const daysAhead = (remind - now) / 86400000;
-  if (daysAhead > 3) return; // will reschedule when closer
+  if (daysAhead > 3) { if (verbose) toast('⚠️ יותר מ-3 ימים — יתוזמן כשמתקרב'); return; }
 
   const scheduled = getScheduledMap();
   const at = Math.floor(remind.getTime() / 1000);
-  // Already scheduled with same time? skip
-  if (scheduled[task.id] === at) return;
+  if (scheduled[task.id] === at) { if (verbose) toast('✓ כבר תוזמן'); return; }
 
   try {
     const dueLocal = due.toLocaleString('he-IL', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
@@ -8682,14 +8727,22 @@ async function scheduleTaskNotification(task) {
         message: `${task.title}\nיעד: ${dueLocal}${task.notes ? '\n\n' + task.notes : ''}`,
         priority: 5,
         tags: ['alarm_clock'],
-        delay: String(at) // unix timestamp (ntfy accepts in delay field)
+        delay: String(at)
       })
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const t = await res.text().catch(()=>'');
+      throw new Error(`HTTP ${res.status} ${t.substring(0,80)}`);
+    }
     scheduled[task.id] = at;
     setScheduledMap(scheduled);
+    if (verbose) {
+      const minsFromNow = Math.round((remind - now) / 60000);
+      toast(`🔔 תוזמן לעוד ${minsFromNow} דק׳`);
+    }
   } catch(e) {
     console.warn('ntfy schedule failed', e);
+    if (verbose) toast('❌ תיזמון נכשל: ' + e.message);
   }
 }
 
@@ -8789,8 +8842,8 @@ function addTask() {
     tasks.unshift(savedTask);
   }
   save('tasks', tasks);
-  // Schedule push notification 1h before due (if enabled)
-  if (savedTask) scheduleTaskNotification(savedTask);
+  // Schedule push notification 1h before due (if enabled) — with feedback
+  if (savedTask) scheduleTaskNotification(savedTask, true);
   toggleTaskForm();
   renderTasks();
 }
