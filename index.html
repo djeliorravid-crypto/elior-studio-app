@@ -3392,8 +3392,7 @@
 
     <!-- פילטרים -->
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <button id="tf-all"     class="btn btn-primary btn-sm" onclick="setTaskFilter('all')">הכל</button>
-      <button id="tf-pending" class="btn btn-ghost  btn-sm" onclick="setTaskFilter('pending')">ממתין</button>
+      <button id="tf-pending" class="btn btn-primary btn-sm" onclick="setTaskFilter('pending')">לא בוצע</button>
       <button id="tf-done"    class="btn btn-ghost  btn-sm" onclick="setTaskFilter('done')">בוצע</button>
       <div style="margin-right:auto;display:flex;align-items:center;gap:6px">
         <span style="font-size:12px;color:var(--text-muted);font-weight:600">מיון:</span>
@@ -8289,7 +8288,7 @@ function toggleTheme() {
 })();
 
 // ===== TASKS =====
-let _taskFilter = 'all';
+let _taskFilter = 'pending';
 
 function toggleTaskForm() {
   const w = document.getElementById('task-form-wrap');
@@ -8335,7 +8334,7 @@ function deleteTask(id) {
 
 function setTaskFilter(f) {
   _taskFilter = f;
-  ['all','pending','done'].forEach(k => {
+  ['pending','done'].forEach(k => {
     const btn = document.getElementById('tf-' + k);
     if (btn) { btn.className = 'btn btn-sm ' + (k === f ? 'btn-primary' : 'btn-ghost'); }
   });
