@@ -1,16 +1,24 @@
 {
-  "name": "אליאור רביד - ניהול חשבונות",
+  "name": "אליאור רביד — ניהול עסקי",
   "short_name": "אליאור רביד",
-  "description": "ניהול הכנסות, הוצאות ולקוחות לאולפן הקלטות",
+  "description": "ניהול הכנסות, הוצאות, לקוחות, משימות ושירים לסטודיו",
   "start_url": "/elior-studio-app/",
+  "scope": "/elior-studio-app/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f2f4fb",
-  "theme_color": "#6c47f5",
+  "background_color": "#2a1f17",
+  "theme_color": "#2a1f17",
   "dir": "rtl",
   "lang": "he",
+  "categories": ["business", "productivity", "music"],
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "הכנסה חדשה", "url": "/elior-studio-app/?action=new-income", "icons": [{"src":"icon-192.png","sizes":"192x192"}] },
+    { "name": "משימה חדשה", "url": "/elior-studio-app/?action=new-task", "icons": [{"src":"icon-192.png","sizes":"192x192"}] }
   ]
 }

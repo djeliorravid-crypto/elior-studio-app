@@ -11,11 +11,15 @@
 
   <!-- ===== PWA ===== -->
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#6c47f5" />
+  <meta name="theme-color" content="#2a1f17" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="אליאור רביד" />
-  <link id="apple-icon" rel="apple-touch-icon" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -2836,6 +2840,44 @@
 </style>
 </head>
 <body>
+
+<!-- PWA install banner (appears once on mobile if not installed) -->
+<div id="install-banner" style="display:none;position:fixed;bottom:calc(env(safe-area-inset-bottom) + 80px);right:12px;left:12px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow-md);z-index:300;align-items:center;gap:12px">
+  <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📲</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:13px;font-weight:900;color:var(--text)">התקן כאפליקציה</div>
+    <div id="install-banner-sub" style="font-size:11px;color:var(--text-muted);margin-top:2px"></div>
+  </div>
+  <button onclick="triggerInstall()" id="install-btn" class="btn btn-primary btn-sm" style="flex-shrink:0">התקן</button>
+  <button onclick="dismissInstallBanner()" style="border:none;background:none;color:var(--text-muted);font-size:22px;cursor:pointer;padding:0 4px;line-height:1">×</button>
+</div>
+
+<!-- iOS install instructions modal -->
+<div class="modal-overlay" id="modal-ios-install">
+  <div class="modal" style="max-width:420px">
+    <h3>📲 התקן כאפליקציה</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">1️⃣</span>
+        <span style="font-size:14px">לחץ על כפתור <strong>שיתוף</strong> (הריבוע עם החץ למעלה) בתחתית Safari</span>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">2️⃣</span>
+        <span style="font-size:14px">גלול ובחר <strong>"הוסף למסך הבית"</strong></span>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">3️⃣</span>
+        <span style="font-size:14px">לחץ <strong>"הוסף"</strong> בפינה הימנית העליונה</span>
+      </div>
+      <div style="background:var(--accent-light);border-radius:10px;padding:12px;font-size:13px;color:var(--accent);font-weight:700">
+        ✨ מעכשיו האפליקציה תפתח במסך מלא, בלי שורת הכתובת — בדיוק כמו אפליקציה רגילה
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal('ios-install')" style="flex:1">הבנתי</button>
+    </div>
+  </div>
+</div>
 
 <!-- Mobile: floating back-to-lobby button -->
 <button id="mobile-lobby-btn" onclick="switchMode()" title="חזרה ללובי" aria-label="חזרה ללובי">
@@ -6784,22 +6826,91 @@ function importBackup(event) {
 }
 
 
-// ===== PWA — Service Worker + אייקון =====
+// ===== PWA — Service Worker + Install =====
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/elior-studio-app/sw.js').then(reg => {
-    // בדוק עדכון כל פעם שפותחים את האפליקציה
     reg.update();
-    // כשנמצאה גרסה חדשה — טען מחדש אוטומטית
     reg.addEventListener('updatefound', () => {
       const newWorker = reg.installing;
       newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'activated') {
-          window.location.reload();
-        }
+        if (newWorker.state === 'activated') window.location.reload();
       });
     });
   }).catch(() => {});
 }
+
+// ===== INSTALL APP =====
+let _deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstall = e;
+  maybeShowInstallBanner();
+});
+
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true
+      || document.referrer.includes('android-app://');
+}
+
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function maybeShowInstallBanner() {
+  if (isStandalone()) return; // already installed
+  if (localStorage.getItem('install_dismissed') === 'yes') return;
+  const banner = document.getElementById('install-banner');
+  const sub = document.getElementById('install-banner-sub');
+  const btn = document.getElementById('install-btn');
+  if (!banner) return;
+
+  if (_deferredInstall) {
+    // Android Chrome
+    if (sub) sub.textContent = 'הוסף את אליאור רביד למסך הבית';
+    if (btn) { btn.style.display = ''; btn.textContent = 'התקן'; }
+  } else if (isIOS()) {
+    // iOS Safari — show instructions modal
+    if (sub) sub.textContent = 'באייפון: שתף ← הוסף למסך הבית';
+    if (btn) { btn.style.display = ''; btn.textContent = 'הסבר'; }
+  } else {
+    // Not installable now — hide
+    return;
+  }
+  banner.style.display = 'flex';
+}
+
+async function triggerInstall() {
+  if (_deferredInstall) {
+    _deferredInstall.prompt();
+    const { outcome } = await _deferredInstall.userChoice;
+    _deferredInstall = null;
+    if (outcome === 'accepted') {
+      dismissInstallBanner();
+      toast('✅ האפליקציה הותקנה');
+    }
+  } else if (isIOS()) {
+    openModal('ios-install');
+  }
+}
+
+function dismissInstallBanner() {
+  localStorage.setItem('install_dismissed', 'yes');
+  const b = document.getElementById('install-banner');
+  if (b) b.style.display = 'none';
+}
+
+// Try to show banner on app load (mobile only)
+window.addEventListener('load', () => {
+  if (window.innerWidth <= 768) {
+    setTimeout(maybeShowInstallBanner, 3000);
+  }
+});
+
+window.addEventListener('appinstalled', () => {
+  dismissInstallBanner();
+  toast('🎉 אליאור רביד הותקן בהצלחה');
+});
 (function() {
   try {
     const s = 180, c = document.createElement('canvas');
