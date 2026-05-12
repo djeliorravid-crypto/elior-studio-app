@@ -8300,13 +8300,53 @@ function toggleTheme() {
 
 // ===== TASKS =====
 let _taskFilter = 'pending';
+let _editingTaskId = null;
 
 function toggleTaskForm() {
   const w = document.getElementById('task-form-wrap');
   if (!w) return;
   const showing = w.style.display !== 'none';
   w.style.display = showing ? 'none' : 'block';
-  if (!showing) setTimeout(() => document.getElementById('task-title')?.focus(), 50);
+  if (showing) {
+    // closing — reset edit mode
+    _editingTaskId = null;
+    const btn = document.querySelector('#task-form-wrap .btn-primary');
+    if (btn) btn.textContent = 'הוסף משימה';
+    ['task-title','task-notes','task-due'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const ti = document.getElementById('task-due-time'); if (ti) ti.value = '18:00';
+    const pri = document.getElementById('task-priority'); if (pri) pri.value = 'medium';
+    const cat = document.getElementById('task-cat');      if (cat) cat.value = 'עסקי';
+  } else {
+    setTimeout(() => document.getElementById('task-title')?.focus(), 50);
+  }
+}
+
+function editTask(id) {
+  const t = load('tasks').find(x => x.id === id);
+  if (!t) return;
+  _editingTaskId = id;
+  const w = document.getElementById('task-form-wrap');
+  if (w) w.style.display = 'block';
+
+  document.getElementById('task-title').value = t.title || '';
+  document.getElementById('task-notes').value = t.notes || '';
+  document.getElementById('task-priority').value = t.priority || 'medium';
+  const catEl = document.getElementById('task-cat'); if (catEl) catEl.value = t.category || 'עסקי';
+
+  if (t.dueDate) {
+    const [datePart, timePart] = t.dueDate.split('T');
+    document.getElementById('task-due').value = datePart || '';
+    document.getElementById('task-due-time').value = (timePart || '18:00').substring(0,5);
+  } else {
+    document.getElementById('task-due').value = '';
+    document.getElementById('task-due-time').value = '18:00';
+  }
+
+  const btn = document.querySelector('#task-form-wrap .btn-primary');
+  if (btn) btn.textContent = 'שמור שינויים';
+
+  document.getElementById('task-title')?.scrollIntoView({behavior:'smooth', block:'center'});
+  setTimeout(() => document.getElementById('task-title')?.focus(), 200);
 }
 
 function setTaskDuePreset(preset) {
@@ -8325,25 +8365,24 @@ function addTask() {
   const tasks = load('tasks');
   const dateVal = document.getElementById('task-due')?.value || '';
   const timeVal = document.getElementById('task-due-time')?.value || '18:00';
-  // Combine date + time into ISO string if date present
   const dueDate = dateVal ? (dateVal + 'T' + timeVal) : '';
-  tasks.unshift({
-    id: genId(),
+
+  const fields = {
     title,
     notes:    (document.getElementById('task-notes')?.value  || '').trim(),
     priority: document.getElementById('task-priority')?.value || 'medium',
     dueDate,
-    category: document.getElementById('task-cat')?.value     || 'אחר',
-    done:     false,
-    createdAt: new Date().toISOString()
-  });
+    category: document.getElementById('task-cat')?.value     || 'אחר'
+  };
+
+  if (_editingTaskId) {
+    const idx = tasks.findIndex(t => t.id === _editingTaskId);
+    if (idx >= 0) { Object.assign(tasks[idx], fields); }
+  } else {
+    tasks.unshift({ id: genId(), ...fields, done: false, createdAt: new Date().toISOString() });
+  }
   save('tasks', tasks);
-  // reset form
-  ['task-title','task-notes','task-due'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const t = document.getElementById('task-due-time'); if (t) t.value = '18:00';
-  const pri = document.getElementById('task-priority'); if (pri) pri.value = 'medium';
-  const cat = document.getElementById('task-cat');      if (cat) cat.value = 'עסקי';
-  toggleTaskForm();
+  toggleTaskForm(); // resets form + edit state
   renderTasks();
 }
 
@@ -8447,9 +8486,9 @@ function renderTasks() {
     const overdue = !t.done && t.dueDate && new Date(t.dueDate) < new Date();
     const cd = (!t.done && t.dueDate) ? fmtTaskCountdown(t.dueDate) : null;
     return `
-    <div class="task-card${t.done ? ' task-done' : ''}${overdue ? ' task-overdue' : ''}">
+    <div class="task-card${t.done ? ' task-done' : ''}${overdue ? ' task-overdue' : ''}" onclick="editTask('${t.id}')" style="cursor:pointer">
       <div style="display:flex;align-items:flex-start;gap:12px">
-        <button onclick="toggleTaskDone('${t.id}')" class="task-check${t.done ? ' checked' : ''}" title="${t.done ? 'בטל ביצוע' : 'סמן כבוצע'}">${t.done ? '✓' : ''}</button>
+        <button onclick="event.stopPropagation();toggleTaskDone('${t.id}')" class="task-check${t.done ? ' checked' : ''}" title="${t.done ? 'בטל ביצוע' : 'סמן כבוצע'}">${t.done ? '✓' : ''}</button>
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
             <span class="task-title-text">${t.title}</span>
@@ -8460,7 +8499,7 @@ function renderTasks() {
           ${cd ? `<div data-task-due="${t.dueDate}" style="font-size:13px;font-weight:800;color:${cd.color};margin-top:4px;font-variant-numeric:tabular-nums">${cd.text}</div>` : ''}
           ${t.notes ? `<div style="font-size:13px;color:var(--text-muted);margin-top:3px;line-height:1.4">${t.notes}</div>` : ''}
         </div>
-        <button onclick="deleteTask('${t.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 4px;flex-shrink:0">×</button>
+        <button onclick="event.stopPropagation();deleteTask('${t.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 4px;flex-shrink:0">×</button>
       </div>
     </div>`;
   }).join('');
