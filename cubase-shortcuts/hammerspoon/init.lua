@@ -36,10 +36,29 @@ local function isCubaseFrontmost()
     return false
 end
 
+-- מחזיר את חלון הפרויקט הראשי של Cubase.
+-- חשוב להשתמש ב-mainWindow ולא ב-focusedWindow כי אחרי שטוענים
+-- פלאגין, חלון הפלאגין מקבל פוקוס - והקואורדינטות שמורות יחסית
+-- לחלון הפרויקט, לא לחלון הפלאגין.
 local function getCubaseWindow()
     local app = hs.application.frontmostApplication()
     if not app then return nil end
-    return app:focusedWindow() or app:mainWindow()
+    -- מחפשים את החלון הראשי - העדפה ל-mainWindow, ואחר כך לחלון הגדול ביותר
+    local mainWin = app:mainWindow()
+    if mainWin then return mainWin end
+
+    -- fallback: החלון הכי גדול (לרוב הפרויקט)
+    local windows = app:visibleWindows()
+    local largest, largestArea = nil, 0
+    for _, w in ipairs(windows) do
+        local f = w:frame()
+        local area = f.w * f.h
+        if area > largestArea then
+            largest = w
+            largestArea = area
+        end
+    end
+    return largest or app:focusedWindow()
 end
 
 local function loadCalibration()
@@ -242,7 +261,10 @@ end
 local pluginHotkeys = {}
 for _, plugin in ipairs(plugins) do
     table.insert(pluginHotkeys, hs.hotkey.new(plugin.mods, plugin.key, function()
-        openPlugin(plugin.name)
+        local ok, err = pcall(openPlugin, plugin.name)
+        if not ok then
+            hs.alert.show("שגיאה ב-openPlugin: " .. tostring(err), 4)
+        end
     end))
 end
 
