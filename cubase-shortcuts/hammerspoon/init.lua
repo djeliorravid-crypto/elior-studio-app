@@ -11,6 +11,8 @@ local plugins = require("plugins")
 
 local CALIBRATION_FILE = os.getenv("HOME") .. "/.hammerspoon/cubase_calibration.json"
 local CUBASE_PATTERNS  = { "cubase", "nuendo" }
+local INSERT_COUNT     = 8   -- מספר סלוטי אינסרט לסריקה (ברירת המחדל ב-Cubase).
+                              -- שנה ל-16 אם הלייאאוט שלך מציג 16 סלוטים.
 
 -- ---------------------------------------------------------------- utilities
 
@@ -241,11 +243,9 @@ local function isSlotEmpty(screenX, screenY)
     return true  -- צבע אחיד = ריק
 end
 
--- סורק את הסלוטים טופ-דאון ומחזיר את הראשון שריק.
--- מניח שהאינסרטים מתמלאים ברצף - מתאים להתנהגות הסטנדרטית של Cubase.
--- עוצר כש:
---   1. מצא סלוט ריק -> זה היעד
---   2. הקואורדינטות יוצאות מחלון Cubase -> חוזר לסלוט קודם
+-- מוצא את הסלוט אחרי האחרון שבשימוש.
+-- סורק רק INSERT_COUNT סלוטים (ברירת מחדל 8) כדי לא לקבל "שימוש" משגוי
+-- מקטעים אחרים באינספקטור (Routing / MIDI / וכו') שמתחת לאזור האינסרטים.
 local function findSlotAfterLastUsed()
     local cal = loadCalibration()
     if not cal or not cal.slot1 or not cal.slotHeight then
@@ -260,25 +260,21 @@ local function findSlotAfterLastUsed()
     local baseY = frame.y + cal.slot1.y
     local maxY  = frame.y + frame.h - 10
 
-    local targetIndex
-    for n = 0, 15 do
+    -- סורק עד INSERT_COUNT סלוטים, זוכר את האחרון שבשימוש
+    local lastUsed = -1
+    for n = 0, INSERT_COUNT - 1 do
         local slotY = baseY + (n * cal.slotHeight)
-        if slotY > maxY then
-            -- חרגנו מהחלון; נשתמש בסלוט הקודם
-            targetIndex = math.max(n - 1, 0)
-            break
-        end
-        if isSlotEmpty(baseX, slotY) then
-            targetIndex = n
-            break
+        if slotY > maxY then break end
+        if not isSlotEmpty(baseX, slotY) then
+            lastUsed = n
         end
     end
 
-    if targetIndex == nil then
-        targetIndex = 15  -- כל 16 הסלוטים בשימוש - מנסה את האחרון
-    end
-
-    local targetY = baseY + (targetIndex * cal.slotHeight)
+    -- היעד = הסלוט מיד אחרי האחרון שבשימוש
+    -- אם כלום לא בשימוש -> סלוט 1 (אינדקס 0)
+    -- אם כל הסלוטים בשימוש -> הסלוט האחרון (מוגבל ל-INSERT_COUNT-1)
+    local target = math.min(lastUsed + 1, INSERT_COUNT - 1)
+    local targetY = baseY + (target * cal.slotHeight)
     return hs.geometry.point(baseX, targetY)
 end
 
@@ -373,7 +369,7 @@ local function runDiagnostics()
         table.insert(lines, "✓ כיול מלא - גובה סלוט: " .. tostring(cal.slotHeight) .. "px")
     end
 
-    -- בודק כמה סלוטים נמצאו בשימוש כרגע (סורק טופ-דאון עד הריק הראשון)
+    -- בודק כמה סלוטים בשימוש (סורק עד INSERT_COUNT, מוצא את האחרון בשימוש)
     if cal and cal.slot1 and cal.slotHeight then
         local win = getCubaseWindow()
         if win then
@@ -382,16 +378,20 @@ local function runDiagnostics()
             local baseY = frame.y + cal.slot1.y
             local maxY  = frame.y + frame.h - 10
             local usedCount = 0
-            for n = 0, 15 do
+            local lastUsed  = -1
+            for n = 0, INSERT_COUNT - 1 do
                 local sy = baseY + (n * cal.slotHeight)
                 if sy > maxY then break end
-                if isSlotEmpty(baseX, sy) then break end
-                usedCount = usedCount + 1
+                if not isSlotEmpty(baseX, sy) then
+                    usedCount = usedCount + 1
+                    lastUsed = n
+                end
             end
             table.insert(lines,
                 "• " .. tostring(usedCount) ..
-                " סלוטים בשימוש. הבא יילך לסלוט " ..
-                tostring(usedCount + 1))
+                " סלוטים בשימוש מתוך " .. tostring(INSERT_COUNT) ..
+                ". הבא יילך לסלוט " ..
+                tostring(math.min(lastUsed + 2, INSERT_COUNT)))
         end
     end
 
