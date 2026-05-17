@@ -230,6 +230,14 @@ local function openPlugin(pluginName)
 
     hs.eventtap.leftClick(target, 40000)
     hs.timer.usleep(220000)
+
+    -- מנקים את שדה החיפוש (קיובייס לפעמים שומר את החיפוש הקודם
+    -- שמוביל ל-"Pro-Q 4Pro-Q 4" בהקלדה השנייה)
+    hs.eventtap.keyStroke({ "cmd" }, "a")
+    hs.timer.usleep(40000)
+    hs.eventtap.keyStroke({}, "delete")
+    hs.timer.usleep(40000)
+
     hs.eventtap.keyStrokes(pluginName)
     hs.timer.usleep(250000)
     hs.eventtap.keyStroke({}, "return")
