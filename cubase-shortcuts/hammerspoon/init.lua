@@ -144,14 +144,12 @@ local function findInsertViaAccessibility()
 end
 
 -- --------------------------------------------------------------- calibration
-
-local calibrationTap   = nil
-local calibrationTimer = nil
-
-local function cancelCalibration()
-    if calibrationTap   then calibrationTap:stop();   calibrationTap   = nil end
-    if calibrationTimer then calibrationTimer:stop(); calibrationTimer = nil end
-end
+--
+-- כיול = רישום מיקום הסלוט הריק.
+-- הזרימה: המשתמש מציב את הסמן מעל סלוט אינסרט פנוי, ומקיש ⌘⌥⇧I.
+-- אנחנו לוקחים את מיקום הסמן הנוכחי ושומרים אותו יחסית לחלון Cubase.
+-- אין צורך ב-eventtap, אין "מצב כיול" עם טיימר - כך השיטה עמידה
+-- מול הרשאות חסרות של ניטור קלט / מערכי קליק חריגים.
 
 local function startCalibration()
     if not isCubaseFrontmost() then
@@ -159,40 +157,22 @@ local function startCalibration()
         return
     end
 
-    cancelCalibration()
-    hs.alert.show("מצב כיול: לחץ עם העכבר על סלוט אינסרט פנוי (10 שניות)", 4)
+    local win = getCubaseWindow()
+    if not win then
+        hs.alert.show("חלון Cubase לא נמצא", 2)
+        return
+    end
 
-    calibrationTap = hs.eventtap.new(
-        { hs.eventtap.event.types.leftMouseDown },
-        function(event)
-            local pos = event:location()
-            local win = getCubaseWindow()
-            if not win then
-                hs.alert.show("חלון Cubase לא נמצא", 2)
-                cancelCalibration()
-                return false
-            end
-            local frame = win:frame()
-            local offset = {
-                x = pos.x - frame.x,
-                y = pos.y - frame.y,
-            }
-            saveCalibration(offset)
-            hs.alert.show(
-                string.format("✓ נשמר. סלוט: %d, %d מפינת חלון Cubase",
-                              offset.x, offset.y), 3)
-            cancelCalibration()
-            return false
-        end
-    )
-    calibrationTap:start()
-
-    calibrationTimer = hs.timer.doAfter(10, function()
-        if calibrationTap then
-            hs.alert.show("הכיול בוטל - לא בוצעה לחיצה", 2)
-            cancelCalibration()
-        end
-    end)
+    local pos = hs.mouse.absolutePosition()
+    local frame = win:frame()
+    local offset = {
+        x = pos.x - frame.x,
+        y = pos.y - frame.y,
+    }
+    saveCalibration(offset)
+    hs.alert.show(
+        string.format("✓ נשמר. סלוט: %d, %d מפינת חלון Cubase",
+                      offset.x, offset.y), 3)
 end
 
 -- ---------------------------------------------------------- target resolution
