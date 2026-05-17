@@ -241,8 +241,11 @@ local function isSlotEmpty(screenX, screenY)
     return true  -- צבע אחיד = ריק
 end
 
--- מחזירה את הסלוט הראשון אחרי הסלוט האחרון שבשימוש,
--- או nil אם אין כיול מלא.
+-- סורק את הסלוטים טופ-דאון ומחזיר את הראשון שריק.
+-- מניח שהאינסרטים מתמלאים ברצף - מתאים להתנהגות הסטנדרטית של Cubase.
+-- עוצר כש:
+--   1. מצא סלוט ריק -> זה היעד
+--   2. הקואורדינטות יוצאות מחלון Cubase -> חוזר לסלוט קודם
 local function findSlotAfterLastUsed()
     local cal = loadCalibration()
     if not cal or not cal.slot1 or not cal.slotHeight then
@@ -255,20 +258,27 @@ local function findSlotAfterLastUsed()
     local frame = win:frame()
     local baseX = frame.x + cal.slot1.x
     local baseY = frame.y + cal.slot1.y
+    local maxY  = frame.y + frame.h - 10
 
-    -- סורק את כל 16 הסלוטים, זוכר את האינדקס של האחרון שבשימוש
-    local lastUsed = -1
+    local targetIndex
     for n = 0, 15 do
         local slotY = baseY + (n * cal.slotHeight)
-        if not isSlotEmpty(baseX, slotY) then
-            lastUsed = n
+        if slotY > maxY then
+            -- חרגנו מהחלון; נשתמש בסלוט הקודם
+            targetIndex = math.max(n - 1, 0)
+            break
+        end
+        if isSlotEmpty(baseX, slotY) then
+            targetIndex = n
+            break
         end
     end
 
-    -- היעד הוא הסלוט אחרי האחרון שבשימוש (או 0 אם הכל ריק).
-    -- מגביל ל-15 כדי לא לחרוג מ-16 סלוטים.
-    local target = math.min(lastUsed + 1, 15)
-    local targetY = baseY + (target * cal.slotHeight)
+    if targetIndex == nil then
+        targetIndex = 15  -- כל 16 הסלוטים בשימוש - מנסה את האחרון
+    end
+
+    local targetY = baseY + (targetIndex * cal.slotHeight)
     return hs.geometry.point(baseX, targetY)
 end
 
@@ -363,25 +373,25 @@ local function runDiagnostics()
         table.insert(lines, "✓ כיול מלא - גובה סלוט: " .. tostring(cal.slotHeight) .. "px")
     end
 
-    -- בודק כמה סלוטים נמצאו בשימוש כרגע
+    -- בודק כמה סלוטים נמצאו בשימוש כרגע (סורק טופ-דאון עד הריק הראשון)
     if cal and cal.slot1 and cal.slotHeight then
         local win = getCubaseWindow()
         if win then
             local frame = win:frame()
             local baseX = frame.x + cal.slot1.x
             local baseY = frame.y + cal.slot1.y
-            local usedCount, lastUsed = 0, -1
+            local maxY  = frame.y + frame.h - 10
+            local usedCount = 0
             for n = 0, 15 do
                 local sy = baseY + (n * cal.slotHeight)
-                if not isSlotEmpty(baseX, sy) then
-                    usedCount = usedCount + 1
-                    lastUsed = n
-                end
+                if sy > maxY then break end
+                if isSlotEmpty(baseX, sy) then break end
+                usedCount = usedCount + 1
             end
             table.insert(lines,
                 "• " .. tostring(usedCount) ..
                 " סלוטים בשימוש. הבא יילך לסלוט " ..
-                tostring(math.min(lastUsed + 2, 16)))
+                tostring(usedCount + 1))
         end
     end
 
