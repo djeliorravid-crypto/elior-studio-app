@@ -189,6 +189,37 @@ end
 -- --------------------------------------------------------- plugin invocation
 
 local function openPlugin(pluginName)
+    -- שלב 1: מביאים את חלון הפרויקט לקדמה.
+    -- חיוני! אחרי שטוענים פלאגין, ה-GUI של הפלאגין נפתח ולעיתים
+    -- מכסה חלקית את אזור האינסרטים. אם ה-GUI של הפלאגין (למשל
+    -- Pro-Q 4) כולל הרבה כחול, הסקנר ימצא שם ציאן ויקליק במקום
+    -- הלא נכון. הבאת חלון הפרויקט לקדמה מסתירה את ה-GUI מאחור.
+    local app = hs.application.frontmostApplication()
+    if app then
+        local mainWin = app:mainWindow()
+        if mainWin and not mainWin:isStandard() then
+            -- ייתכן שה-mainWindow הוא כעת חלון פלאגין; נחפש את החלון
+            -- הראשי בכל החלונות הסטנדרטיים של Cubase
+            local windows = app:visibleWindows()
+            local largest, largestArea = nil, 0
+            for _, w in ipairs(windows) do
+                if w:isStandard() then
+                    local f = w:frame()
+                    local area = f.w * f.h
+                    if area > largestArea then
+                        largest, largestArea = w, area
+                    end
+                end
+            end
+            mainWin = largest
+        end
+        if mainWin then
+            mainWin:focus()
+            hs.timer.usleep(250000)  -- 250ms שהפוקוס יתפוס
+        end
+    end
+
+    -- שלב 2: עכשיו (כש-GUIs של פלאגינים מאחור) סורקים ולוחצים
     local target, source = resolveClickPoint()
     if not target then
         hs.alert.show("צריך לכייל. הקש Cmd+⌥+⇧+I בתוך Cubase.", 4)
