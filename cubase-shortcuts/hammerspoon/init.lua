@@ -42,7 +42,12 @@ local function loadCalibration()
     local content = f:read("*a")
     f:close()
     if not content or content == "" then return nil end
-    return hs.json.decode(content)
+    local data = hs.json.decode(content)
+    -- מיגרציה מפורמט ישן (רק x, y) לפורמט חדש (slot1 / slot2 / slotHeight)
+    if data and data.x and not data.slot1 then
+        data = { slot1 = { x = data.x, y = data.y } }
+    end
+    return data
 end
 
 local function saveCalibration(data)
@@ -151,6 +156,12 @@ end
 -- אין צורך ב-eventtap, אין "מצב כיול" עם טיימר - כך השיטה עמידה
 -- מול הרשאות חסרות של ניטור קלט / מערכי קליק חריגים.
 
+-- כיול דו-שלבי:
+--   קריאה ראשונה  -> שומרת את מיקום סלוט 1.
+--   קריאה שנייה   -> שומרת את מיקום סלוט 2, ומחשבת ממנו את גובה הסלוט.
+-- בעזרת גובה הסלוט הסקריפט יכול לסרוק את כל הסלוטים ולמצוא את הראשון
+-- שמתחת לאחרון שבשימוש.
+
 local function startCalibration()
     if not isCubaseFrontmost() then
         hs.alert.show("פתח את Cubase קודם", 2)
@@ -169,27 +180,123 @@ local function startCalibration()
         x = pos.x - frame.x,
         y = pos.y - frame.y,
     }
-    saveCalibration(offset)
-    hs.alert.show(
-        string.format("✓ נשמר. סלוט: %d, %d מפינת חלון Cubase",
-                      offset.x, offset.y), 3)
+
+    local existing = loadCalibration()
+
+    if not existing or not existing.slot1 then
+        -- שלב 1
+        saveCalibration({ slot1 = offset })
+        hs.alert.show(
+            "✓ שלב 1/2 הושלם.\n\n" ..
+            "עכשיו רחף עם העכבר מעל סלוט 2 (האחד מתחת)\n" ..
+            "והקש שוב Cmd+⌥+⇧+I",
+            8)
+    else
+        -- שלב 2
+        existing.slot2 = offset
+        existing.slotHeight = math.abs(offset.y - existing.slot1.y)
+        saveCalibration(existing)
+        hs.alert.show(
+            string.format(
+                "✓ כיול הושלם!\n" ..
+                "גובה סלוט: %dpx\n" ..
+                "עכשיו Cmd+P יעבוד ויחפש את הסלוט הראשון אחרי האחרון שבשימוש.",
+                existing.slotHeight),
+            5)
+    end
+end
+
+local function resetCalibration()
+    os.remove(CALIBRATION_FILE)
+    hs.alert.show("✓ הכיול אופס. הקש Cmd+⌥+⇧+I פעמיים לכיול מחדש.", 4)
+end
+
+-- --------------------------------------------------- detection of used slots
+--
+-- בודק אם סלוט אינסרט בקואורדינטות נתונות הוא ריק או בשימוש.
+-- ההיוריסטיקה: דוגם רצועה אופקית של פיקסלים מעל הקליק center, ובודק אם
+-- כולם בצבע אחיד (= רקע = ריק) או בעלי וריאציה (= יש טקסט/אייקון = בשימוש).
+
+local function isSlotEmpty(screenX, screenY)
+    local screen = hs.screen.mainScreen()
+    if not screen then return true end
+
+    -- דוגמה: רצועה של 60 פיקסלים אופקיים, 5 פיקסלים מעל המרכז.
+    -- הזזה למעלה כדי להתחמק מהטקסט "---" שמופיע באמצע סלוט ריק.
+    local img = screen:snapshot(hs.geometry.rect(screenX - 30, screenY - 5, 60, 1))
+    if not img then return true end
+
+    local first = img:colorAt({ x = 0, y = 0 })
+    if not first then return true end
+
+    local tolerance = 0.05
+    for x = 1, 59 do
+        local c = img:colorAt({ x = x, y = 0 })
+        if c and (math.abs(c.red   - first.red)   > tolerance or
+                  math.abs(c.green - first.green) > tolerance or
+                  math.abs(c.blue  - first.blue)  > tolerance) then
+            return false  -- וריאציה בצבע = יש שם משהו
+        end
+    end
+    return true  -- צבע אחיד = ריק
+end
+
+-- מחזירה את הסלוט הראשון אחרי הסלוט האחרון שבשימוש,
+-- או nil אם אין כיול מלא.
+local function findSlotAfterLastUsed()
+    local cal = loadCalibration()
+    if not cal or not cal.slot1 or not cal.slotHeight then
+        return nil
+    end
+
+    local win = getCubaseWindow()
+    if not win then return nil end
+
+    local frame = win:frame()
+    local baseX = frame.x + cal.slot1.x
+    local baseY = frame.y + cal.slot1.y
+
+    -- סורק את כל 16 הסלוטים, זוכר את האינדקס של האחרון שבשימוש
+    local lastUsed = -1
+    for n = 0, 15 do
+        local slotY = baseY + (n * cal.slotHeight)
+        if not isSlotEmpty(baseX, slotY) then
+            lastUsed = n
+        end
+    end
+
+    -- היעד הוא הסלוט אחרי האחרון שבשימוש (או 0 אם הכל ריק).
+    -- מגביל ל-15 כדי לא לחרוג מ-16 סלוטים.
+    local target = math.min(lastUsed + 1, 15)
+    local targetY = baseY + (target * cal.slotHeight)
+    return hs.geometry.point(baseX, targetY)
 end
 
 -- ---------------------------------------------------------- target resolution
 
--- מחזירה את נקודת המסך שעליה צריך ללחוץ, או nil אם אין לנו שום שיטה זמינה.
+-- מחזירה את נקודת המסך שעליה צריך ללחוץ.
+-- סדר העדיפויות:
+--   1. סריקה חכמה (כיול דו-שלבי + בדיקת פיקסלים) - הסלוט אחרי האחרון בשימוש
+--   2. AppleScript Accessibility - אם Cubase חושף את הסלוט הריק
+--   3. נפילה לסלוט 1 קבוע (כיול חד-שלבי בלבד)
 local function resolveInsertSlotPoint()
-    -- 1. ניסיון AX
+    -- 1. סריקה חכמה (דורש כיול דו-שלבי)
+    local smart = findSlotAfterLastUsed()
+    if smart then return smart, "smart-scan" end
+
+    -- 2. AppleScript
     local axPoint = findInsertViaAccessibility()
     if axPoint then return axPoint, "ax" end
 
-    -- 2. נפילה לכיול שמור
-    local calibration = loadCalibration()
-    if calibration then
+    -- 3. נפילה לסלוט 1 (כיול חד-שלבי בלבד)
+    local cal = loadCalibration()
+    if cal and cal.slot1 then
         local win = getCubaseWindow()
         if win then
             local f = win:frame()
-            return hs.geometry.point(f.x + calibration.x, f.y + calibration.y), "calibration"
+            return hs.geometry.point(
+                f.x + cal.slot1.x,
+                f.y + cal.slot1.y), "slot1-fixed"
         end
     end
 
@@ -202,7 +309,10 @@ local function openPlugin(pluginName)
     local target, source = resolveInsertSlotPoint()
     if not target then
         hs.alert.show(
-            "אי אפשר למצוא סלוט אינסרט. הקש ⌘⌥⇧I בתוך Cubase כדי לכייל.", 5)
+            "צריך לכייל קודם:\n" ..
+            "1. רחף מעל סלוט 1 → Cmd+⌥+⇧+I\n" ..
+            "2. רחף מעל סלוט 2 → Cmd+⌥+⇧+I (שוב)",
+            6)
         return
     end
 
@@ -240,18 +350,44 @@ local function runDiagnostics()
 
     local axPoint = findInsertViaAccessibility()
     table.insert(lines, axPoint
-        and string.format("✓ זיהוי אוטומטי עובד! סלוט ב-%d, %d",
-                          axPoint.x, axPoint.y)
-        or  "✗ זיהוי אוטומטי לא זמין (לא נורא - יש כיול)")
+        and "✓ זיהוי AppleScript עובד"
+        or  "✗ זיהוי AppleScript לא זמין (לא נורא)")
 
-    local calibration = loadCalibration()
-    table.insert(lines, calibration
-        and string.format("✓ כיול שמור: %d, %d", calibration.x, calibration.y)
-        or  "✗ אין כיול שמור - הקש ⌘⌥⇧I")
+    local cal = loadCalibration()
+    if not cal or not cal.slot1 then
+        table.insert(lines, "✗ אין כיול - הקש Cmd+⌥+⇧+I פעמיים")
+    elseif not cal.slotHeight then
+        table.insert(lines, "⚠ כיול חלקי - יש סלוט 1, חסר סלוט 2")
+        table.insert(lines, "  רחף מעל סלוט 2 והקש שוב Cmd+⌥+⇧+I")
+    else
+        table.insert(lines, string.format(
+            "✓ כיול מלא - גובה סלוט: %dpx", cal.slotHeight))
+    end
+
+    -- בודק כמה סלוטים נמצאו בשימוש כרגע
+    if cal and cal.slot1 and cal.slotHeight then
+        local win = getCubaseWindow()
+        if win then
+            local frame = win:frame()
+            local baseX = frame.x + cal.slot1.x
+            local baseY = frame.y + cal.slot1.y
+            local usedCount, lastUsed = 0, -1
+            for n = 0, 15 do
+                local sy = baseY + (n * cal.slotHeight)
+                if not isSlotEmpty(baseX, sy) then
+                    usedCount = usedCount + 1
+                    lastUsed = n
+                end
+            end
+            table.insert(lines, string.format(
+                "• %d סלוטים בשימוש. הבא יילך לסלוט %d",
+                usedCount, math.min(lastUsed + 2, 16)))
+        end
+    end
 
     table.insert(lines, string.format("• %d קיצורי פלאגינים טעונים", #plugins))
 
-    hs.alert.show(table.concat(lines, "\n"), 7)
+    hs.alert.show(table.concat(lines, "\n"), 8)
 end
 
 -- מצב בדיקה: רק לוחץ על המיקום שזוהה, בלי להקליד כלום.
@@ -308,5 +444,8 @@ pluginTap:start()
 hs.hotkey.bind({ "cmd", "alt", "shift" }, "i", startCalibration)
 hs.hotkey.bind({ "cmd", "alt", "shift" }, "d", runDiagnostics)
 hs.hotkey.bind({ "cmd", "alt", "shift" }, "t", testClick)
+hs.hotkey.bind({ "cmd", "alt", "shift" }, "r", resetCalibration)
 
-hs.alert.show("🎚️ Cubase Shortcuts פעיל\n⌘⌥⇧D = אבחון", 3)
+hs.alert.show(
+    "🎚️ Cubase Shortcuts פעיל\n" ..
+    "⌘⌥⇧I = כיול | ⌘⌥⇧D = אבחון | ⌘⌥⇧R = איפוס", 3)
