@@ -233,43 +233,57 @@ local function testClick()
 end
 
 -- -------------------------------------------------------- hotkey dispatching
+--
+-- משתמשים ב-hs.hotkey (Carbon HotKey API) במקום ב-eventtap.
+-- hs.hotkey דורש רק הרשאת Accessibility, בעוד ש-eventtap לפעמים
+-- דורש גם "ניטור קלט". מפעילים/מכבים את קיצורי הפלאגינים לפי
+-- האם Cubase קדמי, כדי שהם לא ייתפסו באפליקציות אחרות.
 
-local function flagsMatch(eventFlags, mods)
-    local want = { cmd = false, alt = false, shift = false, ctrl = false }
-    for _, m in ipairs(mods) do want[m] = true end
-    return (eventFlags.cmd   == true) == want.cmd
-       and (eventFlags.alt   == true) == want.alt
-       and (eventFlags.shift == true) == want.shift
-       and (eventFlags.ctrl  == true) == want.ctrl
+local pluginHotkeys = {}
+for _, plugin in ipairs(plugins) do
+    table.insert(pluginHotkeys, hs.hotkey.new(plugin.mods, plugin.key, function()
+        openPlugin(plugin.name)
+    end))
 end
 
-local pluginTap = hs.eventtap.new(
-    { hs.eventtap.event.types.keyDown },
-    function(event)
-        if not isCubaseFrontmost() then return false end
+local function enablePluginHotkeys()
+    for _, hk in ipairs(pluginHotkeys) do hk:enable() end
+end
 
-        local keyCode = event:getKeyCode()
-        local flags   = event:getFlags()
+local function disablePluginHotkeys()
+    for _, hk in ipairs(pluginHotkeys) do hk:disable() end
+end
 
-        for _, plugin in ipairs(plugins) do
-            local wantCode = hs.keycodes.map[plugin.key]
-            if wantCode == keyCode and flagsMatch(flags, plugin.mods) then
-                hs.timer.doAfter(0, function()
-                    openPlugin(plugin.name)
-                end)
-                return true
-            end
-        end
-        return false
+local function nameMatchesCubase(name)
+    if not name then return false end
+    local lower = name:lower()
+    for _, pattern in ipairs(CUBASE_PATTERNS) do
+        if lower:find(pattern, 1, true) then return true end
     end
-)
-pluginTap:start()
+    return false
+end
 
+-- Watcher: מאפשר את הקיצורים רק כשעוברים ל-Cubase, ומכבה כשעוזבים
+local appWatcher = hs.application.watcher.new(function(name, eventType)
+    if eventType == hs.application.watcher.activated then
+        if nameMatchesCubase(name) then
+            enablePluginHotkeys()
+        else
+            disablePluginHotkeys()
+        end
+    end
+end)
+appWatcher:start()
+
+-- מצב התחלתי: אם Cubase כבר קדמי בעת טעינת הסקריפט
+if isCubaseFrontmost() then enablePluginHotkeys() end
+
+-- קיצורי עזר (גלובליים, פעילים תמיד)
 hs.hotkey.bind({ "cmd", "alt", "shift" }, "i", startCalibration)
 hs.hotkey.bind({ "cmd", "alt", "shift" }, "d", runDiagnostics)
 hs.hotkey.bind({ "cmd", "alt", "shift" }, "t", testClick)
 hs.hotkey.bind({ "cmd", "alt", "shift" }, "r", resetCalibration)
 
 hs.alert.show(
-    "🎚️ Cubase Shortcuts פעיל (זיהוי ציאן)\n" ..
+    "🎚️ Cubase Shortcuts פעיל\n" ..
     "⌘⌥⇧I = כיול | ⌘⌥⇧D = אבחון | ⌘⌥⇧T = טסט | ⌘⌥⇧R = איפוס", 3)
