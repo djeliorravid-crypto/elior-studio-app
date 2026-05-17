@@ -176,9 +176,11 @@ local function startCalibration()
 
     local pos = hs.mouse.absolutePosition()
     local frame = win:frame()
+    -- שומרים כמספרים שלמים כדי שמסכי Retina (שמחזירים חצאי-פיקסלים)
+    -- לא ייצרו שגיאות %d ב-string.format בהמשך.
     local offset = {
-        x = pos.x - frame.x,
-        y = pos.y - frame.y,
+        x = math.floor(pos.x - frame.x + 0.5),
+        y = math.floor(pos.y - frame.y + 0.5),
     }
 
     local existing = loadCalibration()
@@ -197,11 +199,9 @@ local function startCalibration()
         existing.slotHeight = math.abs(offset.y - existing.slot1.y)
         saveCalibration(existing)
         hs.alert.show(
-            string.format(
-                "✓ כיול הושלם!\n" ..
-                "גובה סלוט: %dpx\n" ..
-                "עכשיו Cmd+P יעבוד ויחפש את הסלוט הראשון אחרי האחרון שבשימוש.",
-                existing.slotHeight),
+            "✓ כיול הושלם!\n" ..
+            "גובה סלוט: " .. tostring(existing.slotHeight) .. "px\n" ..
+            "עכשיו Cmd+P יעבוד ויחפש את הסלוט הראשון אחרי האחרון שבשימוש.",
             5)
     end
 end
@@ -360,8 +360,7 @@ local function runDiagnostics()
         table.insert(lines, "⚠ כיול חלקי - יש סלוט 1, חסר סלוט 2")
         table.insert(lines, "  רחף מעל סלוט 2 והקש שוב Cmd+⌥+⇧+I")
     else
-        table.insert(lines, string.format(
-            "✓ כיול מלא - גובה סלוט: %dpx", cal.slotHeight))
+        table.insert(lines, "✓ כיול מלא - גובה סלוט: " .. tostring(cal.slotHeight) .. "px")
     end
 
     -- בודק כמה סלוטים נמצאו בשימוש כרגע
@@ -379,9 +378,10 @@ local function runDiagnostics()
                     lastUsed = n
                 end
             end
-            table.insert(lines, string.format(
-                "• %d סלוטים בשימוש. הבא יילך לסלוט %d",
-                usedCount, math.min(lastUsed + 2, 16)))
+            table.insert(lines,
+                "• " .. tostring(usedCount) ..
+                " סלוטים בשימוש. הבא יילך לסלוט " ..
+                tostring(math.min(lastUsed + 2, 16)))
         end
     end
 
@@ -402,8 +402,11 @@ local function testClick()
         hs.alert.show("אין כיול ואין זיהוי אוטומטי. הקש ⌘⌥⇧I לכיול.", 4)
         return
     end
-    hs.alert.show(string.format("בדיקה (%s): קליק על %d, %d - סגור את החלון שייפתח",
-                                source, target.x, target.y), 3)
+    hs.alert.show(
+        "בדיקה (" .. source .. "): קליק על " ..
+        tostring(math.floor(target.x + 0.5)) .. ", " ..
+        tostring(math.floor(target.y + 0.5)) ..
+        " - סגור את החלון שייפתח", 3)
     hs.eventtap.leftClick(target, 40000)
 end
 
