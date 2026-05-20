@@ -11,7 +11,7 @@
 // אין צורך לעדכן את הקוד שוב — הנתונים מתרעננים לבד.
 
 // --- הגדרות ---
-const DB_URL  = "https://elior-studio-default-rtdb.firebaseio.com/studio_data.json";
+const DB_BASE = "https://elior-studio-default-rtdb.firebaseio.com";
 const APP_URL = "https://djeliorravid-crypto.github.io/elior-studio-app/"; // נפתח בלחיצה על הוידג'ט
 
 // --- צבעים (תואם עיצוב האפליקציה) ---
@@ -47,14 +47,28 @@ function money(n) {
   return "₪" + n.toLocaleString("en-US");
 }
 
-// --- שליפת נתונים ---
+// --- שליפת נתונים (רק מה שצריך, במקביל) ---
+async function getKey(key) {
+  const req = new Request(DB_BASE + "/studio_data/" + key + ".json");
+  req.timeoutInterval = 25;
+  const txt = await req.loadString();
+  const code = req.response ? req.response.statusCode : 200;
+  if (code >= 400) throw new Error("HTTP " + code + (txt ? " · " + txt.slice(0, 60) : ""));
+  if (!txt || txt === "null") return null;
+  let j;
+  try { j = JSON.parse(txt); } catch (e) { throw new Error("תשובה לא-JSON: " + txt.slice(0, 60)); }
+  if (j && j.error) throw new Error("Firebase: " + j.error);
+  return j;
+}
 async function fetchData() {
+  const keys = ["daily_tasks", "income", "expenses", "recurring_expenses", "monthlyGoal"];
   try {
-    const r = new Request(DB_URL);
-    r.timeoutInterval = 15;
-    return (await r.loadJSON()) || {};
+    const vals = await Promise.all(keys.map(getKey));
+    const out = {};
+    keys.forEach((k, i) => { out[k] = vals[i]; });
+    return out;
   } catch (e) {
-    return null;
+    return { __err: String((e && e.message) || e) };
   }
 }
 
@@ -128,8 +142,11 @@ function buildWidget(m, family) {
   w.setPadding(14, 15, 14, 15);
   w.url = APP_URL;
 
-  if (m === null) {
-    row(w, "אין חיבור לנתונים", Font.semiboldSystemFont(15), C.muted, "center");
+  if (m && m.__err) {
+    row(w, "שגיאת חיבור", Font.boldSystemFont(15), C.bad, "center");
+    w.addSpacer(6);
+    const e = row(w, m.__err, Font.systemFont(11), C.muted, "center");
+    e.lineLimit = 4;
     return w;
   }
 
@@ -207,7 +224,7 @@ function buildWidget(m, family) {
 // --- ריצה ---
 const family = config.widgetFamily || "medium";
 const data   = await fetchData();
-const m      = data === null ? null : compute(data);
+const m      = data && data.__err ? data : compute(data);
 const widget = buildWidget(m, family);
 
 if (config.runsInWidget) {
