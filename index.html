@@ -6932,9 +6932,11 @@ setInterval(() => {
 }, 20 * 1000);
 
 // בדיקת עדכון אוטומטית — כל פתיחה
+let _pendingAction = null;
 (function checkVersion() {
   // אם טענו עם cache-buster — נקה את ה-URL ושמור גרסה
   const params = new URLSearchParams(location.search);
+  _pendingAction = params.get('action') || null; // קיצור דרך ממסך הבית
   if (params.get('_v')) {
     localStorage.setItem('app_version', params.get('_v'));
     history.replaceState(null, '', location.pathname);
@@ -6946,13 +6948,25 @@ setInterval(() => {
       const v = serverVer.trim();
       const localVer = localStorage.getItem('app_version');
       if (localVer && localVer !== v) {
-        // נווט ל-URL חדש — iOS חייבת לטעון מהרשת
-        location.replace(location.pathname + '?_v=' + v);
+        // נווט ל-URL חדש — iOS חייבת לטעון מהרשת (שומר על הקיצור אם יש)
+        location.replace(location.pathname + '?_v=' + v + (_pendingAction ? '&action=' + encodeURIComponent(_pendingAction) : ''));
       } else {
         localStorage.setItem('app_version', v);
       }
     }).catch(() => {});
 })();
+
+// קיצורי דרך ממסך הבית (לחיצה ארוכה על האייקון)
+function runShortcutAction(action) {
+  if (!action) return;
+  setTimeout(() => {
+    if (action === 'new-income') { showPage('income'); openModal('income'); }
+    else if (action === 'new-daily' || action === 'new-task') {
+      showPage('daily');
+      setTimeout(() => document.getElementById('daily-input')?.focus(), 150);
+    }
+  }, 250);
+}
 
 // ===== GOOGLE CALENDAR =====
 let _gcalToken = null;
@@ -7402,6 +7416,7 @@ function showMode(mode) {
   document.getElementById('music-main').style.display       = biz ? 'none'  : 'block';
   localStorage.setItem('app_mode', mode);
   if (biz) refreshAll(); else renderReleased();
+  if (biz && _pendingAction) { const a = _pendingAction; _pendingAction = null; runShortcutAction(a); }
 }
 
 // ===== AUDIO LOCAL STORAGE (IndexedDB) =====

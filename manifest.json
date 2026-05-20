@@ -18,7 +18,7 @@
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "הכנסה חדשה", "url": "/elior-studio-app/?action=new-income", "icons": [{"src":"icon-192.png","sizes":"192x192"}] },
-    { "name": "משימה חדשה", "url": "/elior-studio-app/?action=new-task", "icons": [{"src":"icon-192.png","sizes":"192x192"}] }
+    { "name": "משימה יומית", "short_name": "משימה", "url": "/elior-studio-app/?action=new-daily", "icons": [{"src":"icon-192.png","sizes":"192x192"}] },
+    { "name": "הכנסה חדשה", "short_name": "הכנסה", "url": "/elior-studio-app/?action=new-income", "icons": [{"src":"icon-192.png","sizes":"192x192"}] }
   ]
 }
