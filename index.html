@@ -2885,23 +2885,6 @@
   <span>לובי</span>
 </button>
 
-<!-- AI Chat Assistant (Deri) -->
-<button class="ai-fab" id="ai-fab" onclick="toggleAIPanel()" aria-label="דרי" title="דרי — העוזרת החכמה">
-  <span id="ai-fab-icon">✨</span>
-</button>
-<div class="ai-panel" id="ai-panel">
-  <div class="ai-header">
-    <div class="ai-header-icon" id="ai-header-avatar" onclick="document.getElementById('ai-avatar-input').click()" style="cursor:pointer" title="לחץ להעלאת תמונה">✨</div>
-    <input type="file" id="ai-avatar-input" accept="image/*" style="display:none" onchange="uploadHadarAvatar(event)"/>
-    <div class="ai-header-text">
-      <div class="ai-header-title">דרי 🤍</div>
-      <div class="ai-header-sub">העוזרת החכמה שלך</div>
-    </div>
-    <button class="ai-close" onclick="toggleAIPanel()" aria-label="סגור">×</button>
-  </div>
-  <div id="ai-content"></div>
-</div>
-
 <!-- Floating Quick Add FAB -->
 <div class="fab-container" id="fab-container">
   <div class="fab-menu" id="fab-menu">
@@ -2971,8 +2954,7 @@
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
-    <a onclick="showPage('tasks')" data-page="tasks"><span class="nav-icon">✅</span> משימות<span id="task-nav-badge" style="display:none;margin-right:4px;background:#dc2626;color:#fff;font-size:10px;font-weight:900;border-radius:999px;padding:1px 6px;animation:task-badge-blink 1.2s ease-in-out infinite"></span></a>
-    <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon">☀️</span> לוח יומי</a>
+    <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon">✅</span> משימות יומיות</a>
     <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
@@ -3440,132 +3422,10 @@
     <div id="plans-list" style="display:flex;flex-direction:column;gap:18px"></div>
   </div>
 
-  <!-- ===== TASKS PAGE ===== -->
-  <div class="page" id="page-tasks">
-    <div class="page-header">
-      <div><h2>✅ משימות</h2><p>רשימת משימות ומעקב ביצוע</p></div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn btn-primary" onclick="toggleTaskForm()">+ משימה חדשה</button>
-      </div>
-    </div>
-
-    <!-- טופס הוספת משימה -->
-    <div id="task-form-wrap" style="display:none;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow)">
-      <div style="font-size:15px;font-weight:800;margin-bottom:14px">📝 משימה חדשה</div>
-      <div class="form-group"><label>כותרת *</label><input type="text" id="task-title" placeholder="מה צריך לעשות?" /></div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>קטגוריה</label>
-          <select id="task-cat">
-            <option value="עסקי">עסקי</option>
-            <option value="אישי">אישי</option>
-            <option value="דחוף">דחוף</option>
-            <option value="אחר">אחר</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>עדיפות</label>
-          <select id="task-priority">
-            <option value="high">גבוה</option>
-            <option value="medium" selected>בינוני</option>
-            <option value="low">נמוך</option>
-          </select>
-        </div>
-        <div class="form-group"><label>זמן יעד</label>
-          <div class="task-due-row"><input type="date" id="task-due"/><input type="time" id="task-due-time" value="18:00"/></div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>בחירה מהירה</label>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="setTaskDuePreset('today')">היום</button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="setTaskDuePreset('tomorrow')">מחר</button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="setTaskDuePreset('week')">בעוד שבוע</button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="setTaskDuePreset('month')">בעוד חודש</button>
-        </div>
-      </div>
-      <div class="form-group"><label>הערה / מה קורה</label><textarea id="task-notes" placeholder="עדכון סטטוס, פרטים..." style="min-height:60px"></textarea></div>
-      <div class="modal-actions" style="margin-top:4px">
-        <button class="btn btn-primary" onclick="addTask()">הוסף משימה</button>
-        <button class="btn btn-ghost" onclick="toggleTaskForm()">ביטול</button>
-      </div>
-    </div>
-
-    <!-- סטריפ סטטיסטיקות -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center;box-shadow:var(--shadow)">
-        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">סה"כ</div>
-        <div id="task-stat-total" style="font-size:26px;font-weight:900;color:var(--text)">0</div>
-      </div>
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center;box-shadow:var(--shadow)">
-        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">ממתין</div>
-        <div id="task-stat-pending" style="font-size:26px;font-weight:900;color:var(--accent)">0</div>
-      </div>
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;text-align:center;box-shadow:var(--shadow)">
-        <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:4px">בוצע</div>
-        <div id="task-stat-done" style="font-size:26px;font-weight:900;color:var(--green)">0</div>
-      </div>
-    </div>
-
-    <!-- פילטרים -->
-    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
-      <button id="tf-pending" class="btn btn-primary btn-sm" onclick="setTaskFilter('pending')">לא בוצע</button>
-      <button id="tf-done"    class="btn btn-ghost  btn-sm" onclick="setTaskFilter('done')">בוצע</button>
-      <button id="ntfy-toggle" class="btn btn-ghost btn-sm" onclick="openNtfySetup()" style="margin-right:auto">🔔 תזכורות לטלפון</button>
-    </div>
-
-    <!-- ===== NTFY SETUP MODAL ===== -->
-    <div class="modal-overlay" id="modal-ntfy">
-      <div class="modal" style="max-width:520px">
-        <h3>🔔 התראות לטלפון</h3>
-        <p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin-bottom:18px">
-          שעה לפני כל משימה — האייפון/אנדרואיד שלך יקבל התראה אמיתית, גם אם המסך נעול וגם אם האתר סגור.
-        </p>
-
-        <div style="background:var(--surface2);border-radius:12px;padding:16px;margin-bottom:16px">
-          <div style="font-size:12px;font-weight:900;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">שלב 1: התקן את האפליקציה</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <a class="btn btn-ghost btn-sm" target="_blank" href="https://apps.apple.com/us/app/ntfy/id1625396347" style="justify-content:center">📱 iPhone</a>
-            <a class="btn btn-ghost btn-sm" target="_blank" href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" style="justify-content:center">🤖 Android</a>
-          </div>
-        </div>
-
-        <div style="background:var(--surface2);border-radius:12px;padding:16px;margin-bottom:16px">
-          <div style="font-size:12px;font-weight:900;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px">שלב 2: סרוק את הקוד הזה באפליקציית ntfy</div>
-          <div style="display:flex;align-items:center;gap:14px">
-            <img id="ntfy-qr" alt="QR" style="width:120px;height:120px;border-radius:10px;background:#fff;padding:6px;flex-shrink:0"/>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">או תוסיף ידנית:</div>
-              <div id="ntfy-topic-url" style="font-size:12px;background:var(--surface);padding:8px 10px;border-radius:8px;font-family:monospace;word-break:break-all;direction:ltr;text-align:left"></div>
-              <button class="btn btn-ghost btn-sm" onclick="copyNtfyTopic()" style="margin-top:6px;width:100%">📋 העתק כתובת</button>
-            </div>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-          <button class="btn btn-ghost btn-sm" onclick="sendNtfyTest()" style="flex:1">🧪 שלח התראת בדיקה</button>
-          <button class="btn btn-ghost btn-sm" onclick="resetNtfyTopic()" style="flex:1">🔄 כתובת חדשה</button>
-        </div>
-
-        <div class="modal-actions" id="ntfy-actions">
-          <button class="btn btn-primary" onclick="confirmNtfySetup()" style="flex:1">✓ סיימתי, הפעל</button>
-          <button class="btn btn-ghost" onclick="closeModal('ntfy')">סגור</button>
-        </div>
-        <div class="modal-actions" id="ntfy-actions-active" style="display:none">
-          <button class="btn btn-danger" onclick="disableNtfy();closeModal('ntfy')" style="flex:1">כבה תזכורות</button>
-          <button class="btn btn-ghost" onclick="closeModal('ntfy')">סגור</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- רשימת משימות -->
-    <div id="tasks-list"></div>
-  </div>
-
   <!-- ===== DAILY BOARD (לוח יומי) ===== -->
   <div class="page" id="page-daily">
     <div class="page-header">
-      <div><h2>☀️ לוח יומי</h2><p>כל בוקר — מה על הסדר היום</p></div>
+      <div><h2>✅ משימות יומיות</h2><p>כל בוקר — מה על הסדר היום</p></div>
     </div>
 
     <!-- בורר תאריך -->
@@ -4168,7 +4028,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, tasks:4, daily:5, dashboard:6};
+  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, dashboard:5};
   if (name === 'daily') _dailyDate = dailyDateStr();
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
@@ -6811,7 +6671,6 @@ function refreshAll() {
   renderSessionCal();
   populateClientFilter();
   renderPendingBox();
-  renderTasks();
   renderDaily();
 }
 
@@ -8467,11 +8326,8 @@ function fabAction(type) {
 }
 function quickAction(type) {
   if (type === 'task') {
-    showPage('tasks');
-    setTimeout(() => {
-      const w = document.getElementById('task-form-wrap');
-      if (w && w.style.display === 'none') toggleTaskForm();
-    }, 200);
+    showPage('daily');
+    setTimeout(() => document.getElementById('daily-input')?.focus(), 200);
   } else {
     openModal(type);
   }
