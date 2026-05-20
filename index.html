@@ -2972,6 +2972,7 @@
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
     <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon">👥</span> לקוחות</a>
     <a onclick="showPage('tasks')" data-page="tasks"><span class="nav-icon">✅</span> משימות<span id="task-nav-badge" style="display:none;margin-right:4px;background:#dc2626;color:#fff;font-size:10px;font-weight:900;border-radius:999px;padding:1px 6px;animation:task-badge-blink 1.2s ease-in-out infinite"></span></a>
+    <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon">☀️</span> לוח יומי</a>
     <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
@@ -3561,6 +3562,35 @@
     <div id="tasks-list"></div>
   </div>
 
+  <!-- ===== DAILY BOARD (לוח יומי) ===== -->
+  <div class="page" id="page-daily">
+    <div class="page-header">
+      <div><h2>☀️ לוח יומי</h2><p>כל בוקר — מה על הסדר היום</p></div>
+    </div>
+
+    <!-- בורר תאריך -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+      <div class="month-selector">
+        <button onclick="changeDailyDate(-1)" title="יום קודם">›</button>
+        <span class="month-label" id="daily-date-label" style="min-width:220px;text-align:center"></span>
+        <button onclick="changeDailyDate(1)" title="יום הבא">‹</button>
+      </div>
+      <button id="daily-today-btn" class="btn btn-ghost btn-sm" onclick="goDailyToday()" style="display:none">↺ חזרה להיום</button>
+    </div>
+
+    <!-- הוספה מהירה -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+      <input type="text" id="daily-input" placeholder="מה צריך לעשות היום?" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addDailyTask();}"
+        style="flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-size:15px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface);outline:none"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <button class="btn btn-primary" onclick="addDailyTask()">+ הוסף</button>
+    </div>
+
+    <!-- רשימת היום -->
+    <div id="daily-list"></div>
+  </div>
+
   <!-- ===== PROJECTS ===== -->
   <!-- ===== PROFILE DETAIL ===== -->
   <div class="page" id="page-profile-detail">
@@ -4031,7 +4061,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','released_songs','sketch_songs'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -4138,7 +4168,8 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, tasks:4, dashboard:5};
+  const map = {income:0, expenses:1, installments:2, profiles:3, tasks:4, daily:5, dashboard:6};
+  if (name === 'daily') _dailyDate = dailyDateStr();
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
@@ -6781,6 +6812,7 @@ function refreshAll() {
   populateClientFilter();
   renderPendingBox();
   renderTasks();
+  renderDaily();
 }
 
 // ===== גיבוי ושחזור =====
@@ -9042,6 +9074,98 @@ function renderTaskCard(t, sectionKind, prioColor, prioLabel) {
         <button onclick="event.stopPropagation();deleteTask('${t.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 4px;flex-shrink:0;opacity:0.6;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">×</button>
       </div>
     </div>`;
+}
+
+// ===== DAILY BOARD (לוח יומי) =====
+function dailyDateStr(d) {
+  const x = d ? new Date(d) : new Date();
+  return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+}
+let _dailyDate = dailyDateStr();
+
+function _escHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function changeDailyDate(dir) {
+  const d = new Date(_dailyDate + 'T00:00:00');
+  d.setDate(d.getDate() + dir);
+  _dailyDate = dailyDateStr(d);
+  renderDaily();
+}
+
+function goDailyToday() { _dailyDate = dailyDateStr(); renderDaily(); }
+
+function addDailyTask() {
+  const inp = document.getElementById('daily-input');
+  const text = (inp?.value || '').trim();
+  if (!text) { inp?.focus(); return; }
+  const all = load('daily_tasks');
+  all.push({ id: genId(), date: _dailyDate, text, done: false, createdAt: new Date().toISOString() });
+  save('daily_tasks', all);
+  if (inp) { inp.value = ''; inp.focus(); }
+  renderDaily();
+}
+
+function toggleDailyDone(id) {
+  const all = load('daily_tasks');
+  const t = all.find(x => x.id === id);
+  if (t) { t.done = !t.done; save('daily_tasks', all); renderDaily(); }
+}
+
+function deleteDailyTask(id) {
+  save('daily_tasks', load('daily_tasks').filter(t => t.id !== id));
+  renderDaily();
+}
+
+function renderDaily() {
+  const listEl = document.getElementById('daily-list');
+  if (!listEl) return;
+  const lblEl = document.getElementById('daily-date-label');
+  const todayBtn = document.getElementById('daily-today-btn');
+
+  const isToday = _dailyDate === dailyDateStr();
+  const d = new Date(_dailyDate + 'T00:00:00');
+  const dateText = d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+  if (lblEl) lblEl.textContent = (isToday ? 'היום · ' : '') + dateText;
+  if (todayBtn) todayBtn.style.display = isToday ? 'none' : 'inline-flex';
+
+  const items = load('daily_tasks').filter(t => t.date === _dailyDate);
+  items.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+  });
+
+  const total = items.length;
+  const done = items.filter(t => t.done).length;
+
+  if (total === 0) {
+    listEl.innerHTML = `<div class="empty-state"><div class="ei">${isToday ? '☀️' : '🌙'}</div><p>${isToday ? 'בוקר טוב! מה על הסדר היום?' : 'אין משימות ליום הזה'}</p></div>`;
+    return;
+  }
+
+  const pct = Math.round((done / total) * 100);
+  const allDone = done === total;
+  const banner = `
+    <div style="background:linear-gradient(135deg,var(--surface) 0%,var(--accent-light) 100%);border:1px solid var(--border-glow);border-radius:14px;padding:16px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 6px 18px var(--accent-glow)">${allDone ? '🎉' : '☀️'}</div>
+      <div style="flex:1;min-width:160px">
+        <div style="font-size:13px;font-weight:900;color:var(--text)">${allDone ? 'סיימת הכל — כל הכבוד, ביג׳ונדון!' : 'הסדר יום שלך'}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${done} מתוך ${total} בוצעו</div>
+      </div>
+      <div style="font-size:26px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums">${pct}%</div>
+    </div>`;
+
+  const cards = items.map(t => `
+    <div class="task-card${t.done ? ' task-done' : ''}" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onclick="toggleDailyDone('${t.id}')" class="task-check${t.done ? ' checked' : ''}" title="${t.done ? 'בטל ביצוע' : 'סמן כבוצע'}">${t.done ? '✓' : ''}</button>
+        <span class="task-title-text" style="flex:1;min-width:0;${t.done ? 'text-decoration:line-through;opacity:0.6' : ''}">${_escHtml(t.text)}</span>
+        <button onclick="deleteDailyTask('${t.id}')" title="מחק" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 4px;flex-shrink:0;opacity:0.6;transition:opacity .15s" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">×</button>
+      </div>
+    </div>`).join('');
+
+  listEl.innerHTML = banner + cards;
 }
 
 // ===== DRAG & DROP AUDIO ON SKETCH/SONG DETAIL =====
