@@ -12,7 +12,7 @@
 
 // --- הגדרות ---
 const DB_BASE = "https://elior-studio-default-rtdb.firebaseio.com";
-const APP_URL = "https://djeliorravid-crypto.github.io/elior-studio-app/"; // נפתח בלחיצה על הוידג'ט
+const APP_URL = "https://djeliorravid-crypto.github.io/elior-studio-app/";
 
 // --- צבעים (תואם עיצוב האפליקציה) ---
 const C = {
@@ -48,17 +48,23 @@ function money(n) {
 }
 
 // --- שליפת נתונים (רק מה שצריך, במקביל) ---
+// מנקה תווים נסתרים (כיווניות/רווחים) שעלולים להידבק לכתובת בעת העתקה
+function cleanUrl(u) { return u.replace(/[^\x20-\x7E]/g, "").trim(); }
 async function getKey(key) {
-  const req = new Request(DB_BASE + "/studio_data/" + key + ".json");
-  req.timeoutInterval = 25;
-  const txt = await req.loadString();
-  const code = req.response ? req.response.statusCode : 200;
-  if (code >= 400) throw new Error("HTTP " + code + (txt ? " · " + txt.slice(0, 60) : ""));
-  if (!txt || txt === "null") return null;
-  let j;
-  try { j = JSON.parse(txt); } catch (e) { throw new Error("תשובה לא-JSON: " + txt.slice(0, 60)); }
-  if (j && j.error) throw new Error("Firebase: " + j.error);
-  return j;
+  const url = cleanUrl(DB_BASE + "/studio_data/" + key + ".json");
+  try {
+    const req = new Request(url);
+    req.timeoutInterval = 25;
+    const txt = await req.loadString();
+    const code = req.response ? req.response.statusCode : 200;
+    if (code >= 400) throw new Error("HTTP " + code);
+    if (!txt || txt === "null") return null;
+    const j = JSON.parse(txt);
+    if (j && j.error) throw new Error(String(j.error));
+    return j;
+  } catch (e) {
+    throw new Error("[" + key + "] " + ((e && e.message) || e));
+  }
 }
 async function fetchData() {
   const keys = ["daily_tasks", "income", "expenses", "recurring_expenses", "monthlyGoal"];
@@ -140,7 +146,7 @@ function buildWidget(m, family) {
   bg.endPoint = new Point(1, 1);
   w.backgroundGradient = bg;
   w.setPadding(14, 15, 14, 15);
-  w.url = APP_URL;
+  w.url = cleanUrl(APP_URL);
 
   if (m && m.__err) {
     row(w, "שגיאת חיבור", Font.boldSystemFont(15), C.bad, "center");
