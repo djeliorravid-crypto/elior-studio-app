@@ -2988,7 +2988,19 @@
   .proj-textarea { width:100%; background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:12px 14px; font-size:15px; color:#f2e9dc; outline:none; direction:rtl; font-family:inherit; resize:vertical; min-height:90px; }
   .proj-textarea::placeholder { color:#7d715f; }
   .proj-del { margin-top:22px; width:100%; background:transparent; border:1.5px solid #6e3b3b; border-radius:11px; padding:12px; font-size:14px; font-weight:800; color:#e08a8a; cursor:pointer; }
-  @media (max-width:768px) { .studies-lobby-btn { display:none; } }
+  .proj-stats { display:flex; gap:10px; margin-bottom:18px; }
+  .proj-stat { flex:1; background:#251e16; border:1.5px solid #3a2f23; border-radius:14px; padding:14px 10px; text-align:center; }
+  .proj-stat-num { font-size:26px; font-weight:900; color:#f7f0e6; }
+  .proj-stat-lbl { font-size:12px; color:#b3a690; margin-top:3px; }
+  .proj-tasks { margin-bottom:22px; }
+  .proj-tasks-head { font-size:14px; font-weight:800; color:#c9b8ff; margin-bottom:9px; }
+  .proj-task { background:#251e16; border:1.5px solid #3a2f23; border-radius:11px; padding:11px 13px; margin-bottom:7px; cursor:pointer; }
+  .proj-task:hover { border-color:#7c5cff; }
+  .proj-task-txt { font-size:14.5px; color:#f2e9dc; font-weight:700; line-height:1.4; }
+  .proj-task-proj { font-size:12px; color:#b3a690; margin-top:3px; }
+  .proj-list-head { font-size:14px; font-weight:800; color:#f7f0e6; margin:6px 0 11px; }
+  .proj-delivered-toggle { width:100%; background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:13px 15px; font-size:14px; font-weight:800; color:#8aa888; cursor:pointer; margin-top:10px; display:flex; justify-content:space-between; align-items:center; }
+  @media (max-width:768px) { .studies-lobby-btn, .studies-detail-back { display:none; } }
 </style>
 <main class="main" id="studies-main" style="display:none">
   <div class="studies-wrap">
@@ -7611,10 +7623,20 @@ const PROJ_STATUSES = [
   {k:'done',   label:'נמסר',         color:'#34c759'}
 ];
 const PROJ_SERVICES = ['הפקה','מיקס','מאסטר'];
+let _projShowDelivered = false;
 
 function projStatus(id){ const o = loadObj('proj_status'); return o[id] || 'work'; }
 function projServices(id){ const o = loadObj('proj_services'); return o[id] || []; }
 function projNext(id){ const o = loadObj('proj_next'); return o[id] || ''; }
+function projStatusMeta(k){ return PROJ_STATUSES.find(function(s){ return s.k === k; }) || PROJ_STATUSES[1]; }
+
+function _setLobbyBtn(label, fn){
+  const b = document.getElementById('mobile-lobby-btn');
+  if(!b) return;
+  const spans = b.querySelectorAll('span');
+  if(spans.length >= 2) spans[spans.length-1].textContent = label;
+  b.onclick = fn;
+}
 
 function getProjectsList(){
   const income = load('income');
@@ -7637,8 +7659,7 @@ function getProjectsList(){
 }
 
 function projCard(p){
-  const st = projStatus(p.id);
-  const meta = PROJ_STATUSES.find(function(s){ return s.k === st; }) || PROJ_STATUSES[1];
+  const meta = projStatusMeta(projStatus(p.id));
   const services = projServices(p.id);
   const next = projNext(p.id);
   return '<div class="proj-card" onclick="openProject(\'' + p.id + '\')">' +
@@ -7651,6 +7672,7 @@ function projCard(p){
 }
 
 function renderStudies(){
+  _setLobbyBtn('לובי', switchMode);
   const list = document.getElementById('studies-list');
   const detail = document.getElementById('studies-detail');
   if(detail){ detail.style.display='none'; detail.innerHTML=''; }
@@ -7659,18 +7681,47 @@ function renderStudies(){
   const all = getProjectsList();
   const active = all.filter(function(p){ return projStatus(p.id) !== 'done'; });
   const done = all.filter(function(p){ return projStatus(p.id) === 'done'; });
+
   let h = '<button class="proj-add-btn" onclick="toggleAddProject()">+ פרויקט חדש</button>' +
           '<div id="proj-add-form" style="display:none"></div>';
+
   if(!all.length){
     h += '<div class="proj-empty">אין פרויקטים עדיין.<br>הוסף פרויקט חדש, או רשום הכנסה מסוג הפקה / מיקס / הקלטה והיא תופיע כאן לבד.</div>';
-  } else {
-    h += active.map(projCard).join('');
-    if(done.length){
-      h += '<div class="proj-done-head">✅ נמסרו (' + done.length + ')</div>' + done.map(projCard).join('');
-    }
+    list.innerHTML = h;
+    return;
   }
+
+  // סיכום עליון
+  h += '<div class="proj-stats">' +
+    '<div class="proj-stat"><div class="proj-stat-num">' + active.length + '</div><div class="proj-stat-lbl">בעבודה</div></div>' +
+    '<div class="proj-stat"><div class="proj-stat-num">' + done.length + '</div><div class="proj-stat-lbl">נמסרו</div></div>' +
+    '</div>';
+
+  // משימות = הפעולה הבאה מכל פרויקט פעיל
+  const tasks = active.filter(function(p){ return projNext(p.id); });
+  if(tasks.length){
+    h += '<div class="proj-tasks"><div class="proj-tasks-head">📌 המשימות שלך</div>' +
+      tasks.map(function(p){
+        return '<div class="proj-task" onclick="openProject(\'' + p.id + '\')">' +
+          '<div><div class="proj-task-txt">' + projNext(p.id) + '</div>' +
+          '<div class="proj-task-proj">' + p.name + '</div></div></div>';
+      }).join('') + '</div>';
+  }
+
+  // פרויקטים פעילים
+  h += '<div class="proj-list-head">הפרויקטים בעבודה</div>';
+  h += active.length ? active.map(projCard).join('') : '<div class="proj-empty">אין פרויקטים פעילים 🎉</div>';
+
+  // נמסרו — מקופל
+  if(done.length){
+    h += '<div class="proj-delivered-toggle" onclick="toggleDelivered()"><span>✅ נמסרו (' + done.length + ')</span><span>' + (_projShowDelivered ? '▲' : '▼') + '</span></div>';
+    if(_projShowDelivered){ h += '<div style="margin-top:10px">' + done.map(projCard).join('') + '</div>'; }
+  }
+
   list.innerHTML = h;
 }
+
+function toggleDelivered(){ _projShowDelivered = !_projShowDelivered; renderStudies(); }
 
 function toggleAddProject(){
   const f = document.getElementById('proj-add-form');
@@ -7698,6 +7749,7 @@ function addManualProject(){
 function openProject(id){
   const p = getProjectsList().find(function(x){ return x.id === id; });
   if(!p) return;
+  _setLobbyBtn('פרויקטים', backToStudies);
   document.getElementById('studies-list').style.display='none';
   const d = document.getElementById('studies-detail');
   d.style.display='block';
@@ -7714,7 +7766,7 @@ function openProject(id){
     return '<button class="proj-st-btn' + (on?' active':'') + '" style="' + (on?'background:#7c5cff;border-color:#7c5cff;color:#fff':'') + '" onclick="toggleProjService(\'' + id + '\',\'' + s + '\')">' + s + '</button>';
   }).join('');
   d.innerHTML =
-    '<button class="studies-back" onclick="backToStudies()">← כל הפרויקטים</button>' +
+    '<button class="studies-back studies-detail-back" onclick="backToStudies()">← רשימת הפרויקטים</button>' +
     '<h1 class="study-title">' + p.name + '</h1>' +
     '<div class="proj-sub" style="margin-bottom:14px">' + (p.clientName||'ללא לקוח') + (p.amount?(' · '+fmtMoney(p.amount)):'') + '</div>' +
     '<h3 class="study-h3">שלב</h3><div class="proj-row">' + statusBtns + '</div>' +
