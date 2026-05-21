@@ -1,7 +1,8 @@
 // וידג'ט "משימות היום" — אליאור רביד (Scriptable)
 // מד התקדמות למעלה + רשימת המשימות מתחתיו. נתונים חיים מ-Firebase.
 const DB_BASE = "https://elior-studio-default-rtdb.firebaseio.com";
-const APP_URL = "https://djeliorravid-crypto.github.io/elior-studio-app/?action=new-daily";
+// לחיצה על הוידג'ט מפעילה קיצור-דרך בשם Elior שפותח את האפליקציה המותקנת
+const TAP_URL = "shortcuts://run-shortcut?name=Elior";
 
 const C = {
   text:   new Color("#F3E9DF"),
@@ -91,7 +92,7 @@ function buildWidget(state, family) {
   bg.endPoint = new Point(1, 1);
   w.backgroundGradient = bg;
   w.setPadding(14, 15, 14, 15);
-  w.url = cleanUrl(APP_URL);
+  w.url = cleanUrl(TAP_URL);
 
   if (state.err) {
     rightText(w, "שגיאת חיבור", Font.boldSystemFont(15), C.bad).centerAlignText();
@@ -173,5 +174,5 @@ if (config.runsInWidget) {
   else if (family === "large") await widget.presentLarge();
   else await widget.presentMedium();
 }
-widget.refreshAfterDate = new Date(Date.now() + 10 * 60 * 1000);
+widget.refreshAfterDate = new Date(Date.now() + 60 * 1000);
 Script.complete();
