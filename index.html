@@ -7683,11 +7683,11 @@ const STUDY_GUIDES = [
   },
   {
     id: 'fabfilter', icon: '🎛️', tag: 'FabFilter',
-    title: 'FabFilter — Pro-Q 3 & Pro-C 2',
+    title: 'FabFilter — Pro-Q 4 & Pro-C 2',
     summary: 'ה-EQ והקומפרסור הכי מדויקים בעולם — איך לנצל את הכוח שלהם',
     content: `
-      <p class="lead">FabFilter זה דיוק כירורגי עם ממשק שמראה לך בדיוק מה קורה. שני הכלים המרכזיים: Pro-Q 3 ו-Pro-C 2.</p>
-      <h2>Pro-Q 3 (EQ)</h2>
+      <p class="lead">FabFilter זה דיוק כירורגי עם ממשק שמראה לך בדיוק מה קורה. שני הכלים המרכזיים: Pro-Q 4 ו-Pro-C 2.</p>
+      <h2>Pro-Q 4 (EQ)</h2>
       <h3>Dynamic EQ — הנשק הסודי</h3>
       <p>בנד שפועל <strong>רק כשצריך</strong>. לחץ על בנד והפעל Dynamic — מעולה לרסן תדר צורם בווקאל שקופץ רק במילים חזקות, בלי להחליש את כל השיר.</p>
       <h3>מציאת תדר בעייתי</h3>
@@ -7701,7 +7701,7 @@ const STUDY_GUIDES = [
         <li><strong>Lookahead</strong> — תופס טרנזיינטים מהירים בלי לפספס.</li>
       </ul>
       <div class="guide-rule"><b>כלל:</b> תסתכל על גרף ה-Gain Reduction. אם הוא קופץ פרוע — האטאק/ריליז לא מתאימים לחומר.</div>
-      <div class="guide-tip">💡 טיפ: ב-Pro-Q 3 לחיצה כפולה על המסך יוצרת בנד בדיוק בתדר ובגיין שאתה רוצה. מהיר ומדויק.</div>
+      <div class="guide-tip">💡 טיפ: ב-Pro-Q 4 לחיצה כפולה על המסך יוצרת בנד בדיוק בתדר ובגיין שאתה רוצה. מהיר ומדויק.</div>
     `
   },
   {
@@ -7844,7 +7844,7 @@ const STUDY_GUIDES = [
       </ul>
       <h2>שלב 2 — כוונון (Auto-Tune / Melodyne)</h2>
       <p>Melodyne לתיקון מדויק ושקוף תו-תו; Auto-Tune ל-real-time או לאפקט. אל תגזים — Retune Speed בינוני נשמע טבעי.</p>
-      <h2>שלב 3 — EQ חיתוך (FabFilter Pro-Q 3)</h2>
+      <h2>שלב 3 — EQ חיתוך (FabFilter Pro-Q 4)</h2>
       <ul>
         <li><strong>HPF</strong> ב-<strong>80-100Hz</strong> — לנקות רחש ופופים.</li>
         <li>חתוך בוץ ב-<strong>200-400Hz</strong> (בערך 2-3dB).</li>
@@ -7874,7 +7874,7 @@ const STUDY_GUIDES = [
       <p class="lead">לפסנתר טווח ענק (בס עד טרבל) ולכן הוא "אוכל" מקום. המטרה: שיתמוך, לא ישתלט.</p>
       <h2>קודם — מה התפקיד שלו?</h2>
       <p>פסנתר סולו (בלדה) מקבל מרחב ועושר. פסנתר מלווה תחת ווקאל — צריך "לפנות מקום" באמצע.</p>
-      <h2>EQ (FabFilter Pro-Q 3)</h2>
+      <h2>EQ (FabFilter Pro-Q 4)</h2>
       <ul>
         <li><strong>HPF</strong> ב-<strong>40-60Hz</strong> אם הבס הוא הכלי הנמוך; אם הפסנתר לבד — שמור את הנמוכים.</li>
         <li>חתוך עכירות ב-<strong>250-400Hz</strong>.</li>
@@ -7905,7 +7905,7 @@ const STUDY_GUIDES = [
         <li>תן לכל אחד תדר משלו: לדוגמה <strong>קיק חזק ב-60Hz</strong>, <strong>בס חזק ב-90-100Hz</strong> (או הפוך) — חתוך בכל אחד היכן שהשני שולט.</li>
         <li>לחלופין <strong>סיידצ'יין</strong> קל של הבס לקיק — הבס "נושם" כשהקיק פוגע.</li>
       </ul>
-      <h2>EQ (FabFilter Pro-Q 3)</h2>
+      <h2>EQ (FabFilter Pro-Q 4)</h2>
       <ul>
         <li><strong>HPF</strong> נמוך מאוד (20-30Hz) לנקות רעש סאב מיותר.</li>
         <li>שלוט בסאב סביב <strong>50-80Hz</strong>.</li>
@@ -7931,6 +7931,11 @@ const GUIDE_CATEGORY = {
   'mix-fundamentals':'fundamentals', 'eq-guide':'fundamentals', 'compression':'fundamentals',
   'fabfilter':'plugin', 'izotope':'plugin', 'waves':'plugin', 'true-iron':'plugin',
   'valhalla':'plugin', 'h-delay':'plugin', 'vss4':'plugin'
+};
+// תמונת כותרת לכל מדריך — נטענת מ-studies-img/<name>.png אם הועלתה (אחרת מוסתרת)
+const GUIDE_IMG = {
+  'fabfilter':'pro-q4', 'izotope':'ozone', 'waves':'waves', 'true-iron':'true-iron',
+  'valhalla':'valhalla', 'h-delay':'h-delay', 'vss4':'vss4'
 };
 
 function guideCard(g) {
@@ -7968,9 +7973,13 @@ function openGuide(id) {
   if (list) list.style.display = 'none';
   if (!detail) return;
   detail.style.display = 'block';
+  const imgName = GUIDE_IMG[g.id];
+  const imgHtml = imgName
+    ? `<img class="guide-img" src="/elior-studio-app/studies-img/${imgName}.png" alt="${g.title}" onerror="this.remove()">`
+    : '';
   detail.innerHTML = `
     <button class="studies-back" onclick="backToStudies()">← כל המדריכים</button>
-    <div class="guide-content"><h1>${g.icon} ${g.title}</h1>${g.content}</div>`;
+    <div class="guide-content"><h1>${g.icon} ${g.title}</h1>${imgHtml}${g.content}</div>`;
   window.scrollTo(0, 0);
 }
 
