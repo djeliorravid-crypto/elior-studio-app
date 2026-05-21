@@ -48,8 +48,13 @@ function money(n) {
 }
 
 // --- שליפת נתונים (רק מה שצריך, במקביל) ---
-// מנקה תווים נסתרים (כיווניות/רווחים) שעלולים להידבק לכתובת בעת העתקה
-function cleanUrl(u) { return u.replace(/[^\x20-\x7E]/g, "").trim(); }
+// משאיר רק תווים חוקיים בכתובת — מנקה תווים נסתרים, רווחים וסוגריים <> שנדבקים בהעתקה
+function cleanUrl(u) {
+  const ok = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:/._-~?=&%#";
+  let o = "";
+  for (let i = 0; i < u.length; i++) { if (ok.indexOf(u[i]) >= 0) o += u[i]; }
+  return o;
+}
 async function getKey(key) {
   const url = cleanUrl(DB_BASE + "/studio_data/" + key + ".json");
   try {
