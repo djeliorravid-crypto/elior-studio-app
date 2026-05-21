@@ -3876,6 +3876,32 @@ function runMigrations() {
   console.log('✅ מיגרציה v2 הושלמה');
 }
 
+// תיקון חד-פעמי — החזרת סימון "שולם" שנפל מהכנסות (מאי 2026)
+function fixPaidStatusesMay2026() {
+  const FIX_KEY = 'fix_paid_may2026';
+  if (localStorage.getItem(FIX_KEY)) return;
+  const paidIds = ['idmot76y89kzk','idmot76y89awd','idmon68wnv52l']; // רן 1, רן 2 (לפי התוכנית) + ארומה/נווה לוי (אושר)
+  const income = load('income');
+  let changed = false;
+  income.forEach(i => {
+    if (paidIds.includes(i.id) && i.status !== 'paid') { i.status = 'paid'; changed = true; }
+  });
+  if (changed) {
+    save('income', income);
+    const plans = load('plans');
+    let pc = false;
+    income.filter(i => paidIds.includes(i.id) && i.fromPlan && i.fromPaymentId).forEach(i => {
+      const plan = plans.find(p => p.id === i.fromPlan);
+      if (!plan) return;
+      const pay = (plan.payments || []).find(p => p.id === i.fromPaymentId);
+      if (pay && !pay.paid) { pay.paid = true; pay.paidDate = pay.paidDate || i.date; pc = true; }
+    });
+    if (pc) save('plans', plans);
+    console.log('✅ תיקון סטטוסי שולם הוחל');
+  }
+  localStorage.setItem(FIX_KEY, '1');
+}
+
 function initFirebase() {
   _loadPending(); // טען תור שמירה שנשאר מסשן קודם
   try {
@@ -3932,6 +3958,7 @@ function initFirebase() {
       firebaseReady = true;
       _isFirstSync = false;
       runMigrations();
+      fixPaidStatusesMay2026(); // תיקון חד-פעמי לסטטוסי שולם
       setTimeout(autoBackup, 3000); // גיבוי יומי אוטומטי אחרי שהנתונים התייצבו
       console.log('Firebase loaded ✓ pending:', Object.keys(_pending).length);
     }).catch(err => {
