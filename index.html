@@ -2879,24 +2879,6 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="modal-backup">
-  <div class="modal" style="max-width:420px">
-    <h3>🛟 גיבוי ושחזור</h3>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button onclick="exportBackup()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right">📤 יצוא גיבוי (הורדת קובץ)</button>
-      <label style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:block">
-        📥 ייבוא גיבוי (מקובץ)
-        <input type="file" accept=".json" onchange="importBackup(event);closeModal('backup')" style="display:none"/>
-      </label>
-      <button onclick="restoreFromAutoBackup()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right">🕓 שחזור מגיבוי אוטומטי</button>
-      <div style="background:var(--accent-light);border-radius:10px;padding:11px;font-size:12px;color:var(--accent);font-weight:600;line-height:1.5">✅ גיבוי אוטומטי נשמר כל יום (14 הימים האחרונים). דרך "שחזור מגיבוי אוטומטי" אפשר לחזור לכל יום.</div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closeModal('backup')" style="flex:1">סגור</button>
-    </div>
-  </div>
-</div>
-
 <!-- Mobile: floating back-to-lobby button -->
 <button id="mobile-lobby-btn" onclick="switchMode()" title="חזרה ללובי" aria-label="חזרה ללובי">
   <span style="font-size:13px">←</span>
@@ -2976,7 +2958,6 @@
     <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon">✅</span> משימות יומיות</a>
     <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
-    <a onclick="openModal('backup')" class="mobile-theme-nav"><span class="nav-icon">🛟</span> גיבוי</a>
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;flex-direction:column;gap:6px">
@@ -2990,7 +2971,6 @@
         📥 ייבוא גיבוי
         <input type="file" accept=".json" onchange="importBackup(event)" style="display:none"/>
       </label>
-      <button onclick="restoreFromAutoBackup()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right">🕓 שחזור מגיבוי אוטומטי</button>
     </div>
   </div>
 </aside>
