@@ -1,8 +1,8 @@
 // וידג'ט "משימות היום" — אליאור רביד (Scriptable)
 // מד התקדמות למעלה + רשימת המשימות מתחתיו. נתונים חיים מ-Firebase.
 const DB_BASE = "https://elior-studio-default-rtdb.firebaseio.com";
-// לחיצה על הוידג'ט מפעילה קיצור-דרך בשם Elior שפותח את האפליקציה המותקנת
-const TAP_URL = "shortcuts://run-shortcut?name=Elior";
+// לחיצה על הוידג'ט פותחת את האפליקציה (בדפדפן ברירת המחדל)
+const TAP_URL = "https://djeliorravid-crypto.github.io/elior-studio-app/";
 
 const C = {
   text:   new Color("#F3E9DF"),
