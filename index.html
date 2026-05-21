@@ -2956,53 +2956,53 @@
 
 <!-- ===== STUDIES (לימודים) ===== -->
 <style>
-    #studies-main { margin-right: 0; padding: 0; min-height: 100vh; background: var(--bg); }
-  .studies-wrap { max-width: 780px; margin: 0 auto; padding: 26px 18px 90px; }
-  .studies-head { margin-bottom: 22px; }
-  .studies-back { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 9px; padding: 8px 15px; font-size: 13px; font-weight: 800; cursor: pointer; color: var(--text); margin-bottom: 16px; }
-  .studies-back:hover { background: var(--surface3); }
-  .studies-head h1 { font-size: 30px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; }
-  .studies-head p { font-size: 14px; color: var(--text-muted); margin-top: 6px; }
-  .studies-section { margin-bottom: 30px; }
-  .studies-section-head { margin-bottom: 13px; }
-  .studies-section-head h2 { font-size: 19px; font-weight: 900; color: var(--text); }
-  .studies-section-head p { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
-  .studies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-  .guide-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 16px; cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; }
-  .guide-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: var(--accent); }
-  .guide-card-icon { font-size: 30px; margin-bottom: 8px; }
-  .guide-card-title { font-size: 15px; font-weight: 800; color: var(--text); }
-  .guide-card-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; line-height: 1.45; }
-  .study-title { font-size: 25px; font-weight: 900; color: var(--text); margin: 6px 0 14px; }
-  .study-tabs { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .study-tabs::-webkit-scrollbar { display: none; }
-  .study-tab { flex: 0 0 auto; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 13px; font-size: 13px; font-weight: 800; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
-  .study-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .recipe { list-style: none; margin: 0; padding: 0; }
-  .recipe li { margin-bottom: 9px; }
-  .recipe-step { display: flex; gap: 11px; align-items: flex-start; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 13px; }
-  .recipe-num { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--accent-light); color: var(--accent); font-weight: 900; font-size: 13px; display: flex; align-items: center; justify-content: center; }
-  .recipe-name { font-size: 14px; font-weight: 800; color: var(--text); }
-  .recipe-plugin { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-light); padding: 2px 8px; border-radius: 20px; margin-right: 4px; }
-  .recipe-set { font-size: 13px; color: var(--text-muted); margin-top: 4px; line-height: 1.55; }
-  .cheat { width: 100%; border-collapse: collapse; }
-  .cheat tr { border-bottom: 1px solid var(--border); }
-  .cheat td { padding: 12px 6px; font-size: 14.5px; }
-  .cheat-l { color: var(--text-muted); }
-  .cheat-v { color: var(--text); font-weight: 800; text-align: left; direction: ltr; }
-  .problem { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 9px; }
-  .problem-q { font-size: 14px; font-weight: 800; color: var(--text); }
-  .problem-a { font-size: 13.5px; color: var(--text-muted); margin-top: 5px; line-height: 1.6; }
-  .checklist { display: flex; flex-direction: column; gap: 6px; }
-  .check { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 11px; padding: 13px 14px; font-size: 14px; color: var(--text); cursor: pointer; }
-  .check input { width: 20px; height: 20px; accent-color: var(--accent); flex: 0 0 auto; }
-  .plugin-role { display: inline-block; font-size: 12px; font-weight: 800; color: var(--accent); background: var(--accent-light); padding: 4px 12px; border-radius: 20px; margin-bottom: 8px; }
-  .study-h3 { font-size: 15px; font-weight: 800; color: var(--text); margin: 14px 0 7px; }
-  .plugin-knobs { margin: 0 18px 4px; padding: 0; }
-  .plugin-knobs li { font-size: 14px; color: var(--text); line-height: 1.7; margin-bottom: 5px; }
-  .guide-rule { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 13px 15px; margin: 12px 0; font-size: 13.5px; color: var(--text); line-height: 1.6; }
-  .guide-rule b { color: var(--accent); }
-  .guide-tip { background: var(--accent-light); border-radius: 12px; padding: 12px 15px; font-size: 13.5px; color: var(--text); line-height: 1.6; border-right: 4px solid var(--accent); margin: 10px 0; }
+      #studies-main { margin-right:0; padding:0; min-height:100vh; background:#1b1610; color:#f2e9dc; }
+  .studies-wrap { max-width:780px; margin:0 auto; padding:26px 18px 90px; }
+  .studies-head { margin-bottom:22px; }
+  .studies-back { background:#2e251b; border:1.5px solid #4a3c2c; border-radius:9px; padding:8px 15px; font-size:13px; font-weight:800; cursor:pointer; color:#f2e9dc; margin-bottom:16px; }
+  .studies-back:hover { background:#3a2f23; }
+  .studies-head h1 { font-size:30px; font-weight:900; color:#f7f0e6; letter-spacing:-0.02em; }
+  .studies-head p { font-size:14px; color:#b3a690; margin-top:6px; }
+  .studies-section { margin-bottom:30px; }
+  .studies-section-head { margin-bottom:13px; }
+  .studies-section-head h2 { font-size:19px; font-weight:900; color:#f7f0e6; }
+  .studies-section-head p { font-size:12.5px; color:#b3a690; margin-top:3px; }
+  .studies-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .guide-card { background:#251e16; border:1.5px solid #3a2f23; border-radius:16px; padding:16px; cursor:pointer; transition:transform .15s, border-color .15s; }
+  .guide-card:hover { transform:translateY(-3px); border-color:#7c5cff; }
+  .guide-card-icon { font-size:30px; margin-bottom:8px; }
+  .guide-card-title { font-size:15px; font-weight:800; color:#f7f0e6; }
+  .guide-card-sub { font-size:11.5px; color:#b3a690; margin-top:4px; line-height:1.45; }
+  .study-title { font-size:25px; font-weight:900; color:#f7f0e6; margin:6px 0 14px; }
+  .study-tabs { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .study-tabs::-webkit-scrollbar { display:none; }
+  .study-tab { flex:0 0 auto; background:#2e251b; border:1.5px solid #4a3c2c; border-radius:10px; padding:9px 13px; font-size:13px; font-weight:800; color:#b3a690; cursor:pointer; white-space:nowrap; }
+  .study-tab.active { background:#7c5cff; border-color:#7c5cff; color:#fff; }
+  .recipe { list-style:none; margin:0; padding:0; }
+  .recipe li { margin-bottom:9px; }
+  .recipe-step { display:flex; gap:11px; align-items:flex-start; background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:12px 13px; }
+  .recipe-num { flex:0 0 26px; height:26px; border-radius:50%; background:rgba(124,92,255,0.22); color:#c9b8ff; font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .recipe-name { font-size:14px; font-weight:800; color:#f7f0e6; }
+  .recipe-plugin { display:inline-block; font-size:11px; font-weight:700; color:#c9b8ff; background:rgba(124,92,255,0.16); padding:2px 8px; border-radius:20px; margin-right:4px; }
+  .recipe-set { font-size:13px; color:#bcae98; margin-top:4px; line-height:1.55; }
+  .cheat { width:100%; border-collapse:collapse; }
+  .cheat tr { border-bottom:1px solid #3a2f23; }
+  .cheat td { padding:12px 6px; font-size:14.5px; }
+  .cheat-l { color:#b3a690; }
+  .cheat-v { color:#f7f0e6; font-weight:800; text-align:left; direction:ltr; }
+  .problem { background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:12px 14px; margin-bottom:9px; }
+  .problem-q { font-size:14px; font-weight:800; color:#f7f0e6; }
+  .problem-a { font-size:13.5px; color:#bcae98; margin-top:5px; line-height:1.6; }
+  .checklist { display:flex; flex-direction:column; gap:6px; }
+  .check { display:flex; align-items:center; gap:11px; background:#251e16; border:1.5px solid #3a2f23; border-radius:11px; padding:13px 14px; font-size:14px; color:#f2e9dc; cursor:pointer; }
+  .check input { width:20px; height:20px; accent-color:#7c5cff; flex:0 0 auto; }
+  .plugin-role { display:inline-block; font-size:12px; font-weight:800; color:#c9b8ff; background:rgba(124,92,255,0.16); padding:4px 12px; border-radius:20px; margin-bottom:8px; }
+  .study-h3 { font-size:15px; font-weight:800; color:#f7f0e6; margin:14px 0 7px; }
+  .plugin-knobs { margin:0 18px 4px; padding:0; }
+  .plugin-knobs li { font-size:14px; color:#e8dcc9; line-height:1.7; margin-bottom:5px; }
+  .guide-rule { background:#2e251b; border:1.5px solid #4a3c2c; border-radius:12px; padding:13px 15px; margin:12px 0; font-size:13.5px; color:#f2e9dc; line-height:1.6; }
+  .guide-rule b { color:#c9b8ff; }
+  .guide-tip { background:rgba(124,92,255,0.14); border-radius:12px; padding:12px 15px; font-size:13.5px; color:#f2e9dc; line-height:1.6; border-right:4px solid #7c5cff; margin:10px 0; }
 </style>
 <main class="main" id="studies-main" style="display:none">
   <div class="studies-wrap">
