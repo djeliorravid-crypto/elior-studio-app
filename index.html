@@ -7697,17 +7697,6 @@ function renderStudies(){
     '<div class="proj-stat"><div class="proj-stat-num">' + done.length + '</div><div class="proj-stat-lbl">נמסרו</div></div>' +
     '</div>';
 
-  // משימות = הפעולה הבאה מכל פרויקט פעיל
-  const tasks = active.filter(function(p){ return projNext(p.id); });
-  if(tasks.length){
-    h += '<div class="proj-tasks"><div class="proj-tasks-head">📌 המשימות שלך</div>' +
-      tasks.map(function(p){
-        return '<div class="proj-task" onclick="openProject(\'' + p.id + '\')">' +
-          '<div><div class="proj-task-txt">' + projNext(p.id) + '</div>' +
-          '<div class="proj-task-proj">' + p.name + '</div></div></div>';
-      }).join('') + '</div>';
-  }
-
   // פרויקטים פעילים
   h += '<div class="proj-list-head">הפרויקטים בעבודה</div>';
   h += active.length ? active.map(projCard).join('') : '<div class="proj-empty">אין פרויקטים פעילים 🎉</div>';
