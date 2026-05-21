@@ -2988,11 +2988,12 @@
   .proj-textarea { width:100%; background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:12px 14px; font-size:15px; color:#f2e9dc; outline:none; direction:rtl; font-family:inherit; resize:vertical; min-height:90px; }
   .proj-textarea::placeholder { color:#7d715f; }
   .proj-del { margin-top:22px; width:100%; background:transparent; border:1.5px solid #6e3b3b; border-radius:11px; padding:12px; font-size:14px; font-weight:800; color:#e08a8a; cursor:pointer; }
+  @media (max-width:768px) { .studies-lobby-btn { display:none; } }
 </style>
 <main class="main" id="studies-main" style="display:none">
   <div class="studies-wrap">
     <div class="studies-head">
-      <button class="studies-back" onclick="switchMode()">← לובי</button>
+      <button class="studies-back studies-lobby-btn" onclick="switchMode()">← לובי</button>
       <h1>🎚️ הפקות</h1>
       <p>כל ההפקות שלך במקום אחד — שלב, הפעולה הבאה והערות</p>
     </div>
