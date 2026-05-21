@@ -2166,10 +2166,15 @@
       line-height: 1.5;
     }
     @media (max-width: 500px) {
-      .mode-screen-title { font-size: 28px; padding: 0 20px; }
-      .mode-cards-row { flex-direction: column; gap: 18px; }
-      .mode-card { width: 280px; padding: 36px 32px; }
-      .mode-card-icon { font-size: 52px; }
+      #mode-screen { gap: 24px; padding: 0 0 24px; justify-content: center; }
+      .mode-screen-title { font-size: 25px; padding: 0 20px; }
+      .mode-screen-title small { margin-top: 6px; }
+      .mode-cards-row { flex-direction: column; gap: 13px; }
+      .mode-card { width: 286px; padding: 18px 26px; border-radius: 18px; }
+      .mode-card-icon { font-size: 38px; margin-bottom: 7px; }
+      .mode-card-icon svg { width: 40px; height: 40px; }
+      .mode-card-title { font-size: 18px; }
+      .mode-card-sub { font-size: 12px; margin-top: 4px; }
     }
 
     /* ===== MUSIC SECTION ===== */
@@ -7668,6 +7673,155 @@ const STUDY_GUIDES = [
       </ul>
       <div class="guide-rule"><b>כלל:</b> אם שומעים את הקומפרסור "נושם" או "שואב" — הורד Ratio או האט את ה-Release.</div>
       <div class="guide-tip">💡 טיפ: דחיסה של 2-4dB מספיקה כמעט תמיד. אם אתה לוחץ 10dB — כנראה צריך שני קומפרסורים עדינים בשרשרת, לא אחד אגרסיבי.</div>
+    `
+  },
+  {
+    id: 'fabfilter', icon: '🎛️', tag: 'FabFilter',
+    title: 'FabFilter — Pro-Q 3 & Pro-C 2',
+    summary: 'ה-EQ והקומפרסור הכי מדויקים בעולם — איך לנצל את הכוח שלהם',
+    content: `
+      <p class="lead">FabFilter זה דיוק כירורגי עם ממשק שמראה לך בדיוק מה קורה. שני הכלים המרכזיים: Pro-Q 3 ו-Pro-C 2.</p>
+      <h2>Pro-Q 3 (EQ)</h2>
+      <h3>Dynamic EQ — הנשק הסודי</h3>
+      <p>בנד שפועל <strong>רק כשצריך</strong>. לחץ על בנד והפעל Dynamic — מעולה לרסן תדר צורם בווקאל שקופץ רק במילים חזקות, בלי להחליש את כל השיר.</p>
+      <h3>מציאת תדר בעייתי</h3>
+      <p>החזק <strong>Solo</strong> על בנד (אוזניות עם לופ) וגרור לאורך הספקטרום עד שמוצאים את הצרימה — ואז חותכים.</p>
+      <h3>Mid/Side</h3>
+      <p>הפרד עיבוד לאמצע ולצדדים: נקה בוץ מהאמצע (Mid) ופתח אוויר בצדדים (Side) למיקס רחב.</p>
+      <h2>Pro-C 2 (קומפרסור)</h2>
+      <ul>
+        <li><strong>Styles</strong> — בחר לפי מקור: Vocal לווקאל, Punch לתופים, Bus ל"דבק", Opto לרכות, Mastering למאסטר.</li>
+        <li><strong>Sidechain HPF</strong> — שהבס לא "ידחוף" את הקומפרסור; מסנן את התדרים הנמוכים מהזיהוי.</li>
+        <li><strong>Lookahead</strong> — תופס טרנזיינטים מהירים בלי לפספס.</li>
+      </ul>
+      <div class="guide-rule"><b>כלל:</b> תסתכל על גרף ה-Gain Reduction. אם הוא קופץ פרוע — האטאק/ריליז לא מתאימים לחומר.</div>
+      <div class="guide-tip">💡 טיפ: ב-Pro-Q 3 לחיצה כפולה על המסך יוצרת בנד בדיוק בתדר ובגיין שאתה רוצה. מהיר ומדויק.</div>
+    `
+  },
+  {
+    id: 'izotope', icon: '🎚️', tag: 'מאסטרינג',
+    title: 'iZotope — Ozone & Nectar',
+    summary: 'מאסטרינג ו-ווקאל חכמים — ואיך לא לתת ל-AI להחליט במקומך',
+    content: `
+      <p class="lead">iZotope נותן לך נקודת פתיחה מהירה עם AI — אבל האוזן שלך מקבלת את ההחלטה הסופית.</p>
+      <h2>Ozone (מאסטרינג)</h2>
+      <ul>
+        <li><strong>Master Assistant</strong> — תן לו לנתח ולתת התחלה, אבל אל תשאיר אותו כמו שהוא. זו טיוטה, לא מאסטר.</li>
+        <li><strong>Maximizer</strong> — הכלי שמגביר עוצמה. דחוף בעדינות ושמור על <strong>True Peak של -1 dBTP</strong> שלא יהיו עיוותים.</li>
+        <li><strong>יעד עוצמה</strong> — לסטרימינג כוון בערך <strong>-14 LUFS</strong>. חזק יותר רק מעוות, לא "טוב יותר".</li>
+        <li><strong>Imager</strong> — הרחבה עדינה, ותמיד בדוק במונו שלא נופל משהו.</li>
+      </ul>
+      <h2>Nectar (ווקאל)</h2>
+      <p>שרשרת ווקאל שלמה במקום אחד (EQ, דחיסה, די-אסר, רוויה). ה-Assistant נותן בסיס — כוון ידנית את הדי-אסר ואת הדחיסה לפי השיר.</p>
+      <h2>RX (ניקוי הקלטות)</h2>
+      <p>זהב לתיקון הקלטות: <strong>De-noise</strong> (רעש רקע), <strong>De-click</strong> (נקישות), <strong>Mouth De-click</strong> (רוק בפה). תקן לפני המיקס, לא אחרי.</p>
+      <div class="guide-tip">💡 טיפ: עשה מאסטרינג עם אוזניים רעננות וברפרנס מסחרי פתוח לידך. עוצמה זה הדבר שהכי קל לטעות בו.</div>
+    `
+  },
+  {
+    id: 'waves', icon: '🌊', tag: 'Waves',
+    title: 'Waves — הקלאסיקות שחייבים',
+    summary: 'CLA, SSL, Renaissance — מתי להשתמש בכל אחד',
+    content: `
+      <p class="lead">לוועיס יש מאות פלאגינים, אבל באמת צריך קומץ. אלה האלופים והשימוש הנכון בכל אחד.</p>
+      <h2>Renaissance — נקי וקל</h2>
+      <p>נקודת פתיחה מצוינת: <strong>R-Comp</strong>, <strong>R-EQ</strong>, <strong>R-Vox</strong> (ווקאל בלחיצה), <strong>R-Bass</strong> (מוסיף נוכחות לבס גם ברמקולים קטנים). שקוף ועושה את העבודה.</p>
+      <h2>CLA — אופי אנלוגי</h2>
+      <ul>
+        <li><strong>CLA-2A</strong> — דחיסה רכה ומוזיקלית לווקאל ולבס.</li>
+        <li><strong>CLA-76</strong> — מהיר ואגרסיבי, פּאנץ' לתופים וזעם לווקאל. (אמולציה של 1176).</li>
+      </ul>
+      <h2>SSL — דבק למיקס</h2>
+      <p><strong>SSL G-Bus Compressor</strong> על המאסטר-באס: Ratio 2:1, אטאק איטי, Release על Auto, דחיסה 1-2dB. כל המיקס פתאום מתלכד.</p>
+      <div class="guide-rule"><b>כלל:</b> אל תשים את אותו פלאגין על הכל. בחר כלי לפי האופי שאתה רוצה — נקי (Renaissance) או צבעוני (CLA).</div>
+      <div class="guide-tip">💡 טיפ: H-Delay ו-H-Comp של ועיס הם בין הטובים בעולם — ל-H-Delay יש מדריך נפרד כאן.</div>
+    `
+  },
+  {
+    id: 'true-iron', icon: '🪵', tag: 'רוויה / צבע',
+    title: 'True Iron — חום של טרנספורמר',
+    summary: 'רוויה אנלוגית שמוסיפה גוף, משקל ועושר הרמוני',
+    content: `
+      <p class="lead">True Iron (של Kush Audio) מדמה שני טרנספורמרים של ברזל — הצבע האנלוגי שהופך צליל "דיגיטלי" לחי ובעל גוף.</p>
+      <h2>איך זה עובד</h2>
+      <p><strong>Input</strong> דוחף את הצליל לתוך הברזל (יותר רוויה), <strong>Output</strong> מאזן בחזרה. שני ה-voicings נותנים אופי שונה — נסה ובחר באוזן.</p>
+      <h2>איפה זה זוהר</h2>
+      <ul>
+        <li><strong>בס</strong> — מוסיף משקל והרמוניות שנשמעות גם ברמקולים קטנים.</li>
+        <li><strong>באס תופים / Drum Bus</strong> — גוף וגראנג' שמלכד.</li>
+        <li><strong>ווקאל</strong> — חום עדין שמקרב אותו לאוזן.</li>
+        <li><strong>מאסטר</strong> — נגיעה קלה בלבד לליטוש.</li>
+      </ul>
+      <div class="guide-rule"><b>כלל:</b> רוויה זה תבלין. כוון עד שזה נשמע טוב, ואז הורד קצת — בדרך כלל הגזמת.</div>
+      <div class="guide-tip">💡 טיפ: בדוק עם Bypass שהעוצמה זהה. רוויה מעלה עוצמה ומשלה אותך שזה "יותר טוב" כשזה פשוט יותר חזק.</div>
+    `
+  },
+  {
+    id: 'valhalla', icon: '🏛️', tag: 'ריוורב',
+    title: 'Valhalla — ריוורבים שאי אפשר בלעדיהם',
+    summary: 'VintageVerb, Room ו-Plate — מתי כל אחד, ואיך לשמור על בהירות',
+    content: `
+      <p class="lead">Valhalla נותן צליל יוקרתי במחיר נמוך. הסוד הוא לא כמה ריוורב — אלא איך לשמור שהמיקס לא יהפוך לבוץ.</p>
+      <h2>מי מתאים למה</h2>
+      <ul>
+        <li><strong>VintageVerb</strong> — עשיר ו"וינטג'", מושלם לווקאל ולסינתים. מצבי צבע שונים (70s/80s).</li>
+        <li><strong>Room</strong> — חללים קטנים ואמיתיים, מלכד כלים בלי להרחיק אותם.</li>
+        <li><strong>Plate</strong> — ריוורב צפוף ובהיר, קלאסי לווקאל ולסנייר.</li>
+      </ul>
+      <h2>הכללים לשמירת בהירות</h2>
+      <ul>
+        <li><strong>Predelay</strong> (20-40ms) — מפריד את הריוורב מהצליל היבש כך שהמילים נשארות ברורות.</li>
+        <li><strong>HPF/LPF על הריוורב</strong> — חתוך נמוכים מתחת ~200Hz וגבוהים מעל ~8kHz שלא יבייץ ולא יצרום.</li>
+        <li><strong>Send, לא Insert</strong> — שלח כמה כלים לאותו ריוורב; זה יוצר חלל אחיד וחוסך CPU.</li>
+        <li><strong>Mix נמוך</strong> — 15-25% בדרך כלל מספיק.</li>
+      </ul>
+      <div class="guide-tip">💡 טיפ: ריוורב צריך להרגיש, לא לשמוע. אם אתה "שומע ריוורב" — כנראה יש יותר מדי.</div>
+    `
+  },
+  {
+    id: 'h-delay', icon: '⏱️', tag: 'דיליי',
+    title: 'Waves H-Delay — דיליי חי',
+    summary: 'סלאפבק, 1/8 דוטד והאופי האנלוגי — כל הטריקים',
+    content: `
+      <p class="lead">H-Delay הוא דיליי היברידי עם אופי אנלוגי מדהים. כמה טריקים הופכים אותו מאפקט לכלי מיקס אמיתי.</p>
+      <h2>סנכרון לטמפו</h2>
+      <p>הפעל <strong>Sync</strong> שהדיליי יתנגן בקצב השיר. הערך הקלאסי: <strong>1/8 dotted (מנוקד)</strong> — האפקט ה"מתגלגל" המפורסם מ-U2 וכו'.</p>
+      <h2>סלאפבק (Slapback)</h2>
+      <p>דיליי קצר יחיד, <strong>80-120ms, בלי Feedback</strong>. מוסיף לווקאל ולגיטרות תחושת חדר ועומק רטרו בלי "אקו".</p>
+      <h2>אופי</h2>
+      <ul>
+        <li><strong>Analog</strong> — מוסיף חום וריווי לחזרות.</li>
+        <li><strong>LoFi</strong> — מלכלך את הדיליי שיישב מאחורי הצליל היבש.</li>
+        <li><strong>Ping-Pong</strong> — חזרות שקופצות בין שמאל לימין, רוחב מיידי.</li>
+      </ul>
+      <h2>שילוב נכון במיקס</h2>
+      <ul>
+        <li>שים על <strong>Send</strong>, ו-HPF/LPF על הדיליי שלא יתחרה עם הווקאל היבש.</li>
+        <li><strong>אוטומציה של "throws"</strong> — שלח לדיליי רק את המילה האחרונה במשפט. אפקט מקצועי שלא מבלגן.</li>
+      </ul>
+      <div class="guide-tip">💡 טיפ: דיליי מנוקד (dotted) ממלא את החללים בין המילים בלי להתנגש בקצב. כמעט תמיד הבחירה הנכונה לווקאל.</div>
+    `
+  },
+  {
+    id: 'vss4', icon: '✨', tag: 'ריוורב',
+    title: 'VSS4 — ריוורב יוקרתי',
+    summary: 'הריוורב האלגוריתמי האגדי — עומק תלת-ממדי בלי בוץ',
+    content: `
+      <p class="lead">VSS4 (האלגוריתם מ-TC System 6000) הוא מהריוורבים העשירים בעולם — חלל תלת-ממדי לווקאל, מיתרים והפקות גדולות.</p>
+      <h2>שני המרכיבים</h2>
+      <ul>
+        <li><strong>Early Reflections</strong> — ההחזרות הראשונות שמגדירות את גודל החדר ואת תחושת המרחק.</li>
+        <li><strong>Reverb Tail</strong> — הזנב הארוך והעשיר. האיזון בין השניים = עומק בלי "רחצה".</li>
+      </ul>
+      <h2>איך מכווננים</h2>
+      <ul>
+        <li><strong>Predelay</strong> — מפריד את הריוורב מהיבש; שומר על נוכחות הווקאל.</li>
+        <li><strong>Decay</strong> — לפי הטמפו והסגנון; בלדה ארוך יותר, קצבי קצר.</li>
+        <li><strong>EQ על ה-Return</strong> — חתוך מתחת ~200Hz (שלא יבייץ) ורסן גבוהים אם צורם.</li>
+        <li><strong>Send בלבד</strong> — אף פעם לא כ-Insert על הווקאל.</li>
+      </ul>
+      <div class="guide-rule"><b>כלל:</b> ריוורב יוקרתי מפתה להגזים. תכוון פחות רטוב ממה שנדמה לך — בהקשר המיקס זה מתיישב מושלם.</div>
+      <div class="guide-tip">💡 טיפ: שלב VSS4 (חלל) עם דיליי מנוקד (קצב) — הריוורב נותן עומק והדיליי נותן תנועה. ביחד = ווקאל מקצועי.</div>
     `
   }
 ];
