@@ -2971,6 +2971,7 @@
         📥 ייבוא גיבוי
         <input type="file" accept=".json" onchange="importBackup(event)" style="display:none"/>
       </label>
+      <button onclick="restoreFromAutoBackup()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right">🕓 שחזור מגיבוי אוטומטי</button>
     </div>
   </div>
 </aside>
@@ -3912,6 +3913,7 @@ function initFirebase() {
       firebaseReady = true;
       _isFirstSync = false;
       runMigrations();
+      setTimeout(autoBackup, 3000); // גיבוי יומי אוטומטי אחרי שהנתונים התייצבו
       console.log('Firebase loaded ✓ pending:', Object.keys(_pending).length);
     }).catch(err => {
       console.warn('Firebase load failed — using local data:', err.message);
@@ -3994,6 +3996,89 @@ function save(key, val) {
   _savePending();
   // 3. נסה לדחוף לענן עכשיו
   _pushKey(key);
+}
+
+// ===== גיבוי אוטומטי יומי =====
+// כל יום נשמר עותק מלא של כל הנתונים בצומת נפרד בענן (studio_backups)
+// וגם עותק מקומי. כך תמיד יש נקודת שחזור גם אם הנתונים החיים נדרסים.
+const BACKUP_KEEP_DAYS = 14;
+
+function _collectAllData() {
+  const data = {};
+  ALL_KEYS.forEach(k => {
+    const v = localStorage.getItem('s_' + k);
+    if (v) { try { data[k] = JSON.parse(v); } catch(e){} }
+  });
+  return data;
+}
+
+function _hasMeaningfulData(data) {
+  // אל תגבה מצב ריק על גבי גיבוי תקין
+  const inc = data.income, exp = data.expenses;
+  return (Array.isArray(inc) && inc.length > 0) || (Array.isArray(exp) && exp.length > 0);
+}
+
+function autoBackup() {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('_last_auto_backup') === today) return; // כבר גובה היום
+
+    const data = _collectAllData();
+    if (!_hasMeaningfulData(data)) return; // אין מה לגבות
+
+    // 1. עותק מקומי — תמיד, גם בלי אינטרנט
+    try { localStorage.setItem('_local_backup', JSON.stringify({ date: today, ts: Date.now(), data })); } catch(e) {}
+
+    // 2. עותק לענן בצומת נפרד — לא נוגע בנתונים החיים
+    if (firebaseDB) {
+      firebaseDB.ref('studio_backups/' + today).set({ ts: Date.now(), data })
+        .then(() => { localStorage.setItem('_last_auto_backup', today); _pruneBackups(); })
+        .catch(() => {});
+    } else {
+      localStorage.setItem('_last_auto_backup', today);
+    }
+  } catch(e) { console.warn('autoBackup failed', e); }
+}
+
+function _pruneBackups() {
+  if (!firebaseDB) return;
+  firebaseDB.ref('studio_backups').once('value').then(snap => {
+    const all = snap.val() || {};
+    const dates = Object.keys(all).sort(); // ישן → חדש
+    if (dates.length <= BACKUP_KEEP_DAYS) return;
+    const updates = {};
+    dates.slice(0, dates.length - BACKUP_KEEP_DAYS).forEach(d => { updates['studio_backups/' + d] = null; });
+    firebaseDB.ref().update(updates).catch(() => {});
+  }).catch(() => {});
+}
+
+function restoreFromAutoBackup() {
+  if (!firebaseDB) { toast('❌ אין חיבור לענן לשחזור'); return; }
+  toast('טוען רשימת גיבויים…');
+  firebaseDB.ref('studio_backups').once('value').then(snap => {
+    const all = snap.val() || {};
+    const dates = Object.keys(all).sort().reverse(); // חדש → ישן
+    if (!dates.length) { toast('אין עדיין גיבויים אוטומטיים'); return; }
+    const list = dates.map((d, i) => {
+      const bd = all[d] && all[d].data ? all[d].data : {};
+      const inc = Array.isArray(bd.income) ? bd.income.length : 0;
+      const exp = Array.isArray(bd.expenses) ? bd.expenses.length : 0;
+      return (i + 1) + '. ' + d + ' — ' + inc + ' הכנסות, ' + exp + ' הוצאות';
+    }).join('\n');
+    const choice = prompt('בחר מספר גיבוי לשחזור:\n\n' + list);
+    if (!choice) return;
+    const idx = parseInt(choice, 10) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= dates.length) { toast('בחירה לא תקינה'); return; }
+    const backup = all[dates[idx]];
+    if (!backup || !backup.data) { toast('גיבוי לא תקין'); return; }
+    if (!confirm('לשחזר את הגיבוי מ-' + dates[idx] + '?\nזה יחליף את הנתונים הנוכחיים בכל המכשירים.')) return;
+    ALL_KEYS.forEach(k => {
+      if (backup.data[k] !== undefined) localStorage.setItem('s_' + k, JSON.stringify(backup.data[k]));
+    });
+    pushAllToCloud();
+    refreshAll();
+    toast('✅ שוחזר גיבוי מ-' + dates[idx]);
+  }).catch(() => toast('❌ שגיאה בטעינת גיבויים'));
 }
 
 const genId = () => 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
