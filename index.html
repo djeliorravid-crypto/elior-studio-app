@@ -2956,40 +2956,53 @@
 
 <!-- ===== STUDIES (לימודים) ===== -->
 <style>
-  #studies-main { margin-right: 0; padding: 0; min-height: 100vh; background: var(--bg); }
+    #studies-main { margin-right: 0; padding: 0; min-height: 100vh; background: var(--bg); }
   .studies-wrap { max-width: 780px; margin: 0 auto; padding: 26px 18px 90px; }
   .studies-head { margin-bottom: 22px; }
-  .studies-back { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 9px; padding: 7px 14px; font-size: 13px; font-weight: 800; cursor: pointer; color: var(--text); margin-bottom: 16px; }
+  .studies-back { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 9px; padding: 8px 15px; font-size: 13px; font-weight: 800; cursor: pointer; color: var(--text); margin-bottom: 16px; }
   .studies-back:hover { background: var(--surface3); }
   .studies-head h1 { font-size: 30px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; }
   .studies-head p { font-size: 14px; color: var(--text-muted); margin-top: 6px; }
-  .studies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 14px; }
-  .guide-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 18px; cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; position: relative; overflow: hidden; }
-  .guide-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: var(--accent); }
-  .guide-card-icon { font-size: 30px; margin-bottom: 10px; }
-  .guide-card-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 5px; }
-  .guide-card-sub { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
-  .guide-card-tag { display:inline-block; margin-top:10px; font-size:10.5px; font-weight:800; color: var(--accent); background: var(--accent-light); padding: 3px 9px; border-radius: 20px; }
-  .guide-content { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 24px 22px; margin-top: 14px; }
-  .guide-content h1 { font-size: 26px; font-weight: 900; color: var(--text); margin-bottom: 6px; letter-spacing: -0.02em; }
-  .guide-content .lead { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
-  .guide-content h2 { font-size: 19px; font-weight: 800; color: var(--text); margin: 24px 0 10px; padding-bottom: 7px; border-bottom: 2px solid var(--border); }
-  .guide-content h3 { font-size: 15.5px; font-weight: 800; color: var(--accent); margin: 16px 0 6px; }
-  .guide-content p { font-size: 14px; color: var(--text); line-height: 1.75; margin-bottom: 10px; }
-  .guide-content ul { margin: 4px 18px 14px; padding: 0; }
-  .guide-content li { font-size: 14px; color: var(--text); line-height: 1.7; margin-bottom: 7px; }
-  .guide-content strong { color: var(--text); font-weight: 800; }
-  .guide-tip { background: var(--accent-light); border-radius: 12px; padding: 13px 15px; font-size: 13.5px; color: var(--text); line-height: 1.65; margin: 14px 0; border-right: 4px solid var(--accent); }
-  .guide-rule { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 13px 15px; margin: 10px 0; }
-  .guide-rule b { color: var(--accent); }
   .studies-section { margin-bottom: 30px; }
   .studies-section-head { margin-bottom: 13px; }
-  .studies-section-head h2 { font-size: 19px; font-weight: 900; color: var(--text); letter-spacing: -0.01em; }
+  .studies-section-head h2 { font-size: 19px; font-weight: 900; color: var(--text); }
   .studies-section-head p { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; }
-  .guide-img { width: 100%; border-radius: 12px; border: 1.5px solid var(--border); margin: 14px 0 4px; display: block; }
-  .guide-img-cap { font-size: 11.5px; color: var(--text-muted); text-align: center; margin-bottom: 14px; }
-  .guide-visual { width: 100%; height: auto; border-radius: 12px; border: 1.5px solid var(--border); margin: 14px 0 4px; display: block; }
-  .guide-visual-cap { font-size: 11.5px; color: var(--text-muted); text-align: center; margin-bottom: 14px; }
+  .studies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .guide-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 16px; cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; }
+  .guide-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: var(--accent); }
+  .guide-card-icon { font-size: 30px; margin-bottom: 8px; }
+  .guide-card-title { font-size: 15px; font-weight: 800; color: var(--text); }
+  .guide-card-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; line-height: 1.45; }
+  .study-title { font-size: 25px; font-weight: 900; color: var(--text); margin: 6px 0 14px; }
+  .study-tabs { display: flex; gap: 6px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .study-tabs::-webkit-scrollbar { display: none; }
+  .study-tab { flex: 0 0 auto; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 13px; font-size: 13px; font-weight: 800; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+  .study-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .recipe { list-style: none; margin: 0; padding: 0; }
+  .recipe li { margin-bottom: 9px; }
+  .recipe-step { display: flex; gap: 11px; align-items: flex-start; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 13px; }
+  .recipe-num { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--accent-light); color: var(--accent); font-weight: 900; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .recipe-name { font-size: 14px; font-weight: 800; color: var(--text); }
+  .recipe-plugin { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-light); padding: 2px 8px; border-radius: 20px; margin-right: 4px; }
+  .recipe-set { font-size: 13px; color: var(--text-muted); margin-top: 4px; line-height: 1.55; }
+  .cheat { width: 100%; border-collapse: collapse; }
+  .cheat tr { border-bottom: 1px solid var(--border); }
+  .cheat td { padding: 12px 6px; font-size: 14.5px; }
+  .cheat-l { color: var(--text-muted); }
+  .cheat-v { color: var(--text); font-weight: 800; text-align: left; direction: ltr; }
+  .problem { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 9px; }
+  .problem-q { font-size: 14px; font-weight: 800; color: var(--text); }
+  .problem-a { font-size: 13.5px; color: var(--text-muted); margin-top: 5px; line-height: 1.6; }
+  .checklist { display: flex; flex-direction: column; gap: 6px; }
+  .check { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 11px; padding: 13px 14px; font-size: 14px; color: var(--text); cursor: pointer; }
+  .check input { width: 20px; height: 20px; accent-color: var(--accent); flex: 0 0 auto; }
+  .plugin-role { display: inline-block; font-size: 12px; font-weight: 800; color: var(--accent); background: var(--accent-light); padding: 4px 12px; border-radius: 20px; margin-bottom: 8px; }
+  .study-h3 { font-size: 15px; font-weight: 800; color: var(--text); margin: 14px 0 7px; }
+  .plugin-knobs { margin: 0 18px 4px; padding: 0; }
+  .plugin-knobs li { font-size: 14px; color: var(--text); line-height: 1.7; margin-bottom: 5px; }
+  .guide-rule { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 13px 15px; margin: 12px 0; font-size: 13.5px; color: var(--text); line-height: 1.6; }
+  .guide-rule b { color: var(--accent); }
+  .guide-tip { background: var(--accent-light); border-radius: 12px; padding: 12px 15px; font-size: 13.5px; color: var(--text); line-height: 1.6; border-right: 4px solid var(--accent); margin: 10px 0; }
 </style>
 <main class="main" id="studies-main" style="display:none">
   <div class="studies-wrap">
@@ -7603,502 +7616,237 @@ function showMode(mode) {
 }
 
 // ===== לימודים — מדריכים =====
-const STUDY_GUIDES = [
+const STUDY_INSTRUMENTS = [
   {
-    id: 'mix-fundamentals', icon: '🎚️', tag: 'כללי יסוד',
-    title: 'כללי יסוד במיקס',
-    summary: '7 העקרונות שכל מיקס טוב עומד עליהם — לפני שנוגעים בפלאגין אחד',
-    content: `
-      <p class="lead">מיקס טוב לא מתחיל מפלאגין יקר — הוא מתחיל מהרגלים נכונים. אלה 7 הכללים שיחזיקו לך כל פרויקט.</p>
-      <h2>1. Gain Staging — סדר בעוצמות</h2>
-      <p>שכל ערוץ ייכנס בעוצמה בריאה: שיא של בערך <strong>-6 עד -12 dB</strong>, לא נוגע באדום. אם נכנסת חזק מדי, כל הפלאגינים אחרי זה עובדים לא נכון.</p>
-      <h2>2. השאר Headroom</h2>
-      <p>אל תמלא את המאסטר עד הסוף. תשאיר בערך <strong>-6 dB</strong> פנויים במאסטר — זה נותן למאסטרינג מקום לנשום.</p>
-      <h2>3. תמיד עם רפרנס</h2>
-      <p>תפתח שיר מקצועי בסגנון שלך והשווה מולו. האוזן מתעייפת ומשקרת — רפרנס מחזיר אותך לאמת.</p>
-      <h2>4. בדוק במונו</h2>
-      <p>תלחץ מונו מדי פעם. אם משהו נעלם או נשמע חלש — יש לך בעיית פאזה. מיקס שנשמע טוב במונו נשמע מעולה בסטריאו.</p>
-      <div class="guide-rule"><b>הכלל הזהב:</b> פחות זה יותר. עדיף להוריד מה שמפריע מאשר להוסיף עוד ועוד.</div>
-      <h2>5. סדר את הארנג'מנט קודם</h2>
-      <p>אי אפשר למקס בלגן. אם שני כלים נלחמים על אותו מקום — לפעמים הפתרון הוא להשתיק אחד, לא לאקווליז.</p>
-      <h2>6. מקס בעוצמה נמוכה</h2>
-      <p>כשממקסים חזק הכל נשמע טוב. עוצמה נמוכה חושפת את האמת ושומרת על האוזניים.</p>
-      <h2>7. תן לאוזניים לנוח</h2>
-      <p>כל 45-60 דקות — הפסקה של 10 דקות. החלטות שמתקבלות עם אוזניים עייפות תמיד צריך לתקן למחרת.</p>
-      <div class="guide-tip">💡 טיפ: תשמור גרסה לפני שינוי גדול. "Save As" זה הביטוח הכי זול בעולם.</div>
-    `
+    id:'vocal', name:'ווקאל', icon:'🎤',
+    recipe:[
+      {step:'ניקוי', plugin:'iZotope RX', set:'De-noise, De-click, Mouth De-click. אזן נשימות (להחליש, לא למחוק).'},
+      {step:'כוונון', plugin:'Melodyne / Auto-Tune', set:'Melodyne תו-תו לשקיפות; Retune Speed בינוני = טבעי.'},
+      {step:'clip-gain ידני', plugin:'—', set:'יישור ווליום מילה-מילה לפני הדחיסה. הנשק הסודי.'},
+      {step:'EQ חיתוך', plugin:'Pro-Q 4', set:'HPF 90Hz · חתך בוץ 250Hz · בנד דינמי 3-5kHz לחספוס.'},
+      {step:'דחיסה 1 (רכה)', plugin:'UAD LA-2A Silver', set:'3-4dB, אופי אופטי רך ומוזיקלי.'},
+      {step:'דחיסה 2 (פאנץ)', plugin:'UAD 1176', set:'אטאק מהיר, ריליז מהיר, עוד 2-3dB ליישור.'},
+      {step:'De-ess', plugin:'Pro-Q 4 (דינמי)', set:'בנד דינמי 5-8kHz, רק כמה dB וכשמופיע.'},
+      {step:'צבע', plugin:'UAD Ampex (טייפ)', set:'נגיעת רוויה לחום וגוף שמקרב לאוזן.'},
+      {step:'ריוורב (Send)', plugin:'Valhalla Plate / VSS4', set:'Predelay 20-40ms שהמילים יישארו ברורות.'},
+      {step:'דיליי (Send)', plugin:'Waves H-Delay', set:'1/8 מנוקד, HPF/LPF, throws בסופי שורות.'}
+    ],
+    cheatsheet:[
+      {l:'HPF', v:'80-100Hz'},
+      {l:'בוץ — לחתוך', v:'200-400Hz'},
+      {l:'נוכחות — להרים', v:'+5kHz'},
+      {l:'אוויר — להרים', v:'+12kHz'},
+      {l:'דה-אס / חספוס', v:'5-8kHz'},
+      {l:'דחיסה', v:'2 שלבים, ~3+3dB'},
+      {l:'ריוורב Predelay', v:'20-40ms'}
+    ],
+    problems:[
+      {q:'צורם / חד מדי', a:'De-ess 5-8kHz + בנד דינמי שמרסן 3-5kHz. אל תחתוך קבוע.'},
+      {q:'קבור במיקס', a:'הרם נוכחות 3-5kHz, ופנה את אותו אזור בכלים שמסביב.'},
+      {q:'דק / חלש', a:'גוף ב-200-300Hz + LA-2A לעקביות, ונגיעת טייפ לחום.'},
+      {q:'קופץ / לא יציב', a:'1176 אטאק מהיר, או clip-gain ידני לפני הדחיסה.'},
+      {q:'יבש / שטוח', a:'Send לריוורב Plate קצר + דיליי מנוקד — לא Insert.'}
+    ],
+    checklist:['בחרתי את הטייק הכי טוב (comp)','clip-gain ידני','ניקוי RX','כוונון','EQ חיתוך','דחיסה סדרתית','de-ess','אפקטים על Sends','בדיקה במונו']
   },
   {
-    id: 'eq-guide', icon: '📊', tag: 'אקווליזציה',
-    title: 'EQ — המדריך המלא',
-    summary: 'איך לפסל תדרים בצורה נקייה: חיתוך, הגברה, ומפת התדרים',
-    content: `
-      <p class="lead">EQ הוא הכלי הכי חשוב במיקס. לא להפוך כל כלי ל"יפה" — אלא לתת לכל אחד מקום משלו.</p>
-      <h2>חיתוך לפני הגברה (Subtractive)</h2>
-      <p>קודם <strong>תחתוך</strong> את מה שמפריע, ורק אז תגביר אם צריך. חיתוך נשמע טבעי; הגברה מוגזמת נשמעת מלאכותית.</p>
-      <h2>HPF — מסנן מעביר גבוהים</h2>
-      <p>כמעט לכל כלי שהוא לא בס/קיק — שים HPF ונקה את הבוץ שמתחת. ווקאל בערך <strong>80-100Hz</strong>, גיטרות <strong>100-120Hz</strong>. פתאום יש מקום לבס.</p>
-      <h2>טכניקת ה-Sweep למציאת תדר בעייתי</h2>
-      <ul>
-        <li>צור הגברה חדה וגבוהה (bell צר).</li>
-        <li>הזז אותה לאורך התדרים עד שמשהו צורם לאוזן.</li>
-        <li>זה התדר הבעייתי — עכשיו <strong>תחתוך</strong> אותו במקום להגביר.</li>
-      </ul>
-      <h2>מפת תדרים מהירה</h2>
-      <ul>
-        <li><strong>20-60Hz</strong> — סאב, האנרגיה שמרגישים בחזה.</li>
-        <li><strong>60-250Hz</strong> — גוף ועוצמה (יותר מדי = בוצי).</li>
-        <li><strong>250-500Hz</strong> — אזור ה"בוץ", לרוב צריך חיתוך קל.</li>
-        <li><strong>2-5kHz</strong> — נוכחות ובהירות (יותר מדי = צורם/עייף).</li>
-        <li><strong>10kHz+</strong> — אוויר וברק.</li>
-      </ul>
-      <div class="guide-rule"><b>כלל:</b> אם אתה מגביר יותר מ-6dB — כנראה הבעיה היא בהקלטה או בבחירת הצליל, לא ב-EQ.</div>
-      <div class="guide-tip">💡 טיפ: עשה EQ תמיד בהקשר של כל המיקס, לא על ערוץ מבודד. כלי לבד תמיד נשמע אחרת.</div>
-    `
+    id:'bass', name:'בס', icon:'🎸',
+    recipe:[
+      {step:'החלטה', plugin:'—', set:'מי הבוס בנמוכים — קיק או בס? כל המהלכים נגזרים מזה.'},
+      {step:'מונו בנמוכים', plugin:'—', set:'כל מה שמתחת ~120Hz למונו (אחרת מתבטל בפאזה).'},
+      {step:'EQ', plugin:'Pro-Q 4', set:'HPF 25Hz · שלוט בסאב 50-80Hz · גראול 700Hz-2.5kHz.'},
+      {step:'בס מול קיק', plugin:'Pro-Q 4 (דינמי)', set:'בנד דינמי שמתרסן כשהקיק פוגע (במקום סיידצ׳יין אגרסיבי).'},
+      {step:'דחיסה', plugin:'UAD LA-2A Silver', set:'4-6dB ליציבות — כל תו באותה עוצמה.'},
+      {step:'צבע / נוכחות', plugin:'UAD Ampex / Waves R-Bass', set:'הרמוניות שנשמעות גם ברמקול קטן.'}
+    ],
+    cheatsheet:[
+      {l:'מונו מתחת ל-', v:'120Hz'},
+      {l:'HPF', v:'20-30Hz'},
+      {l:'סאב', v:'50-80Hz'},
+      {l:'גראול / נוכחות', v:'700Hz-2.5kHz'},
+      {l:'דחיסה', v:'4:1, 4-6dB'}
+    ],
+    problems:[
+      {q:'נעלם בטלפון / רמקול קטן', a:'הוסף הרמוניות 700Hz-2.5kHz + רוויה (Ampex/R-Bass).'},
+      {q:'מתנגש עם הקיק', a:'תן לכל אחד תדר, או EQ דינמי/סיידצ׳יין של הבס לקיק.'},
+      {q:'מבייץ / עכור', a:'פחות סאב, ובדוק שהנמוכים במונו.'},
+      {q:'לא יציב בעוצמה', a:'דחיסה חזקה יותר (LA-2A) או שתי דחיסות בשרשרת.'}
+    ],
+    checklist:['החלטתי קיק/בס','נמוכים מונו','HPF','שליטה בסאב','גראול לרמקול קטן','יחס מול הקיק','דחיסה ליציבות']
   },
   {
-    id: 'compression', icon: '🔧', tag: 'דינמיקה',
-    title: 'קומפרסור — שליטה מלאה',
-    summary: 'Threshold · Ratio · Attack · Release — בעברית פשוטה, עם הגדרות התחלה',
-    content: `
-      <p class="lead">קומפרסור מאזן בין החלקים החזקים לחלשים, כך שהכל יישמע יציב ונוכח. הנה כל כפתור ומה הוא עושה באמת.</p>
-      <h2>4 הכפתורים</h2>
-      <h3>Threshold (סף)</h3>
-      <p>מאיזו עוצמה הקומפרסור מתחיל לעבוד. נמוך יותר = יותר דחיסה.</p>
-      <h3>Ratio (יחס)</h3>
-      <p>כמה חזק הוא לוחץ. <strong>2:1-3:1</strong> עדין (ווקאל, באס), <strong>4:1-8:1</strong> אגרסיבי, <strong>10:1+</strong> כבר לימיטר.</p>
-      <h3>Attack (זמן תקיפה)</h3>
-      <p>כמה מהר הוא קופץ. <strong>אטאק איטי</strong> משאיר את ה"נשיכה" של הצליל (פּאנץ'), <strong>אטאק מהיר</strong> מרסן אותה.</p>
-      <h3>Release (זמן שחרור)</h3>
-      <p>כמה מהר הוא משחרר. ריליז מהיר = אנרגטי ונושם; איטי = חלק ו"מודבק".</p>
-      <h2>Makeup Gain</h2>
-      <p>דחיסה מורידה עוצמה — ה-Makeup מחזיר אותה. כוון כך שעם הקומפרסור ובלעדיו העוצמה <strong>זהה</strong>, ואז תשפוט אם זה באמת נשמע יותר טוב.</p>
-      <h2>הגדרות התחלה</h2>
-      <ul>
-        <li><strong>ווקאל:</strong> Ratio 3:1, אטאק בינוני, ריליז מהיר, ~3-6dB דחיסה.</li>
-        <li><strong>פּאנץ' לתופים:</strong> אטאק איטי (שהנשיכה תעבור), ריליז מהיר.</li>
-        <li><strong>"דבק" למיקס (Bus):</strong> Ratio 2:1, דחיסה עדינה של 1-2dB בלבד.</li>
-      </ul>
-      <div class="guide-rule"><b>כלל:</b> אם שומעים את הקומפרסור "נושם" או "שואב" — הורד Ratio או האט את ה-Release.</div>
-      <div class="guide-tip">💡 טיפ: דחיסה של 2-4dB מספיקה כמעט תמיד. אם אתה לוחץ 10dB — כנראה צריך שני קומפרסורים עדינים בשרשרת, לא אחד אגרסיבי.</div>
-    `
+    id:'drums', name:'תופים', icon:'🥁',
+    recipe:[
+      {step:'אוברהדס קודם', plugin:'Pro-Q 4', set:'HPF 300-500Hz, אזן את התמונה המלאה של הסט.'},
+      {step:'Transient', plugin:'Transient Shaper', set:'הוסף אטאק לקיק/סנר חלשים, הורד זנב חדר עודף.'},
+      {step:'קיק', plugin:'Pro-Q 4', set:'סאב 50-60Hz · קליק 2-4kHz · חתך בוץ 300-500Hz.'},
+      {step:'סנר', plugin:'Pro-Q 4 + 1176', set:'גוף 150-250Hz · קראק 3-5kHz · 1176 לפאנץ.'},
+      {step:'דחיסה מקבילה', plugin:'UAD 1176', set:'ערוץ מקביל, דחיסה חזקה (Ratio גבוה), מערבבים מתחת.'},
+      {step:'Drum Bus', plugin:'Waves SSL G-Comp', set:'2-3dB על כל הסט יחד — מלכד לגוף אחד.'},
+      {step:'צבע', plugin:'UAD Ampex (טייפ)', set:'הדבקה וגראנג קל על הבאס.'}
+    ],
+    cheatsheet:[
+      {l:'קיק סאב', v:'50-60Hz'},
+      {l:'קיק קליק', v:'2-4kHz'},
+      {l:'סנר גוף', v:'150-250Hz'},
+      {l:'סנר קראק', v:'3-5kHz'},
+      {l:'אוברהדס HPF', v:'300-500Hz'},
+      {l:'Drum Bus', v:'2-3dB דחיסה'}
+    ],
+    problems:[
+      {q:'קיק נבלע', a:'קליק ב-2-4kHz + transient attack; פנה לו מקום מול הבס.'},
+      {q:'סנר חלש / שטוח', a:'קראק 3-5kHz, 1176 לפאנץ, או סמפל מעורבב מתחת.'},
+      {q:'הסט נשמע מפורק', a:'דחיסת Drum Bus (SSL) + טייפ למעט הדבקה.'},
+      {q:'צלחות צורמות', a:'רסן 6-8kHz באוברהדס, ו-HPF גבוה.'}
+    ],
+    checklist:['אוברהדס מאוזנים','transient shaping','קיק','סנר','שאר התופים','דחיסה מקבילה','Drum Bus','בדיקה מול הבס']
   },
   {
-    id: 'fabfilter', icon: '🎛️', tag: 'FabFilter',
-    title: 'FabFilter — Pro-Q 4 & Pro-C 2',
-    summary: 'ה-EQ והקומפרסור הכי מדויקים בעולם — איך לנצל את הכוח שלהם',
-    content: `
-      <p class="lead">FabFilter זה דיוק כירורגי עם ממשק שמראה לך בדיוק מה קורה. שני הכלים המרכזיים: Pro-Q 4 ו-Pro-C 2.</p>
-      <svg class="guide-visual" viewBox="0 0 600 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pro-Q 4 EQ display">
-        <rect x="0" y="0" width="600" height="290" rx="14" fill="#13151f"/>
-        <g stroke="#2a2d3d" stroke-width="1">
-          <line x1="0" y1="60" x2="600" y2="60"/><line x1="0" y1="102" x2="600" y2="102"/>
-          <line x1="0" y1="188" x2="600" y2="188"/><line x1="0" y1="230" x2="600" y2="230"/>
-        </g>
-        <line x1="0" y1="145" x2="600" y2="145" stroke="#3a3e52" stroke-width="1.5"/>
-        <g fill="#5b6076" font-size="12" font-family="sans-serif">
-          <text x="36" y="278">20</text><text x="156" y="278">100</text><text x="312" y="278">1k</text><text x="472" y="278">10k</text>
-        </g>
-        <polyline fill="none" stroke="#4a4f66" stroke-width="1" opacity="0.6" points="20,250 50,235 80,240 110,220 140,228 170,210 200,225 230,205 260,215 290,196 320,210 350,200 380,214 410,205 440,222 470,210 500,228 530,218 560,234 580,228"/>
-        <path d="M30 145 C140 145 210 70 300 70 C360 70 380 205 450 205 C510 205 545 145 570 145 Z" fill="#8b5cf6" fill-opacity="0.28"/>
-        <path d="M30 145 C140 145 210 70 300 70 C360 70 380 205 450 205 C510 205 545 145 570 145" fill="none" stroke="#a78bfa" stroke-width="2.5"/>
-        <circle cx="300" cy="70" r="7" fill="#a78bfa" stroke="#fff" stroke-width="1.5"/>
-        <circle cx="450" cy="205" r="7" fill="#38bdf8" stroke="#fff" stroke-width="1.5"/>
-        <circle cx="40" cy="138" r="6" fill="#fbbf24" stroke="#fff" stroke-width="1.5"/>
-        <circle cx="558" cy="145" r="6" fill="#34d399" stroke="#fff" stroke-width="1.5"/>
-        <text x="18" y="27" fill="#c9b8ff" font-size="15" font-weight="700" font-family="sans-serif">Pro-Q 4</text>
-        <text x="560" y="27" fill="#5b6076" font-size="11" font-family="sans-serif">EQ</text>
-      </svg>
-      <div class="guide-visual-cap">תצוגת ה-EQ של Pro-Q 4 — עקומה אינטראקטיבית מעל ספקטרום בזמן אמת</div>
-      <h2>Pro-Q 4 (EQ)</h2>
-      <h3>Dynamic EQ — הנשק הסודי</h3>
-      <p>בנד שפועל <strong>רק כשצריך</strong>. לחץ על בנד והפעל Dynamic — מעולה לרסן תדר צורם בווקאל שקופץ רק במילים חזקות, בלי להחליש את כל השיר.</p>
-      <h3>מציאת תדר בעייתי</h3>
-      <p>החזק <strong>Solo</strong> על בנד (אוזניות עם לופ) וגרור לאורך הספקטרום עד שמוצאים את הצרימה — ואז חותכים.</p>
-      <h3>Mid/Side</h3>
-      <p>הפרד עיבוד לאמצע ולצדדים: נקה בוץ מהאמצע (Mid) ופתח אוויר בצדדים (Side) למיקס רחב.</p>
-      <h2>Pro-C 2 (קומפרסור)</h2>
-      <ul>
-        <li><strong>Styles</strong> — בחר לפי מקור: Vocal לווקאל, Punch לתופים, Bus ל"דבק", Opto לרכות, Mastering למאסטר.</li>
-        <li><strong>Sidechain HPF</strong> — שהבס לא "ידחוף" את הקומפרסור; מסנן את התדרים הנמוכים מהזיהוי.</li>
-        <li><strong>Lookahead</strong> — תופס טרנזיינטים מהירים בלי לפספס.</li>
-      </ul>
-      <div class="guide-rule"><b>כלל:</b> תסתכל על גרף ה-Gain Reduction. אם הוא קופץ פרוע — האטאק/ריליז לא מתאימים לחומר.</div>
-      <div class="guide-tip">💡 טיפ: ב-Pro-Q 4 לחיצה כפולה על המסך יוצרת בנד בדיוק בתדר ובגיין שאתה רוצה. מהיר ומדויק.</div>
-    `
+    id:'piano', name:'פסנתר', icon:'🎹',
+    recipe:[
+      {step:'החלטה', plugin:'—', set:'סולו (רחב ומלא) או ליווי (צנוע ומפנה מקום)?'},
+      {step:'EQ', plugin:'Pro-Q 4', set:'HPF 40-60Hz (אם הבס נמוך יותר) · חתך עכירות 250-400Hz · אוויר 10-14kHz.'},
+      {step:'פינוי לווקאל', plugin:'Pro-Q 4 (דינמי)', set:'בנד דינמי 2-4kHz עם sidechain מהווקאל — מתעמעם רק כששרים.'},
+      {step:'דחיסה', plugin:'UAD LA-2A Silver', set:'עדין (2-3dB) רק ליישור — לא להרוג מוזיקליות.'},
+      {step:'מרחב (Send)', plugin:'Valhalla Room/Hall', set:'Predelay לעומק בלי בוץ; נמוכים קרוב למרכז.'}
+    ],
+    cheatsheet:[
+      {l:'HPF (ליווי)', v:'40-150Hz'},
+      {l:'עכירות — לחתוך', v:'250-400Hz'},
+      {l:'פינוי לווקאל', v:'2-4kHz (דינמי)'},
+      {l:'אוויר', v:'10-14kHz'},
+      {l:'דחיסה', v:'2:1, 2-3dB'}
+    ],
+    problems:[
+      {q:'בולע את הווקאל', a:'בנד דינמי 2-4kHz עם sidechain מהווקאל; HPF גבוה יותר.'},
+      {q:'עכור / בוצי', a:'חתך 250-400Hz, וצמצם נמוכים בליווי.'},
+      {q:'שטוח / רחוק', a:'ריוורב Room עם Predelay, ומעט אוויר 10kHz+.'}
+    ],
+    checklist:['סולו או ליווי','HPF מתאים','חתך עכירות','פינוי לווקאל','דחיסה עדינה','מרחב']
   },
   {
-    id: 'izotope', icon: '🎚️', tag: 'מאסטרינג',
-    title: 'iZotope — Ozone & Nectar',
-    summary: 'מאסטרינג ו-ווקאל חכמים — ואיך לא לתת ל-AI להחליט במקומך',
-    content: `
-      <p class="lead">iZotope נותן לך נקודת פתיחה מהירה עם AI — אבל האוזן שלך מקבלת את ההחלטה הסופית.</p>
-      <h2>Ozone (מאסטרינג)</h2>
-      <ul>
-        <li><strong>Master Assistant</strong> — תן לו לנתח ולתת התחלה, אבל אל תשאיר אותו כמו שהוא. זו טיוטה, לא מאסטר.</li>
-        <li><strong>Maximizer</strong> — הכלי שמגביר עוצמה. דחוף בעדינות ושמור על <strong>True Peak של -1 dBTP</strong> שלא יהיו עיוותים.</li>
-        <li><strong>יעד עוצמה</strong> — לסטרימינג כוון בערך <strong>-14 LUFS</strong>. חזק יותר רק מעוות, לא "טוב יותר".</li>
-        <li><strong>Imager</strong> — הרחבה עדינה, ותמיד בדוק במונו שלא נופל משהו.</li>
-      </ul>
-      <h2>Nectar (ווקאל)</h2>
-      <p>שרשרת ווקאל שלמה במקום אחד (EQ, דחיסה, די-אסר, רוויה). ה-Assistant נותן בסיס — כוון ידנית את הדי-אסר ואת הדחיסה לפי השיר.</p>
-      <h2>RX (ניקוי הקלטות)</h2>
-      <p>זהב לתיקון הקלטות: <strong>De-noise</strong> (רעש רקע), <strong>De-click</strong> (נקישות), <strong>Mouth De-click</strong> (רוק בפה). תקן לפני המיקס, לא אחרי.</p>
-      <div class="guide-tip">💡 טיפ: עשה מאסטרינג עם אוזניים רעננות וברפרנס מסחרי פתוח לידך. עוצמה זה הדבר שהכי קל לטעות בו.</div>
-    `
+    id:'acoustic-guitar', name:'גיטרה אקוסטית', icon:'🎶',
+    recipe:[
+      {step:'מקור', plugin:'—', set:'חצי מהמיקס נקבע במיקרופון ובנגן. הקלטה נכונה = פחות תיקון.'},
+      {step:'EQ', plugin:'Pro-Q 4', set:'HPF 100-150Hz · חתך בום 100-200Hz · ברק 7-12kHz · רסן פריטה 2-4kHz.'},
+      {step:'דחיסה', plugin:'UAD LA-2A Silver', set:'3-5dB ליישור (חשוב בליווי ריתמי).'},
+      {step:'סטריאו', plugin:'—', set:'שני טייקים נפרדים לצדדים; בדוק פאזה במונו.'},
+      {step:'מרחב (Send)', plugin:'Valhalla Room', set:'עומק עדין; פנה את אזור הווקאל.'}
+    ],
+    cheatsheet:[
+      {l:'HPF (ליווי)', v:'100-200Hz'},
+      {l:'בום — לחתוך', v:'100-200Hz'},
+      {l:'עכירות', v:'200-400Hz'},
+      {l:'ברק ואוויר', v:'7-12kHz'},
+      {l:'פריטה חדה', v:'2-4kHz'}
+    ],
+    problems:[
+      {q:'בומי / עכור', a:'HPF אגרסיבי (אפילו 150-200Hz בליווי) + חתך 200-400Hz.'},
+      {q:'מתחרה בווקאל', a:'פזר לצדדים, רסן 2-4kHz, ותן לווקאל את המרכז.'},
+      {q:'דק / חד', a:'מעט גוף 150-250Hz ורסן ברק עודף מעל 10kHz.'}
+    ],
+    checklist:['מיקום מיקרופון נכון','HPF','חתך בום/עכירות','דחיסה','סטריאו אמיתי + פאזה','פינוי לווקאל']
   },
   {
-    id: 'waves', icon: '🌊', tag: 'Waves',
-    title: 'Waves — הקלאסיקות שחייבים',
-    summary: 'CLA, SSL, Renaissance — מתי להשתמש בכל אחד',
-    content: `
-      <p class="lead">לוועיס יש מאות פלאגינים, אבל באמת צריך קומץ. אלה האלופים והשימוש הנכון בכל אחד.</p>
-      <h2>Renaissance — נקי וקל</h2>
-      <p>נקודת פתיחה מצוינת: <strong>R-Comp</strong>, <strong>R-EQ</strong>, <strong>R-Vox</strong> (ווקאל בלחיצה), <strong>R-Bass</strong> (מוסיף נוכחות לבס גם ברמקולים קטנים). שקוף ועושה את העבודה.</p>
-      <h2>CLA — אופי אנלוגי</h2>
-      <ul>
-        <li><strong>CLA-2A</strong> — דחיסה רכה ומוזיקלית לווקאל ולבס.</li>
-        <li><strong>CLA-76</strong> — מהיר ואגרסיבי, פּאנץ' לתופים וזעם לווקאל. (אמולציה של 1176).</li>
-      </ul>
-      <h2>SSL — דבק למיקס</h2>
-      <p><strong>SSL G-Bus Compressor</strong> על המאסטר-באס: Ratio 2:1, אטאק איטי, Release על Auto, דחיסה 1-2dB. כל המיקס פתאום מתלכד.</p>
-      <div class="guide-rule"><b>כלל:</b> אל תשים את אותו פלאגין על הכל. בחר כלי לפי האופי שאתה רוצה — נקי (Renaissance) או צבעוני (CLA).</div>
-      <div class="guide-tip">💡 טיפ: H-Delay ו-H-Comp של ועיס הם בין הטובים בעולם — ל-H-Delay יש מדריך נפרד כאן.</div>
-    `
+    id:'electric-guitar', name:'גיטרה חשמלית', icon:'🤘',
+    recipe:[
+      {step:'הצליל באמפ', plugin:'—', set:'הטון נקבע באמפ ובאצבעות. אם לא יושב — החלף טון, אל תתקן ב-EQ.'},
+      {step:'EQ', plugin:'Pro-Q 4', set:'HPF 80-100Hz · חתך עכירות 200-500Hz · נוכחות 2-4kHz · LPF לפיז 6-8kHz.'},
+      {step:'דחיסה', plugin:'UAD 1176', set:'קלה (האמפ כבר דוחס) — רק ליישוב.'},
+      {step:'קיר רחב', plugin:'—', set:'שני טייקים, חזק שמאלה וחזק ימינה.'},
+      {step:'אפקטים (Send)', plugin:'H-Delay / Valhalla', set:'דיליי/ריוורב מאחורי הסולו; פנה מקום לווקאל.'}
+    ],
+    cheatsheet:[
+      {l:'HPF', v:'80-100Hz'},
+      {l:'עכירות', v:'200-500Hz'},
+      {l:'נוכחות', v:'2-4kHz'},
+      {l:'פיז (LPF)', v:'6-8kHz'},
+      {l:'רוחב', v:'2 טייקים L/R'}
+    ],
+    problems:[
+      {q:'פיז / חד מדי', a:'LPF סביב 6-8kHz; הגיטרה לא צריכה אוויר שמתחרה בצלחות.'},
+      {q:'דק / לא יושב', a:'עדיף להחליף טון/אמפ או re-amp מאשר להעמיס EQ.'},
+      {q:'צר / קטן', a:'שני טייקים מפוזרים לצדדים, לא סטריאו מזויף באמצע.'}
+    ],
+    checklist:['טון טוב באמפ','HPF','חתך עכירות','נוכחות','LPF לפיז','קיר רחב (L/R)','פינוי לווקאל']
   },
   {
-    id: 'true-iron', icon: '🪵', tag: 'רוויה / צבע',
-    title: 'True Iron — חום של טרנספורמר',
-    summary: 'רוויה אנלוגית שמוסיפה גוף, משקל ועושר הרמוני',
-    content: `
-      <p class="lead">True Iron (של Kush Audio) מדמה שני טרנספורמרים של ברזל — הצבע האנלוגי שהופך צליל "דיגיטלי" לחי ובעל גוף.</p>
-      <h2>איך זה עובד</h2>
-      <p><strong>Input</strong> דוחף את הצליל לתוך הברזל (יותר רוויה), <strong>Output</strong> מאזן בחזרה. שני ה-voicings נותנים אופי שונה — נסה ובחר באוזן.</p>
-      <h2>איפה זה זוהר</h2>
-      <ul>
-        <li><strong>בס</strong> — מוסיף משקל והרמוניות שנשמעות גם ברמקולים קטנים.</li>
-        <li><strong>באס תופים / Drum Bus</strong> — גוף וגראנג' שמלכד.</li>
-        <li><strong>ווקאל</strong> — חום עדין שמקרב אותו לאוזן.</li>
-        <li><strong>מאסטר</strong> — נגיעה קלה בלבד לליטוש.</li>
-      </ul>
-      <div class="guide-rule"><b>כלל:</b> רוויה זה תבלין. כוון עד שזה נשמע טוב, ואז הורד קצת — בדרך כלל הגזמת.</div>
-      <div class="guide-tip">💡 טיפ: בדוק עם Bypass שהעוצמה זהה. רוויה מעלה עוצמה ומשלה אותך שזה "יותר טוב" כשזה פשוט יותר חזק.</div>
-    `
-  },
-  {
-    id: 'valhalla', icon: '🏛️', tag: 'ריוורב',
-    title: 'Valhalla — ריוורבים שאי אפשר בלעדיהם',
-    summary: 'VintageVerb, Room ו-Plate — מתי כל אחד, ואיך לשמור על בהירות',
-    content: `
-      <p class="lead">Valhalla נותן צליל יוקרתי במחיר נמוך. הסוד הוא לא כמה ריוורב — אלא איך לשמור שהמיקס לא יהפוך לבוץ.</p>
-      <h2>מי מתאים למה</h2>
-      <ul>
-        <li><strong>VintageVerb</strong> — עשיר ו"וינטג'", מושלם לווקאל ולסינתים. מצבי צבע שונים (70s/80s).</li>
-        <li><strong>Room</strong> — חללים קטנים ואמיתיים, מלכד כלים בלי להרחיק אותם.</li>
-        <li><strong>Plate</strong> — ריוורב צפוף ובהיר, קלאסי לווקאל ולסנייר.</li>
-      </ul>
-      <h2>הכללים לשמירת בהירות</h2>
-      <ul>
-        <li><strong>Predelay</strong> (20-40ms) — מפריד את הריוורב מהצליל היבש כך שהמילים נשארות ברורות.</li>
-        <li><strong>HPF/LPF על הריוורב</strong> — חתוך נמוכים מתחת ~200Hz וגבוהים מעל ~8kHz שלא יבייץ ולא יצרום.</li>
-        <li><strong>Send, לא Insert</strong> — שלח כמה כלים לאותו ריוורב; זה יוצר חלל אחיד וחוסך CPU.</li>
-        <li><strong>Mix נמוך</strong> — 15-25% בדרך כלל מספיק.</li>
-      </ul>
-      <div class="guide-tip">💡 טיפ: ריוורב צריך להרגיש, לא לשמוע. אם אתה "שומע ריוורב" — כנראה יש יותר מדי.</div>
-    `
-  },
-  {
-    id: 'h-delay', icon: '⏱️', tag: 'דיליי',
-    title: 'Waves H-Delay — דיליי חי',
-    summary: 'סלאפבק, 1/8 דוטד והאופי האנלוגי — כל הטריקים',
-    content: `
-      <p class="lead">H-Delay הוא דיליי היברידי עם אופי אנלוגי מדהים. כמה טריקים הופכים אותו מאפקט לכלי מיקס אמיתי.</p>
-      <h2>סנכרון לטמפו</h2>
-      <p>הפעל <strong>Sync</strong> שהדיליי יתנגן בקצב השיר. הערך הקלאסי: <strong>1/8 dotted (מנוקד)</strong> — האפקט ה"מתגלגל" המפורסם מ-U2 וכו'.</p>
-      <h2>סלאפבק (Slapback)</h2>
-      <p>דיליי קצר יחיד, <strong>80-120ms, בלי Feedback</strong>. מוסיף לווקאל ולגיטרות תחושת חדר ועומק רטרו בלי "אקו".</p>
-      <h2>אופי</h2>
-      <ul>
-        <li><strong>Analog</strong> — מוסיף חום וריווי לחזרות.</li>
-        <li><strong>LoFi</strong> — מלכלך את הדיליי שיישב מאחורי הצליל היבש.</li>
-        <li><strong>Ping-Pong</strong> — חזרות שקופצות בין שמאל לימין, רוחב מיידי.</li>
-      </ul>
-      <h2>שילוב נכון במיקס</h2>
-      <ul>
-        <li>שים על <strong>Send</strong>, ו-HPF/LPF על הדיליי שלא יתחרה עם הווקאל היבש.</li>
-        <li><strong>אוטומציה של "throws"</strong> — שלח לדיליי רק את המילה האחרונה במשפט. אפקט מקצועי שלא מבלגן.</li>
-      </ul>
-      <div class="guide-tip">💡 טיפ: דיליי מנוקד (dotted) ממלא את החללים בין המילים בלי להתנגש בקצב. כמעט תמיד הבחירה הנכונה לווקאל.</div>
-    `
-  },
-  {
-    id: 'vss4', icon: '✨', tag: 'ריוורב',
-    title: 'VSS4 — ריוורב יוקרתי',
-    summary: 'הריוורב האלגוריתמי האגדי — עומק תלת-ממדי בלי בוץ',
-    content: `
-      <p class="lead">VSS4 (האלגוריתם מ-TC System 6000) הוא מהריוורבים העשירים בעולם — חלל תלת-ממדי לווקאל, מיתרים והפקות גדולות.</p>
-      <h2>שני המרכיבים</h2>
-      <ul>
-        <li><strong>Early Reflections</strong> — ההחזרות הראשונות שמגדירות את גודל החדר ואת תחושת המרחק.</li>
-        <li><strong>Reverb Tail</strong> — הזנב הארוך והעשיר. האיזון בין השניים = עומק בלי "רחצה".</li>
-      </ul>
-      <h2>איך מכווננים</h2>
-      <ul>
-        <li><strong>Predelay</strong> — מפריד את הריוורב מהיבש; שומר על נוכחות הווקאל.</li>
-        <li><strong>Decay</strong> — לפי הטמפו והסגנון; בלדה ארוך יותר, קצבי קצר.</li>
-        <li><strong>EQ על ה-Return</strong> — חתוך מתחת ~200Hz (שלא יבייץ) ורסן גבוהים אם צורם.</li>
-        <li><strong>Send בלבד</strong> — אף פעם לא כ-Insert על הווקאל.</li>
-      </ul>
-      <div class="guide-rule"><b>כלל:</b> ריוורב יוקרתי מפתה להגזים. תכוון פחות רטוב ממה שנדמה לך — בהקשר המיקס זה מתיישב מושלם.</div>
-      <div class="guide-tip">💡 טיפ: שלב VSS4 (חלל) עם דיליי מנוקד (קצב) — הריוורב נותן עומק והדיליי נותן תנועה. ביחד = ווקאל מקצועי.</div>
-    `
-  },
-  {
-    id: 'vocal', icon: '🎤', tag: 'טיפול בכלי',
-    title: 'איך לטפל בווקאל',
-    summary: 'שרשרת ווקאל מלאה משלב לשלב — מהקלטה גולמית לווקאל מסחרי',
-    content: `
-      <p class="lead">הווקאל הוא הכוכב. סדר השרשרת קריטי — כל שלב מכין את הבא. זה הסדר המומלץ, עם הפלאגינים שלך.</p>
-      <h2>🎯 הגישה שלי</h2>
-      <p>לפני שאני נוגע בפלאגין — <strong>הטייק הוא הכל</strong>. אני בורר את הביצוע הכי טוב מכמה הקלטות (comping), מיישר טיימינג, ומאזן ווליום <strong>ידנית</strong> (clip gain) מילה-מילה. זה הנשק הסודי: כשהווליום כבר אחיד מראש, הדחיסה רק מלטשת — במקום להילחם ולשאוב.</p>
-      <h3>טריק לווקאל תלת-ממדי</h3>
-      <p>שלח את הווקאל גם ל<strong>ריוורב קצר (Plate)</strong> לאינטימיות וגם ל<strong>דיליי מנוקד</strong> לתנועה. ואז הטריק היקר: נתב את ה<strong>דיליי לתוך הריוורב</strong> — החזרות מתמוססות בחלל ונשמעות עשירות בלי לבלגן.</p>
-      <h2>שלב 1 — ניקוי (iZotope RX)</h2>
-      <ul>
-        <li><strong>De-noise</strong> — הסר רעש רקע ומזגן.</li>
-        <li><strong>De-click / Mouth De-click</strong> — נקישות ורוק בפה.</li>
-        <li>אזן נשימות (להחליש, לא למחוק — נשימה זה אנושי).</li>
-      </ul>
-      <h2>שלב 2 — כוונון (Auto-Tune / Melodyne)</h2>
-      <p>Melodyne לתיקון מדויק ושקוף תו-תו; Auto-Tune ל-real-time או לאפקט. אל תגזים — Retune Speed בינוני נשמע טבעי.</p>
-      <h2>שלב 3 — EQ חיתוך (FabFilter Pro-Q 4)</h2>
-      <ul>
-        <li><strong>HPF</strong> ב-<strong>80-100Hz</strong> — לנקות רחש ופופים.</li>
-        <li>חתוך בוץ ב-<strong>200-400Hz</strong> (בערך 2-3dB).</li>
-        <li><strong>Dynamic band</strong> ב-<strong>3-5kHz</strong> לרסן חספוס שקופץ במילים חזקות.</li>
-        <li>הרמה עדינה ב-<strong>5kHz</strong> (נוכחות) וב-<strong>12kHz+</strong> (אוויר).</li>
-      </ul>
-      <h2>שלב 4 — דחיסה (CLA-2A → Pro-C 2)</h2>
-      <p>טריק מקצועי: <strong>שתי דחיסות עדינות בשרשרת</strong> במקום אחת חזקה. קודם <strong>CLA-2A</strong> (3-4dB, אופי אנלוגי), ואז <strong>Pro-C 2</strong> בסגנון Vocal (עוד 2-3dB) ליישור.</p>
-      <h2>שלב 5 — De-esser</h2>
-      <p>רסן ש' ו-ס' צורמות ב-<strong>5-8kHz</strong>. רק כמה dB, רק כשזה מופיע.</p>
-      <h2>שלב 6 — צבע (True Iron)</h2>
-      <p>נגיעת רוויה לחום וגוף שמקרב את הווקאל לאוזן. עדין.</p>
-      <h2>שלב 7 — אפקטים (על Sends)</h2>
-      <ul>
-        <li><strong>ריוורב:</strong> Valhalla Plate או VSS4 — עם Predelay 20-40ms שהמילים יישארו ברורות.</li>
-        <li><strong>דיליי:</strong> H-Delay ב-1/8 מנוקד, HPF/LPF עליו, אוטומציה של "throws" בסופי משפטים.</li>
-      </ul>
-      <div class="guide-rule"><b>טעות נפוצה:</b> ריוורב/דיליי כ-Insert ישירות על הווקאל. תמיד על Send נפרד — שליטה מלאה ומיקס נקי.</div>
-      <div class="guide-tip">💡 כלל הזהב לווקאל: אם צריך להילחם כדי לשמוע אותו — הבעיה במיקס מסביב (יותר מדי באמצע), לא בווקאל.</div>
-    `
-  },
-  {
-    id: 'piano', icon: '🎹', tag: 'טיפול בכלי',
-    title: 'איך לטפל בפסנתר',
-    summary: 'פסנתר יושב מצוין — בלי לבלוע את הווקאל ובלי להעכיר את המיקס',
-    content: `
-      <p class="lead">לפסנתר טווח ענק (בס עד טרבל) ולכן הוא "אוכל" מקום. המטרה: שיתמוך, לא ישתלט.</p>
-      <h2>🎯 הגישה שלי</h2>
-      <p>השאלה הראשונה: <strong>סולו או ליווי?</strong> בסולו (בלדה) אני נותן לו סטריאו רחב, נמוכים מלאים ומעט מאוד עיבוד — שהמוזיקליות תנשום. בליווי מתחת לווקאל אני הופך אותו צנוע: יותר מונו, נמוכים מצומצמים, ו-carving אגרסיבי.</p>
-      <h3>EQ דינמי שמתפנה לווקאל</h3>
-      <p>הטריק החביב עליי: <strong>בנד דינמי</strong> ב-2-4kHz על הפסנתר, עם sidechain מהווקאל — הפסנתר מתעמעם מעט <strong>רק כשהזמר שר</strong>, וחוזר מלא בין השורות. שקוף לחלוטין לאוזן.</p>
-      <h3>מיקום במרחב</h3>
-      <p>אם יש גיטרה/כלי ליווי נוסף — אני מפזר אותם לצדדים מנוגדים שלא יתנגשו. נמוכי הפסנתר תמיד קרוב למרכז ומונו.</p>
-      <h2>קודם — מה התפקיד שלו?</h2>
-      <p>פסנתר סולו (בלדה) מקבל מרחב ועושר. פסנתר מלווה תחת ווקאל — צריך "לפנות מקום" באמצע.</p>
-      <h2>EQ (FabFilter Pro-Q 4)</h2>
-      <ul>
-        <li><strong>HPF</strong> ב-<strong>40-60Hz</strong> אם הבס הוא הכלי הנמוך; אם הפסנתר לבד — שמור את הנמוכים.</li>
-        <li>חתוך עכירות ב-<strong>250-400Hz</strong>.</li>
-        <li>כשיש ווקאל — צור "מדף" קל מינוס ב-<strong>2-4kHz</strong> בדיוק היכן שהווקאל יושב (carving).</li>
-        <li>אוויר ב-<strong>10-14kHz</strong> לברק עדין.</li>
-      </ul>
-      <h2>דחיסה (Pro-C 2 / CLA-2A)</h2>
-      <p>פסנתר אקוסטי דינמי מטבעו — דחוס בעדינות (2:1, 2-3dB) רק כדי ליישר. דחיסה כבדה הורגת את המוזיקליות.</p>
-      <h2>סטריאו ומרחב</h2>
-      <ul>
-        <li>שמור את הנמוכים יותר במונו, ותן לגבוהים להתפזר בסטריאו.</li>
-        <li><strong>ריוורב:</strong> Valhalla Room/Hall עם Predelay — עומק בלי בוץ.</li>
-      </ul>
-      <div class="guide-rule"><b>טעות נפוצה:</b> פסנתר רחב ומלא לבד נשמע מהמם — אבל מבלגן את המיקס. תמיד שפוט אותו בתוך כל השיר.</div>
-      <div class="guide-tip">💡 טיפ: סיידצ'יין עדין של הפסנתר לווקאל (הורדה זעירה כשהזמר שר) פותח מקום בלי שמרגישים.</div>
-    `
-  },
-  {
-    id: 'bass', icon: '🎸', tag: 'טיפול בכלי',
-    title: 'איך לטפל בבס',
-    summary: 'בס שנשמע גם ברמקול קטן וגם במערכת גדולה — היחס עם הקיק',
-    content: `
-      <p class="lead">בס טוב זה גם הרגשה (סאב) וגם נשמע בטלפון (הרמוניות גבוהות). והכי חשוב — היחס שלו עם הקיק.</p>
-      <h2>🎯 הגישה שלי</h2>
-      <p>הדבר הראשון שאני מחליט: <strong>מי הבוס בנמוכים — הקיק או הבס?</strong> בדרך כלל הקיק שולט בתחתית (50-60Hz) והבס יושב מעט מעליו (80-100Hz). מרגע שהחלטתי, כל מהלך EQ נגזר מזה.</p>
-      <h3>DI + רוויה במקביל</h3>
-      <p>אני אוהב לשלב צליל <strong>DI נקי</strong> (יציבות ותחתית) עם שכבת <strong>True Iron / R-Bass</strong> שמוסיפה הרמוניות באמצע. ה-DI נותן את הגוף, הרוויה נותנת את ה"נשמע בכל רמקול".</p>
-      <h3>EQ דינמי לסאב</h3>
-      <p>במקום לחתוך סאב קבוע, אני שם <strong>בנד דינמי</strong> בנמוכים שמתרסן רק כשהקיק פוגע — כך הבס מלא, אבל מפנה רגע לקיק בכל מכה. נקי יותר מסיידצ׳יין אגרסיבי.</p>
-      <h2>מונו בנמוכים</h2>
-      <p>כל מה שמתחת ל-<strong>~120Hz</strong> חייב להיות <strong>מונו</strong>. נמוכים בסטריאו מתבטלים בפאזה ומחלישים את הבס.</p>
-      <h2>בס מול קיק (הכי קריטי)</h2>
-      <ul>
-        <li>תן לכל אחד תדר משלו: לדוגמה <strong>קיק חזק ב-60Hz</strong>, <strong>בס חזק ב-90-100Hz</strong> (או הפוך) — חתוך בכל אחד היכן שהשני שולט.</li>
-        <li>לחלופין <strong>סיידצ'יין</strong> קל של הבס לקיק — הבס "נושם" כשהקיק פוגע.</li>
-      </ul>
-      <h2>EQ (FabFilter Pro-Q 4)</h2>
-      <ul>
-        <li><strong>HPF</strong> נמוך מאוד (20-30Hz) לנקות רעש סאב מיותר.</li>
-        <li>שלוט בסאב סביב <strong>50-80Hz</strong>.</li>
-        <li>הוסף "גראול"/נוכחות ב-<strong>700Hz-2.5kHz</strong> — זה מה שגורם לבס להישמע ברמקול קטן.</li>
-      </ul>
-      <h2>דחיסה (CLA-2A / Pro-C 2)</h2>
-      <p>בס צריך עוצמה <strong>יציבה</strong>. דחוס יחסית חזק (4:1, 4-6dB) או שתי דחיסות בשרשרת, שכל תו יישב באותה עוצמה.</p>
-      <h2>צבע ונוכחות (True Iron / Waves R-Bass)</h2>
-      <p>רוויה מוסיפה הרמוניות עליונות — כך אוזניים "ממציאות" את הבס גם כשאין סאב פיזי ברמקול.</p>
-      <div class="guide-rule"><b>טעות נפוצה:</b> להגביר עוד ועוד נמוכים. זה רק מבייץ. הסוד לבס "גדול" הוא דווקא ההרמוניות באמצע.</div>
-      <div class="guide-tip">💡 טיפ: אם הקלטת DI — שכבת אמפ/רוויה מקבילה (parallel) נותנת גראנג' בלי לאבד את הנקיון של ה-DI.</div>
-    `
-  },
-  {
-    id: 'drums', icon: '🥁', tag: 'טיפול בכלי',
-    title: 'איך לטפל בתופים',
-    summary: 'קיק, סנר, אוברהדס וחדר — וכוח דרך דחיסה מקבילה',
-    content: `
-      <p class="lead">תופים מטפלים בשתי רמות: כל חלק בנפרד, ואז כל הסט יחד דרך ה-Drum Bus. זה מה שנותן גוף ואנרגיה.</p>
-      <h2>🎯 הגישה שלי</h2>
-      <p>אני בונה את התופים <strong>מבחוץ פנימה</strong>: קודם מאזן את ה<strong>אוברהדס</strong> (הם התמונה המלאה של הסט), ורק אז מוסיף קיק וסנר כדי <strong>לתמוך</strong> במה שכבר נשמע טוב. ככה הסט נשמע כמו כלי אחד, לא אוסף ערוצים.</p>
-      <h3>Transient Shaper לפני EQ</h3>
-      <p>לפני שאני מאקווליז, אני מעצב טרנזיינטים: להוסיף אטאק לקיק/סנר שלא בולטים, או להוריד "זנב" מחדר עודף. לפעמים זה פותר מה שחשבת שצריך EQ.</p>
-      <h3>סמפלים מעורבבים</h3>
-      <p>אם הקיק/סנר חלשים — אני מוסיף <strong>סמפל</strong> מתחת לטבעי (לא במקומו), מיישר פאזה, ומערבב. כך מקבלים פאנץ' עקבי בלי לאבד את ההרגשה האנושית.</p>
-      <h2>קיק (Kick)</h2>
-      <ul>
-        <li><strong>סאב</strong> ב-50-60Hz — הבטן שמרגישים.</li>
-        <li><strong>קליק/ביטר</strong> ב-2-4kHz — שייקרא גם ברמקול קטן.</li>
-        <li>חתוך <strong>בוץ</strong> ב-300-500Hz.</li>
-      </ul>
-      <h2>סנר (Snare)</h2>
-      <ul>
-        <li><strong>גוף</strong> ב-150-250Hz, <strong>קראק</strong> ב-3-5kHz.</li>
-        <li>חתוך "קופסתיות" ב-400-800Hz.</li>
-        <li>ריוורב Plate/Room קצר על Send.</li>
-      </ul>
-      <h2>אוברהדס וצלחות</h2>
-      <p>HPF גבוה (300-500Hz) להסיר רעם, ורסן חספוס ב-6-8kHz. האוברהדס הם ה"דבק" של הסט והתמונה הסטריאו.</p>
-      <h2>דחיסה מקבילה (New York)</h2>
-      <p>שלח עותק של התופים לערוץ מקביל, דחוס אותו <strong>חזק מאוד</strong> (8:1, אטאק מהיר), וערבב מתחת ליבש. אנרגיה ופאנץ' בלי לאבד את הטרנזיינטים.</p>
-      <h2>Drum Bus</h2>
-      <p>SSL G-Comp על כל התופים יחד (2-3dB דחיסה) — מלכד אותם לגוף אחד.</p>
-      <div class="guide-rule"><b>טעות נפוצה:</b> לדחוס כל חלק חזק בנפרד. עדיף דחיסה עדינה לכל חלק + דחיסה מקבילה לאנרגיה.</div>
-      <div class="guide-tip">💡 טיפ: כוונן קיק ובס יחד, אף פעם לא בנפרד — הם חולקים את אותו אזור ותמיד מתחרים.</div>
-    `
-  },
-  {
-    id: 'acoustic-guitar', icon: '🎸', tag: 'טיפול בכלי',
-    title: 'איך לטפל בגיטרה אקוסטית',
-    summary: 'בהירות וגוף בלי בומיות — ואיך לפנות מקום לווקאל',
-    content: `
-      <p class="lead">גיטרה אקוסטית עשירה בתדרים. המטרה: לשמור על הברק והגוף בלי שתעכיר את המיקס.</p>
-      <h2>🎯 הגישה שלי</h2>
-      <p>חצי מהעבודה נקבעת ב<strong>הקלטה</strong> — מיקום המיקרופון (כיוון החור מבייץ; לכיוון הסוף-לוח בהיר יותר) והנגן עצמו. אם הוקלט נכון, במיקס כמעט לא צריך לגעת.</p>
-      <h3>בליווי — בלי רחמים על הנמוכים</h3>
-      <p>כשהאקוסטית מלווה ווקאל, אני חותך נמוכים אגרסיבי (HPF גבוה אפילו ל-150-200Hz) — היא לא צריכה בס, היא צריכה ברק ונוכחות מהצדדים.</p>
-      <h3>סטריאו אמיתי</h3>
-      <p>שני <strong>טייקים נפרדים</strong> מפוזרים לצדדים — לא chorus ולא דאבלר מזויף. אם הקלטת בשני מיקרופונים, בדוק <strong>פאזה</strong> ביניהם (לחיצת מונו) שלא יתבטלו.</p>
-      <h2>EQ</h2>
-      <ul>
-        <li><strong>HPF</strong> ב-100-150Hz (אלא אם זה הכלי הנמוך היחיד).</li>
-        <li>חתוך <strong>בום</strong> ב-100-200Hz ועכירות ב-200-400Hz.</li>
-        <li><strong>ברק ואוויר</strong> ב-7-12kHz.</li>
-        <li>אם הפריטה חדה מדי — רסן ב-2-4kHz.</li>
-      </ul>
-      <h2>דחיסה</h2>
-      <p>3:1, 3-5dB ליישור הדינמיקה — חשוב בליווי ריתמי. בסינגר-סונגרייטר תן לה יותר לנשום.</p>
-      <h2>מרחב</h2>
-      <p>בליווי — דאבל-טראקינג ופיזור לצדדים. ריוורב Room עדין לעומק. תמיד פנה את אזור הווקאל.</p>
-      <div class="guide-rule"><b>טעות נפוצה:</b> יותר מדי נמוכים — האקוסטית מתחרה בבס ובווקאל. תהיה אגרסיבי עם ה-HPF.</div>
-      <div class="guide-tip">💡 טיפ: בשיר עם ווקאל מרכזי, הגיטרה תומכת מהצדדים — לא נלחמת על האמצע.</div>
-    `
-  },
-  {
-    id: 'electric-guitar', icon: '🤘', tag: 'טיפול בכלי',
-    title: 'איך לטפל בגיטרה חשמלית',
-    summary: 'האמפ כבר עיצב — פחות זה יותר, ורוחב דרך דאבלינג',
-    content: `
-      <p class="lead">גיטרה חשמלית לרוב כבר מעוצבת ע"י האמפ. התפקיד שלך: ליישב אותה במיקס, לא להמציא אותה מחדש.</p>
-      <h2>🎯 הגישה שלי</h2>
-      <p>הצליל נקבע ב<strong>אמפ ובאצבעות</strong>, לא בפלאגינים. אם הצליל לא יושב — אני מחליף טון/אמפ במקום להעמיס EQ. ככל שהקלטת נכון, פחות אני נוגע.</p>
-      <h3>קיר רחב</h3>
-      <p>לריתם — שני טייקים נפרדים, אחד <strong>חזק שמאלה</strong> ואחד <strong>חזק ימינה</strong>. זה קיר אמיתי שמשאיר את כל המרכז פנוי לווקאל ולתופים.</p>
-      <h3>Re-amp ו-LPF לפיז</h3>
-      <p>אם הוקלט DI — אפשר לשלוח שוב לאמפ (re-amp) ולעצב מחדש. ועל "פיז" חד אני שם <strong>LPF</strong> סביב 6-8kHz; הגיטרה לא צריכה אוויר שמתחרה בצימבלים ובווקאל.</p>
-      <h2>EQ</h2>
-      <ul>
-        <li><strong>HPF</strong> ב-80-100Hz.</li>
-        <li>חתוך עכירות ב-200-500Hz.</li>
-        <li><strong>נוכחות</strong> ב-2-4kHz.</li>
-        <li><strong>LPF</strong> לרסן "פיז" חד מעל 6-8kHz.</li>
-      </ul>
-      <h2>רוחב דרך דאבלינג</h2>
-      <p>הקלט שני טייקים נפרדים ופזר אותם <strong>חזק שמאלה וימינה</strong> — קיר רחב ואמיתי (לא חיקוי סטריאו).</p>
-      <h2>דחיסה ואפקטים</h2>
-      <p>דחיסה קלה (האמפ כבר דוחס). דיליי/ריוורב למרחב. תמיד פנה מקום לווקאל.</p>
-      <div class="guide-rule"><b>טעות נפוצה:</b> להעמיס EQ ודחיסה על צליל אמפ טוב. אם הוא לא יושב — עדיף להחליף טון/אמפ מאשר לתקן במיקס.</div>
-      <div class="guide-tip">💡 טיפ: שתי גיטרות מפוזרות לצדדים נשמעות גדול יותר משכבה אחת "סטריאו" באמצע.</div>
-    `
-  },
-  {
-    id: 'synth', icon: '🎹', tag: 'טיפול בכלי',
-    title: 'איך לטפל בסינתים ומקלדות',
-    summary: 'סינתים ענקיים בלי להציף את המיקס — סיידצ׳יין ומרחב',
-    content: `
-      <p class="lead">סינתים יכולים למלא את כל הספקטרום. המטרה: עוצמה ורוחב בלי שיבלעו את הווקאל ואת הבס.</p>
-      <h2>🎯 הגישה שלי</h2>
-      <p>קודם אני מגדיר <strong>תפקיד</strong> לכל סינת: בס, פד, ליד או אווירה. לכל תפקיד אזור תדרים משלו — וברגע שכל אחד "במסלול" שלו, הם מפסיקים להילחם.</p>
-      <h3>רוחב נכון</h3>
-      <p>נמוכים תמיד <strong>מונו</strong>; את הרוחב אני שומר לגבוהים. ב-unison של סינת — לפזר את הקולות (detune/width) אבל לבדוק מונו שלא מתבטל.</p>
-      <h3>תנועה</h3>
-      <p>פד סטטי משעמם ומציף. אני נותן לו חיים עם <strong>סיידצ׳יין לקיק</strong> (נשימה) או LFO עדין על הפילטר/ווליום. רוויה לאופי, וריוורב/דיליי לעומק מאחורי הליד.</p>
-      <h2>שליטה בנמוכים</h2>
-      <p>HPF לפדים/לידים שלא צריכים בס, או הפוך את הנמוכים ל<strong>מונו</strong> שלא יתנגשו עם הבס.</p>
-      <h2>פינוי מקום</h2>
-      <ul>
-        <li>חתוך באזור שבו הווקאל או הליד יושבים.</li>
-        <li><strong>סיידצ׳יין</strong> של פדים לקיק — נותן תנועה ונשימה.</li>
-      </ul>
-      <h2>מרחב וצבע</h2>
-      <p>רוחב סטריאו (תמיד לבדוק מונו!), רוויה לאופי, וריוורב/דיליי לעומק.</p>
-      <div class="guide-rule"><b>טעות נפוצה:</b> פד סטריאו רחב עם נמוכים — מתבטל במונו ומעכיר את הבס. מונו בנמוכים, רוחב בגבוהים.</div>
-      <div class="guide-tip">💡 טיפ: אם הסינת "גדול מדי" ואין מקום — לפעמים שתי שכבות פשוטות עדיפות על פאץ' ענק אחד.</div>
-    `
+    id:'synth', name:'סינתים ומקלדות', icon:'🎛️',
+    recipe:[
+      {step:'תפקיד', plugin:'—', set:'בס / פד / ליד / אווירה — לכל אחד אזור תדרים משלו.'},
+      {step:'שליטה בנמוכים', plugin:'Pro-Q 4', set:'HPF לפדים/לידים, או נמוכים למונו (שלא יתנגשו בבס).'},
+      {step:'פינוי מקום', plugin:'Pro-Q 4', set:'חתך באזור שבו הווקאל/הליד יושבים.'},
+      {step:'תנועה', plugin:'Pro-C 2 (sidechain)', set:'סיידצ׳יין פד לקיק, או LFO עדין לפילטר.'},
+      {step:'מרחב וצבע', plugin:'Ampex / Valhalla', set:'רוויה לאופי, ריוורב/דיליי לעומק; בדוק מונו.'}
+    ],
+    cheatsheet:[
+      {l:'נמוכים', v:'מונו / HPF'},
+      {l:'רוחב', v:'רק בגבוהים'},
+      {l:'פינוי לליד/ווקאל', v:'באזור 1-4kHz'},
+      {l:'תנועה', v:'sidechain / LFO'}
+    ],
+    problems:[
+      {q:'מציף את המיקס', a:'HPF, נמוכים למונו, וחתך באזור הווקאל.'},
+      {q:'משעמם / סטטי', a:'סיידצ׳יין לקיק או LFO עדין; רוויה לאופי.'},
+      {q:'מתבטל במונו', a:'נמוכים למונו; רוחב רק בגבוהים. בדוק unison.'}
+    ],
+    checklist:['הגדרתי תפקיד','נמוכים מונו/HPF','פינוי לליד','תנועה (sidechain/LFO)','מרחב','בדיקת מונו']
   }
 ];
 
-const STUDY_CATEGORIES = [
-  { id: 'instrument',   title: '🎙️ טיפול לפי כלי',    sub: 'איך לטפל בכל מקור צליל' },
-  { id: 'fundamentals', title: '📐 יסודות',            sub: 'הכללים שהכל עומד עליהם' },
-  { id: 'plugin',       title: '🎛️ מדריכי פלאגינים',  sub: 'הכלים שאתה עובד איתם' }
+const STUDY_PLUGINS = [
+  {id:'pro-q4', name:'FabFilter Pro-Q 4', icon:'🎛️', role:'EQ',
+   knobs:['Dynamic EQ — בנד שפועל רק כשצריך','HPF/LPF נקיים','Mid/Side','Solo + sweep למצוא תדר בעייתי'],
+   start:'HPF, וחתוך מה שמפריע (subtractive) לפני שמגבירים.',
+   mistake:'הגברה של +6dB ומעלה — כנראה הבעיה במקור, לא ב-EQ.'},
+  {id:'pro-c2', name:'FabFilter Pro-C 2', icon:'🎚️', role:'קומפרסור',
+   knobs:['Styles: Vocal / Punch / Bus / Opto / Mastering','Sidechain HPF','Lookahead'],
+   start:'בחר Style לפי המקור; שמור על Gain Reduction חלק.',
+   mistake:'אטאק/ריליז לא מתאימים → הקומפרסור נושם ושואב.'},
+  {id:'la2a', name:'UAD Teletronix LA-2A Silver', icon:'🟦', role:'קומפרסור אופטי',
+   knobs:['Peak Reduction (כמות דחיסה)','Gain (פיצוי)','אופי איטי ומוזיקלי'],
+   start:'ווקאל/בס: 3-4dB דחיסה, רך ועקבי.',
+   mistake:'לדחוס חזק מדי — LA-2A נועד לעדינות, לא לפאנץ.'},
+  {id:'1176', name:'UAD 1176', icon:'🟧', role:'קומפרסור FET',
+   knobs:['אטאק/ריליז מהירים מאוד','Ratio 4 / 8 / 12 / 20','All-buttons (Nuke) לאפקט'],
+   start:'ווקאל/תופים: אטאק מהיר, 2-4dB לפאנץ.',
+   mistake:'אטאק מהיר מדי בולע את הטרנזיינט — שחק עם הכיוון.'},
+  {id:'ampex', name:'UAD Ampex ATR-102 (טייפ)', icon:'📼', role:'רוויית טייפ',
+   knobs:['Input (כמות רוויה)','מהירות סרט (7.5/15/30)','סוג סרט'],
+   start:'נגיעה על מאסטר/באס/ווקאל — חום והדבקה.',
+   mistake:'יותר מדי Input = עכירות. בדוק עם Bypass בעוצמה זהה.'},
+  {id:'ozone', name:'iZotope Ozone', icon:'🟣', role:'מאסטרינג',
+   knobs:['Master Assistant (התחלה בלבד)','Maximizer','Imager','Dynamics'],
+   start:'יעד ~-14 LUFS, True Peak -1dBTP.',
+   mistake:'להשאיר את ה-AI כמו שהוא — זו טיוטה, לא מאסטר.'},
+  {id:'nectar', name:'iZotope Nectar', icon:'🎙️', role:'שרשרת ווקאל',
+   knobs:['EQ + דחיסה + de-ess + רוויה במקום אחד','Vocal Assistant'],
+   start:'תן בסיס מה-Assistant, ואז כוון ידנית de-ess ודחיסה.',
+   mistake:'להסתמך עיוור על ה-Assistant בלי להתאים לשיר.'},
+  {id:'valhalla', name:'Valhalla (VintageVerb/Room/Plate)', icon:'🏛️', role:'ריוורב',
+   knobs:['בחירת אלגוריתם','Predelay','Decay','Mix'],
+   start:'Send, Mix 15-25%, Predelay לבהירות, HPF/LPF על הזנב.',
+   mistake:'יותר מדי — אם שומעים את הריוורב, יש עודף.'},
+  {id:'vss4', name:'VSS4 (ריוורב)', icon:'✨', role:'ריוורב יוקרתי',
+   knobs:['Early Reflections','Reverb Tail','Predelay'],
+   start:'Send, EQ על ה-Return (חתך מתחת 200Hz).',
+   mistake:'רטוב מדי — תכוון פחות ממה שנדמה לך.'},
+  {id:'hdelay', name:'Waves H-Delay', icon:'⏱️', role:'דיליי',
+   knobs:['Sync (1/8 מנוקד קלאסי)','Feedback','Analog / LoFi','Ping-Pong'],
+   start:'Send, 1/8 מנוקד, HPF/LPF, throws בסופי משפט.',
+   mistake:'דיליי כ-Insert מבלגן — תמיד על Send.'}
 ];
-const GUIDE_CATEGORY = {
-  'vocal':'instrument', 'piano':'instrument', 'bass':'instrument', 'drums':'instrument',
-  'acoustic-guitar':'instrument', 'electric-guitar':'instrument', 'synth':'instrument',
-  'mix-fundamentals':'fundamentals', 'eq-guide':'fundamentals', 'compression':'fundamentals',
-  'fabfilter':'plugin', 'izotope':'plugin', 'waves':'plugin', 'true-iron':'plugin',
-  'valhalla':'plugin', 'h-delay':'plugin', 'vss4':'plugin'
-};
-// תמונת כותרת לכל מדריך — נטענת מ-studies-img/<name>.png אם הועלתה (אחרת מוסתרת)
-const GUIDE_IMG = {
-  'fabfilter':'pro-q4', 'izotope':'ozone', 'waves':'waves', 'true-iron':'true-iron',
-  'valhalla':'valhalla', 'h-delay':'h-delay', 'vss4':'vss4'
-};
 
-function guideCard(g) {
-  return `
-    <div class="guide-card" onclick="openGuide('${g.id}')">
-      <div class="guide-card-icon">${g.icon}</div>
-      <div class="guide-card-title">${g.title}</div>
-      <div class="guide-card-sub">${g.summary}</div>
-      <span class="guide-card-tag">${g.tag}</span>
-    </div>`;
+function studyCard(item, fn, sub) {
+  return '<div class="guide-card" onclick="' + fn + '(\'' + item.id + '\')">' +
+    '<div class="guide-card-icon">' + item.icon + '</div>' +
+    '<div class="guide-card-title">' + item.name + '</div>' +
+    '<div class="guide-card-sub">' + sub + '</div></div>';
+}
+
+function studySection(title, sub, inner) {
+  return '<div class="studies-section"><div class="studies-section-head"><h2>' + title +
+    '</h2><p>' + sub + '</p></div><div class="studies-grid">' + inner + '</div></div>';
 }
 
 function renderStudies() {
@@ -8107,32 +7855,77 @@ function renderStudies() {
   if (detail) { detail.style.display = 'none'; detail.innerHTML = ''; }
   if (!list) return;
   list.style.display = 'block';
-  list.innerHTML = STUDY_CATEGORIES.map(cat => {
-    const guides = STUDY_GUIDES.filter(g => GUIDE_CATEGORY[g.id] === cat.id);
-    if (!guides.length) return '';
-    return `
-      <div class="studies-section">
-        <div class="studies-section-head"><h2>${cat.title}</h2><p>${cat.sub}</p></div>
-        <div class="studies-grid">${guides.map(guideCard).join('')}</div>
-      </div>`;
-  }).join('');
+  list.innerHTML =
+    studySection('🎙️ טיפול לפי כלי', 'בחר כלי — מתכון, צ׳יט-שיט, פתרונות וצ׳ק-ליסט',
+      STUDY_INSTRUMENTS.map(function(i){ return studyCard(i, 'openInstrument', 'מתכון · צ׳יט-שיט · בעיות · צ׳ק-ליסט'); }).join('')) +
+    studySection('🎛️ הפלאגינים שלי', 'כרטיס מהיר לכל כלי',
+      STUDY_PLUGINS.map(function(p){ return studyCard(p, 'openPlugin', p.role); }).join(''));
 }
 
-function openGuide(id) {
-  const g = STUDY_GUIDES.find(x => x.id === id);
-  if (!g) return;
-  const list = document.getElementById('studies-list');
-  const detail = document.getElementById('studies-detail');
-  if (list) list.style.display = 'none';
-  if (!detail) return;
-  detail.style.display = 'block';
-  const imgName = GUIDE_IMG[g.id];
-  const imgHtml = imgName
-    ? `<img class="guide-img" src="/elior-studio-app/studies-img/${imgName}.png" alt="${g.title}" onerror="this.remove()">`
-    : '';
-  detail.innerHTML = `
-    <button class="studies-back" onclick="backToStudies()">← כל המדריכים</button>
-    <div class="guide-content"><h1>${g.icon} ${g.title}</h1>${imgHtml}${g.content}</div>`;
+let _curInstrument = null;
+
+function openInstrument(id) {
+  const ins = STUDY_INSTRUMENTS.find(function(x){ return x.id === id; });
+  if (!ins) return;
+  _curInstrument = id;
+  document.getElementById('studies-list').style.display = 'none';
+  const d = document.getElementById('studies-detail');
+  d.style.display = 'block';
+  d.innerHTML =
+    '<button class="studies-back" onclick="backToStudies()">← כל הכלים</button>' +
+    '<h1 class="study-title">' + ins.icon + ' ' + ins.name + '</h1>' +
+    '<div class="study-tabs">' +
+      '<button class="study-tab" data-t="recipe" onclick="showStudyTab(\'recipe\')">🍳 מתכון</button>' +
+      '<button class="study-tab" data-t="cheat" onclick="showStudyTab(\'cheat\')">⚡ צ׳יט-שיט</button>' +
+      '<button class="study-tab" data-t="problems" onclick="showStudyTab(\'problems\')">🔧 בעיות</button>' +
+      '<button class="study-tab" data-t="check" onclick="showStudyTab(\'check\')">✅ צ׳ק-ליסט</button>' +
+    '</div><div id="study-tab-body"></div>';
+  showStudyTab('recipe');
+  window.scrollTo(0, 0);
+}
+
+function showStudyTab(t) {
+  const ins = STUDY_INSTRUMENTS.find(function(x){ return x.id === _curInstrument; });
+  if (!ins) return;
+  document.querySelectorAll('.study-tab').forEach(function(b){ b.classList.toggle('active', b.dataset.t === t); });
+  const body = document.getElementById('study-tab-body');
+  let h = '';
+  if (t === 'recipe') {
+    h = '<ol class="recipe">' + ins.recipe.map(function(s, i){
+      return '<li><div class="recipe-step"><span class="recipe-num">' + (i+1) + '</span><div>' +
+        '<div class="recipe-name">' + s.step + ' <span class="recipe-plugin">' + s.plugin + '</span></div>' +
+        '<div class="recipe-set">' + s.set + '</div></div></div></li>';
+    }).join('') + '</ol>';
+  } else if (t === 'cheat') {
+    h = '<table class="cheat"><tbody>' + ins.cheatsheet.map(function(c){
+      return '<tr><td class="cheat-l">' + c.l + '</td><td class="cheat-v">' + c.v + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  } else if (t === 'problems') {
+    h = '<div class="problems">' + ins.problems.map(function(p){
+      return '<div class="problem"><div class="problem-q">❓ ' + p.q + '</div><div class="problem-a">' + p.a + '</div></div>';
+    }).join('') + '</div>';
+  } else {
+    h = '<div class="checklist">' + ins.checklist.map(function(c){
+      return '<label class="check"><input type="checkbox"><span>' + c + '</span></label>';
+    }).join('') + '</div>';
+  }
+  body.innerHTML = h;
+}
+
+function openPlugin(id) {
+  const p = STUDY_PLUGINS.find(function(x){ return x.id === id; });
+  if (!p) return;
+  document.getElementById('studies-list').style.display = 'none';
+  const d = document.getElementById('studies-detail');
+  d.style.display = 'block';
+  d.innerHTML =
+    '<button class="studies-back" onclick="backToStudies()">← כל הכלים</button>' +
+    '<h1 class="study-title">' + p.icon + ' ' + p.name + '</h1>' +
+    '<div class="plugin-role">' + p.role + '</div>' +
+    '<h3 class="study-h3">כפתורים חשובים</h3>' +
+    '<ul class="plugin-knobs">' + p.knobs.map(function(k){ return '<li>' + k + '</li>'; }).join('') + '</ul>' +
+    '<div class="guide-rule"><b>ההגדרה שאני מתחיל ממנה:</b> ' + p.start + '</div>' +
+    '<div class="guide-tip">⚠️ טעות נפוצה: ' + p.mistake + '</div>';
   window.scrollTo(0, 0);
 }
 
