@@ -2947,69 +2947,54 @@
     </div>
     <div class="mode-card studies" onclick="chooseMode('studies')">
       <div class="mode-card-glow"></div>
-      <div class="mode-card-icon">📚</div>
-      <div class="mode-card-title">לימודים</div>
-      <div class="mode-card-sub">מדריכים · כללי יסוד · טיפים</div>
+      <div class="mode-card-icon">🎚️</div>
+      <div class="mode-card-title">הפקות</div>
+      <div class="mode-card-sub">כל הפרויקטים · שלבים · הפעולה הבאה</div>
     </div>
   </div>
 </div>
 
 <!-- ===== STUDIES (לימודים) ===== -->
 <style>
-      #studies-main { margin-right:0; padding:0; min-height:100vh; background:#1b1610; color:#f2e9dc; }
+        #studies-main { margin-right:0; padding:0; min-height:100vh; background:#1b1610; color:#f2e9dc; }
   .studies-wrap { max-width:780px; margin:0 auto; padding:26px 18px 90px; }
-  .studies-head { margin-bottom:22px; }
+  .studies-head { margin-bottom:18px; }
   .studies-back { background:#2e251b; border:1.5px solid #4a3c2c; border-radius:9px; padding:8px 15px; font-size:13px; font-weight:800; cursor:pointer; color:#f2e9dc; margin-bottom:16px; }
   .studies-back:hover { background:#3a2f23; }
   .studies-head h1 { font-size:30px; font-weight:900; color:#f7f0e6; letter-spacing:-0.02em; }
   .studies-head p { font-size:14px; color:#b3a690; margin-top:6px; }
-  .studies-section { margin-bottom:30px; }
-  .studies-section-head { margin-bottom:13px; }
-  .studies-section-head h2 { font-size:19px; font-weight:900; color:#f7f0e6; }
-  .studies-section-head p { font-size:12.5px; color:#b3a690; margin-top:3px; }
-  .studies-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
-  .guide-card { background:#251e16; border:1.5px solid #3a2f23; border-radius:16px; padding:16px; cursor:pointer; transition:transform .15s, border-color .15s; }
-  .guide-card:hover { transform:translateY(-3px); border-color:#7c5cff; }
-  .guide-card-icon { font-size:30px; margin-bottom:8px; }
-  .guide-card-title { font-size:15px; font-weight:800; color:#f7f0e6; }
-  .guide-card-sub { font-size:11.5px; color:#b3a690; margin-top:4px; line-height:1.45; }
-  .study-title { font-size:25px; font-weight:900; color:#f7f0e6; margin:6px 0 14px; }
-  .study-tabs { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-  .study-tabs::-webkit-scrollbar { display:none; }
-  .study-tab { flex:0 0 auto; background:#2e251b; border:1.5px solid #4a3c2c; border-radius:10px; padding:9px 13px; font-size:13px; font-weight:800; color:#b3a690; cursor:pointer; white-space:nowrap; }
-  .study-tab.active { background:#7c5cff; border-color:#7c5cff; color:#fff; }
-  .recipe { list-style:none; margin:0; padding:0; }
-  .recipe li { margin-bottom:9px; }
-  .recipe-step { display:flex; gap:11px; align-items:flex-start; background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:12px 13px; }
-  .recipe-num { flex:0 0 26px; height:26px; border-radius:50%; background:rgba(124,92,255,0.22); color:#c9b8ff; font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center; }
-  .recipe-name { font-size:14px; font-weight:800; color:#f7f0e6; }
-  .recipe-plugin { display:inline-block; font-size:11px; font-weight:700; color:#c9b8ff; background:rgba(124,92,255,0.16); padding:2px 8px; border-radius:20px; margin-right:4px; }
-  .recipe-set { font-size:13px; color:#bcae98; margin-top:4px; line-height:1.55; }
-  .cheat { width:100%; border-collapse:collapse; }
-  .cheat tr { border-bottom:1px solid #3a2f23; }
-  .cheat td { padding:12px 6px; font-size:14.5px; }
-  .cheat-l { color:#b3a690; }
-  .cheat-v { color:#f7f0e6; font-weight:800; text-align:left; direction:ltr; }
-  .problem { background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:12px 14px; margin-bottom:9px; }
-  .problem-q { font-size:14px; font-weight:800; color:#f7f0e6; }
-  .problem-a { font-size:13.5px; color:#bcae98; margin-top:5px; line-height:1.6; }
-  .checklist { display:flex; flex-direction:column; gap:6px; }
-  .check { display:flex; align-items:center; gap:11px; background:#251e16; border:1.5px solid #3a2f23; border-radius:11px; padding:13px 14px; font-size:14px; color:#f2e9dc; cursor:pointer; }
-  .check input { width:20px; height:20px; accent-color:#7c5cff; flex:0 0 auto; }
-  .plugin-role { display:inline-block; font-size:12px; font-weight:800; color:#c9b8ff; background:rgba(124,92,255,0.16); padding:4px 12px; border-radius:20px; margin-bottom:8px; }
-  .study-h3 { font-size:15px; font-weight:800; color:#f7f0e6; margin:14px 0 7px; }
-  .plugin-knobs { margin:0 18px 4px; padding:0; }
-  .plugin-knobs li { font-size:14px; color:#e8dcc9; line-height:1.7; margin-bottom:5px; }
-  .guide-rule { background:#2e251b; border:1.5px solid #4a3c2c; border-radius:12px; padding:13px 15px; margin:12px 0; font-size:13.5px; color:#f2e9dc; line-height:1.6; }
-  .guide-rule b { color:#c9b8ff; }
-  .guide-tip { background:rgba(124,92,255,0.14); border-radius:12px; padding:12px 15px; font-size:13.5px; color:#f2e9dc; line-height:1.6; border-right:4px solid #7c5cff; margin:10px 0; }
+  .study-title { font-size:25px; font-weight:900; color:#f7f0e6; margin:6px 0 4px; }
+  .study-h3 { font-size:14px; font-weight:800; color:#c9b8ff; margin:18px 0 8px; }
+  .proj-add-btn { width:100%; background:#7c5cff; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:800; color:#fff; cursor:pointer; margin-bottom:14px; }
+  .proj-add-btn:active { opacity:.85; }
+  .proj-add-box { background:#251e16; border:1.5px solid #3a2f23; border-radius:14px; padding:14px; margin-bottom:14px; display:flex; flex-direction:column; gap:10px; }
+  .proj-input { width:100%; background:#1b1610; border:1.5px solid #4a3c2c; border-radius:10px; padding:12px 14px; font-size:15px; color:#f2e9dc; outline:none; }
+  .proj-input::placeholder { color:#7d715f; }
+  .proj-add-go { background:#7c5cff; border:none; border-radius:10px; padding:11px; font-size:14px; font-weight:800; color:#fff; cursor:pointer; }
+  .proj-empty { text-align:center; color:#b3a690; font-size:14px; line-height:1.7; padding:40px 16px; background:#251e16; border:1.5px solid #3a2f23; border-radius:14px; }
+  .proj-card { background:#251e16; border:1.5px solid #3a2f23; border-radius:16px; padding:15px 16px; margin-bottom:11px; cursor:pointer; transition:border-color .15s, transform .15s; }
+  .proj-card:active { transform:scale(.99); }
+  .proj-card:hover { border-color:#7c5cff; }
+  .proj-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .proj-name { font-size:16px; font-weight:800; color:#f7f0e6; line-height:1.3; }
+  .proj-status { flex:0 0 auto; font-size:11.5px; font-weight:800; padding:4px 10px; border-radius:20px; border:1.5px solid; white-space:nowrap; }
+  .proj-sub { font-size:13px; color:#b3a690; margin-top:5px; }
+  .proj-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
+  .proj-tag { font-size:11px; font-weight:700; color:#c9b8ff; background:rgba(124,92,255,0.16); padding:3px 9px; border-radius:20px; }
+  .proj-next { font-size:13px; color:#e8dcc9; margin-top:9px; background:#1b1610; border-radius:9px; padding:8px 11px; line-height:1.5; }
+  .proj-done-head { font-size:14px; font-weight:800; color:#8aa888; margin:22px 0 11px; }
+  .proj-row { display:flex; flex-wrap:wrap; gap:7px; }
+  .proj-st-btn { background:#2e251b; border:1.5px solid #4a3c2c; border-radius:10px; padding:9px 14px; font-size:13.5px; font-weight:800; color:#cbbfad; cursor:pointer; }
+  .proj-textarea { width:100%; background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:12px 14px; font-size:15px; color:#f2e9dc; outline:none; direction:rtl; font-family:inherit; resize:vertical; min-height:90px; }
+  .proj-textarea::placeholder { color:#7d715f; }
+  .proj-del { margin-top:22px; width:100%; background:transparent; border:1.5px solid #6e3b3b; border-radius:11px; padding:12px; font-size:14px; font-weight:800; color:#e08a8a; cursor:pointer; }
 </style>
 <main class="main" id="studies-main" style="display:none">
   <div class="studies-wrap">
     <div class="studies-head">
       <button class="studies-back" onclick="switchMode()">← לובי</button>
-      <h1>📚 לימודים</h1>
-      <p>מדריכים, כללי יסוד וטיפים — נבנים במיוחד בשבילך</p>
+      <h1>🎚️ הפקות</h1>
+      <p>כל ההפקות שלך במקום אחד — שלב, הפעולה הבאה והערות</p>
     </div>
     <div id="studies-list"></div>
     <div id="studies-detail" style="display:none"></div>
@@ -4025,7 +4010,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -7616,320 +7601,144 @@ function showMode(mode) {
 }
 
 // ===== לימודים — מדריכים =====
-const STUDY_INSTRUMENTS = [
-  {
-    id:'vocal', name:'ווקאל', icon:'🎤',
-    recipe:[
-      {step:'ניקוי', plugin:'iZotope RX', set:'De-noise, De-click, Mouth De-click. אזן נשימות (להחליש, לא למחוק).'},
-      {step:'כוונון', plugin:'Melodyne / Auto-Tune', set:'Melodyne תו-תו לשקיפות; Retune Speed בינוני = טבעי.'},
-      {step:'clip-gain ידני', plugin:'—', set:'יישור ווליום מילה-מילה לפני הדחיסה. הנשק הסודי.'},
-      {step:'EQ חיתוך', plugin:'Pro-Q 4', set:'HPF 90Hz · חתך בוץ 250Hz · בנד דינמי 3-5kHz לחספוס.'},
-      {step:'דחיסה 1 (רכה)', plugin:'UAD LA-2A Silver', set:'3-4dB, אופי אופטי רך ומוזיקלי.'},
-      {step:'דחיסה 2 (פאנץ)', plugin:'UAD 1176', set:'אטאק מהיר, ריליז מהיר, עוד 2-3dB ליישור.'},
-      {step:'De-ess', plugin:'Pro-Q 4 (דינמי)', set:'בנד דינמי 5-8kHz, רק כמה dB וכשמופיע.'},
-      {step:'צבע', plugin:'UAD Ampex (טייפ)', set:'נגיעת רוויה לחום וגוף שמקרב לאוזן.'},
-      {step:'ריוורב (Send)', plugin:'Valhalla Plate / VSS4', set:'Predelay 20-40ms שהמילים יישארו ברורות.'},
-      {step:'דיליי (Send)', plugin:'Waves H-Delay', set:'1/8 מנוקד, HPF/LPF, throws בסופי שורות.'}
-    ],
-    cheatsheet:[
-      {l:'HPF', v:'80-100Hz'},
-      {l:'בוץ — לחתוך', v:'200-400Hz'},
-      {l:'נוכחות — להרים', v:'+5kHz'},
-      {l:'אוויר — להרים', v:'+12kHz'},
-      {l:'דה-אס / חספוס', v:'5-8kHz'},
-      {l:'דחיסה', v:'2 שלבים, ~3+3dB'},
-      {l:'ריוורב Predelay', v:'20-40ms'}
-    ],
-    problems:[
-      {q:'צורם / חד מדי', a:'De-ess 5-8kHz + בנד דינמי שמרסן 3-5kHz. אל תחתוך קבוע.'},
-      {q:'קבור במיקס', a:'הרם נוכחות 3-5kHz, ופנה את אותו אזור בכלים שמסביב.'},
-      {q:'דק / חלש', a:'גוף ב-200-300Hz + LA-2A לעקביות, ונגיעת טייפ לחום.'},
-      {q:'קופץ / לא יציב', a:'1176 אטאק מהיר, או clip-gain ידני לפני הדחיסה.'},
-      {q:'יבש / שטוח', a:'Send לריוורב Plate קצר + דיליי מנוקד — לא Insert.'}
-    ],
-    checklist:['בחרתי את הטייק הכי טוב (comp)','clip-gain ידני','ניקוי RX','כוונון','EQ חיתוך','דחיסה סדרתית','de-ess','אפקטים על Sends','בדיקה במונו']
-  },
-  {
-    id:'bass', name:'בס', icon:'🎸',
-    recipe:[
-      {step:'החלטה', plugin:'—', set:'מי הבוס בנמוכים — קיק או בס? כל המהלכים נגזרים מזה.'},
-      {step:'מונו בנמוכים', plugin:'—', set:'כל מה שמתחת ~120Hz למונו (אחרת מתבטל בפאזה).'},
-      {step:'EQ', plugin:'Pro-Q 4', set:'HPF 25Hz · שלוט בסאב 50-80Hz · גראול 700Hz-2.5kHz.'},
-      {step:'בס מול קיק', plugin:'Pro-Q 4 (דינמי)', set:'בנד דינמי שמתרסן כשהקיק פוגע (במקום סיידצ׳יין אגרסיבי).'},
-      {step:'דחיסה', plugin:'UAD LA-2A Silver', set:'4-6dB ליציבות — כל תו באותה עוצמה.'},
-      {step:'צבע / נוכחות', plugin:'UAD Ampex / Waves R-Bass', set:'הרמוניות שנשמעות גם ברמקול קטן.'}
-    ],
-    cheatsheet:[
-      {l:'מונו מתחת ל-', v:'120Hz'},
-      {l:'HPF', v:'20-30Hz'},
-      {l:'סאב', v:'50-80Hz'},
-      {l:'גראול / נוכחות', v:'700Hz-2.5kHz'},
-      {l:'דחיסה', v:'4:1, 4-6dB'}
-    ],
-    problems:[
-      {q:'נעלם בטלפון / רמקול קטן', a:'הוסף הרמוניות 700Hz-2.5kHz + רוויה (Ampex/R-Bass).'},
-      {q:'מתנגש עם הקיק', a:'תן לכל אחד תדר, או EQ דינמי/סיידצ׳יין של הבס לקיק.'},
-      {q:'מבייץ / עכור', a:'פחות סאב, ובדוק שהנמוכים במונו.'},
-      {q:'לא יציב בעוצמה', a:'דחיסה חזקה יותר (LA-2A) או שתי דחיסות בשרשרת.'}
-    ],
-    checklist:['החלטתי קיק/בס','נמוכים מונו','HPF','שליטה בסאב','גראול לרמקול קטן','יחס מול הקיק','דחיסה ליציבות']
-  },
-  {
-    id:'drums', name:'תופים', icon:'🥁',
-    recipe:[
-      {step:'אוברהדס קודם', plugin:'Pro-Q 4', set:'HPF 300-500Hz, אזן את התמונה המלאה של הסט.'},
-      {step:'Transient', plugin:'Transient Shaper', set:'הוסף אטאק לקיק/סנר חלשים, הורד זנב חדר עודף.'},
-      {step:'קיק', plugin:'Pro-Q 4', set:'סאב 50-60Hz · קליק 2-4kHz · חתך בוץ 300-500Hz.'},
-      {step:'סנר', plugin:'Pro-Q 4 + 1176', set:'גוף 150-250Hz · קראק 3-5kHz · 1176 לפאנץ.'},
-      {step:'דחיסה מקבילה', plugin:'UAD 1176', set:'ערוץ מקביל, דחיסה חזקה (Ratio גבוה), מערבבים מתחת.'},
-      {step:'Drum Bus', plugin:'Waves SSL G-Comp', set:'2-3dB על כל הסט יחד — מלכד לגוף אחד.'},
-      {step:'צבע', plugin:'UAD Ampex (טייפ)', set:'הדבקה וגראנג קל על הבאס.'}
-    ],
-    cheatsheet:[
-      {l:'קיק סאב', v:'50-60Hz'},
-      {l:'קיק קליק', v:'2-4kHz'},
-      {l:'סנר גוף', v:'150-250Hz'},
-      {l:'סנר קראק', v:'3-5kHz'},
-      {l:'אוברהדס HPF', v:'300-500Hz'},
-      {l:'Drum Bus', v:'2-3dB דחיסה'}
-    ],
-    problems:[
-      {q:'קיק נבלע', a:'קליק ב-2-4kHz + transient attack; פנה לו מקום מול הבס.'},
-      {q:'סנר חלש / שטוח', a:'קראק 3-5kHz, 1176 לפאנץ, או סמפל מעורבב מתחת.'},
-      {q:'הסט נשמע מפורק', a:'דחיסת Drum Bus (SSL) + טייפ למעט הדבקה.'},
-      {q:'צלחות צורמות', a:'רסן 6-8kHz באוברהדס, ו-HPF גבוה.'}
-    ],
-    checklist:['אוברהדס מאוזנים','transient shaping','קיק','סנר','שאר התופים','דחיסה מקבילה','Drum Bus','בדיקה מול הבס']
-  },
-  {
-    id:'piano', name:'פסנתר', icon:'🎹',
-    recipe:[
-      {step:'החלטה', plugin:'—', set:'סולו (רחב ומלא) או ליווי (צנוע ומפנה מקום)?'},
-      {step:'EQ', plugin:'Pro-Q 4', set:'HPF 40-60Hz (אם הבס נמוך יותר) · חתך עכירות 250-400Hz · אוויר 10-14kHz.'},
-      {step:'פינוי לווקאל', plugin:'Pro-Q 4 (דינמי)', set:'בנד דינמי 2-4kHz עם sidechain מהווקאל — מתעמעם רק כששרים.'},
-      {step:'דחיסה', plugin:'UAD LA-2A Silver', set:'עדין (2-3dB) רק ליישור — לא להרוג מוזיקליות.'},
-      {step:'מרחב (Send)', plugin:'Valhalla Room/Hall', set:'Predelay לעומק בלי בוץ; נמוכים קרוב למרכז.'}
-    ],
-    cheatsheet:[
-      {l:'HPF (ליווי)', v:'40-150Hz'},
-      {l:'עכירות — לחתוך', v:'250-400Hz'},
-      {l:'פינוי לווקאל', v:'2-4kHz (דינמי)'},
-      {l:'אוויר', v:'10-14kHz'},
-      {l:'דחיסה', v:'2:1, 2-3dB'}
-    ],
-    problems:[
-      {q:'בולע את הווקאל', a:'בנד דינמי 2-4kHz עם sidechain מהווקאל; HPF גבוה יותר.'},
-      {q:'עכור / בוצי', a:'חתך 250-400Hz, וצמצם נמוכים בליווי.'},
-      {q:'שטוח / רחוק', a:'ריוורב Room עם Predelay, ומעט אוויר 10kHz+.'}
-    ],
-    checklist:['סולו או ליווי','HPF מתאים','חתך עכירות','פינוי לווקאל','דחיסה עדינה','מרחב']
-  },
-  {
-    id:'acoustic-guitar', name:'גיטרה אקוסטית', icon:'🎶',
-    recipe:[
-      {step:'מקור', plugin:'—', set:'חצי מהמיקס נקבע במיקרופון ובנגן. הקלטה נכונה = פחות תיקון.'},
-      {step:'EQ', plugin:'Pro-Q 4', set:'HPF 100-150Hz · חתך בום 100-200Hz · ברק 7-12kHz · רסן פריטה 2-4kHz.'},
-      {step:'דחיסה', plugin:'UAD LA-2A Silver', set:'3-5dB ליישור (חשוב בליווי ריתמי).'},
-      {step:'סטריאו', plugin:'—', set:'שני טייקים נפרדים לצדדים; בדוק פאזה במונו.'},
-      {step:'מרחב (Send)', plugin:'Valhalla Room', set:'עומק עדין; פנה את אזור הווקאל.'}
-    ],
-    cheatsheet:[
-      {l:'HPF (ליווי)', v:'100-200Hz'},
-      {l:'בום — לחתוך', v:'100-200Hz'},
-      {l:'עכירות', v:'200-400Hz'},
-      {l:'ברק ואוויר', v:'7-12kHz'},
-      {l:'פריטה חדה', v:'2-4kHz'}
-    ],
-    problems:[
-      {q:'בומי / עכור', a:'HPF אגרסיבי (אפילו 150-200Hz בליווי) + חתך 200-400Hz.'},
-      {q:'מתחרה בווקאל', a:'פזר לצדדים, רסן 2-4kHz, ותן לווקאל את המרכז.'},
-      {q:'דק / חד', a:'מעט גוף 150-250Hz ורסן ברק עודף מעל 10kHz.'}
-    ],
-    checklist:['מיקום מיקרופון נכון','HPF','חתך בום/עכירות','דחיסה','סטריאו אמיתי + פאזה','פינוי לווקאל']
-  },
-  {
-    id:'electric-guitar', name:'גיטרה חשמלית', icon:'🤘',
-    recipe:[
-      {step:'הצליל באמפ', plugin:'—', set:'הטון נקבע באמפ ובאצבעות. אם לא יושב — החלף טון, אל תתקן ב-EQ.'},
-      {step:'EQ', plugin:'Pro-Q 4', set:'HPF 80-100Hz · חתך עכירות 200-500Hz · נוכחות 2-4kHz · LPF לפיז 6-8kHz.'},
-      {step:'דחיסה', plugin:'UAD 1176', set:'קלה (האמפ כבר דוחס) — רק ליישוב.'},
-      {step:'קיר רחב', plugin:'—', set:'שני טייקים, חזק שמאלה וחזק ימינה.'},
-      {step:'אפקטים (Send)', plugin:'H-Delay / Valhalla', set:'דיליי/ריוורב מאחורי הסולו; פנה מקום לווקאל.'}
-    ],
-    cheatsheet:[
-      {l:'HPF', v:'80-100Hz'},
-      {l:'עכירות', v:'200-500Hz'},
-      {l:'נוכחות', v:'2-4kHz'},
-      {l:'פיז (LPF)', v:'6-8kHz'},
-      {l:'רוחב', v:'2 טייקים L/R'}
-    ],
-    problems:[
-      {q:'פיז / חד מדי', a:'LPF סביב 6-8kHz; הגיטרה לא צריכה אוויר שמתחרה בצלחות.'},
-      {q:'דק / לא יושב', a:'עדיף להחליף טון/אמפ או re-amp מאשר להעמיס EQ.'},
-      {q:'צר / קטן', a:'שני טייקים מפוזרים לצדדים, לא סטריאו מזויף באמצע.'}
-    ],
-    checklist:['טון טוב באמפ','HPF','חתך עכירות','נוכחות','LPF לפיז','קיר רחב (L/R)','פינוי לווקאל']
-  },
-  {
-    id:'synth', name:'סינתים ומקלדות', icon:'🎛️',
-    recipe:[
-      {step:'תפקיד', plugin:'—', set:'בס / פד / ליד / אווירה — לכל אחד אזור תדרים משלו.'},
-      {step:'שליטה בנמוכים', plugin:'Pro-Q 4', set:'HPF לפדים/לידים, או נמוכים למונו (שלא יתנגשו בבס).'},
-      {step:'פינוי מקום', plugin:'Pro-Q 4', set:'חתך באזור שבו הווקאל/הליד יושבים.'},
-      {step:'תנועה', plugin:'Pro-C 2 (sidechain)', set:'סיידצ׳יין פד לקיק, או LFO עדין לפילטר.'},
-      {step:'מרחב וצבע', plugin:'Ampex / Valhalla', set:'רוויה לאופי, ריוורב/דיליי לעומק; בדוק מונו.'}
-    ],
-    cheatsheet:[
-      {l:'נמוכים', v:'מונו / HPF'},
-      {l:'רוחב', v:'רק בגבוהים'},
-      {l:'פינוי לליד/ווקאל', v:'באזור 1-4kHz'},
-      {l:'תנועה', v:'sidechain / LFO'}
-    ],
-    problems:[
-      {q:'מציף את המיקס', a:'HPF, נמוכים למונו, וחתך באזור הווקאל.'},
-      {q:'משעמם / סטטי', a:'סיידצ׳יין לקיק או LFO עדין; רוויה לאופי.'},
-      {q:'מתבטל במונו', a:'נמוכים למונו; רוחב רק בגבוהים. בדוק unison.'}
-    ],
-    checklist:['הגדרתי תפקיד','נמוכים מונו/HPF','פינוי לליד','תנועה (sidechain/LFO)','מרחב','בדיקת מונו']
-  }
+// ===== מרכז הפקות (Projects hub) =====
+const PROJ_STATUSES = [
+  {k:'todo',   label:'לא התחיל',     color:'#9aa0aa'},
+  {k:'work',   label:'בעבודה',       color:'#f0a830'},
+  {k:'client', label:'ממתין ללקוח',  color:'#4aa3ff'},
+  {k:'rev',    label:'רוויזיות',      color:'#a78bfa'},
+  {k:'done',   label:'נמסר',         color:'#34c759'}
 ];
+const PROJ_SERVICES = ['הפקה','מיקס','מאסטר'];
 
-const STUDY_PLUGINS = [
-  {id:'pro-q4', name:'FabFilter Pro-Q 4', icon:'🎛️', role:'EQ',
-   knobs:['Dynamic EQ — בנד שפועל רק כשצריך','HPF/LPF נקיים','Mid/Side','Solo + sweep למצוא תדר בעייתי'],
-   start:'HPF, וחתוך מה שמפריע (subtractive) לפני שמגבירים.',
-   mistake:'הגברה של +6dB ומעלה — כנראה הבעיה במקור, לא ב-EQ.'},
-  {id:'pro-c2', name:'FabFilter Pro-C 2', icon:'🎚️', role:'קומפרסור',
-   knobs:['Styles: Vocal / Punch / Bus / Opto / Mastering','Sidechain HPF','Lookahead'],
-   start:'בחר Style לפי המקור; שמור על Gain Reduction חלק.',
-   mistake:'אטאק/ריליז לא מתאימים → הקומפרסור נושם ושואב.'},
-  {id:'la2a', name:'UAD Teletronix LA-2A Silver', icon:'🟦', role:'קומפרסור אופטי',
-   knobs:['Peak Reduction (כמות דחיסה)','Gain (פיצוי)','אופי איטי ומוזיקלי'],
-   start:'ווקאל/בס: 3-4dB דחיסה, רך ועקבי.',
-   mistake:'לדחוס חזק מדי — LA-2A נועד לעדינות, לא לפאנץ.'},
-  {id:'1176', name:'UAD 1176', icon:'🟧', role:'קומפרסור FET',
-   knobs:['אטאק/ריליז מהירים מאוד','Ratio 4 / 8 / 12 / 20','All-buttons (Nuke) לאפקט'],
-   start:'ווקאל/תופים: אטאק מהיר, 2-4dB לפאנץ.',
-   mistake:'אטאק מהיר מדי בולע את הטרנזיינט — שחק עם הכיוון.'},
-  {id:'ampex', name:'UAD Ampex ATR-102 (טייפ)', icon:'📼', role:'רוויית טייפ',
-   knobs:['Input (כמות רוויה)','מהירות סרט (7.5/15/30)','סוג סרט'],
-   start:'נגיעה על מאסטר/באס/ווקאל — חום והדבקה.',
-   mistake:'יותר מדי Input = עכירות. בדוק עם Bypass בעוצמה זהה.'},
-  {id:'ozone', name:'iZotope Ozone', icon:'🟣', role:'מאסטרינג',
-   knobs:['Master Assistant (התחלה בלבד)','Maximizer','Imager','Dynamics'],
-   start:'יעד ~-14 LUFS, True Peak -1dBTP.',
-   mistake:'להשאיר את ה-AI כמו שהוא — זו טיוטה, לא מאסטר.'},
-  {id:'nectar', name:'iZotope Nectar', icon:'🎙️', role:'שרשרת ווקאל',
-   knobs:['EQ + דחיסה + de-ess + רוויה במקום אחד','Vocal Assistant'],
-   start:'תן בסיס מה-Assistant, ואז כוון ידנית de-ess ודחיסה.',
-   mistake:'להסתמך עיוור על ה-Assistant בלי להתאים לשיר.'},
-  {id:'valhalla', name:'Valhalla (VintageVerb/Room/Plate)', icon:'🏛️', role:'ריוורב',
-   knobs:['בחירת אלגוריתם','Predelay','Decay','Mix'],
-   start:'Send, Mix 15-25%, Predelay לבהירות, HPF/LPF על הזנב.',
-   mistake:'יותר מדי — אם שומעים את הריוורב, יש עודף.'},
-  {id:'vss4', name:'VSS4 (ריוורב)', icon:'✨', role:'ריוורב יוקרתי',
-   knobs:['Early Reflections','Reverb Tail','Predelay'],
-   start:'Send, EQ על ה-Return (חתך מתחת 200Hz).',
-   mistake:'רטוב מדי — תכוון פחות ממה שנדמה לך.'},
-  {id:'hdelay', name:'Waves H-Delay', icon:'⏱️', role:'דיליי',
-   knobs:['Sync (1/8 מנוקד קלאסי)','Feedback','Analog / LoFi','Ping-Pong'],
-   start:'Send, 1/8 מנוקד, HPF/LPF, throws בסופי משפט.',
-   mistake:'דיליי כ-Insert מבלגן — תמיד על Send.'}
-];
+function projStatus(id){ const o = loadObj('proj_status'); return o[id] || 'work'; }
+function projServices(id){ const o = loadObj('proj_services'); return o[id] || []; }
+function projNext(id){ const o = loadObj('proj_next'); return o[id] || ''; }
 
-function studyCard(item, fn, sub) {
-  return '<div class="guide-card" onclick="' + fn + '(\'' + item.id + '\')">' +
-    '<div class="guide-card-icon">' + item.icon + '</div>' +
-    '<div class="guide-card-title">' + item.name + '</div>' +
-    '<div class="guide-card-sub">' + sub + '</div></div>';
+function getProjectsList(){
+  const income = load('income');
+  const plans = load('plans');
+  const manual = load('projects');
+  const cats = ['הפקה מוזיקלית','מיקס ומאסטרינג','הקלטה'];
+  const list = [];
+  plans.forEach(function(pl){
+    list.push({id:'plan_'+pl.id, name:pl.project||'פרויקט', clientName:pl.clientName||'', clientId:pl.clientId||'', amount:pl.totalAmount||0, date:(pl.createdAt||'').slice(0,10), src:'plan'});
+  });
+  income.forEach(function(i){
+    if(i.fromPlan) return;
+    if(cats.indexOf(i.category) < 0) return;
+    list.push({id:i.id, name:i.description||'פרויקט', clientName:i.clientName||'', clientId:i.clientId||'', amount:i.amount||0, date:i.date||'', src:'income'});
+  });
+  (manual||[]).forEach(function(p){
+    list.push({id:p.id, name:p.name||'פרויקט', clientName:p.clientName||'', clientId:p.clientId||'', amount:p.amount||0, date:p.date||'', src:'manual'});
+  });
+  return list;
 }
 
-function studySection(title, sub, inner) {
-  return '<div class="studies-section"><div class="studies-section-head"><h2>' + title +
-    '</h2><p>' + sub + '</p></div><div class="studies-grid">' + inner + '</div></div>';
+function projCard(p){
+  const st = projStatus(p.id);
+  const meta = PROJ_STATUSES.find(function(s){ return s.k === st; }) || PROJ_STATUSES[1];
+  const services = projServices(p.id);
+  const next = projNext(p.id);
+  return '<div class="proj-card" onclick="openProject(\'' + p.id + '\')">' +
+    '<div class="proj-card-top"><div class="proj-name">' + p.name + '</div>' +
+    '<span class="proj-status" style="background:' + meta.color + '22;color:' + meta.color + ';border-color:' + meta.color + '66">' + meta.label + '</span></div>' +
+    '<div class="proj-sub">' + (p.clientName || 'ללא לקוח') + (p.amount ? (' · ' + fmtMoney(p.amount)) : '') + '</div>' +
+    (services.length ? '<div class="proj-tags">' + services.map(function(s){ return '<span class="proj-tag">' + s + '</span>'; }).join('') + '</div>' : '') +
+    (next ? '<div class="proj-next">📌 ' + next + '</div>' : '') +
+    '</div>';
 }
 
-function renderStudies() {
+function renderStudies(){
   const list = document.getElementById('studies-list');
   const detail = document.getElementById('studies-detail');
-  if (detail) { detail.style.display = 'none'; detail.innerHTML = ''; }
-  if (!list) return;
-  list.style.display = 'block';
-  list.innerHTML =
-    studySection('🎙️ טיפול לפי כלי', 'בחר כלי — מתכון, צ׳יט-שיט, פתרונות וצ׳ק-ליסט',
-      STUDY_INSTRUMENTS.map(function(i){ return studyCard(i, 'openInstrument', 'מתכון · צ׳יט-שיט · בעיות · צ׳ק-ליסט'); }).join('')) +
-    studySection('🎛️ הפלאגינים שלי', 'כרטיס מהיר לכל כלי',
-      STUDY_PLUGINS.map(function(p){ return studyCard(p, 'openPlugin', p.role); }).join(''));
-}
-
-let _curInstrument = null;
-
-function openInstrument(id) {
-  const ins = STUDY_INSTRUMENTS.find(function(x){ return x.id === id; });
-  if (!ins) return;
-  _curInstrument = id;
-  document.getElementById('studies-list').style.display = 'none';
-  const d = document.getElementById('studies-detail');
-  d.style.display = 'block';
-  d.innerHTML =
-    '<button class="studies-back" onclick="backToStudies()">← כל הכלים</button>' +
-    '<h1 class="study-title">' + ins.icon + ' ' + ins.name + '</h1>' +
-    '<div class="study-tabs">' +
-      '<button class="study-tab" data-t="recipe" onclick="showStudyTab(\'recipe\')">🍳 מתכון</button>' +
-      '<button class="study-tab" data-t="cheat" onclick="showStudyTab(\'cheat\')">⚡ צ׳יט-שיט</button>' +
-      '<button class="study-tab" data-t="problems" onclick="showStudyTab(\'problems\')">🔧 בעיות</button>' +
-      '<button class="study-tab" data-t="check" onclick="showStudyTab(\'check\')">✅ צ׳ק-ליסט</button>' +
-    '</div><div id="study-tab-body"></div>';
-  showStudyTab('recipe');
-  window.scrollTo(0, 0);
-}
-
-function showStudyTab(t) {
-  const ins = STUDY_INSTRUMENTS.find(function(x){ return x.id === _curInstrument; });
-  if (!ins) return;
-  document.querySelectorAll('.study-tab').forEach(function(b){ b.classList.toggle('active', b.dataset.t === t); });
-  const body = document.getElementById('study-tab-body');
-  let h = '';
-  if (t === 'recipe') {
-    h = '<ol class="recipe">' + ins.recipe.map(function(s, i){
-      return '<li><div class="recipe-step"><span class="recipe-num">' + (i+1) + '</span><div>' +
-        '<div class="recipe-name">' + s.step + ' <span class="recipe-plugin">' + s.plugin + '</span></div>' +
-        '<div class="recipe-set">' + s.set + '</div></div></div></li>';
-    }).join('') + '</ol>';
-  } else if (t === 'cheat') {
-    h = '<table class="cheat"><tbody>' + ins.cheatsheet.map(function(c){
-      return '<tr><td class="cheat-l">' + c.l + '</td><td class="cheat-v">' + c.v + '</td></tr>';
-    }).join('') + '</tbody></table>';
-  } else if (t === 'problems') {
-    h = '<div class="problems">' + ins.problems.map(function(p){
-      return '<div class="problem"><div class="problem-q">❓ ' + p.q + '</div><div class="problem-a">' + p.a + '</div></div>';
-    }).join('') + '</div>';
+  if(detail){ detail.style.display='none'; detail.innerHTML=''; }
+  if(!list) return;
+  list.style.display='block';
+  const all = getProjectsList();
+  const active = all.filter(function(p){ return projStatus(p.id) !== 'done'; });
+  const done = all.filter(function(p){ return projStatus(p.id) === 'done'; });
+  let h = '<button class="proj-add-btn" onclick="toggleAddProject()">+ פרויקט חדש</button>' +
+          '<div id="proj-add-form" style="display:none"></div>';
+  if(!all.length){
+    h += '<div class="proj-empty">אין פרויקטים עדיין.<br>הוסף פרויקט חדש, או רשום הכנסה מסוג הפקה / מיקס / הקלטה והיא תופיע כאן לבד.</div>';
   } else {
-    h = '<div class="checklist">' + ins.checklist.map(function(c){
-      return '<label class="check"><input type="checkbox"><span>' + c + '</span></label>';
-    }).join('') + '</div>';
+    h += active.map(projCard).join('');
+    if(done.length){
+      h += '<div class="proj-done-head">✅ נמסרו (' + done.length + ')</div>' + done.map(projCard).join('');
+    }
   }
-  body.innerHTML = h;
+  list.innerHTML = h;
 }
 
-function openPlugin(id) {
-  const p = STUDY_PLUGINS.find(function(x){ return x.id === id; });
-  if (!p) return;
-  document.getElementById('studies-list').style.display = 'none';
+function toggleAddProject(){
+  const f = document.getElementById('proj-add-form');
+  if(!f) return;
+  if(f.style.display === 'none'){
+    f.style.display = 'block';
+    f.innerHTML = '<div class="proj-add-box">' +
+      '<input class="proj-input" id="pa-name" placeholder="שם הפרויקט / שיר">' +
+      '<input class="proj-input" id="pa-client" placeholder="לקוח (לא חובה)">' +
+      '<button class="proj-add-go" onclick="addManualProject()">הוסף פרויקט</button></div>';
+    const n = document.getElementById('pa-name'); if(n) n.focus();
+  } else { f.style.display='none'; f.innerHTML=''; }
+}
+
+function addManualProject(){
+  const name = (document.getElementById('pa-name').value || '').trim();
+  if(!name){ toast('צריך שם לפרויקט'); return; }
+  const client = (document.getElementById('pa-client').value || '').trim();
+  const arr = load('projects');
+  arr.push({id:genId(), name:name, clientName:client, amount:0, date:new Date().toISOString().slice(0,10)});
+  save('projects', arr);
+  renderStudies();
+}
+
+function openProject(id){
+  const p = getProjectsList().find(function(x){ return x.id === id; });
+  if(!p) return;
+  document.getElementById('studies-list').style.display='none';
   const d = document.getElementById('studies-detail');
-  d.style.display = 'block';
+  d.style.display='block';
+  const st = projStatus(id);
+  const services = projServices(id);
+  const next = projNext(id);
+  const note = (loadObj('proj_notes'))[id] || '';
+  const statusBtns = PROJ_STATUSES.map(function(s){
+    const on = s.k === st;
+    return '<button class="proj-st-btn' + (on?' active':'') + '" style="' + (on?('background:'+s.color+';border-color:'+s.color+';color:#fff'):'') + '" onclick="setProjStatus(\'' + id + '\',\'' + s.k + '\')">' + s.label + '</button>';
+  }).join('');
+  const serviceBtns = PROJ_SERVICES.map(function(s){
+    const on = services.indexOf(s) >= 0;
+    return '<button class="proj-st-btn' + (on?' active':'') + '" style="' + (on?'background:#7c5cff;border-color:#7c5cff;color:#fff':'') + '" onclick="toggleProjService(\'' + id + '\',\'' + s + '\')">' + s + '</button>';
+  }).join('');
   d.innerHTML =
-    '<button class="studies-back" onclick="backToStudies()">← כל הכלים</button>' +
-    '<h1 class="study-title">' + p.icon + ' ' + p.name + '</h1>' +
-    '<div class="plugin-role">' + p.role + '</div>' +
-    '<h3 class="study-h3">כפתורים חשובים</h3>' +
-    '<ul class="plugin-knobs">' + p.knobs.map(function(k){ return '<li>' + k + '</li>'; }).join('') + '</ul>' +
-    '<div class="guide-rule"><b>ההגדרה שאני מתחיל ממנה:</b> ' + p.start + '</div>' +
-    '<div class="guide-tip">⚠️ טעות נפוצה: ' + p.mistake + '</div>';
-  window.scrollTo(0, 0);
+    '<button class="studies-back" onclick="backToStudies()">← כל הפרויקטים</button>' +
+    '<h1 class="study-title">' + p.name + '</h1>' +
+    '<div class="proj-sub" style="margin-bottom:14px">' + (p.clientName||'ללא לקוח') + (p.amount?(' · '+fmtMoney(p.amount)):'') + '</div>' +
+    '<h3 class="study-h3">שלב</h3><div class="proj-row">' + statusBtns + '</div>' +
+    '<h3 class="study-h3">מה אני עושה בפרויקט</h3><div class="proj-row">' + serviceBtns + '</div>' +
+    '<h3 class="study-h3">📌 הפעולה הבאה</h3>' +
+    '<input class="proj-input" id="proj-next-in" value="' + String(next).replace(/"/g,'&quot;') + '" placeholder="מה השלב הבא? (למשל: לשלוח מיקס לאישור)" oninput="saveProjNext(\'' + id + '\', this.value)">' +
+    '<h3 class="study-h3">📝 הערות</h3>' +
+    '<textarea class="proj-textarea" placeholder="הערות על הפרויקט..." oninput="saveProjectNote(\'' + id + '\', this.value)">' + note + '</textarea>' +
+    (p.src === 'manual' ? '<button class="proj-del" onclick="deleteManualProject(\'' + id + '\')">🗑 מחק פרויקט</button>' : '');
+  window.scrollTo(0,0);
 }
 
-function backToStudies() { renderStudies(); window.scrollTo(0, 0); }
+function setProjStatus(id,k){ const o=loadObj('proj_status'); o[id]=k; save('proj_status',o); openProject(id); }
+function toggleProjService(id,s){ const o=loadObj('proj_services'); const arr=o[id]||[]; const i=arr.indexOf(s); if(i<0) arr.push(s); else arr.splice(i,1); o[id]=arr; save('proj_services',o); openProject(id); }
+function saveProjNext(id,v){ const o=loadObj('proj_next'); o[id]=v; save('proj_next',o); }
+
+function deleteManualProject(id){
+  if(!confirm('למחוק את הפרויקט?')) return;
+  const arr = load('projects').filter(function(p){ return p.id !== id; });
+  save('projects', arr);
+  ['proj_status','proj_services','proj_next','proj_notes'].forEach(function(k){ const o=loadObj(k); if(o[id]!==undefined){ delete o[id]; save(k,o); } });
+  backToStudies();
+}
+
+function backToStudies(){ renderStudies(); window.scrollTo(0, 0); }
 
 // ===== AUDIO LOCAL STORAGE (IndexedDB) =====
 const AudioDB = (() => {
