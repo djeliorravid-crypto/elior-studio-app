@@ -1,148 +1,88 @@
-// ===== וידג'ט "אליאור רביד" ל-Scriptable =====
-// מציג: משימות היום · יתרת הבנק החודש · יעד החודש
-// הנתונים נמשכים חיים מ-Firebase (אותו מקור כמו האפליקציה).
-//
-// התקנה (פעם אחת):
-//   1. התקן את האפליקציה החינמית "Scriptable" מה-App Store
-//   2. פתח Scriptable → "+" → הדבק את כל הקובץ הזה → שמור בשם "אליאור"
-//   3. לחיצה ארוכה על מסך הבית → "+" → Scriptable → בחר גודל בינוני → הוסף
-//   4. לחיצה ארוכה על הוידג'ט → Edit Widget → Script: "אליאור"
-//
-// אין צורך לעדכן את הקוד שוב — הנתונים מתרעננים לבד.
-
-// --- הגדרות ---
+// וידג'ט "משימות היום" — אליאור רביד (Scriptable)
+// מד התקדמות למעלה + רשימת המשימות מתחתיו. נתונים חיים מ-Firebase.
 const DB_BASE = "https://elior-studio-default-rtdb.firebaseio.com";
-const APP_URL = "https://djeliorravid-crypto.github.io/elior-studio-app/";
+const APP_URL = "https://djeliorravid-crypto.github.io/elior-studio-app/?action=new-daily";
 
-// --- צבעים (תואם עיצוב האפליקציה) ---
 const C = {
   text:   new Color("#F3E9DF"),
   muted:  new Color("#B9A48F"),
+  dim:    new Color("#7C6B5A"),
   accent: new Color("#E8A24A"),
   good:   new Color("#7BD88F"),
   bad:    new Color("#FF6B6B"),
   track:  new Color("#4A382A"),
 };
 
-// --- עזרי נתונים ---
-function todayStr() {
-  const x = new Date();
-  return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
-}
-function curMonthKey() {
-  const x = new Date();
-  return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0");
-}
-function asArr(v) {
-  if (Array.isArray(v)) return v.filter(Boolean);
-  if (v && typeof v === "object") return Object.values(v).filter(Boolean);
-  return [];
-}
-function inCurMonth(s) {
-  const d = new Date(s), n = new Date();
-  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth();
-}
-function money(n) {
-  n = Math.round(Number(n) || 0);
-  return "₪" + n.toLocaleString("en-US");
-}
-
-// --- שליפת נתונים (רק מה שצריך, במקביל) ---
-// משאיר רק תווים חוקיים בכתובת — מנקה תווים נסתרים, רווחים וסוגריים <> שנדבקים בהעתקה
 function cleanUrl(u) {
   const ok = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:/._-~?=&%#";
   let o = "";
   for (let i = 0; i < u.length; i++) { if (ok.indexOf(u[i]) >= 0) o += u[i]; }
   return o;
 }
-async function getKey(key) {
-  const url = cleanUrl(DB_BASE + "/studio_data/" + key + ".json");
+function todayStr() {
+  const x = new Date();
+  return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0");
+}
+function asArr(v) {
+  if (Array.isArray(v)) return v.filter(Boolean);
+  if (v && typeof v === "object") return Object.values(v).filter(Boolean);
+  return [];
+}
+
+async function fetchDaily() {
+  const url = cleanUrl(DB_BASE + "/studio_data/daily_tasks.json");
   try {
     const req = new Request(url);
     req.timeoutInterval = 25;
     const txt = await req.loadString();
     const code = req.response ? req.response.statusCode : 200;
-    if (code >= 400) throw new Error("HTTP " + code);
-    if (!txt || txt === "null") return null;
+    if (code >= 400) return { err: "HTTP " + code };
+    if (!txt || txt === "null") return { list: [] };
     const j = JSON.parse(txt);
-    if (j && j.error) throw new Error(String(j.error));
-    return j;
+    if (j && j.error) return { err: String(j.error) };
+    return { list: asArr(j) };
   } catch (e) {
-    throw new Error("[" + key + "] " + ((e && e.message) || e));
-  }
-}
-async function fetchData() {
-  const keys = ["daily_tasks", "income", "expenses", "recurring_expenses", "monthlyGoal"];
-  try {
-    const vals = await Promise.all(keys.map(getKey));
-    const out = {};
-    keys.forEach((k, i) => { out[k] = vals[i]; });
-    return out;
-  } catch (e) {
-    return { __err: String((e && e.message) || e) };
+    return { err: String((e && e.message) || e) };
   }
 }
 
-// --- חישובים (זהים ללוגיקה באפליקציה) ---
-function compute(data) {
+function compute(list) {
   const today = todayStr();
-  const mKey  = curMonthKey();
-
-  const daily  = asArr(data.daily_tasks).filter(t => t.date === today);
-  const total  = daily.length;
-  const done   = daily.filter(t => t.done).length;
-  const open   = daily.filter(t => !t.done)
-                      .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0))
-                      .map(t => t.text);
-
-  const income = asArr(data.income).filter(i => inCurMonth(i.date));
-  const exps   = asArr(data.expenses).filter(e => inCurMonth(e.date));
-  const recur  = asArr(data.recurring_expenses).filter(r => {
-    if (r.startMonth && r.startMonth > mKey) return false;
-    if (r.endMonth && r.endMonth < mKey) return false;
-    return true;
+  const items = list.filter(t => t && t.date === today);
+  items.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
   });
-
-  const paidInc    = income.filter(i => (i.status || "pending") === "paid")
-                           .reduce((s, i) => s + Number(i.amount || 0), 0);
-  const pendingInc = income.filter(i => (i.status || "pending") !== "paid")
-                           .reduce((s, i) => s + Number(i.amount || 0), 0);
-  const paidExp    = exps.filter(e => e.paid).reduce((s, e) => s + Number(e.amount || 0), 0)
-                   + recur.filter(r => r.paidMonths && r.paidMonths[mKey])
-                          .reduce((s, r) => s + Number(r.amount || 0), 0);
-
-  const balance = paidInc - paidExp;
-  const goal    = (data.monthlyGoal && Number(data.monthlyGoal.v)) || 0;
-  const goalPct = goal > 0 ? Math.min(100, Math.round((paidInc / goal) * 100)) : 0;
-
-  return { total, done, open, paidInc, pendingInc, balance, goal, goalPct };
+  const total = items.length;
+  const done = items.filter(t => t.done).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return { items, total, done, pct };
 }
 
-// --- רכיבי תצוגה ---
-function addBar(stack, pct, width, height) {
-  const track = stack.addStack();
+// מד התקדמות אופקי — מתמלא מימין (RTL)
+function addBar(container, pct, width, height) {
+  const track = container.addStack();
   track.size = new Size(width, height);
   track.backgroundColor = C.track;
   track.cornerRadius = height / 2;
-  const fillW = Math.max(0, Math.min(width, (width * pct) / 100));
+  const fillW = (width * pct) / 100;
   if (fillW > 0) {
+    track.addSpacer();
     const fill = track.addStack();
-    fill.size = new Size(fillW, height);
-    fill.backgroundColor = C.accent;
+    fill.size = new Size(Math.max(fillW, height), height);
+    fill.backgroundColor = pct >= 100 ? C.good : C.accent;
     fill.cornerRadius = height / 2;
   }
 }
-function row(stack, txt, font, color, align = "right") {
+function rightText(stack, txt, font, color) {
   const t = stack.addText(txt);
   t.font = font;
   t.textColor = color;
-  if (align === "right") t.rightAlignText();
-  else if (align === "center") t.centerAlignText();
+  t.rightAlignText();
   return t;
 }
 
-// --- בניית הוידג'ט ---
-function buildWidget(m, family) {
+function buildWidget(state, family) {
   const w = new ListWidget();
   const bg = new LinearGradient();
   bg.colors = [new Color("#2A1F17"), new Color("#16100B")];
@@ -153,90 +93,78 @@ function buildWidget(m, family) {
   w.setPadding(14, 15, 14, 15);
   w.url = cleanUrl(APP_URL);
 
-  if (m && m.__err) {
-    row(w, "שגיאת חיבור", Font.boldSystemFont(15), C.bad, "center");
-    w.addSpacer(6);
-    const e = row(w, m.__err, Font.systemFont(11), C.muted, "center");
-    e.lineLimit = 4;
+  if (state.err) {
+    rightText(w, "שגיאת חיבור", Font.boldSystemFont(15), C.bad).centerAlignText();
+    w.addSpacer(4);
+    const e = rightText(w, state.err, Font.systemFont(11), C.muted);
+    e.centerAlignText();
+    e.lineLimit = 3;
     return w;
   }
 
+  const m = state.m;
   const small = family === "small";
-
-  if (small) {
-    // קומפקטי: משימות + יתרה
-    row(w, "משימות היום", Font.semiboldSystemFont(12), C.muted);
-    row(w, m.total ? `${m.done}/${m.total} בוצעו` : "אין משימות", Font.boldSystemFont(24), C.accent);
-    w.addSpacer(6);
-    row(w, "יתרת הבנק החודש", Font.semiboldSystemFont(12), C.muted);
-    row(w, money(m.balance), Font.boldSystemFont(22), m.balance >= 0 ? C.good : C.bad);
-    w.addSpacer();
-    return w;
-  }
+  const barW = small ? 120 : (family === "large" ? 320 : 300);
 
   // כותרת
   const head = w.addStack();
   head.addSpacer();
-  row(head, "אליאור רביד", Font.boldSystemFont(15), C.accent);
-  w.addSpacer(8);
+  rightText(head, "משימות היום", Font.boldSystemFont(small ? 13 : 15), C.accent);
+  w.addSpacer(small ? 6 : 8);
 
-  // יתרת הבנק
-  row(w, "יתרת הבנק החודש", Font.semiboldSystemFont(12), C.muted);
-  row(w, money(m.balance), Font.boldSystemFont(26), m.balance >= 0 ? C.good : C.bad);
-  row(w, `התקבל ${money(m.paidInc)}  ·  ממתין ${money(m.pendingInc)}`, Font.systemFont(11), C.muted);
-
-  // יעד החודש
-  if (m.goal > 0) {
-    w.addSpacer(8);
-    const gl = w.addStack();
-    gl.addSpacer();
-    row(gl, `יעד החודש · ${m.goalPct}%`, Font.semiboldSystemFont(11), C.muted);
-    w.addSpacer(4);
-    const barRow = w.addStack();
-    barRow.addSpacer();
-    addBar(barRow, m.goalPct, family === "large" ? 300 : 280, 7);
-  }
-
-  w.addSpacer(10);
-
-  // משימות היום
-  const tHead = w.addStack();
-  tHead.addSpacer();
-  const label = m.total ? `משימות היום · ${m.done}/${m.total}` : "משימות היום";
-  row(tHead, label, Font.semiboldSystemFont(13), C.text);
+  // מד התקדמות + אחוז
+  const meter = w.addStack();
+  meter.centerAlignContent();
+  const pctTxt = meter.addText(m.pct + "%");
+  pctTxt.font = Font.boldSystemFont(small ? 18 : 22);
+  pctTxt.textColor = m.pct >= 100 ? C.good : C.accent;
+  meter.addSpacer(8);
+  meter.addSpacer();
+  addBar(meter, m.pct, barW, small ? 7 : 9);
   w.addSpacer(4);
+  rightText(w, m.total ? `${m.done} מתוך ${m.total} בוצעו` : "אין משימות להיום", Font.semiboldSystemFont(small ? 11 : 12), C.muted);
 
   if (m.total === 0) {
-    row(w, "אין משימות להיום ☀️", Font.systemFont(13), C.muted);
-  } else if (m.open.length === 0) {
-    row(w, "סיימת הכל — כל הכבוד! 🎉", Font.semiboldSystemFont(14), C.good);
-  } else {
-    const max = family === "large" ? 7 : 3;
-    m.open.slice(0, max).forEach(txt => {
-      const r = w.addStack();
-      r.addSpacer();
-      const t = r.addText("• " + txt);
-      t.font = Font.systemFont(13);
-      t.textColor = C.text;
-      t.lineLimit = 1;
-      t.rightAlignText();
-    });
-    if (m.open.length > max) {
-      row(w, `ועוד ${m.open.length - max}…`, Font.systemFont(12), C.muted);
-    }
+    w.addSpacer(8);
+    rightText(w, "הוסף משימה ראשונה ☀️", Font.systemFont(small ? 12 : 13), C.dim);
+    w.addSpacer();
+    return w;
+  }
+
+  w.addSpacer(small ? 6 : 10);
+
+  // רשימת המשימות
+  const max = small ? 3 : (family === "large" ? 11 : 5);
+  m.items.slice(0, max).forEach(t => {
+    const r = w.addStack();
+    r.spacing = 6;
+    r.centerAlignContent();
+    r.addSpacer();
+    const txt = r.addText(t.text);
+    txt.font = Font.systemFont(small ? 12 : 13);
+    txt.textColor = t.done ? C.dim : C.text;
+    txt.rightAlignText();
+    txt.lineLimit = 1;
+    const mark = r.addText(t.done ? "✓" : "○");
+    mark.font = Font.boldSystemFont(small ? 12 : 14);
+    mark.textColor = t.done ? C.good : C.accent;
+    if (!small) w.addSpacer(4);
+  });
+  if (m.items.length > max) {
+    rightText(w, `ועוד ${m.items.length - max}…`, Font.systemFont(small ? 11 : 12), C.muted);
   }
 
   w.addSpacer();
   const time = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-  row(w, "עודכן " + time, Font.systemFont(10), C.muted, "left");
+  const tEl = rightText(w, "עודכן " + time, Font.systemFont(9), C.dim);
+  tEl.leftAlignText();
   return w;
 }
 
-// --- ריצה ---
 const family = config.widgetFamily || "medium";
-const data   = await fetchData();
-const m      = data && data.__err ? data : compute(data);
-const widget = buildWidget(m, family);
+const res = await fetchDaily();
+const state = res.err ? { err: res.err } : { m: compute(res.list) };
+const widget = buildWidget(state, family);
 
 if (config.runsInWidget) {
   Script.setWidget(widget);
@@ -245,5 +173,5 @@ if (config.runsInWidget) {
   else if (family === "large") await widget.presentLarge();
   else await widget.presentMedium();
 }
-widget.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
+widget.refreshAfterDate = new Date(Date.now() + 10 * 60 * 1000);
 Script.complete();
