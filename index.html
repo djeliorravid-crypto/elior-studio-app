@@ -2144,6 +2144,8 @@
     }
     .mode-card.business .mode-card-glow { background: linear-gradient(135deg,#d4a574,#a06c48); }
     .mode-card.music    .mode-card-glow { background: linear-gradient(135deg,#a06c48,#5c3a28); }
+    .mode-card.studies  .mode-card-glow { background: linear-gradient(135deg,#6c47f5,#3a1c8c); }
+    .mode-card.studies:hover { box-shadow: 0 30px 80px rgba(108,71,245,0.42); }
     .mode-card:hover .mode-card-glow { opacity: 1; }
 
     .mode-card-icon {
@@ -2938,8 +2940,55 @@
       <div class="mode-card-title">סטודיו</div>
       <div class="mode-card-sub">שירים · סקיצות · מיקסים · הפקה</div>
     </div>
+    <div class="mode-card studies" onclick="chooseMode('studies')">
+      <div class="mode-card-glow"></div>
+      <div class="mode-card-icon">📚</div>
+      <div class="mode-card-title">לימודים</div>
+      <div class="mode-card-sub">מדריכים · כללי יסוד · טיפים</div>
+    </div>
   </div>
 </div>
+
+<!-- ===== STUDIES (לימודים) ===== -->
+<style>
+  #studies-main { margin-right: 0; padding: 0; min-height: 100vh; background: var(--bg); }
+  .studies-wrap { max-width: 780px; margin: 0 auto; padding: 26px 18px 90px; }
+  .studies-head { margin-bottom: 22px; }
+  .studies-back { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 9px; padding: 7px 14px; font-size: 13px; font-weight: 800; cursor: pointer; color: var(--text); margin-bottom: 16px; }
+  .studies-back:hover { background: var(--surface3); }
+  .studies-head h1 { font-size: 30px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; }
+  .studies-head p { font-size: 14px; color: var(--text-muted); margin-top: 6px; }
+  .studies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 14px; }
+  .guide-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 18px; cursor: pointer; transition: transform .15s, box-shadow .15s, border-color .15s; position: relative; overflow: hidden; }
+  .guide-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: var(--accent); }
+  .guide-card-icon { font-size: 30px; margin-bottom: 10px; }
+  .guide-card-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 5px; }
+  .guide-card-sub { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+  .guide-card-tag { display:inline-block; margin-top:10px; font-size:10.5px; font-weight:800; color: var(--accent); background: var(--accent-light); padding: 3px 9px; border-radius: 20px; }
+  .guide-content { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 24px 22px; margin-top: 14px; }
+  .guide-content h1 { font-size: 26px; font-weight: 900; color: var(--text); margin-bottom: 6px; letter-spacing: -0.02em; }
+  .guide-content .lead { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; }
+  .guide-content h2 { font-size: 19px; font-weight: 800; color: var(--text); margin: 24px 0 10px; padding-bottom: 7px; border-bottom: 2px solid var(--border); }
+  .guide-content h3 { font-size: 15.5px; font-weight: 800; color: var(--accent); margin: 16px 0 6px; }
+  .guide-content p { font-size: 14px; color: var(--text); line-height: 1.75; margin-bottom: 10px; }
+  .guide-content ul { margin: 4px 18px 14px; padding: 0; }
+  .guide-content li { font-size: 14px; color: var(--text); line-height: 1.7; margin-bottom: 7px; }
+  .guide-content strong { color: var(--text); font-weight: 800; }
+  .guide-tip { background: var(--accent-light); border-radius: 12px; padding: 13px 15px; font-size: 13.5px; color: var(--text); line-height: 1.65; margin: 14px 0; border-right: 4px solid var(--accent); }
+  .guide-rule { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 12px; padding: 13px 15px; margin: 10px 0; }
+  .guide-rule b { color: var(--accent); }
+</style>
+<main class="main" id="studies-main" style="display:none">
+  <div class="studies-wrap">
+    <div class="studies-head">
+      <button class="studies-back" onclick="switchMode()">← לובי</button>
+      <h1>📚 לימודים</h1>
+      <p>מדריכים, כללי יסוד וטיפים — נבנים במיוחד בשבילך</p>
+    </div>
+    <div id="studies-list" class="studies-grid"></div>
+    <div id="studies-detail" style="display:none"></div>
+  </div>
+</main>
 
 <!-- ===== BUSINESS SIDEBAR ===== -->
 <aside class="sidebar" id="business-sidebar">
@@ -7520,22 +7569,139 @@ function chooseMode(mode) {
 }
 
 function switchMode() {
-  ['business-sidebar','business-main','music-sidebar','music-main'].forEach(id => {
-    document.getElementById(id).style.display = 'none';
+  ['business-sidebar','business-main','music-sidebar','music-main','studies-main'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
   });
   document.getElementById('mode-screen').classList.remove('hidden');
 }
 
 function showMode(mode) {
-  const biz = mode === 'business';
-  document.getElementById('business-sidebar').style.display = biz ? 'flex'  : 'none';
-  document.getElementById('business-main').style.display    = biz ? 'block' : 'none';
-  document.getElementById('music-sidebar').style.display    = biz ? 'none'  : 'flex';
-  document.getElementById('music-main').style.display       = biz ? 'none'  : 'block';
+  const biz = mode === 'business', music = mode === 'music', studies = mode === 'studies';
+  document.getElementById('business-sidebar').style.display = biz   ? 'flex'  : 'none';
+  document.getElementById('business-main').style.display    = biz   ? 'block' : 'none';
+  document.getElementById('music-sidebar').style.display    = music ? 'flex'  : 'none';
+  document.getElementById('music-main').style.display       = music ? 'block' : 'none';
+  const sm = document.getElementById('studies-main');
+  if (sm) sm.style.display = studies ? 'block' : 'none';
   localStorage.setItem('app_mode', mode);
-  if (biz) refreshAll(); else renderReleased();
+  if (biz) refreshAll(); else if (music) renderReleased(); else if (studies) renderStudies();
   if (biz && _pendingAction) { const a = _pendingAction; _pendingAction = null; runShortcutAction(a); }
 }
+
+// ===== לימודים — מדריכים =====
+const STUDY_GUIDES = [
+  {
+    id: 'mix-fundamentals', icon: '🎚️', tag: 'כללי יסוד',
+    title: 'כללי יסוד במיקס',
+    summary: '7 העקרונות שכל מיקס טוב עומד עליהם — לפני שנוגעים בפלאגין אחד',
+    content: `
+      <p class="lead">מיקס טוב לא מתחיל מפלאגין יקר — הוא מתחיל מהרגלים נכונים. אלה 7 הכללים שיחזיקו לך כל פרויקט.</p>
+      <h2>1. Gain Staging — סדר בעוצמות</h2>
+      <p>שכל ערוץ ייכנס בעוצמה בריאה: שיא של בערך <strong>-6 עד -12 dB</strong>, לא נוגע באדום. אם נכנסת חזק מדי, כל הפלאגינים אחרי זה עובדים לא נכון.</p>
+      <h2>2. השאר Headroom</h2>
+      <p>אל תמלא את המאסטר עד הסוף. תשאיר בערך <strong>-6 dB</strong> פנויים במאסטר — זה נותן למאסטרינג מקום לנשום.</p>
+      <h2>3. תמיד עם רפרנס</h2>
+      <p>תפתח שיר מקצועי בסגנון שלך והשווה מולו. האוזן מתעייפת ומשקרת — רפרנס מחזיר אותך לאמת.</p>
+      <h2>4. בדוק במונו</h2>
+      <p>תלחץ מונו מדי פעם. אם משהו נעלם או נשמע חלש — יש לך בעיית פאזה. מיקס שנשמע טוב במונו נשמע מעולה בסטריאו.</p>
+      <div class="guide-rule"><b>הכלל הזהב:</b> פחות זה יותר. עדיף להוריד מה שמפריע מאשר להוסיף עוד ועוד.</div>
+      <h2>5. סדר את הארנג'מנט קודם</h2>
+      <p>אי אפשר למקס בלגן. אם שני כלים נלחמים על אותו מקום — לפעמים הפתרון הוא להשתיק אחד, לא לאקווליז.</p>
+      <h2>6. מקס בעוצמה נמוכה</h2>
+      <p>כשממקסים חזק הכל נשמע טוב. עוצמה נמוכה חושפת את האמת ושומרת על האוזניים.</p>
+      <h2>7. תן לאוזניים לנוח</h2>
+      <p>כל 45-60 דקות — הפסקה של 10 דקות. החלטות שמתקבלות עם אוזניים עייפות תמיד צריך לתקן למחרת.</p>
+      <div class="guide-tip">💡 טיפ: תשמור גרסה לפני שינוי גדול. "Save As" זה הביטוח הכי זול בעולם.</div>
+    `
+  },
+  {
+    id: 'eq-guide', icon: '📊', tag: 'אקווליזציה',
+    title: 'EQ — המדריך המלא',
+    summary: 'איך לפסל תדרים בצורה נקייה: חיתוך, הגברה, ומפת התדרים',
+    content: `
+      <p class="lead">EQ הוא הכלי הכי חשוב במיקס. לא להפוך כל כלי ל"יפה" — אלא לתת לכל אחד מקום משלו.</p>
+      <h2>חיתוך לפני הגברה (Subtractive)</h2>
+      <p>קודם <strong>תחתוך</strong> את מה שמפריע, ורק אז תגביר אם צריך. חיתוך נשמע טבעי; הגברה מוגזמת נשמעת מלאכותית.</p>
+      <h2>HPF — מסנן מעביר גבוהים</h2>
+      <p>כמעט לכל כלי שהוא לא בס/קיק — שים HPF ונקה את הבוץ שמתחת. ווקאל בערך <strong>80-100Hz</strong>, גיטרות <strong>100-120Hz</strong>. פתאום יש מקום לבס.</p>
+      <h2>טכניקת ה-Sweep למציאת תדר בעייתי</h2>
+      <ul>
+        <li>צור הגברה חדה וגבוהה (bell צר).</li>
+        <li>הזז אותה לאורך התדרים עד שמשהו צורם לאוזן.</li>
+        <li>זה התדר הבעייתי — עכשיו <strong>תחתוך</strong> אותו במקום להגביר.</li>
+      </ul>
+      <h2>מפת תדרים מהירה</h2>
+      <ul>
+        <li><strong>20-60Hz</strong> — סאב, האנרגיה שמרגישים בחזה.</li>
+        <li><strong>60-250Hz</strong> — גוף ועוצמה (יותר מדי = בוצי).</li>
+        <li><strong>250-500Hz</strong> — אזור ה"בוץ", לרוב צריך חיתוך קל.</li>
+        <li><strong>2-5kHz</strong> — נוכחות ובהירות (יותר מדי = צורם/עייף).</li>
+        <li><strong>10kHz+</strong> — אוויר וברק.</li>
+      </ul>
+      <div class="guide-rule"><b>כלל:</b> אם אתה מגביר יותר מ-6dB — כנראה הבעיה היא בהקלטה או בבחירת הצליל, לא ב-EQ.</div>
+      <div class="guide-tip">💡 טיפ: עשה EQ תמיד בהקשר של כל המיקס, לא על ערוץ מבודד. כלי לבד תמיד נשמע אחרת.</div>
+    `
+  },
+  {
+    id: 'compression', icon: '🔧', tag: 'דינמיקה',
+    title: 'קומפרסור — שליטה מלאה',
+    summary: 'Threshold · Ratio · Attack · Release — בעברית פשוטה, עם הגדרות התחלה',
+    content: `
+      <p class="lead">קומפרסור מאזן בין החלקים החזקים לחלשים, כך שהכל יישמע יציב ונוכח. הנה כל כפתור ומה הוא עושה באמת.</p>
+      <h2>4 הכפתורים</h2>
+      <h3>Threshold (סף)</h3>
+      <p>מאיזו עוצמה הקומפרסור מתחיל לעבוד. נמוך יותר = יותר דחיסה.</p>
+      <h3>Ratio (יחס)</h3>
+      <p>כמה חזק הוא לוחץ. <strong>2:1-3:1</strong> עדין (ווקאל, באס), <strong>4:1-8:1</strong> אגרסיבי, <strong>10:1+</strong> כבר לימיטר.</p>
+      <h3>Attack (זמן תקיפה)</h3>
+      <p>כמה מהר הוא קופץ. <strong>אטאק איטי</strong> משאיר את ה"נשיכה" של הצליל (פּאנץ'), <strong>אטאק מהיר</strong> מרסן אותה.</p>
+      <h3>Release (זמן שחרור)</h3>
+      <p>כמה מהר הוא משחרר. ריליז מהיר = אנרגטי ונושם; איטי = חלק ו"מודבק".</p>
+      <h2>Makeup Gain</h2>
+      <p>דחיסה מורידה עוצמה — ה-Makeup מחזיר אותה. כוון כך שעם הקומפרסור ובלעדיו העוצמה <strong>זהה</strong>, ואז תשפוט אם זה באמת נשמע יותר טוב.</p>
+      <h2>הגדרות התחלה</h2>
+      <ul>
+        <li><strong>ווקאל:</strong> Ratio 3:1, אטאק בינוני, ריליז מהיר, ~3-6dB דחיסה.</li>
+        <li><strong>פּאנץ' לתופים:</strong> אטאק איטי (שהנשיכה תעבור), ריליז מהיר.</li>
+        <li><strong>"דבק" למיקס (Bus):</strong> Ratio 2:1, דחיסה עדינה של 1-2dB בלבד.</li>
+      </ul>
+      <div class="guide-rule"><b>כלל:</b> אם שומעים את הקומפרסור "נושם" או "שואב" — הורד Ratio או האט את ה-Release.</div>
+      <div class="guide-tip">💡 טיפ: דחיסה של 2-4dB מספיקה כמעט תמיד. אם אתה לוחץ 10dB — כנראה צריך שני קומפרסורים עדינים בשרשרת, לא אחד אגרסיבי.</div>
+    `
+  }
+];
+
+function renderStudies() {
+  const list = document.getElementById('studies-list');
+  const detail = document.getElementById('studies-detail');
+  if (detail) { detail.style.display = 'none'; detail.innerHTML = ''; }
+  if (!list) return;
+  list.style.display = 'grid';
+  list.innerHTML = STUDY_GUIDES.map(g => `
+    <div class="guide-card" onclick="openGuide('${g.id}')">
+      <div class="guide-card-icon">${g.icon}</div>
+      <div class="guide-card-title">${g.title}</div>
+      <div class="guide-card-sub">${g.summary}</div>
+      <span class="guide-card-tag">${g.tag}</span>
+    </div>`).join('');
+}
+
+function openGuide(id) {
+  const g = STUDY_GUIDES.find(x => x.id === id);
+  if (!g) return;
+  const list = document.getElementById('studies-list');
+  const detail = document.getElementById('studies-detail');
+  if (list) list.style.display = 'none';
+  if (!detail) return;
+  detail.style.display = 'block';
+  detail.innerHTML = `
+    <button class="studies-back" onclick="backToStudies()">← כל המדריכים</button>
+    <div class="guide-content"><h1>${g.icon} ${g.title}</h1>${g.content}</div>`;
+  window.scrollTo(0, 0);
+}
+
+function backToStudies() { renderStudies(); window.scrollTo(0, 0); }
 
 // ===== AUDIO LOCAL STORAGE (IndexedDB) =====
 const AudioDB = (() => {
