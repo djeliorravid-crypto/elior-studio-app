@@ -4044,10 +4044,11 @@ function save(key, val) {
   _pushKey(key);
 }
 
-// ===== גיבוי אוטומטי יומי =====
-// כל יום נשמר עותק מלא של כל הנתונים בצומת נפרד בענן (studio_backups)
-// וגם עותק מקומי. כך תמיד יש נקודת שחזור גם אם הנתונים החיים נדרסים.
-const BACKUP_KEEP_DAYS = 14;
+// ===== גיבוי אוטומטי =====
+// בכל טעינה נשמר עותק מלא של כל הנתונים בצומת נפרד בענן (studio_backups)
+// וגם עותק מקומי. הגיבוי לא נוגע בנתונים החיים — רק מוסיף נקודת שחזור.
+// שמירה: כל יום מ-30 הימים האחרונים + צ'קפוינט חודשי לכל חודש אחורה (לתמיד).
+const BACKUP_KEEP_DAYS = 30;
 
 function _collectAllData() {
   const data = {};
@@ -4067,15 +4068,13 @@ function _hasMeaningfulData(data) {
 function autoBackup() {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    if (localStorage.getItem('_last_auto_backup') === today) return; // כבר גובה היום
-
     const data = _collectAllData();
-    if (!_hasMeaningfulData(data)) return; // אין מה לגבות
+    if (!_hasMeaningfulData(data)) return; // לא נדרוס גיבוי טוב במצב ריק
 
-    // 1. עותק מקומי — תמיד, גם בלי אינטרנט
+    // עותק מקומי — תמיד, גם בלי אינטרנט
     try { localStorage.setItem('_local_backup', JSON.stringify({ date: today, ts: Date.now(), data })); } catch(e) {}
 
-    // 2. עותק לענן בצומת נפרד — לא נוגע בנתונים החיים
+    // עותק לענן — מעדכן את גיבוי היום בכל טעינה כך שהוא תמיד עדכני
     if (firebaseDB) {
       firebaseDB.ref('studio_backups/' + today).set({ ts: Date.now(), data })
         .then(() => { localStorage.setItem('_last_auto_backup', today); _pruneBackups(); })
@@ -4090,11 +4089,19 @@ function _pruneBackups() {
   if (!firebaseDB) return;
   firebaseDB.ref('studio_backups').once('value').then(snap => {
     const all = snap.val() || {};
-    const dates = Object.keys(all).sort(); // ישן → חדש
-    if (dates.length <= BACKUP_KEEP_DAYS) return;
+    const dates = Object.keys(all).sort(); // ישן→חדש, פורמט YYYY-MM-DD
+    if (!dates.length) return;
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - BACKUP_KEEP_DAYS);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    const monthKept = {};
     const updates = {};
-    dates.slice(0, dates.length - BACKUP_KEEP_DAYS).forEach(d => { updates['studio_backups/' + d] = null; });
-    firebaseDB.ref().update(updates).catch(() => {});
+    dates.forEach(d => {
+      if (d >= cutoffStr) return;            // בתוך החלון היומי — שומרים הכל
+      const month = d.slice(0, 7);            // YYYY-MM
+      if (!monthKept[month]) monthKept[month] = d;  // צ'קפוינט חודשי — נשמר לתמיד
+      else updates['studio_backups/' + d] = null;   // שאר הישנים בחודש — נמחקים
+    });
+    if (Object.keys(updates).length) firebaseDB.ref().update(updates).catch(() => {});
   }).catch(() => {});
 }
 
