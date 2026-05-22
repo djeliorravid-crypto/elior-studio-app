@@ -8702,7 +8702,7 @@ function gmailRenderConn() {
     </div>`;
 }
 
-function gmailConnect() {
+function gmailConnect(forceConsent) {
   const inputEl = document.getElementById('gmail-client-id');
   const clientId = ((inputEl && inputEl.value) || localStorage.getItem('gcal_client_id') || '').trim();
   if (!clientId) { toast('⚠️ הזן Client ID של גוגל'); return; }
@@ -8712,12 +8712,19 @@ function gmailConnect() {
   }
   const hint = localStorage.getItem('gcal_user_email') || '';
   try {
-    google.accounts.oauth2.initTokenClient({
+    const tc = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: GMAIL_SCOPE,
       login_hint: hint,
       callback: (resp) => {
         if (resp.error) { toast('❌ ' + (resp.error_description || resp.error)); return; }
+        // ודא שהמשתמש אישר בפועל את הרשאת הקריאה לג׳ימייל
+        if (resp.scope && !/gmail\.readonly/.test(resp.scope)) {
+          gmailClearToken(); gmailRenderConn();
+          toast('⚠️ לא אושרה הרשאת ג׳ימייל — פותח שוב את מסך ההרשאות');
+          setTimeout(() => gmailConnect(true), 500);
+          return;
+        }
         gmailSaveToken(resp.access_token);
         // נסה לשמור את כתובת המייל אם עוד לא ידועה
         if (!localStorage.getItem('gcal_user_email')) {
@@ -8728,7 +8735,8 @@ function gmailConnect() {
         gmailRenderConn();
         toast('✅ מחובר לג׳ימייל');
       }
-    }).requestAccessToken();
+    });
+    tc.requestAccessToken(forceConsent ? { prompt: 'consent' } : {});
   } catch (e) { toast('❌ שגיאת התחברות'); }
 }
 
@@ -8810,7 +8818,13 @@ async function gmailScan() {
         + encodeURIComponent(q) + (pageToken ? '&pageToken=' + pageToken : '');
       const r = await fetch(url, { headers: { Authorization: 'Bearer ' + _gmailToken } });
       if (r.status === 401) { gmailClearToken(); gmailRenderConn(); throw new Error('פג תוקף החיבור — התחבר שוב'); }
-      if (!r.ok) throw new Error('שגיאת גוגל (' + r.status + ')');
+      if (!r.ok) {
+        let detail = '', reason = '';
+        try { const eb = await r.json(); detail = eb?.error?.message || ''; reason = eb?.error?.status || eb?.error?.errors?.[0]?.reason || ''; } catch (e) {}
+        const err = new Error(detail || ('שגיאת גוגל (' + r.status + ')'));
+        err.gcode = r.status; err.detail = detail; err.reason = reason;
+        throw err;
+      }
       const d = await r.json();
       (d.messages || []).forEach(m => ids.push(m.id));
       pageToken = d.nextPageToken || '';
@@ -8857,10 +8871,39 @@ async function gmailScan() {
     status.textContent = 'נמצאו ' + _gmailCandidates.length + ' מיילים · ' + withAmt + ' עם סכום מזוהה';
     if (getAIKey()) status.textContent += ' · אפשר לשפר עם זיהוי חכם ✨';
   } catch (e) {
-    results.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><p>' + (e.message || 'שגיאה') + '</p></div>';
+    results.innerHTML = gmailErrorHtml(e);
+    status.textContent = '';
   } finally {
     btn.disabled = false; btn.textContent = '🔎 סרוק מיילים';
   }
+}
+
+// ── הסבר ידידותי לשגיאות גוגל הנפוצות (403 וכו') ──
+function gmailErrorHtml(e) {
+  const detail = e && (e.detail || e.message) || 'שגיאה לא ידועה';
+  const reason = (e && e.reason || '') + ' ' + detail;
+  let title = '⚠️ ' + (e && e.gcode ? 'שגיאת גוגל ' + e.gcode : 'שגיאה');
+  let help = '';
+
+  if (/SCOPE|insufficient|הרשאה|permission/i.test(reason) && /scope|insufficient/i.test(reason)) {
+    title = '⚠️ חסרה הרשאת קריאה לג׳ימייל';
+    help = `החיבור נוצר בלי הרשאת קריאה לג׳ימייל.<br/>לחץ <b>התנתק</b> ואז התחבר מחדש — וודא שאתה מסמן ✔️ את ההרשאה <b>"View your email messages"</b> במסך של גוגל.
+      <br/><br/><button class="btn btn-primary btn-sm" onclick="gmailDisconnect();setTimeout(()=>gmailConnect(true),400)">🔄 התחבר מחדש עם הרשאה</button>`;
+  } else if (/has not been used|is disabled|accessNotConfigured|SERVICE_DISABLED/i.test(reason)) {
+    title = '⚠️ Gmail API לא מופעל בפרויקט';
+    const m = detail.match(/https?:\/\/[^\s"']+/);
+    const link = m ? m[0] : 'https://console.cloud.google.com/apis/library/gmail.googleapis.com';
+    help = `צריך להפעיל פעם אחת את <b>Gmail API</b> בפרויקט ה‑Google Cloud שלך, ואז להמתין דקה ולסרוק שוב.
+      <br/><br/><a href="${gmailEsc(link)}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none">↗ הפעל את Gmail API</a>`;
+  } else {
+    help = gmailEsc(detail);
+  }
+
+  return `<div style="text-align:center;padding:18px 10px">
+      <div style="font-size:40px;margin-bottom:8px">⚠️</div>
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px">${gmailEsc(title)}</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.6">${help}</div>
+    </div>`;
 }
 
 async function gmailGetMeta(id) {
