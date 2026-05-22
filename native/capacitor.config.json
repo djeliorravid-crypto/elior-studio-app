@@ -1,17 +1,17 @@
 {
-  "appId": "com.eliorravid.studio",
-  "appName": "אליאור רביד",
+  "appId": "com.eliorravid.fitness",
+  "appName": "כושר ותזונה",
   "webDir": "www",
   "bundledWebRuntime": false,
   "ios": {
     "contentInset": "always",
     "scrollEnabled": true,
-    "backgroundColor": "#2a1f17"
+    "backgroundColor": "#0f172a"
   },
   "plugins": {
     "LocalNotifications": {
       "smallIcon": "ic_stat_icon_config_sample",
-      "iconColor": "#d4a574",
+      "iconColor": "#0ea5e9",
       "sound": "default"
     }
   }

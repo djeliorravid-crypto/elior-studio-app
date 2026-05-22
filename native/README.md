@@ -1,6 +1,6 @@
-# אליאור רביד — Native iOS App
+# כושר ותזונה — Native iOS App
 
-האפליקציה הזו עוטפת את אתר Elior Studio כאפליקציית iOS אמיתית.
+האפליקציה הזו עוטפת את אתר "כושר ותזונה" כאפליקציית iOS אמיתית.
 
 ## מה צריך פעם אחת
 
@@ -19,7 +19,7 @@ npm run ios
 ב-Xcode:
 1. **Signing & Capabilities** → בחר "Add Account..." → התחבר עם ה-Apple ID שלך
 2. ב-**Team** בחר את ה-Apple ID שלך (Personal Team)
-3. ב-**Bundle Identifier** ודא שמופיע `com.eliorravid.studio` (או שנה אם יש קונפליקט)
+3. ב-**Bundle Identifier** ודא שמופיע `com.eliorravid.fitness` (או שנה אם יש קונפליקט)
 4. חבר את האייפון בכבל למק
 5. בחר את האייפון מהרשימה למעלה (לא Simulator)
 6. לחץ **▶ Run** (חץ הפעלה)

@@ -1,7 +1,7 @@
 {
-  "name": "elior-studio-native",
+  "name": "fit-tracker-native",
   "version": "1.0.0",
-  "description": "Native iOS app for אליאור רביד studio",
+  "description": "Native iOS app for כושר ותזונה",
   "private": true,
   "scripts": {
     "sync": "rsync -a --delete --exclude='native' --exclude='.git' --exclude='node_modules' ../ www/ && npx cap copy ios",

@@ -1,11 +1,12 @@
-// Service Worker — אפליקציה אמיתית עם תמיכה offline
-const CACHE_NAME = 'elior-app-v3';
+// Service Worker — offline support + always-fresh code.
+// Network-first for HTML (so new versions ship instantly), cache-first for assets.
+const CACHE_NAME = 'fit-app-v1';
 const APP_SHELL = [
-  '/elior-studio-app/',
-  '/elior-studio-app/index.html',
-  '/elior-studio-app/manifest.json',
-  '/elior-studio-app/icon-192.png',
-  '/elior-studio-app/icon-512.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', e => {
@@ -23,15 +24,14 @@ self.addEventListener('activate', e => {
   })());
 });
 
-// Strategy: Network-first for HTML (fresh code), cache-first for assets, fallback to cache offline
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
 
-  // External assets (Firebase, fonts, etc.) — go to network, ignore cache
+  // External (Firebase, fonts, etc.) — go straight to network
   if (url.origin !== self.location.origin) return;
 
-  // HTML/JS/CSS — network first, fallback to cache
+  // HTML — network first, fall back to cache offline
   if (e.request.mode === 'navigate' || e.request.destination === 'document') {
     e.respondWith((async () => {
       try {
@@ -40,7 +40,7 @@ self.addEventListener('fetch', e => {
         cache.put(e.request, fresh.clone());
         return fresh;
       } catch (err) {
-        const cached = await caches.match(e.request) || await caches.match('/elior-studio-app/');
+        const cached = await caches.match(e.request) || await caches.match('./');
         if (cached) return cached;
         throw err;
       }
