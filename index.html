@@ -3403,6 +3403,7 @@
           <span class="month-label" id="lbl-expenses"></span>
           <button onclick="changeMonth(1)">‹</button>
         </div>
+        <button class="btn btn-ghost" onclick="openGmailReceipts()">📥 קבלות מהמייל</button>
         <button class="btn btn-primary" onclick="openModal('expense')">+ הוצאה חדשה</button>
       </div>
     </div>
@@ -3697,6 +3698,42 @@
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="saveExpense()">שמירה</button>
       <button class="btn btn-ghost" onclick="closeModal('expense')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GMAIL RECEIPTS MODAL ===== -->
+<div class="modal-overlay" id="modal-gmail">
+  <div class="modal" style="max-width:720px">
+    <h3>📥 קבלות מהמייל</h3>
+
+    <!-- מצב חיבור -->
+    <div id="gmail-conn" style="margin-bottom:14px"></div>
+
+    <!-- בקרות סריקה -->
+    <div id="gmail-controls" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label>מתאריך</label><input type="date" id="gmail-since"/></div>
+        <div class="form-group"><label>עד תאריך (ריק = היום)</label><input type="date" id="gmail-until"/></div>
+      </div>
+      <div class="form-group">
+        <label>מילות חיפוש בגוגל (אפשר לערוך)</label>
+        <input type="text" id="gmail-query" placeholder="חשבונית OR קבלה OR invoice OR receipt"/>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+        <button class="btn btn-primary" id="gmail-scan-btn" onclick="gmailScan()">🔎 סרוק מיילים</button>
+        <button class="btn btn-ghost" id="gmail-ai-btn" onclick="gmailAIEnhance()" style="display:none">✨ זיהוי חכם (AI)</button>
+        <span id="gmail-status" style="font-size:13px;color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+    <!-- תוצאות -->
+    <div id="gmail-results" style="max-height:46vh;overflow:auto;margin-top:4px"></div>
+
+    <div class="modal-actions" id="gmail-footer" style="display:none">
+      <button class="btn btn-primary" onclick="gmailImportSelected()">➕ הוסף נבחרים כהוצאות</button>
+      <button class="btn btn-ghost" onclick="gmailExportCSV()">⬇️ ייצוא CSV</button>
+      <button class="btn btn-ghost" onclick="closeModal('gmail')">סגירה</button>
     </div>
   </div>
 </div>
@@ -8591,6 +8628,424 @@ function clearAIKey() {
   localStorage.removeItem('ai_api_key');
   _aiHistory = [];
   renderAIPanel();
+}
+
+// ===== GMAIL — ייבוא חשבוניות וקבלות מהמייל =====
+// משתמש באותו OAuth Client ID של גוגל קלנדר (gcal_client_id), עם scope קריאה בלבד לג׳ימייל.
+const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
+const GMAIL_DEFAULT_QUERY = 'חשבונית OR קבלה OR "חשבונית מס" OR invoice OR receipt OR "אישור תשלום" OR "קבלה על תשלום"';
+let _gmailToken = null;
+let _gmailCandidates = [];
+
+function gmailLoadToken() {
+  const t = localStorage.getItem('gmail_token');
+  const exp = parseInt(localStorage.getItem('gmail_token_exp') || '0', 10);
+  if (t && exp > Date.now() + 30000) { _gmailToken = t; return true; }
+  return false;
+}
+function gmailSaveToken(t) {
+  _gmailToken = t;
+  localStorage.setItem('gmail_token', t);
+  localStorage.setItem('gmail_token_exp', String(Date.now() + 55 * 60 * 1000));
+}
+function gmailClearToken() {
+  _gmailToken = null;
+  localStorage.removeItem('gmail_token');
+  localStorage.removeItem('gmail_token_exp');
+}
+
+function openGmailReceipts() {
+  // ברירות מחדל: מתחילת השנה הנוכחית עד היום
+  const y = new Date().getFullYear();
+  const sinceEl = document.getElementById('gmail-since');
+  const qEl = document.getElementById('gmail-query');
+  if (sinceEl && !sinceEl.value) sinceEl.value = y + '-01-01';
+  if (qEl && !qEl.value) qEl.value = GMAIL_DEFAULT_QUERY;
+  gmailLoadToken();
+  gmailRenderConn();
+  document.getElementById('modal-gmail').classList.add('open');
+}
+
+function gmailRenderConn() {
+  const box = document.getElementById('gmail-conn');
+  const controls = document.getElementById('gmail-controls');
+  const connected = !!_gmailToken;
+  if (controls) controls.style.display = connected ? 'block' : 'none';
+  const aiBtn = document.getElementById('gmail-ai-btn');
+  if (aiBtn) aiBtn.style.display = (connected && getAIKey()) ? 'inline-flex' : 'none';
+  if (!box) return;
+
+  if (connected) {
+    const who = localStorage.getItem('gcal_user_email') || '';
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid var(--green-border);border-radius:12px;padding:10px 14px">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(22,163,74,0.5)"></div>
+        <div style="flex:1;font-size:14px;font-weight:800;color:var(--green)">מחובר לג׳ימייל${who ? ' · ' + who : ''}</div>
+        <button class="btn btn-ghost btn-sm" onclick="gmailDisconnect()">🔌 התנתק</button>
+      </div>`;
+    return;
+  }
+
+  const hasCid = !!localStorage.getItem('gcal_client_id');
+  box.innerHTML = `
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:34px;height:34px;background:linear-gradient(135deg,#ea4335,#fbbc05);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px">✉️</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:800;color:var(--text)">חיבור לחשבון הג׳ימייל שלך</div>
+          <div style="font-size:12px;color:var(--text-muted)">הרשאת קריאה בלבד — שום מייל לא נשמר או נשלח לשרת</div>
+        </div>
+      </div>
+      ${hasCid ? '' : `<input id="gmail-client-id" type="text" placeholder="Client ID מגוגל קלאוד..." style="width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface2);outline:none;margin-bottom:10px"/>`}
+      <button class="btn btn-primary" style="width:100%" onclick="gmailConnect()">🔗 התחבר עם גוגל</button>
+      ${hasCid ? '' : `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5">צריך OAuth Client ID מ‑<a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud</a>, ולהפעיל את <b>Gmail API</b> בפרויקט. אותו Client ID משמש גם ליומן.</div>`}
+    </div>`;
+}
+
+function gmailConnect() {
+  const inputEl = document.getElementById('gmail-client-id');
+  const clientId = ((inputEl && inputEl.value) || localStorage.getItem('gcal_client_id') || '').trim();
+  if (!clientId) { toast('⚠️ הזן Client ID של גוגל'); return; }
+  localStorage.setItem('gcal_client_id', clientId);
+  if (typeof google === 'undefined' || !google.accounts) {
+    toast('❌ ספריית גוגל עדיין נטענת — נסה שוב עוד רגע'); return;
+  }
+  const hint = localStorage.getItem('gcal_user_email') || '';
+  try {
+    google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: GMAIL_SCOPE,
+      login_hint: hint,
+      callback: (resp) => {
+        if (resp.error) { toast('❌ ' + (resp.error_description || resp.error)); return; }
+        gmailSaveToken(resp.access_token);
+        // נסה לשמור את כתובת המייל אם עוד לא ידועה
+        if (!localStorage.getItem('gcal_user_email')) {
+          fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + resp.access_token } })
+            .then(r => r.json()).then(info => { if (info.email) localStorage.setItem('gcal_user_email', info.email); gmailRenderConn(); })
+            .catch(() => {});
+        }
+        gmailRenderConn();
+        toast('✅ מחובר לג׳ימייל');
+      }
+    }).requestAccessToken();
+  } catch (e) { toast('❌ שגיאת התחברות'); }
+}
+
+function gmailDisconnect() {
+  if (_gmailToken && typeof google !== 'undefined') {
+    try { google.accounts.oauth2.revoke(_gmailToken, () => {}); } catch (e) {}
+  }
+  gmailClearToken();
+  _gmailCandidates = [];
+  document.getElementById('gmail-results').innerHTML = '';
+  document.getElementById('gmail-footer').style.display = 'none';
+  document.getElementById('gmail-status').textContent = '';
+  gmailRenderConn();
+  toast('🔌 התנתקת מהג׳ימייל');
+}
+
+// ── חילוץ סכום בש"ח מטקסט ──
+function gmailParseAmount(text) {
+  if (!text) return null;
+  const t = String(text).replace(/&nbsp;/g, ' ').replace(/&[a-z]+;/gi, ' ');
+  const num = '([\\d]{1,3}(?:[,\\s]?\\d{3})*(?:\\.\\d{1,2})?)';
+  const cur = '(?:₪|ש"?ח|שקל(?:ים)?|NIS|ILS)';
+  const res = [
+    new RegExp('(?:סה"?כ|סך הכל|לתשלום|סכום|total|amount)\\s*[:\\-]?\\s*' + cur + '?\\s*' + num, 'i'),
+    new RegExp(cur + '\\s*' + num, 'i'),
+    new RegExp(num + '\\s*' + cur, 'i')
+  ];
+  for (const re of res) {
+    const m = t.match(re);
+    if (m) {
+      const n = parseFloat(m[1].replace(/[,\s]/g, ''));
+      if (n > 0 && n < 10000000) return n;
+    }
+  }
+  return null;
+}
+
+function gmailParseVendor(from) {
+  if (!from) return '';
+  const named = from.match(/^\s*"?([^"<]+?)"?\s*<[^>]*>/);
+  if (named && named[1].trim()) return named[1].trim();
+  const email = from.match(/([^<>@\s]+@[^<>\s]+)/);
+  if (email) return email[1].split('@')[0];
+  return from.trim();
+}
+
+function gmailParseDate(dateHeader) {
+  if (!dateHeader) return '';
+  const d = new Date(dateHeader);
+  if (isNaN(d)) return '';
+  return d.toISOString().slice(0, 10);
+}
+
+async function gmailScan() {
+  if (!_gmailToken && !gmailLoadToken()) { toast('התחבר תחילה'); return; }
+  const btn = document.getElementById('gmail-scan-btn');
+  const status = document.getElementById('gmail-status');
+  const results = document.getElementById('gmail-results');
+  const since = document.getElementById('gmail-since').value;
+  const until = document.getElementById('gmail-until').value;
+  const userQ = document.getElementById('gmail-query').value.trim();
+
+  let q = '';
+  if (since) q += 'after:' + since.replace(/-/g, '/') + ' ';
+  if (until) q += 'before:' + until.replace(/-/g, '/') + ' ';
+  if (userQ) q += '(' + userQ + ')';
+  q = q.trim();
+
+  btn.disabled = true; btn.textContent = '⏳ סורק...';
+  status.textContent = '';
+  results.innerHTML = '';
+  _gmailCandidates = [];
+
+  try {
+    // 1. רשימת מזהי הודעות (עם דפדוף, עד 300)
+    let ids = [], pageToken = '';
+    do {
+      const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=100&q='
+        + encodeURIComponent(q) + (pageToken ? '&pageToken=' + pageToken : '');
+      const r = await fetch(url, { headers: { Authorization: 'Bearer ' + _gmailToken } });
+      if (r.status === 401) { gmailClearToken(); gmailRenderConn(); throw new Error('פג תוקף החיבור — התחבר שוב'); }
+      if (!r.ok) throw new Error('שגיאת גוגל (' + r.status + ')');
+      const d = await r.json();
+      (d.messages || []).forEach(m => ids.push(m.id));
+      pageToken = d.nextPageToken || '';
+    } while (pageToken && ids.length < 300);
+
+    if (!ids.length) {
+      results.innerHTML = '<div class="empty-state"><div class="ei">📭</div><p>לא נמצאו מיילים תואמים בטווח שבחרת</p></div>';
+      status.textContent = '';
+      return;
+    }
+
+    status.textContent = 'נמצאו ' + ids.length + ' מיילים — טוען פרטים...';
+
+    // 2. שליפת מטא־דאטה לכל הודעה (במנות, להגבלת עומס)
+    const metas = [];
+    const POOL = 8;
+    for (let i = 0; i < ids.length; i += POOL) {
+      const chunk = ids.slice(i, i + POOL);
+      const got = await Promise.all(chunk.map(id => gmailGetMeta(id).catch(() => null)));
+      got.forEach(m => { if (m) metas.push(m); });
+      status.textContent = 'טוען פרטים... ' + Math.min(i + POOL, ids.length) + '/' + ids.length;
+    }
+
+    // 3. בניית מועמדים + חילוץ סכום ראשוני
+    const existingIds = new Set(load('expenses').map(e => e.gmailId).filter(Boolean));
+    _gmailCandidates = metas.map(m => {
+      const amount = gmailParseAmount(m.subject + ' ' + m.snippet);
+      return {
+        id: m.id,
+        subject: m.subject,
+        vendor: gmailParseVendor(m.from),
+        from: m.from,
+        date: gmailParseDate(m.dateHeader),
+        snippet: m.snippet,
+        amount,
+        category: 'אחר',
+        checked: amount != null,
+        imported: existingIds.has(m.id)
+      };
+    }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    gmailRenderResults();
+    const withAmt = _gmailCandidates.filter(c => c.amount != null).length;
+    status.textContent = 'נמצאו ' + _gmailCandidates.length + ' מיילים · ' + withAmt + ' עם סכום מזוהה';
+    if (getAIKey()) status.textContent += ' · אפשר לשפר עם זיהוי חכם ✨';
+  } catch (e) {
+    results.innerHTML = '<div class="empty-state"><div class="ei">⚠️</div><p>' + (e.message || 'שגיאה') + '</p></div>';
+  } finally {
+    btn.disabled = false; btn.textContent = '🔎 סרוק מיילים';
+  }
+}
+
+async function gmailGetMeta(id) {
+  const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/' + id
+    + '?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date';
+  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + _gmailToken } });
+  if (!r.ok) throw new Error('meta ' + r.status);
+  const d = await r.json();
+  const h = {};
+  (d.payload && d.payload.headers || []).forEach(x => { h[x.name.toLowerCase()] = x.value; });
+  return {
+    id,
+    subject: h.subject || '(ללא נושא)',
+    from: h.from || '',
+    dateHeader: h.date || '',
+    snippet: (d.snippet || '').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+  };
+}
+
+function gmailRenderResults() {
+  const wrap = document.getElementById('gmail-results');
+  const footer = document.getElementById('gmail-footer');
+  if (!_gmailCandidates.length) { wrap.innerHTML = ''; footer.style.display = 'none'; return; }
+  const cats = ['ציוד', 'שכירות', 'חשמל/מים', 'תוכנות', 'שיווק', 'תחבורה', 'אחר'];
+
+  wrap.innerHTML = `
+    <div style="display:flex;gap:10px;align-items:center;margin:6px 2px 10px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer">
+        <input type="checkbox" id="gmail-check-all" onchange="gmailToggleAll(this.checked)" style="width:16px;height:16px;accent-color:var(--accent)"/> בחר הכל
+      </label>
+      <span style="font-size:13px;color:var(--text-muted)" id="gmail-sel-count"></span>
+    </div>` +
+    _gmailCandidates.map((c, idx) => `
+      <div class="gm-row" style="display:flex;gap:10px;align-items:flex-start;padding:10px 8px;border-bottom:1px solid var(--border);${c.imported ? 'opacity:.55' : ''}">
+        <input type="checkbox" class="gm-check" data-idx="${idx}" ${c.checked && !c.imported ? 'checked' : ''} ${c.imported ? 'disabled' : ''}
+          onchange="gmailUpdateSelCount()" style="width:18px;height:18px;margin-top:3px;accent-color:var(--accent);flex-shrink:0"/>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${gmailEsc(c.vendor || '(ללא ספק)')}
+            ${c.imported ? '<span class="badge badge-gray" style="font-size:10px;margin-right:6px">כבר יובא</span>' : ''}
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${gmailEsc(c.subject)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${c.date ? fmtDate(c.date) : 'ללא תאריך'} · <a href="https://mail.google.com/mail/u/0/#all/${c.id}" target="_blank" style="color:var(--accent)">פתח במייל ↗</a></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;width:118px;flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:3px">
+            <span style="font-size:13px;color:var(--text-muted)">₪</span>
+            <input type="number" id="gm-amt-${idx}" value="${c.amount != null ? c.amount : ''}" placeholder="סכום" min="0" step="0.01"
+              style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:5px 7px;font-size:13px;background:var(--surface2);color:var(--text);font-family:'Heebo',sans-serif"/>
+          </div>
+          <select id="gm-cat-${idx}" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:5px 7px;font-size:12px;background:var(--surface2);color:var(--text);font-family:'Heebo',sans-serif">
+            ${cats.map(cat => `<option ${cat === c.category ? 'selected' : ''}>${cat}</option>`).join('')}
+          </select>
+        </div>
+      </div>`).join('');
+
+  footer.style.display = 'flex';
+  gmailUpdateSelCount();
+}
+
+function gmailEsc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function gmailToggleAll(on) {
+  document.querySelectorAll('#gmail-results input.gm-check:not(:disabled)').forEach(ch => { ch.checked = on; });
+  gmailUpdateSelCount();
+}
+
+function gmailUpdateSelCount() {
+  const n = document.querySelectorAll('#gmail-results input.gm-check:checked').length;
+  const el = document.getElementById('gmail-sel-count');
+  if (el) el.textContent = n ? n + ' נבחרו' : '';
+}
+
+// ── שיפור באמצעות Gemini: סינון "האם זו קבלה" + ספק/סכום/קטגוריה מדויקים ──
+async function gmailAIEnhance() {
+  if (!getAIKey()) { toast('אין מפתח AI מוגדר'); return; }
+  if (!_gmailCandidates.length) { toast('סרוק מיילים תחילה'); return; }
+  const btn = document.getElementById('gmail-ai-btn');
+  const status = document.getElementById('gmail-status');
+  btn.disabled = true; btn.textContent = '✨ מנתח...';
+  try {
+    const model = await discoverGeminiModel();
+    const cats = 'ציוד, שכירות, חשמל/מים, תוכנות, שיווק, תחבורה, אחר';
+    const BATCH = 25;
+    for (let i = 0; i < _gmailCandidates.length; i += BATCH) {
+      const batch = _gmailCandidates.slice(i, i + BATCH);
+      const list = batch.map((c, j) => `#${i + j} | מאת: ${c.from} | נושא: ${c.subject} | תקציר: ${c.snippet}`).join('\n');
+      const prompt = `קיבלת רשימת מיילים. לכל אחד קבע אם זו חשבונית/קבלה על תשלום כספי, וחלץ פרטים.\n`
+        + `החזר אך ורק JSON תקין במבנה: {"items":[{"i":<מספר השורה>,"isReceipt":true/false,"vendor":"שם העסק","amount":<מספר או null>,"category":"<אחת מ: ${cats}>"}]}\n`
+        + `amount = הסכום הכולל בש"ח כמספר בלבד (בלי סימן מטבע ובלי פסיקים). אם לא ברור — null.\n`
+        + `vendor = שם העסק/הספק בעברית אם אפשר. category = הקטגוריה המתאימה ביותר מהרשימה.\n\nהמיילים:\n${list}`;
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=` + encodeURIComponent(getAIKey()), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 2048, responseMimeType: 'application/json' }
+        })
+      });
+      const data = await res.json();
+      const raw = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+      let parsed = null;
+      try { parsed = JSON.parse(raw); } catch (e) {
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) {} }
+      }
+      (parsed?.items || []).forEach(it => {
+        const c = _gmailCandidates[it.i];
+        if (!c) return;
+        if (it.vendor) c.vendor = it.vendor;
+        if (typeof it.amount === 'number' && it.amount > 0) c.amount = it.amount;
+        if (it.category) c.category = it.category;
+        c.checked = !!it.isReceipt;
+        c.aiChecked = true;
+      });
+      status.textContent = 'זיהוי חכם... ' + Math.min(i + BATCH, _gmailCandidates.length) + '/' + _gmailCandidates.length;
+    }
+    // מיין: קבלות שזוהו קודם
+    _gmailCandidates.sort((a, b) => (b.checked ? 1 : 0) - (a.checked ? 1 : 0) || (b.date || '').localeCompare(a.date || ''));
+    gmailRenderResults();
+    const receipts = _gmailCandidates.filter(c => c.checked && !c.imported).length;
+    status.textContent = '✨ זוהו ' + receipts + ' קבלות/חשבוניות';
+  } catch (e) {
+    status.textContent = '⚠️ ' + (e.message || 'שגיאת AI');
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ זיהוי חכם (AI)';
+  }
+}
+
+function gmailImportSelected() {
+  const checks = [...document.querySelectorAll('#gmail-results input.gm-check:checked')];
+  if (!checks.length) { toast('לא נבחרו פריטים'); return; }
+  const expenses = load('expenses');
+  const existingIds = new Set(expenses.map(e => e.gmailId).filter(Boolean));
+  let added = 0, skipped = 0;
+  checks.forEach(ch => {
+    const idx = +ch.dataset.idx;
+    const c = _gmailCandidates[idx];
+    if (!c || existingIds.has(c.id)) { skipped++; return; }
+    const amount = parseFloat(document.getElementById('gm-amt-' + idx)?.value);
+    if (!amount || amount <= 0) { skipped++; return; }
+    expenses.push({
+      id: genId(),
+      date: c.date || new Date().toISOString().slice(0, 10),
+      amount,
+      description: c.vendor || c.subject || 'קבלה מהמייל',
+      category: document.getElementById('gm-cat-' + idx)?.value || 'אחר',
+      notes: 'יובא מהמייל · ' + c.subject,
+      projectId: '', projectName: '',
+      paid: true,
+      gmailId: c.id,
+      source: 'gmail'
+    });
+    existingIds.add(c.id);
+    added++;
+  });
+  expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+  save('expenses', expenses);
+  closeModal('gmail');
+  toast('✓ יובאו ' + added + ' קבלות' + (skipped ? ' (' + skipped + ' דולגו)' : ''));
+  refreshAll();
+}
+
+function gmailExportCSV() {
+  const checks = [...document.querySelectorAll('#gmail-results input.gm-check:checked')];
+  if (!checks.length) { toast('לא נבחרו פריטים'); return; }
+  const rows = [['תאריך', 'ספק', 'סכום', 'קטגוריה', 'נושא']];
+  checks.forEach(ch => {
+    const idx = +ch.dataset.idx;
+    const c = _gmailCandidates[idx];
+    if (!c) return;
+    const amount = document.getElementById('gm-amt-' + idx)?.value || '';
+    const cat = document.getElementById('gm-cat-' + idx)?.value || '';
+    rows.push([c.date || '', c.vendor || '', amount, cat, c.subject || '']);
+  });
+  const csv = '﻿' + rows.map(r => r.map(f => '"' + String(f).replace(/"/g, '""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'קבלות-' + new Date().getFullYear() + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('⬇️ הקובץ הורד');
 }
 
 // ===== HOME DASHBOARD =====
