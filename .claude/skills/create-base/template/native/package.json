@@ -1,0 +1,17 @@
+{
+  "name": "app-base-native",
+  "version": "1.0.0",
+  "description": "Native iOS wrapper for the base app",
+  "private": true,
+  "scripts": {
+    "sync": "rsync -a --delete --exclude='native' --exclude='.git' --exclude='node_modules' ../ www/ && npx cap copy ios",
+    "ios": "npm run sync && npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/ios": "^8.3.4",
+    "@capacitor/local-notifications": "^8.1.0"
+  }
+}

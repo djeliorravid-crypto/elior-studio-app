@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>הבסיס שלי</title>
+
+  <!-- ===== PWA ===== -->
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="הבסיס שלי" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+
+  <!-- ===== Firebase SDK ===== -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- ===== Fonts ===== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+      --bg:#f1f5f9; --surface:#ffffff; --surface2:#f8fafc; --surface3:#eef2f7;
+      --border:#e2e8f0; --text:#0f172a; --text-muted:#64748b;
+      --accent:#0ea5e9; --accent2:#22d3ee; --accent-soft:rgba(14,165,233,0.12);
+      --green:#16a34a; --red:#ef4444;
+      --radius:18px;
+      --shadow:0 1px 2px rgba(15,23,42,.04),0 4px 16px rgba(15,23,42,.06);
+      --shadow-lg:0 12px 34px rgba(15,23,42,.16);
+    }
+    [data-theme="dark"] {
+      --bg:#0f172a; --surface:#1e293b; --surface2:#243349; --surface3:#334155;
+      --border:#334155; --text:#f1f5f9; --text-muted:#94a3b8;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.35);
+      --shadow-lg:0 14px 36px rgba(0,0,0,.55);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html, body { height:100%; }
+    body { font-family:'Heebo',system-ui,sans-serif; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; line-height:1.4; }
+    .hidden { display:none !important; }
+    .muted { color:var(--text-muted); font-size:13px; }
+    button { font-family:inherit; }
+
+    .btn { border:none; border-radius:14px; padding:13px 18px; font-size:15px; font-weight:800; cursor:pointer; transition:transform .1s, opacity .15s; }
+    .btn:active { transform:scale(.97); }
+    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-ghost { background:var(--surface2); color:var(--text); border:1.5px solid var(--border); }
+    .btn-danger-ghost { background:transparent; color:var(--red); border:1.5px solid var(--red); }
+    .btn-block { width:100%; display:block; }
+    .btn-sm { padding:9px 14px; font-size:13.5px; border-radius:11px; }
+
+    label { display:block; font-size:13px; font-weight:700; color:var(--text-muted); margin-bottom:6px; }
+    .inp { width:100%; background:var(--surface2); border:1.5px solid var(--border); border-radius:12px; padding:12px 14px; font-size:16px; color:var(--text); outline:none; font-family:inherit; margin-bottom:13px; }
+    .inp:focus { border-color:var(--accent); }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 12px; }
+
+    .screen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center; }
+    .login-box { width:100%; max-width:340px; }
+    .login-logo { font-size:56px; }
+    .login-title { font-size:30px; font-weight:900; margin-top:6px; }
+    .login-sub { color:var(--text-muted); margin-bottom:26px; }
+    .login-err { color:var(--red); margin-top:8px; min-height:20px; font-weight:700; font-size:14px; }
+    .lobby-head { font-size:30px; font-weight:900; }
+    .lobby-sub { color:var(--text-muted); margin:6px 0 32px; }
+    .lobby-cards { display:flex; gap:18px; flex-wrap:wrap; justify-content:center; width:100%; max-width:520px; }
+    .lobby-card { flex:1 1 150px; min-width:150px; border-radius:26px; padding:30px 18px; color:#fff; cursor:pointer; position:relative; overflow:hidden; box-shadow:var(--shadow-lg); transition:transform .15s; }
+    .lobby-card:active { transform:scale(.96); }
+    .lc-emoji { font-size:50px; }
+    .lc-name { font-size:25px; font-weight:900; margin-top:8px; }
+    .lc-sub { font-size:13px; opacity:.92; margin-top:5px; }
+    .lobby-logout { margin-top:34px; background:none; border:none; color:var(--text-muted); font-weight:700; cursor:pointer; font-size:14px; }
+
+    #app { display:flex; min-height:100vh; }
+    .sidebar { width:222px; background:var(--surface); border-left:1px solid var(--border); padding:18px 12px; position:fixed; top:0; bottom:0; right:0; display:flex; flex-direction:column; z-index:50; }
+    .side-person { display:flex; align-items:center; gap:10px; padding:11px; border-radius:15px; background:var(--accent-soft); margin-bottom:16px; cursor:pointer; }
+    .side-person .av { width:40px; height:40px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:21px; flex:0 0 auto; }
+    .side-person .nm { font-weight:800; font-size:15px; }
+    .side-person .sw { font-size:11px; color:var(--text-muted); }
+    .nav-link { display:flex; align-items:center; gap:11px; padding:11px 14px; border-radius:13px; color:var(--text-muted); font-weight:700; font-size:14.5px; cursor:pointer; margin-bottom:3px; }
+    .nav-link.active { background:var(--accent-soft); color:var(--accent); }
+    .nav-link .ic { font-size:18px; width:22px; text-align:center; }
+
+    .main { flex:1; margin-right:222px; padding:26px 24px 44px; max-width:780px; }
+    .bottomnav { display:none; }
+    .fab { position:fixed; bottom:80px; left:18px; width:56px; height:56px; border-radius:50%; background:var(--accent); color:#fff; font-size:30px; border:none; box-shadow:var(--shadow-lg); cursor:pointer; z-index:90; display:flex; align-items:center; justify-content:center; line-height:1; }
+    .fab:active { transform:scale(.92); }
+    @media (max-width:768px) {
+      .sidebar { display:none; }
+      .main { margin-right:0; padding:calc(16px + env(safe-area-inset-top)) 14px 96px; max-width:100%; }
+      .bottomnav { display:flex; position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:7px 4px calc(7px + env(safe-area-inset-bottom)); justify-content:space-around; z-index:100; }
+      .bn-item { display:flex; flex-direction:column; align-items:center; gap:2px; font-size:10px; color:var(--text-muted); cursor:pointer; flex:1; padding:3px; font-weight:700; }
+      .bn-item.active { color:var(--accent); }
+      .bn-item .ic { font-size:21px; }
+      .fab { bottom:86px; }
+    }
+    @media (min-width:769px) { .fab { bottom:30px; left:30px; } }
+
+    .page { display:none; }
+    .page.active { display:block; animation:fade .25s; }
+    @keyframes fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    .phead { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:20px; gap:12px; }
+    .phead h2 { font-size:27px; font-weight:900; letter-spacing:-.01em; }
+    .phead p { font-size:13px; color:var(--text-muted); margin-top:3px; }
+
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); margin-bottom:14px; }
+    .card-title { font-size:15px; font-weight:800; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .stat { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:15px 10px; text-align:center; box-shadow:var(--shadow); }
+    .stat-num { font-size:23px; font-weight:900; }
+    .stat-lbl { font-size:11px; color:var(--text-muted); margin-top:3px; }
+    .bar { height:9px; background:var(--surface3); border-radius:99px; overflow:hidden; }
+    .bar > i { display:block; height:100%; border-radius:99px; background:var(--accent); transition:width .4s; }
+
+    .item { display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+    .item:last-child { border-bottom:none; }
+    .item-main { flex:1; min-width:0; }
+    .item-title { font-weight:700; font-size:15px; }
+    .item-sub { font-size:12.5px; color:var(--text-muted); margin-top:2px; }
+    .item-val { font-weight:800; font-size:15px; white-space:nowrap; }
+    .chip { display:inline-block; font-size:11.5px; font-weight:700; background:var(--accent-soft); color:var(--accent); padding:3px 9px; border-radius:99px; margin:2px 0 0 4px; }
+    .empty { text-align:center; color:var(--text-muted); font-size:14px; padding:34px 14px; line-height:1.7; }
+    .sec-label { font-size:12px; font-weight:800; color:var(--text-muted); margin:16px 0 6px; }
+
+    .modal { position:fixed; inset:0; background:rgba(15,23,42,.55); display:none; align-items:flex-end; justify-content:center; z-index:200; }
+    .modal.open { display:flex; }
+    .modal-card { background:var(--surface); width:100%; max-width:480px; border-radius:26px 26px 0 0; padding:22px 20px calc(22px + env(safe-area-inset-bottom)); max-height:92vh; overflow:auto; animation:slideup .25s; }
+    @keyframes slideup { from { transform:translateY(100%); } to { transform:none; } }
+    .modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .modal-head h3 { font-size:20px; font-weight:900; }
+    .modal-x { background:var(--surface2); border:none; width:34px; height:34px; border-radius:50%; font-size:16px; cursor:pointer; color:var(--text); }
+    @media (min-width:769px) { .modal { align-items:center; } .modal-card { border-radius:26px; } }
+
+    .toast { position:fixed; bottom:96px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--text); color:var(--surface); padding:12px 22px; border-radius:99px; font-weight:700; font-size:14px; opacity:0; pointer-events:none; transition:.25s; z-index:300; white-space:nowrap; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    .install-banner { position:fixed; bottom:84px; left:12px; right:12px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:12px 14px; display:none; align-items:center; gap:12px; box-shadow:var(--shadow-lg); z-index:96; }
+    .install-banner .ib-txt { flex:1; }
+    .install-banner .ib-t { font-weight:800; font-size:14px; }
+    .install-banner .ib-s { font-size:12px; color:var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <!-- ===== LOGIN ===== -->
+  <div id="login-screen" class="screen">
+    <div class="login-box">
+      <div class="login-logo">✨</div>
+      <div class="login-title" id="login-app-name">הבסיס שלי</div>
+      <div class="login-sub">ברוכים הבאים</div>
+      <input id="login-pass" class="inp" type="password" inputmode="numeric" placeholder="סיסמה" onkeydown="if(event.key==='Enter')doLogin()" />
+      <button class="btn btn-primary btn-block" onclick="doLogin()">כניסה</button>
+      <div id="login-err" class="login-err"></div>
+    </div>
+  </div>
+
+  <!-- ===== LOBBY (skipped automatically when there is only one profile) ===== -->
+  <div id="lobby-screen" class="screen hidden">
+    <div class="lobby-head">היי 👋</div>
+    <div class="lobby-sub">בחר/י פרופיל</div>
+    <div class="lobby-cards" id="lobby-cards"></div>
+    <button class="lobby-logout" onclick="logout()">יציאה מהמערכת</button>
+  </div>
+
+  <!-- ===== APP ===== -->
+  <div id="app" class="hidden">
+    <aside class="sidebar">
+      <div class="side-person" onclick="backToLobby()" title="החלפת פרופיל">
+        <div class="av" id="side-av">🙂</div>
+        <div><div class="nm" id="side-name">—</div><div class="sw" id="side-switch">↩ החלפת פרופיל</div></div>
+      </div>
+      <nav id="sidebar-nav"></nav>
+      <div style="margin-top:auto; font-size:11px; color:var(--text-muted); text-align:center; padding-top:12px;">
+        <span id="ver-side">1</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div id="page-dashboard" class="page"></div>
+      <div id="page-items" class="page"></div>
+      <div id="page-settings" class="page"></div>
+    </main>
+
+    <nav class="bottomnav" id="bottom-nav"></nav>
+    <button class="fab" id="fab" onclick="fabAction()">+</button>
+  </div>
+
+  <!-- ===== ITEM MODAL (sample CRUD — duplicate & rename per entity) ===== -->
+  <div class="modal" id="modal-item">
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="item-title">פריט חדש</h3><button class="modal-x" onclick="closeModal('item')">✕</button></div>
+      <label>שם</label>
+      <input id="item-name" class="inp" placeholder="שם הפריט" />
+      <div class="grid2">
+        <div><label>כמות / ערך</label><input id="item-amount" type="number" inputmode="numeric" class="inp" placeholder="0" /></div>
+        <div><label>תאריך</label><input id="item-date" type="date" class="inp" /></div>
+      </div>
+      <label>הערה</label>
+      <input id="item-note" class="inp" placeholder="(אופציונלי)" />
+      <button class="btn btn-primary btn-block" onclick="saveItem()">שמירה</button>
+      <button class="btn btn-danger-ghost btn-block" id="item-del" style="display:none;margin-top:10px" onclick="deleteItem()">מחיקה</button>
+    </div>
+  </div>
+
+  <!-- ===== iOS INSTALL MODAL ===== -->
+  <div class="modal" id="modal-ios">
+    <div class="modal-card">
+      <div class="modal-head"><h3>התקנה לאייפון</h3><button class="modal-x" onclick="closeModal('ios')">✕</button></div>
+      <p style="line-height:1.9;font-size:15px">1. לחצו על <b>שיתוף</b> ⬆️ בספארי<br>2. בחרו <b>הוסף למסך הבית</b><br>3. לחצו <b>הוסף</b> ✓</p>
+      <button class="btn btn-primary btn-block" style="margin-top:14px" onclick="closeModal('ios')">הבנתי</button>
+    </div>
+  </div>
+
+  <!-- ===== INSTALL BANNER ===== -->
+  <div class="install-banner" id="install-banner">
+    <div style="font-size:26px">📲</div>
+    <div class="ib-txt"><div class="ib-t">התקן את האפליקציה</div><div class="ib-s" id="ib-sub">הוסף למסך הבית</div></div>
+    <button class="btn btn-primary btn-sm" id="install-btn" onclick="triggerInstall()">התקן</button>
+    <button class="modal-x" onclick="dismissInstallBanner()">✕</button>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+  /* ============================================================
+     👉 CUSTOMIZE — everything app-specific is in this block
+     ============================================================ */
+  const APP_NAME = 'הבסיס שלי';
+  const PASS = '1234';                 // login password
+
+  // One entry per person. ONE profile → the lobby is skipped automatically.
+  const PROFILES = {
+    me: { name:'אני', emoji:'🙂', accent:'#0ea5e9', accent2:'#22d3ee', soft:'rgba(14,165,233,0.13)', grad:'linear-gradient(140deg,#0ea5e9,#14b8a6)' },
+    // partner: { name:'שותף/ה', emoji:'🌸', accent:'#ec4899', accent2:'#f472b6', soft:'rgba(236,72,153,0.13)', grad:'linear-gradient(140deg,#ec4899,#a855f7)' },
+  };
+
+  // Tabs (must match a page-<id> div + a render function).
+  const NAV = [
+    { id:'dashboard', label:'בית',     ic:'🏠' },
+    { id:'items',     label:'פריטים',  ic:'📋' },
+    { id:'settings',  label:'הגדרות',  ic:'⚙️' },
+  ];
+
+  // Per-profile data collections. Each becomes a synced key.
+  const DATA_TYPES = ['items'];
+
+  // Firebase (cloud sync). Leave as-is for local-only mode.
+  const firebaseConfig = {
+    apiKey:            "PASTE_YOUR_API_KEY_HERE",
+    authDomain:        "PASTE.firebaseapp.com",
+    databaseURL:       "https://PASTE-default-rtdb.firebaseio.com",
+    projectId:         "PASTE",
+    storageBucket:     "PASTE.appspot.com",
+    messagingSenderId: "PASTE",
+    appId:             "PASTE"
+  };
+  /* ===================== end CUSTOMIZE ===================== */
+
+  const CLOUD_CONFIGURED = firebaseConfig.apiKey !== 'PASTE_YOUR_API_KEY_HERE';
+
+  /* ============================================================
+     STATE
+     ============================================================ */
+  let currentPerson = null;
+  let currentPage = 'dashboard';
+  let editingItemId = null;
+  const SINGLE = Object.keys(PROFILES).length === 1;
+
+  const ALL_KEYS = (() => { const k=[]; Object.keys(PROFILES).forEach(p => DATA_TYPES.forEach(t => k.push(p+'_'+t))); return k; })();
+
+  /* ============================================================
+     STORAGE (local-first + cloud sync)
+     ============================================================ */
+  let firebaseDB = null, firebaseReady = false;
+  const load = key => { try { return JSON.parse(localStorage.getItem('s_'+key) || '[]'); } catch(e){ return []; } };
+  function save(key, val) {
+    const ts = Date.now();
+    localStorage.setItem('s_'+key, JSON.stringify(val));
+    localStorage.setItem('s_'+key+'_ts', String(ts));
+    _pending[key] = { data: val, ts }; _savePending(); _pushKey(key);
+  }
+
+  // ── Sync engine: resilient pending queue (survives app close) ──
+  let _pending = {};
+  function _loadPending() { try { _pending = JSON.parse(localStorage.getItem('_sync_pending') || '{}'); } catch(e){ _pending = {}; } }
+  function _savePending() { try { localStorage.setItem('_sync_pending', JSON.stringify(_pending)); } catch(e){} }
+  function _markClean(key) { if (_pending[key]) { delete _pending[key]; _savePending(); } }
+  function _pushKey(key) {
+    if (!firebaseDB || !_pending[key]) return;
+    const snap = _pending[key], updates = {};
+    updates['app_data/'+key] = snap.data; updates['app_meta/'+key] = snap.ts || Date.now();
+    firebaseDB.ref().update(updates).then(() => setTimeout(() => _markClean(key), 8000)).catch(() => {});
+  }
+  function flushPending() { Object.keys(_pending).forEach(_pushKey); }
+  function pushAllToCloud() {
+    if (!firebaseDB) return;
+    ALL_KEYS.forEach(k => { const v = localStorage.getItem('s_'+k); if (v) { _pending[k] = { data: JSON.parse(v), ts: Date.now() }; _pushKey(k); } });
+    _savePending();
+  }
+  function initFirebase() {
+    _loadPending();
+    if (!CLOUD_CONFIGURED) { console.warn('Firebase not configured — local-only mode'); return Promise.resolve(); }
+    try {
+      firebase.initializeApp(firebaseConfig);
+      firebaseDB = firebase.database();
+      return firebaseDB.ref().once('value').then(snapshot => {
+        const root = snapshot.val() || {}, cloudData = root.app_data || {}, cloudMeta = root.app_meta || {};
+        ALL_KEYS.forEach(key => {
+          if (_pending[key]) { localStorage.setItem('s_'+key, JSON.stringify(_pending[key].data)); if (_pending[key].ts) localStorage.setItem('s_'+key+'_ts', String(_pending[key].ts)); _pushKey(key); return; }
+          const cloudVal = cloudData[key];
+          const hasCloud = cloudVal != null && (Array.isArray(cloudVal) ? cloudVal.length>0 : Object.keys(cloudVal).length>0);
+          const cloudTs = parseInt(cloudMeta[key] || '0', 10), localTs = parseInt(localStorage.getItem('s_'+key+'_ts') || '0', 10);
+          if (hasCloud) {
+            if (cloudTs === 0 || localTs === 0 || cloudTs > localTs) { localStorage.setItem('s_'+key, JSON.stringify(cloudVal)); if (cloudTs>0) localStorage.setItem('s_'+key+'_ts', String(cloudTs)); }
+            else if (localTs > cloudTs) { const raw = localStorage.getItem('s_'+key); if (raw) { _pending[key] = { data: JSON.parse(raw), ts: localTs }; _savePending(); _pushKey(key); } }
+          } else {
+            const raw = localStorage.getItem('s_'+key);
+            if (raw) { const v = JSON.parse(raw); if (v && (Array.isArray(v)?v.length>0:Object.keys(v).length>0)) { _pending[key] = { data: v, ts: localTs || Date.now() }; _savePending(); _pushKey(key); } }
+          }
+        });
+        firebaseReady = true; setTimeout(autoBackup, 3000); console.log('Firebase ✓');
+      }).catch(err => console.warn('Firebase load failed — local data:', err.message));
+    } catch(e) { console.warn('Firebase init failed:', e.message); return Promise.resolve(); }
+  }
+  function _syncFromCloud(reason) {
+    if (!firebaseDB) return;
+    flushPending();
+    firebaseDB.ref().once('value').then(snapshot => {
+      const root = snapshot.val() || {}, cloudData = root.app_data || {}, cloudMeta = root.app_meta || {};
+      let changed = false;
+      ALL_KEYS.forEach(key => {
+        if (_pending[key] || cloudData[key] === undefined) return;
+        const localTs = parseInt(localStorage.getItem('s_'+key+'_ts') || '0', 10), cloudTs = parseInt(cloudMeta[key] || '0', 10);
+        if (cloudTs > 0 && localTs > 0 && cloudTs <= localTs) return;
+        const cur = localStorage.getItem('s_'+key), next = JSON.stringify(cloudData[key]);
+        if (cur !== next) { localStorage.setItem('s_'+key, next); if (cloudTs>0) localStorage.setItem('s_'+key+'_ts', String(cloudTs)); changed = true; }
+      });
+      if (changed) { refreshAll(); console.log('🔄', reason); }
+    }).catch(() => {});
+  }
+
+  // ── Auto-backup ──
+  const BACKUP_KEEP_DAYS = 30;
+  function _collectAll() { const d={}; ALL_KEYS.forEach(k=>{ const v=localStorage.getItem('s_'+k); if(v){ try{ d[k]=JSON.parse(v); }catch(e){} } }); return d; }
+  function _hasData(d) { return Object.values(d).some(v => Array.isArray(v) && v.length>0); }
+  function autoBackup() {
+    try {
+      const today = todayStr(), data = _collectAll();
+      if (!_hasData(data)) return;
+      try { localStorage.setItem('_local_backup', JSON.stringify({ date: today, ts: Date.now(), data })); } catch(e){}
+      if (firebaseDB) firebaseDB.ref('app_backups/'+today).set({ ts: Date.now(), data }).then(_pruneBackups).catch(()=>{});
+    } catch(e){}
+  }
+  function _pruneBackups() {
+    if (!firebaseDB) return;
+    firebaseDB.ref('app_backups').once('value').then(snap => {
+      const all = snap.val() || {}, dates = Object.keys(all).sort();
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-BACKUP_KEEP_DAYS);
+      const cutoffStr = cutoff.toISOString().slice(0,10), monthKept = {}, updates = {};
+      dates.forEach(d => { if (d>=cutoffStr) return; const m=d.slice(0,7); if(!monthKept[m]) monthKept[m]=d; else updates['app_backups/'+d]=null; });
+      if (Object.keys(updates).length) firebaseDB.ref().update(updates).catch(()=>{});
+    }).catch(()=>{});
+  }
+
+  /* ============================================================
+     UTILS
+     ============================================================ */
+  const el = id => document.getElementById(id);
+  const genId = () => 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+  function todayStr() { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function parseD(s) { return new Date(s + 'T00:00:00'); }
+  function shortDate(s) { return s ? parseD(s).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'}) : ''; }
+  function greeting() { const h=new Date().getHours(); if(h<12) return 'בוקר טוב'; if(h<17) return 'צהריים טובים'; if(h<21) return 'ערב טוב'; return 'לילה טוב'; }
+  function toast(msg) { const t=el('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
+  function pk(t) { return currentPerson + '_' + t; }
+  function esc(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  /* ============================================================
+     AUTH + LOBBY
+     ============================================================ */
+  function doLogin() {
+    if (el('login-pass').value === PASS) { localStorage.setItem('app_authed','1'); el('login-pass').value=''; afterAuth(); }
+    else { el('login-err').textContent='❌ סיסמה שגויה'; el('login-pass').value=''; el('login-pass').focus(); setTimeout(()=>el('login-err').textContent='',2000); }
+  }
+  function logout() { localStorage.removeItem('app_authed'); el('lobby-screen').classList.add('hidden'); el('app').classList.add('hidden'); el('login-screen').classList.remove('hidden'); }
+  function afterAuth() { if (SINGLE) enterPerson(Object.keys(PROFILES)[0]); else showLobby(); }
+  function showLobby() {
+    el('login-screen').classList.add('hidden'); el('app').classList.add('hidden'); el('lobby-screen').classList.remove('hidden');
+    el('lobby-cards').innerHTML = Object.keys(PROFILES).map(id => { const p=PROFILES[id];
+      return `<div class="lobby-card" style="background:${p.grad}" onclick="enterPerson('${id}')"><div class="lc-emoji">${p.emoji}</div><div class="lc-name">${p.name}</div></div>`;
+    }).join('');
+  }
+  function applyAccent(id) { const p=PROFILES[id], r=document.documentElement.style; r.setProperty('--accent',p.accent); r.setProperty('--accent2',p.accent2); r.setProperty('--accent-soft',p.soft); }
+  function enterPerson(id) {
+    currentPerson = id; applyAccent(id);
+    el('login-screen').classList.add('hidden'); el('lobby-screen').classList.add('hidden'); el('app').classList.remove('hidden');
+    const p=PROFILES[id]; el('side-av').textContent=p.emoji; el('side-name').textContent=p.name;
+    el('side-switch').style.display = SINGLE ? 'none' : '';
+    showPage('dashboard');
+  }
+  function backToLobby() { if (SINGLE) return; currentPerson=null; showLobby(); }
+
+  /* ============================================================
+     NAVIGATION
+     ============================================================ */
+  function buildNav() {
+    el('sidebar-nav').innerHTML = NAV.map(n => `<div class="nav-link" data-page="${n.id}" onclick="showPage('${n.id}')"><span class="ic">${n.ic}</span> ${n.label}</div>`).join('');
+    el('bottom-nav').innerHTML = NAV.map(n => `<div class="bn-item" data-page="${n.id}" onclick="showPage('${n.id}')"><span class="ic">${n.ic}</span>${n.label}</div>`).join('');
+  }
+  function showPage(name) {
+    currentPage = name;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    el('page-'+name).classList.add('active');
+    document.querySelectorAll('[data-page]').forEach(a => a.classList.toggle('active', a.dataset.page===name));
+    el('fab').style.display = (name==='settings') ? 'none' : 'flex';
+    window.scrollTo(0,0); render(name);
+  }
+  function fabAction() { openItemModal(); }   // 👉 route by currentPage when you add more entities
+  function refreshAll() { if (currentPerson && !el('app').classList.contains('hidden')) render(currentPage); }
+  function render(name) {
+    if (!currentPerson) return;
+    ({ dashboard:renderDashboard, items:renderItems, settings:renderSettings }[name] || (()=>{}))();
+  }
+
+  /* ============================================================
+     RENDER — DASHBOARD  (👉 replace with your real home screen)
+     ============================================================ */
+  function renderDashboard() {
+    const p = PROFILES[currentPerson];
+    const items = load(pk('items'));
+    const recent = items.slice().sort((a,b)=> (a.date<b.date?1:-1)).slice(0,5);
+    el('page-dashboard').innerHTML = `
+      <div class="phead"><div><h2>${greeting()}${SINGLE?'':', '+p.name}</h2><p>${APP_NAME}</p></div></div>
+      <div class="stats">
+        <div class="stat" onclick="showPage('items')" style="cursor:pointer"><div class="stat-num">${items.length}</div><div class="stat-lbl">פריטים</div></div>
+        <div class="stat"><div class="stat-num">${items.reduce((s,i)=>s+(+i.amount||0),0)}</div><div class="stat-lbl">סה"כ</div></div>
+        <div class="stat"><div class="stat-num">${p.emoji}</div><div class="stat-lbl">${SINGLE?APP_NAME:p.name}</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">אחרונים</div>
+        ${recent.length ? recent.map(i=>`<div class="item" onclick="openItemModal('${i.id}')"><div class="item-main"><div class="item-title">${esc(i.name)}</div><div class="item-sub">${shortDate(i.date)}${i.note?' · '+esc(i.note):''}</div></div><div class="item-val">${i.amount||''}</div></div>`).join('') : '<div class="empty">אין עדיין נתונים.<br>לחץ + כדי להוסיף</div>'}
+      </div>`;
+  }
+
+  /* ============================================================
+     RENDER — ITEMS  (👉 sample CRUD list — copy & rename per entity)
+     ============================================================ */
+  function renderItems() {
+    const items = load(pk('items')).slice().sort((a,b)=> (a.date<b.date?1:-1));
+    el('page-items').innerHTML = `
+      <div class="phead"><div><h2>פריטים</h2><p>רשימה לדוגמה</p></div><button class="btn btn-primary btn-sm" onclick="openItemModal()">+ חדש</button></div>
+      <div class="card">${ items.length ? items.map(i=>`<div class="item" onclick="openItemModal('${i.id}')"><div class="item-main"><div class="item-title">${esc(i.name)}</div><div class="item-sub">${shortDate(i.date)}${i.note?' · '+esc(i.note):''}</div></div><div class="item-val">${i.amount||''}</div></div>`).join('') : '<div class="empty">אין עדיין פריטים.<br>לחץ + כדי להוסיף</div>' }</div>`;
+  }
+
+  /* ============================================================
+     RENDER — SETTINGS
+     ============================================================ */
+  function renderSettings() {
+    const p = PROFILES[currentPerson], isDark = document.documentElement.getAttribute('data-theme')==='dark';
+    el('page-settings').innerHTML = `
+      <div class="phead"><div><h2>הגדרות</h2><p>${SINGLE?APP_NAME:p.name+' '+p.emoji}</p></div></div>
+      <div class="card">
+        <div class="card-title">⚙️ כללי</div>
+        <button class="btn btn-ghost btn-block" style="margin-bottom:10px" onclick="toggleTheme()">${isDark?'☀️ מצב יום':'🌙 מצב לילה'}</button>
+        <button class="btn btn-ghost btn-block" style="margin-bottom:10px" onclick="exportBackup()">📤 ייצוא גיבוי</button>
+        <label class="btn btn-ghost btn-block" style="margin-bottom:10px;text-align:center">📥 ייבוא גיבוי<input type="file" accept=".json" onchange="importBackup(event)" style="display:none"></label>
+        ${firebaseReady?'<button class="btn btn-ghost btn-block" style="margin-bottom:10px" onclick="restoreFromAutoBackup()">♻️ שחזור מגיבוי ענן</button>':''}
+        ${SINGLE?'':'<button class="btn btn-ghost btn-block" onclick="backToLobby()">↩ החלפת פרופיל</button>'}
+      </div>
+      <div class="card">
+        <div class="card-title">☁️ סטטוס</div>
+        <div class="muted" style="line-height:1.9">${CLOUD_CONFIGURED ? (firebaseReady ? '🟢 מחובר לענן — מסונכרן בין מכשירים' : '🟡 מתחבר…') : '⚪ מצב מקומי — נשמר במכשיר הזה בלבד.<br>להפעלת סנכרון: צור פרויקט Firebase והדבק את הפרטים בקוד.'}<br>גרסה ${localStorage.getItem('app_version')||'1'}</div>
+      </div>`;
+  }
+
+  /* ============================================================
+     ITEM CRUD  (👉 sample — copy this whole block per entity)
+     ============================================================ */
+  function openModal(t) { el('modal-'+t).classList.add('open'); }
+  function closeModal(t) { el('modal-'+t).classList.remove('open'); }
+  document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); }));
+
+  function openItemModal(id) {
+    editingItemId = id || null;
+    const it = id ? load(pk('items')).find(x=>x.id===id) : null;
+    el('item-title').textContent = it ? 'עריכת פריט' : 'פריט חדש';
+    el('item-name').value = it?it.name:''; el('item-amount').value = it?(it.amount||''):'';
+    el('item-date').value = it?it.date:todayStr(); el('item-note').value = it?(it.note||''):'';
+    el('item-del').style.display = it?'block':'none';
+    openModal('item');
+  }
+  function saveItem() {
+    const name = el('item-name').value.trim();
+    if (!name) { toast('צריך שם'); return; }
+    const obj = { id: editingItemId||genId(), name, amount:+el('item-amount').value||0, date: el('item-date').value||todayStr(), note: el('item-note').value.trim() };
+    const arr = load(pk('items')); const i = arr.findIndex(x=>x.id===obj.id);
+    if (i>=0) arr[i]=obj; else arr.push(obj);
+    save(pk('items'), arr); closeModal('item'); toast('✓ נשמר'); refreshAll();
+  }
+  function deleteItem() { if (!editingItemId) return; if (!confirm('למחוק?')) return; save(pk('items'), load(pk('items')).filter(x=>x.id!==editingItemId)); closeModal('item'); toast('נמחק'); refreshAll(); }
+
+  /* ============================================================
+     BACKUP / EXPORT / IMPORT / RESTORE
+     ============================================================ */
+  function exportBackup() {
+    const blob = new Blob([JSON.stringify({ app:APP_NAME, version:1, ts:Date.now(), data:_collectAll() }, null, 2)], { type:'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup-'+todayStr()+'.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000); toast('📤 גיבוי יוצא');
+  }
+  function importBackup(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { try {
+      const parsed = JSON.parse(reader.result), data = parsed.data || parsed;
+      if (!confirm('לייבא גיבוי? זה יחליף את הנתונים הנוכחיים.')) return;
+      ALL_KEYS.forEach(k => { if (data[k]!==undefined) localStorage.setItem('s_'+k, JSON.stringify(data[k])); });
+      pushAllToCloud(); refreshAll(); toast('✅ הגיבוי יובא');
+    } catch(err) { toast('❌ קובץ לא תקין'); } };
+    reader.readAsText(file); e.target.value = '';
+  }
+  function restoreFromAutoBackup() {
+    if (!firebaseDB) { toast('❌ אין חיבור לענן'); return; }
+    toast('טוען גיבויים…');
+    firebaseDB.ref('app_backups').once('value').then(snap => {
+      const all = snap.val() || {}, dates = Object.keys(all).sort().reverse();
+      if (!dates.length) { toast('אין עדיין גיבויים'); return; }
+      const choice = prompt('בחר מספר גיבוי לשחזור:\n\n' + dates.map((d,i)=>(i+1)+'. '+d).join('\n'));
+      if (!choice) return;
+      const idx = parseInt(choice,10)-1; if (isNaN(idx)||idx<0||idx>=dates.length) { toast('בחירה לא תקינה'); return; }
+      const backup = all[dates[idx]]; if (!backup || !backup.data) { toast('גיבוי לא תקין'); return; }
+      if (!confirm('לשחזר מ-'+dates[idx]+'?')) return;
+      ALL_KEYS.forEach(k => { if (backup.data[k]!==undefined) localStorage.setItem('s_'+k, JSON.stringify(backup.data[k])); });
+      pushAllToCloud(); refreshAll(); toast('✅ שוחזר מ-'+dates[idx]);
+    }).catch(() => toast('❌ שגיאה'));
+  }
+
+  /* ============================================================
+     THEME
+     ============================================================ */
+  function applyTheme() {
+    const t = localStorage.getItem('app_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    const mc = document.querySelector('meta[name=theme-color]'); if (mc) mc.setAttribute('content', t==='dark'?'#0f172a':'#f1f5f9');
+  }
+  function toggleTheme() { const next = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'; localStorage.setItem('app_theme', next); applyTheme(); refreshAll(); }
+
+  /* ============================================================
+     PWA — service worker + install + auto-update
+     ============================================================ */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => { reg.update(); reg.addEventListener('updatefound', () => { const nw=reg.installing; nw && nw.addEventListener('statechange', () => { if (nw.state==='activated') location.reload(); }); }); }).catch(()=>{});
+  }
+  let _deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); _deferredInstall = e; });
+  const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+  const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  function maybeShowInstallBanner() {
+    if (isStandalone() || localStorage.getItem('install_dismissed')==='yes') return;
+    if (_deferredInstall) { el('ib-sub').textContent='הוסף למסך הבית'; el('install-btn').textContent='התקן'; }
+    else if (isIOS()) { el('ib-sub').textContent='שתף ← הוסף למסך הבית'; el('install-btn').textContent='איך?'; }
+    else return;
+    el('install-banner').style.display = 'flex';
+  }
+  async function triggerInstall() { if (_deferredInstall) { _deferredInstall.prompt(); await _deferredInstall.userChoice; _deferredInstall=null; dismissInstallBanner(); } else if (isIOS()) openModal('ios'); }
+  function dismissInstallBanner() { localStorage.setItem('install_dismissed','yes'); el('install-banner').style.display='none'; }
+  window.addEventListener('load', () => { if (window.innerWidth<=768) setTimeout(maybeShowInstallBanner, 3000); });
+  (function checkVersion() {
+    const params = new URLSearchParams(location.search);
+    if (params.get('_v')) { localStorage.setItem('app_version', params.get('_v')); history.replaceState(null,'',location.pathname); return; }
+    fetch('version.txt?t=' + Date.now()).then(r=>r.text()).then(sv => { const v=sv.trim(), local=localStorage.getItem('app_version'); if (local && local!==v) location.replace(location.pathname + '?_v=' + v); else localStorage.setItem('app_version', v); }).catch(()=>{});
+  })();
+
+  /* ============================================================
+     BOOT
+     ============================================================ */
+  el('login-app-name').textContent = APP_NAME;
+  applyTheme(); buildNav();
+  el('ver-side').textContent = APP_NAME + ' · v' + (localStorage.getItem('app_version')||'1');
+  if (localStorage.getItem('app_authed')==='1') afterAuth(); else el('login-screen').classList.remove('hidden');
+  initFirebase().then(() => { refreshAll(); el('ver-side').textContent = APP_NAME + ' · v' + (localStorage.getItem('app_version')||'1'); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState==='visible') _syncFromCloud('חזרה'); });
+  setInterval(() => { if (document.visibilityState==='visible') _syncFromCloud('תקופתי'); }, 3*60*1000);
+  setInterval(() => { if (document.visibilityState==='visible' && Object.keys(_pending).length) flushPending(); }, 20*1000);
+  </script>
+</body>
+</html>
