@@ -8494,7 +8494,8 @@ async function shareDropboxFile(path, name){
   try {
     const res = await fetch(link);
     const blob = await res.blob();
-    const file = new File([blob], name, { type: blob.type || 'audio/mpeg' });
+    // Force document MIME so WhatsApp sends as a file (no audio re-encode → preserves quality)
+    const file = new File([blob], name, { type: 'application/octet-stream' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: name });
     } else if (navigator.share) {
