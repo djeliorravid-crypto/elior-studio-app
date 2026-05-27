@@ -2276,13 +2276,19 @@
     .mini-player-meta { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mini-player-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .mini-btn {
-      border: none; background: var(--accent); color: #fff;
-      width: 38px; height: 38px; border-radius: 50%;
-      font-size: 16px; cursor: pointer;
-      box-shadow: 0 4px 12px rgba(108,71,245,0.3);
-      transition: transform .15s;
+      border: none; background: #c8985a; color: #fff;
+      width: 40px; height: 40px; border-radius: 50%;
+      font-size: 14px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      box-shadow: 0 3px 10px rgba(200,152,90,0.35);
+      transition: transform .15s, background .15s;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+      padding: 0;
     }
-    .mini-btn:hover { transform: scale(1.08); }
+    .mini-btn:hover { background: #d4a468; }
+    .mini-btn:active { transform: scale(.94); }
+    .mini-btn:focus { outline: none; }
     .mini-time { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 80px; }
     .mini-progress {
       position: absolute; top: -1.5px; left: 0; right: 0; width: 100%;
@@ -3608,7 +3614,7 @@
       <div class="mini-player-meta" id="mini-player-meta"></div>
     </div>
     <div class="mini-player-controls">
-      <button class="mini-btn" onclick="miniPlayerToggle()" id="mini-btn-play">▶</button>
+      <button class="mini-btn" onclick="miniPlayerToggle()" id="mini-btn-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
       <span class="mini-time" id="mini-time">0:00 / 0:00</span>
     </div>
     <button class="mini-btn-close" onclick="miniPlayerClose()" title="סגור">×</button>
@@ -3632,6 +3638,9 @@
   .sketch-folder-other:hover { border-color:#c8985a; }
   .sketch-folder-other .sketch-folder-icon { font-size:30px; margin:0; }
   .sketch-back { background:#2e251b; border:1.5px solid #4a3c2c; border-radius:9px; padding:8px 14px; font-size:13px; font-weight:800; cursor:pointer; color:#f2e9dc; margin-bottom:14px; }
+  .dx-icon-btn { width:38px; height:38px; border-radius:10px; background:#2e251b; border:1.5px solid #4a3c2c; color:#f2e9dc; font-size:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent; }
+  .dx-icon-btn:hover { border-color:#c8985a; }
+  .dx-icon-btn:active { transform:scale(.95); }
   .sketch-section-title { font-size:24px; font-weight:900; color:#f7f0e6; letter-spacing:-0.02em; margin-bottom:6px; }
   .sketch-section-sub { font-size:13px; color:#b3a690; margin-bottom:18px; }
   .sketch-singer-head { font-size:12px; font-weight:800; color:#c8985a; margin:18px 0 8px; letter-spacing:0.08em; }
@@ -8060,16 +8069,32 @@ function renderSketches(){
 
   const dxPath = localStorage.getItem('dropbox_path') || '/סקיצות';
   listEl.innerHTML =
-    '<div class="sketch-section-title">📦 הסקיצות שלך</div>' +
-    '<div class="sketch-section-sub">מסונכרן מ-Dropbox — מתעדכן בריענון</div>' +
-    '<div style="display:flex;gap:8px;margin-bottom:12px">' +
-      '<input class="proj-input" id="dx-path" value="' + dxPath.replace(/"/g,'&quot;') + '" placeholder="/סקיצות" style="flex:1">' +
-      '<button class="proj-add-go" style="width:auto;padding:11px 14px" onclick="dxApplyPath()">החל</button>' +
-      '<button class="proj-add-go" style="width:auto;padding:11px 14px;background:#2e251b;border:1.5px solid #4a3c2c;color:#f2e9dc" onclick="dxReload()" title="ריענון">↻</button>' +
+    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="sketch-section-title">📦 הסקיצות שלך</div>' +
+        '<div class="sketch-section-sub" style="margin-bottom:0">מסונכרן מ-Dropbox</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;flex-shrink:0;margin-top:6px">' +
+        '<button class="dx-icon-btn" onclick="dxReload()" title="ריענון">↻</button>' +
+        '<button class="dx-icon-btn" onclick="dxToggleSettings()" title="הגדרות">⚙</button>' +
+      '</div>' +
     '</div>' +
-    '<div id="dx-list"></div>' +
-    '<button onclick="dropboxDisconnect()" style="margin-top:24px;width:100%;background:transparent;border:1.5px solid #6e3b3b;border-radius:11px;padding:11px;font-size:13px;font-weight:800;color:#e08a8a;cursor:pointer">התנתק מ-Dropbox</button>';
+    '<div id="dx-settings" style="display:none;background:#251e16;border:1.5px solid #3a2f23;border-radius:12px;padding:14px;margin-bottom:14px">' +
+      '<label style="display:block;font-size:12px;font-weight:800;color:#b3a690;margin-bottom:6px">נתיב התיקייה ב-Dropbox</label>' +
+      '<div style="display:flex;gap:8px">' +
+        '<input class="proj-input" id="dx-path" value="' + dxPath.replace(/"/g,'&quot;') + '" placeholder="/סקיצות" style="flex:1">' +
+        '<button class="proj-add-go" style="width:auto;padding:11px 14px" onclick="dxApplyPath()">החל</button>' +
+      '</div>' +
+      '<button onclick="dropboxDisconnect()" style="margin-top:14px;width:100%;background:transparent;border:1.5px solid #6e3b3b;border-radius:11px;padding:10px;font-size:13px;font-weight:800;color:#e08a8a;cursor:pointer">התנתק מ-Dropbox</button>' +
+    '</div>' +
+    '<div id="dx-list"></div>';
   dxReload();
+}
+
+function dxToggleSettings(){
+  const el = document.getElementById('dx-settings');
+  if(!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function setSketchGender(id, g){
@@ -8353,6 +8378,7 @@ function uploadMusicAudio(event, type, id) {
 
 // ===== MINI PERSISTENT PLAYER =====
 const _miniAudio = new Audio();
+_miniAudio.crossOrigin = 'anonymous'; // needed for Web Audio analyser on cross-origin (e.g. Dropbox) sources
 let _miniContext = null; // {type, id, title, singer, thumbUrl}
 
 _miniAudio.addEventListener('timeupdate', () => {
@@ -8363,9 +8389,11 @@ _miniAudio.addEventListener('timeupdate', () => {
   if (tEl) tEl.textContent = `${fmtAudioTime(cur)} / ${fmtAudioTime(dur)}`;
   if (pEl && dur) pEl.value = (cur/dur)*100;
 });
-_miniAudio.addEventListener('play',  () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '⏸'; _refreshSketchPlayBtn(); _miniStartWave(); });
-_miniAudio.addEventListener('pause', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '▶'; _refreshSketchPlayBtn(); });
-_miniAudio.addEventListener('ended', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '▶'; _refreshSketchPlayBtn(); });
+const _PLAY_SVG  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+const _PAUSE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/></svg>';
+_miniAudio.addEventListener('play',  () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = _PAUSE_SVG; _refreshSketchPlayBtn(); _miniStartWave(); });
+_miniAudio.addEventListener('pause', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = _PLAY_SVG; _refreshSketchPlayBtn(); });
+_miniAudio.addEventListener('ended', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = _PLAY_SVG; _refreshSketchPlayBtn(); });
 
 function _refreshSketchPlayBtn() {
   if (!_miniContext) return;
