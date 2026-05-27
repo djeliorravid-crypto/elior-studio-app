@@ -3585,13 +3585,6 @@
 
   <!-- סקיצות -->
   <div class="page" id="page-sketches">
-    <div class="page-header">
-      <div><h2>🎙 סקיצות</h2><p>עבודות שעוד לא יצאו</p></div>
-      <button class="btn btn-primary" onclick="openMusicModal('sketches')">+ סקיצה חדשה</button>
-    </div>
-    <div style="margin-bottom:16px">
-      <input type="text" id="sketches-search" oninput="renderSketches()" placeholder="חפש סקיצה, כותב..." class="music-search-bar"/>
-    </div>
     <div id="sketches-list"></div>
   </div>
 
@@ -7212,6 +7205,7 @@ let _pendingAction = null;
   // אם טענו עם cache-buster — נקה את ה-URL ושמור גרסה
   const params = new URLSearchParams(location.search);
   _pendingAction = params.get('action') || null; // קיצור דרך ממסך הבית
+  if (params.get('code')) return; // Dropbox OAuth callback in progress — skip version redirect
   if (params.get('_v')) {
     localStorage.setItem('app_version', params.get('_v'));
     history.replaceState(null, '', location.pathname);
@@ -8047,84 +8041,35 @@ function addMusicItem() {
 
 function renderReleased() { _renderMusicList('released'); }
 
-// ===== סקיצות — תיקיות לפי זמר/זמרת =====
-let _sketchGender = null;
-function openSketchFolder(g){ _sketchGender = g; renderSketches(); window.scrollTo(0,0); }
-function closeSketchFolder(){ _sketchGender = null; renderSketches(); window.scrollTo(0,0); }
-
-function renderSketchCard(s){
-  const playing = (typeof _miniContext !== 'undefined' && _miniContext && _miniContext.type === 'sketches' && _miniContext.id === s.id && typeof _miniAudio !== 'undefined' && _miniAudio && !_miniAudio.paused);
-  return '<div class="sketch-item" onclick="openMusicDetail(\'sketches\',\'' + s.id + '\')">' +
-    '<div class="sketch-item-avatar">🎙</div>' +
-    '<div class="sketch-item-body">' +
-      '<div class="sketch-item-title">' + s.title + '</div>' +
-      (s.cowriters ? '<div class="sketch-item-sub">' + s.cowriters + '</div>' : '') +
-    '</div>' +
-    (s.audioUrl ? '<button class="sketch-play" onclick="event.stopPropagation();playSketchInline(\'' + s.id + '\')" id="play-btn-' + s.id + '" title="נגן">' + (playing ? '⏸' : '▶') + '</button>' : '') +
-    '<button class="sketch-del" onclick="event.stopPropagation();quickDeleteMusic(\'sketches\',\'' + s.id + '\')" title="מחק">×</button>' +
-  '</div>';
-}
+// ===== סקיצות — מסונכרן מ-Dropbox =====
+let _sketchGender = null; // vestigial; kept for compatibility with showMusicPage
 
 function renderSketches(){
   const listEl = document.getElementById('sketches-list');
   if(!listEl) return;
-  const items = load('sketch_songs');
+  listEl.style.display = 'block';
 
-  if(_sketchGender === null){
-    const male = items.filter(function(s){ return s.gender === 'male'; });
-    const female = items.filter(function(s){ return s.gender === 'female'; });
-    const other = items.filter(function(s){ return s.gender !== 'male' && s.gender !== 'female'; });
-    let h = '<div class="sketch-folders">' +
-      '<div class="sketch-folder" onclick="openSketchFolder(\'male\')">' +
-        '<div class="sketch-folder-icon">👨</div>' +
-        '<div class="sketch-folder-title">זמרים</div>' +
-        '<div class="sketch-folder-count">' + male.length + ' סקיצות</div></div>' +
-      '<div class="sketch-folder female" onclick="openSketchFolder(\'female\')">' +
-        '<div class="sketch-folder-icon">👩</div>' +
-        '<div class="sketch-folder-title">זמרות</div>' +
-        '<div class="sketch-folder-count">' + female.length + ' סקיצות</div></div>' +
-      '</div>';
-    if(other.length){
-      h += '<div class="sketch-folder-other" onclick="openSketchFolder(\'other\')">' +
-        '<div class="sketch-folder-icon">🎤</div>' +
-        '<div style="flex:1"><div class="sketch-folder-title" style="font-size:15px">לא משויך</div><div class="sketch-folder-count">' + other.length + ' סקיצות — לחץ לסיווג</div></div>' +
-        '<div style="font-size:22px;color:#c8985a">‹</div></div>';
-    }
-    listEl.innerHTML = h;
+  if (!dropboxIsConnected()) {
+    listEl.innerHTML =
+      '<div class="sketch-section-title">📦 הסקיצות שלך</div>' +
+      '<div class="sketch-section-sub">חבר את Dropbox כדי לראות את כל הסקיצות מהתיקייה שלך</div>' +
+      '<button class="proj-add-btn" onclick="dropboxConnect()" style="background:#0061ff">חבר Dropbox</button>' +
+      '<div style="text-align:center;color:#b3a690;padding:18px 0;font-size:13px;line-height:1.7">חיבור חד-פעמי. נפתח עמוד הרשאות של Dropbox.<br>האפליקציה תקרא רק מהתיקייה שתבחר.</div>';
     return;
   }
 
-  let filtered = items.filter(function(s){
-    if(_sketchGender === 'male') return s.gender === 'male';
-    if(_sketchGender === 'female') return s.gender === 'female';
-    return s.gender !== 'male' && s.gender !== 'female';
-  });
-  const q = (document.getElementById('sketches-search')?.value || '').trim().toLowerCase();
-  if(q){
-    filtered = filtered.filter(function(s){
-      return (s.title||'').toLowerCase().includes(q)
-          || (s.singer||'').toLowerCase().includes(q)
-          || (s.cowriters||'').toLowerCase().includes(q);
-    });
-  }
-  const groups = {};
-  filtered.forEach(function(s){ const k = s.singer || 'ללא שם זמר'; (groups[k] = groups[k]||[]).push(s); });
-  const sortedSingers = Object.keys(groups).sort(function(a,b){ return a.localeCompare(b,'he'); });
-  const headerLabel = _sketchGender === 'male' ? 'זמרים' : (_sketchGender === 'female' ? 'זמרות' : 'לא משויך');
-  const headerSub = _sketchGender === 'male' ? 'סקיצות מקובצות לפי שם הזמר' : (_sketchGender === 'female' ? 'סקיצות מקובצות לפי שם הזמרת' : 'סקיצות שעוד לא סווגו');
-  let h = '<button class="sketch-back" onclick="closeSketchFolder()">← תיקיות</button>' +
-    '<div class="sketch-section-title">' + headerLabel + '</div>' +
-    '<div class="sketch-section-sub">' + headerSub + '</div>';
-  if(!filtered.length){
-    h += '<div style="text-align:center;color:#b3a690;padding:30px 0;font-size:14px">אין סקיצות בקטגוריה זו</div>';
-    listEl.innerHTML = h;
-    return;
-  }
-  sortedSingers.forEach(function(singer){
-    h += '<div class="sketch-singer-head">' + singer + ' <span style="color:#7d715f;font-weight:600">· ' + groups[singer].length + '</span></div>';
-    h += groups[singer].map(renderSketchCard).join('');
-  });
-  listEl.innerHTML = h;
+  const dxPath = localStorage.getItem('dropbox_path') || '/סקיצות';
+  listEl.innerHTML =
+    '<div class="sketch-section-title">📦 הסקיצות שלך</div>' +
+    '<div class="sketch-section-sub">מסונכרן מ-Dropbox — מתעדכן בריענון</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:12px">' +
+      '<input class="proj-input" id="dx-path" value="' + dxPath.replace(/"/g,'&quot;') + '" placeholder="/סקיצות" style="flex:1">' +
+      '<button class="proj-add-go" style="width:auto;padding:11px 14px" onclick="dxApplyPath()">החל</button>' +
+      '<button class="proj-add-go" style="width:auto;padding:11px 14px;background:#2e251b;border:1.5px solid #4a3c2c;color:#f2e9dc" onclick="dxReload()" title="ריענון">↻</button>' +
+    '</div>' +
+    '<div id="dx-list"></div>' +
+    '<button onclick="dropboxDisconnect()" style="margin-top:24px;width:100%;background:transparent;border:1.5px solid #6e3b3b;border-radius:11px;padding:11px;font-size:13px;font-weight:800;color:#e08a8a;cursor:pointer">התנתק מ-Dropbox</button>';
+  dxReload();
 }
 
 function setSketchGender(id, g){
@@ -8331,11 +8276,12 @@ async function openMusicDetail(type, id) {
             <p style="color:#92400e;font-size:13px;font-weight:700;margin:0 0 4px">📂 קובץ לא נמצא במכשיר זה</p>
             <p style="color:#92400e;font-size:12px;margin:0">הקובץ הועלה ממכשיר אחר. העלה אותו שוב מכאן כדי לשמוע ולסנכרן לענן.</p>
           </div>` : '<p style="color:var(--text-muted);font-size:14px;margin-bottom:12px">אין קובץ אודיו עדיין</p>'}
+        ${type === 'sketches' ? '<p style="color:var(--text-muted);font-size:13px;line-height:1.6;margin:0">סקיצות מסונכרנות מ-Dropbox.<br>העלה קבצים לתיקיית הסקיצות שלך ב-Dropbox כדי שיופיעו כאן.</p>' : `
         <label class="upload-zone" style="display:block">
           📁 ${s.audioUrl ? 'החלף / העלה מחדש' : 'העלה קובץ'} (MP3 / WAV / M4A)
           <input type="file" onchange="uploadMusicAudio(event,'${type}','${id}')" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0"/>
         </label>
-        <div id="music-upload-progress" style="font-size:13px;color:var(--accent);margin-top:8px;display:none">מעלה...</div>
+        <div id="music-upload-progress" style="font-size:13px;color:var(--accent);margin-top:8px;display:none">מעלה...</div>`}
       </div>
     </div>`;
 
@@ -8544,6 +8490,184 @@ async function playSketchInline(id) {
   }
   await playInMiniPlayer('sketches', id);
 }
+
+// ===== DROPBOX SYNC =====
+const DROPBOX_APP_KEY = 'yhv7cr43tw04u2f';
+const DROPBOX_REDIRECT = 'https://djeliorravid-crypto.github.io/elior-studio-app/';
+const _DX_AUDIO_EXT = ['mp3','wav','m4a','aac','ogg','flac','aif','aiff','wma'];
+
+async function _dxSha256b64url(s){
+  const buf = new TextEncoder().encode(s);
+  const h = await crypto.subtle.digest('SHA-256', buf);
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(h)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function _dxRand(n){
+  const a = new Uint8Array(n||48);
+  crypto.getRandomValues(a);
+  return Array.from(a, function(b){ return ('0'+b.toString(16)).slice(-2); }).join('');
+}
+function _dxIsAudio(name){
+  const ext = (name.split('.').pop()||'').toLowerCase();
+  return _DX_AUDIO_EXT.indexOf(ext) >= 0;
+}
+function dropboxIsConnected(){ return !!localStorage.getItem('dropbox_auth'); }
+
+async function dropboxConnect(){
+  try {
+    const verifier = _dxRand(48);
+    const challenge = await _dxSha256b64url(verifier);
+    localStorage.setItem('dropbox_verifier', verifier);
+    location.href = 'https://www.dropbox.com/oauth2/authorize'
+      + '?client_id=' + DROPBOX_APP_KEY
+      + '&response_type=code&token_access_type=offline'
+      + '&code_challenge=' + challenge + '&code_challenge_method=S256'
+      + '&redirect_uri=' + encodeURIComponent(DROPBOX_REDIRECT);
+  } catch(e){ toast('שגיאה ביצירת חיבור'); }
+}
+
+function dropboxDisconnect(){
+  localStorage.removeItem('dropbox_auth');
+  localStorage.removeItem('dropbox_verifier');
+  toast('Dropbox התנתק');
+  renderSketches();
+}
+
+async function _dxHandleCallback(){
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  if (!code) return;
+  const verifier = localStorage.getItem('dropbox_verifier');
+  if (!verifier) { history.replaceState(null,'',location.pathname); return; }
+  try {
+    const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
+      method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({
+        code: code, grant_type:'authorization_code',
+        client_id: DROPBOX_APP_KEY, redirect_uri: DROPBOX_REDIRECT,
+        code_verifier: verifier
+      })
+    });
+    const data = await res.json();
+    if (data.access_token) {
+      localStorage.setItem('dropbox_auth', JSON.stringify({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || '',
+        expires_at: Date.now() + (data.expires_in||14400)*1000
+      }));
+      localStorage.removeItem('dropbox_verifier');
+      toast('Dropbox מחובר ✅');
+    } else {
+      toast('שגיאה: ' + (data.error_description || data.error || ''));
+    }
+  } catch(e){ toast('שגיאת התחברות'); }
+  history.replaceState(null, '', location.pathname);
+}
+
+async function _dxToken(){
+  const raw = localStorage.getItem('dropbox_auth');
+  if (!raw) return null;
+  let auth; try { auth = JSON.parse(raw); } catch(e){ return null; }
+  if (auth.expires_at && Date.now() > auth.expires_at - 60000) {
+    if (!auth.refresh_token) return null;
+    try {
+      const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({
+          grant_type:'refresh_token', refresh_token: auth.refresh_token,
+          client_id: DROPBOX_APP_KEY
+        })
+      });
+      const data = await res.json();
+      if (!data.access_token) return null;
+      auth.access_token = data.access_token;
+      auth.expires_at = Date.now() + (data.expires_in||14400)*1000;
+      localStorage.setItem('dropbox_auth', JSON.stringify(auth));
+    } catch(e){ return null; }
+  }
+  return auth.access_token;
+}
+
+async function dropboxList(path){
+  const tok = await _dxToken(); if (!tok) return null;
+  try {
+    const res = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', Authorization:'Bearer '+tok},
+      body: JSON.stringify({path: path||'', recursive:false, include_media_info:false})
+    });
+    if (!res.ok) return { error: (await res.text()) };
+    return res.json();
+  } catch(e){ return null; }
+}
+
+async function _dxGetTempLink(path){
+  const tok = await _dxToken(); if (!tok) return null;
+  try {
+    const res = await fetch('https://api.dropboxapi.com/2/files/get_temporary_link', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', Authorization:'Bearer '+tok},
+      body: JSON.stringify({path})
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.link;
+  } catch(e){ return null; }
+}
+
+async function playDropboxFile(path, name){
+  toast('טוען מ-Dropbox...');
+  const link = await _dxGetTempLink(path);
+  if (!link) { toast('לא ניתן לטעון את הקובץ'); return; }
+  _miniContext = { type:'dropbox', id: path, title: name, singer: '', ytId: null };
+  document.getElementById('mini-player-title').textContent = name;
+  document.getElementById('mini-player-meta').textContent = 'Dropbox';
+  document.getElementById('mini-player-thumb').innerHTML = '📦';
+  document.getElementById('mini-player').classList.add('active');
+  _miniAudio.src = link;
+  _miniSetupWave();
+  if (_miniAudioCtx && _miniAudioCtx.state === 'suspended') _miniAudioCtx.resume();
+  _miniAudio.play();
+}
+
+function dxApplyPath(){
+  let v = (document.getElementById('dx-path')?.value || '').trim();
+  if (v && !v.startsWith('/')) v = '/' + v;
+  localStorage.setItem('dropbox_path', v || '/סקיצות');
+  dxReload();
+}
+
+async function dxReload(){
+  const list = document.getElementById('dx-list');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;color:#b3a690;padding:24px 0;font-size:14px">טוען...</div>';
+  const path = localStorage.getItem('dropbox_path') || '/סקיצות';
+  const apiPath = (path === '/' || path === '') ? '' : path;
+  const res = await dropboxList(apiPath);
+  if (!res || res.error) {
+    list.innerHTML = '<div style="text-align:center;color:#e08a8a;padding:24px 0;font-size:13px;line-height:1.6">לא ניתן לטעון את התיקייה.<br>בדוק ששם התיקייה זהה למה שב-Dropbox.</div>';
+    return;
+  }
+  const audio = (res.entries || []).filter(function(e){ return e['.tag']==='file' && _dxIsAudio(e.name); });
+  if (!audio.length) {
+    list.innerHTML = '<div style="text-align:center;color:#b3a690;padding:24px 0;font-size:14px">אין קבצי אודיו בתיקייה הזו<br><span style="font-size:12px">העלה קבצים ל-Dropbox ולחץ על ↻</span></div>';
+    return;
+  }
+  audio.sort(function(a,b){ return a.name.localeCompare(b.name, 'he'); });
+  list.innerHTML = audio.map(function(e){
+    const safeP = (e.path_lower || e.path_display || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeN = (e.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div class="sketch-item" onclick="playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')">' +
+      '<div class="sketch-item-avatar">📦</div>' +
+      '<div class="sketch-item-body"><div class="sketch-item-title">' + e.name + '</div>' +
+      '<div class="sketch-item-sub">Dropbox</div></div>' +
+      '<button class="sketch-play" onclick="event.stopPropagation();playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')" title="נגן">▶</button>' +
+      '</div>';
+  }).join('');
+}
+
+// Run OAuth callback on script load (if redirected back from Dropbox)
+_dxHandleCallback();
 
 // ===== AI ASSISTANT =====
 const AI_SYSTEM = `את דרי — עוזרת עסקית אישית של מפיק מוזיקלי ישראלי. שמו "ביג׳ונדון" — תמיד פני אליו בשם הזה, לעולם לא בשם "אליאור".
