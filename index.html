@@ -3644,7 +3644,7 @@
   .sketch-section-title { font-size:24px; font-weight:900; color:#f7f0e6; letter-spacing:-0.02em; margin-bottom:6px; }
   .sketch-section-sub { font-size:13px; color:#b3a690; margin-bottom:18px; }
   .sketch-singer-head { font-size:12px; font-weight:800; color:#c8985a; margin:18px 0 8px; letter-spacing:0.08em; }
-  .sketch-item { display:flex; align-items:center; gap:12px; background:#251e16; border:1.5px solid #3a2f23; border-radius:14px; padding:12px 14px; margin-bottom:9px; cursor:pointer; transition:border-color .15s, transform .15s; }
+  .sketch-item { display:flex; align-items:center; gap:12px; background:#251e16; border:1.5px solid #3a2f23; border-radius:14px; padding:12px 14px; margin-bottom:9px; cursor:pointer; transition:border-color .15s, transform .15s; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
   .sketch-item:hover { border-color:#c8985a; }
   .sketch-item:active { transform:scale(.99); }
   .sketch-item-avatar { width:42px; height:42px; border-radius:11px; background:linear-gradient(135deg,#3a2818,#5c3a24); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; color:#c8985a; }
@@ -8401,26 +8401,10 @@ function _refreshSketchPlayBtn() {
   if (btn) btn.innerHTML = _miniAudio.paused ? '▶' : '⏸';
 }
 
-// ===== Waveform visualizer for the mini-player =====
-let _miniAudioCtx = null, _miniAnalyser = null, _miniDataArr = null, _miniWaveRunning = false;
-function _miniSetupWave(){
-  if (_miniAudioCtx) return true;
-  try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return false;
-    _miniAudioCtx = new Ctx();
-    const src = _miniAudioCtx.createMediaElementSource(_miniAudio);
-    _miniAnalyser = _miniAudioCtx.createAnalyser();
-    _miniAnalyser.fftSize = 128;
-    _miniAnalyser.smoothingTimeConstant = 0.78;
-    src.connect(_miniAnalyser);
-    _miniAnalyser.connect(_miniAudioCtx.destination);
-    _miniDataArr = new Uint8Array(_miniAnalyser.frequencyBinCount);
-    return true;
-  } catch(e){ console.warn('wave setup failed', e); return false; }
-}
+// ===== Waveform visualizer (decorative — no Web Audio so audio keeps playing in background) =====
+let _miniWaveRunning = false;
+function _miniSetupWave(){ /* removed — Web Audio analyser kills background playback on iOS */ }
 function _miniDrawWave(){
-  if (!_miniAnalyser) { _miniWaveRunning = false; return; }
   const c = document.getElementById('mini-wave');
   if (!c) { _miniWaveRunning = false; return; }
   const dpr = window.devicePixelRatio || 1;
@@ -8429,14 +8413,17 @@ function _miniDrawWave(){
   const ctx = c.getContext('2d');
   const W = c.width, H = c.height;
   ctx.clearRect(0,0,W,H);
-  _miniAnalyser.getByteFrequencyData(_miniDataArr);
   const bars = 38;
   const slot = W/bars, barW = slot*0.62, gap = (slot-barW)/2;
   const progress = (_miniAudio.duration && _miniAudio.currentTime) ? _miniAudio.currentTime / _miniAudio.duration : 0;
+  const t = performance.now() / 500;
+  const playing = !_miniAudio.paused && !_miniAudio.ended;
   for (let i=0; i<bars; i++){
-    const di = Math.floor(i/bars * _miniDataArr.length * 0.78);
-    const v = _miniDataArr[di] / 255;
-    const h = Math.max(2*dpr, v*H*0.9);
+    const seed = Math.abs(Math.sin(i*1.73 + 0.5) * 43758.5453);
+    const base = 0.32 + (seed - Math.floor(seed)) * 0.58;
+    const wobble = playing ? (Math.sin(t + i*0.45)*0.12 + Math.sin(t*1.7 + i*0.7)*0.06) : 0;
+    const v = Math.max(0.14, Math.min(0.98, base + wobble));
+    const h = Math.max(2*dpr, v*H*0.88);
     const x = i*slot + gap, y = (H-h)/2;
     const elapsed = (i/bars) <= progress;
     ctx.fillStyle = elapsed ? '#c8985a' : 'rgba(200,152,90,0.28)';
@@ -8449,11 +8436,11 @@ function _miniDrawWave(){
     ctx.arcTo(x,y,x+barW,y,r);
     ctx.closePath(); ctx.fill();
   }
-  if (!_miniAudio.paused) requestAnimationFrame(_miniDrawWave);
+  if (playing) requestAnimationFrame(_miniDrawWave);
   else _miniWaveRunning = false;
 }
 function _miniStartWave(){
-  if (_miniWaveRunning || !_miniAnalyser) return;
+  if (_miniWaveRunning) return;
   _miniWaveRunning = true;
   requestAnimationFrame(_miniDrawWave);
 }
@@ -8463,6 +8450,61 @@ function _miniWaveClick(e){
   const r = c.getBoundingClientRect();
   _miniAudio.currentTime = ((e.clientX - r.left) / r.width) * _miniAudio.duration;
   if (!_miniWaveRunning) requestAnimationFrame(_miniDrawWave);
+}
+
+// Media Session — lock-screen controls + metadata while in background
+function _setupMediaSession(title, artist){
+  if (!('mediaSession' in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title || 'סקיצה',
+      artist: artist || 'Elior Studio',
+      album: 'Sketches'
+    });
+    navigator.mediaSession.setActionHandler('play',  () => _miniAudio.play());
+    navigator.mediaSession.setActionHandler('pause', () => _miniAudio.pause());
+    navigator.mediaSession.setActionHandler('seekbackward', () => { _miniAudio.currentTime = Math.max(0, (_miniAudio.currentTime||0) - 10); });
+    navigator.mediaSession.setActionHandler('seekforward',  () => { _miniAudio.currentTime = Math.min((_miniAudio.duration||0), (_miniAudio.currentTime||0) + 10); });
+  } catch(e){}
+}
+
+// Long-press detector → callback
+function _attachLongPress(el, fn){
+  let timer = null, fired = false;
+  el.addEventListener('touchstart', function(){
+    fired = false;
+    timer = setTimeout(function(){
+      fired = true; timer = null;
+      if (navigator.vibrate) try { navigator.vibrate(40); } catch(e){}
+      fn();
+    }, 550);
+  }, {passive: true});
+  const cancel = function(){ if (timer) { clearTimeout(timer); timer = null; } };
+  el.addEventListener('touchend', function(e){ cancel(); if (fired) { e.preventDefault(); } });
+  el.addEventListener('touchcancel', cancel);
+  el.addEventListener('touchmove', cancel, {passive: true});
+  el.addEventListener('click', function(e){ if (fired) { e.preventDefault(); e.stopPropagation(); fired = false; } }, true);
+  el.addEventListener('contextmenu', function(e){ e.preventDefault(); fn(); });
+}
+
+async function shareDropboxFile(path, name){
+  toast('מכין שיתוף...');
+  const link = await _dxGetTempLink(path);
+  if (!link) { toast('לא ניתן להוריד את הקובץ'); return; }
+  try {
+    const res = await fetch(link);
+    const blob = await res.blob();
+    const file = new File([blob], name, { type: blob.type || 'audio/mpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: name });
+    } else if (navigator.share) {
+      await navigator.share({ url: link, title: name, text: name });
+    } else {
+      toast('שיתוף לא נתמך במכשיר הזה');
+    }
+  } catch(e){
+    if (e && e.name !== 'AbortError') { toast('שגיאה בשיתוף'); console.warn(e); }
+  }
 }
 
 async function playInMiniPlayer(type, id) {
@@ -8490,9 +8532,9 @@ async function playInMiniPlayer(type, id) {
   }
   document.getElementById('mini-player').classList.add('active');
   _miniAudio.src = src;
-  _miniSetupWave();
-  if (_miniAudioCtx && _miniAudioCtx.state === 'suspended') _miniAudioCtx.resume();
+  _setupMediaSession(s.title, s.singer || (type === 'released' ? '' : ''));
   _miniAudio.play();
+  _miniStartWave();
 }
 
 function miniPlayerToggle() {
@@ -8653,9 +8695,9 @@ async function playDropboxFile(path, name){
   document.getElementById('mini-player-thumb').innerHTML = '📦';
   document.getElementById('mini-player').classList.add('active');
   _miniAudio.src = link;
-  _miniSetupWave();
-  if (_miniAudioCtx && _miniAudioCtx.state === 'suspended') _miniAudioCtx.resume();
+  _setupMediaSession(name, 'Dropbox');
   _miniAudio.play();
+  _miniStartWave();
 }
 
 function dxApplyPath(){
@@ -8685,13 +8727,19 @@ async function dxReload(){
   list.innerHTML = audio.map(function(e){
     const safeP = (e.path_lower || e.path_display || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const safeN = (e.name || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    return '<div class="sketch-item" onclick="playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')">' +
+    return '<div class="sketch-item dx-row" data-path="' + (e.path_lower || e.path_display || '').replace(/"/g,'&quot;') + '" data-name="' + (e.name || '').replace(/"/g,'&quot;') + '" onclick="playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')">' +
       '<div class="sketch-item-avatar">📦</div>' +
       '<div class="sketch-item-body"><div class="sketch-item-title">' + e.name + '</div>' +
-      '<div class="sketch-item-sub">Dropbox</div></div>' +
+      '<div class="sketch-item-sub">Dropbox · לחיצה ארוכה לשיתוף</div></div>' +
       '<button class="sketch-play" onclick="event.stopPropagation();playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')" title="נגן">▶</button>' +
       '</div>';
   }).join('');
+  // long-press → share
+  list.querySelectorAll('.dx-row').forEach(function(el){
+    const p = el.getAttribute('data-path');
+    const n = el.getAttribute('data-name');
+    _attachLongPress(el, function(){ shareDropboxFile(p, n); });
+  });
 }
 
 // Run OAuth callback on script load (if redirected back from Dropbox)
