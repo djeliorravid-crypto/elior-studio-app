@@ -8487,17 +8487,47 @@ function _attachLongPress(el, fn){
   el.addEventListener('contextmenu', function(e){ e.preventDefault(); fn(); });
 }
 
+// CRC32 + minimal STORE-only ZIP (so WhatsApp ships the audio as a document
+// without re-encoding; recipient extracts the original file bit-for-bit)
+const _ZIP_CRC_T = (function(){ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xedb88320 ^ (c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+function _zipCrc32(b){ let c=0xffffffff; for(let i=0;i<b.length;i++) c=_ZIP_CRC_T[(c^b[i])&0xff]^(c>>>8); return (c^0xffffffff)>>>0; }
+function _zipWrap(name, bytes){
+  const nb = new TextEncoder().encode(name);
+  const nl = nb.length, sz = bytes.length, crc = _zipCrc32(bytes);
+  const lfh = new Uint8Array(30 + nl); const v1 = new DataView(lfh.buffer);
+  v1.setUint32(0, 0x04034b50, true); v1.setUint16(4, 20, true); v1.setUint16(6, 0, true);
+  v1.setUint16(8, 0, true); v1.setUint16(10, 0, true); v1.setUint16(12, 0x0021, true);
+  v1.setUint32(14, crc, true); v1.setUint32(18, sz, true); v1.setUint32(22, sz, true);
+  v1.setUint16(26, nl, true); v1.setUint16(28, 0, true); lfh.set(nb, 30);
+  const cdr = new Uint8Array(46 + nl); const v2 = new DataView(cdr.buffer);
+  v2.setUint32(0, 0x02014b50, true); v2.setUint16(4, 20, true); v2.setUint16(6, 20, true);
+  v2.setUint16(8, 0, true); v2.setUint16(10, 0, true); v2.setUint16(12, 0, true);
+  v2.setUint16(14, 0x0021, true); v2.setUint32(16, crc, true); v2.setUint32(20, sz, true);
+  v2.setUint32(24, sz, true); v2.setUint16(28, nl, true); v2.setUint16(30, 0, true);
+  v2.setUint16(32, 0, true); v2.setUint16(34, 0, true); v2.setUint16(36, 0, true);
+  v2.setUint32(38, 0, true); v2.setUint32(42, 0, true); cdr.set(nb, 46);
+  const eocd = new Uint8Array(22); const v3 = new DataView(eocd.buffer);
+  v3.setUint32(0, 0x06054b50, true); v3.setUint16(4, 0, true); v3.setUint16(6, 0, true);
+  v3.setUint16(8, 1, true); v3.setUint16(10, 1, true);
+  v3.setUint32(12, cdr.length, true); v3.setUint32(16, lfh.length + sz, true); v3.setUint16(20, 0, true);
+  const out = new Uint8Array(lfh.length + sz + cdr.length + eocd.length);
+  let o = 0; out.set(lfh, o); o += lfh.length; out.set(bytes, o); o += sz; out.set(cdr, o); o += cdr.length; out.set(eocd, o);
+  return out;
+}
+
 async function shareDropboxFile(path, name){
-  toast('מכין שיתוף...');
+  toast('מכין שיתוף באיכות מלאה...');
   const link = await _dxGetTempLink(path);
   if (!link) { toast('לא ניתן להוריד את הקובץ'); return; }
   try {
     const res = await fetch(link);
-    const blob = await res.blob();
-    // Force document MIME so WhatsApp sends as a file (no audio re-encode → preserves quality)
-    const file = new File([blob], name, { type: 'application/octet-stream' });
+    const ab  = await res.arrayBuffer();
+    const bytes = new Uint8Array(ab);
+    const zipped = _zipWrap(name, bytes);
+    const zipName = name.replace(/\.[^.]+$/, '') + '.zip';
+    const file = new File([zipped], zipName, { type: 'application/zip' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: name });
+      await navigator.share({ files: [file], title: zipName });
     } else if (navigator.share) {
       await navigator.share({ url: link, title: name, text: name });
     } else {
