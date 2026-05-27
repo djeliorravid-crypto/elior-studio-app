@@ -3616,6 +3616,25 @@
   <button class="mini-btn-close" onclick="miniPlayerClose()" title="סגור">×</button>
 </div>
 
+<style>
+  .gender-pick { display:flex; gap:8px; }
+  .gp-btn { flex:1; padding:11px; background:#2e251b; border:1.5px solid #4a3c2c; border-radius:10px; font-size:14px; font-weight:800; color:#f2e9dc; cursor:pointer; }
+  .gp-btn.active { background:#c8985a; border-color:#c8985a; color:#fff; }
+  .sketch-folders { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:8px; }
+  .sketch-folder { background:linear-gradient(135deg,#2a1d10,#4a3424); border:1.5px solid #4a3c2c; border-radius:18px; padding:26px 18px; cursor:pointer; text-align:center; transition:transform .15s, border-color .15s; color:#fff; }
+  .sketch-folder.female { background:linear-gradient(135deg,#3a1d18,#5c3424); }
+  .sketch-folder:active { transform:scale(.98); }
+  .sketch-folder:hover { border-color:#c8985a; }
+  .sketch-folder-icon { font-size:46px; margin-bottom:8px; }
+  .sketch-folder-title { font-size:17px; font-weight:800; }
+  .sketch-folder-count { font-size:13px; color:rgba(255,255,255,0.75); margin-top:4px; }
+  .sketch-folder-other { background:linear-gradient(135deg,#2a2620,#3e3830); grid-column:1/-1; padding:14px 18px; display:flex; align-items:center; gap:14px; text-align:right; cursor:pointer; color:#fff; border-radius:14px; border:1.5px solid #4a3c2c; }
+  .sketch-folder-other:hover { border-color:#c8985a; }
+  .sketch-folder-other .sketch-folder-icon { font-size:30px; margin:0; }
+  .sketch-back { background:var(--surface2); border:1.5px solid var(--border); border-radius:9px; padding:8px 14px; font-size:13px; font-weight:800; cursor:pointer; color:var(--text); margin-bottom:14px; }
+  .sketch-singer-head { font-size:15px; font-weight:800; color:#c8985a; margin:20px 0 10px; padding-bottom:6px; border-bottom:1.5px solid var(--border); }
+</style>
+
 <!-- ===== MUSIC ADD MODAL ===== -->
 <div class="modal-overlay" id="modal-music-add">
   <div class="modal">
@@ -3626,6 +3645,16 @@
       <div class="form-group"><label>מי כתב איתי</label><input type="text" id="mf-cowriters" placeholder="שמות..."/></div>
       <div class="form-group"><label>מי הפיק</label><input type="text" id="mf-producer" placeholder="שם המפיק..."/></div>
       <div class="form-group"><label>מי הזמר</label><input type="text" id="mf-singer" placeholder="שם הזמר..."/></div>
+    </div>
+    <div id="mf-sketch-fields" style="display:none">
+      <div class="form-group"><label>שם הזמר/ת</label><input type="text" id="mf-sk-singer" placeholder="שם..."/></div>
+      <div class="form-group"><label>קטגוריה</label>
+        <div class="gender-pick">
+          <button type="button" class="gp-btn" data-g="male" onclick="pickGender('male')">👨 זמר</button>
+          <button type="button" class="gp-btn" data-g="female" onclick="pickGender('female')">👩 זמרת</button>
+        </div>
+        <input type="hidden" id="mf-sk-gender" value=""/>
+      </div>
     </div>
     <div class="form-group"><label>הערות</label><textarea id="mf-notes" placeholder="הערות, קונספט..."></textarea></div>
     <div class="modal-actions">
@@ -7871,7 +7900,7 @@ function showMusicPage(name) {
   document.querySelectorAll('#music-nav a').forEach(a => a.classList.remove('active'));
   document.querySelector(`#music-nav [data-mpage="${name}"]`)?.classList.add('active');
   if (name === 'released') renderReleased();
-  if (name === 'sketches') renderSketches();
+  if (name === 'sketches') { _sketchGender = null; renderSketches(); }
 }
 
 // ===== WAVEFORM PLAYER =====
@@ -7931,10 +7960,18 @@ function openMusicModal(type) {
   _curMusicType = type;
   document.getElementById('music-modal-type').value = type;
   document.getElementById('music-modal-title').textContent = type === 'released' ? '🎵 שיר חדש' : '🎙 סקיצה חדשה';
-  ['mf-title','mf-cowriters','mf-producer','mf-singer','mf-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['mf-title','mf-cowriters','mf-producer','mf-singer','mf-notes','mf-sk-singer','mf-sk-gender'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const relFields = document.getElementById('mf-released-fields');
   if (relFields) relFields.style.display = type === 'released' ? '' : 'none';
+  const skFields = document.getElementById('mf-sketch-fields');
+  if (skFields) skFields.style.display = type === 'sketches' ? '' : 'none';
+  document.querySelectorAll('#modal-music-add .gender-pick .gp-btn').forEach(b => b.classList.remove('active'));
   openModal('music-add');
+}
+
+function pickGender(g){
+  const inp = document.getElementById('mf-sk-gender'); if(inp) inp.value = g;
+  document.querySelectorAll('#modal-music-add .gender-pick .gp-btn').forEach(b => b.classList.toggle('active', b.dataset.g === g));
 }
 
 function addMusicItem() {
@@ -7974,6 +8011,10 @@ function addMusicItem() {
     audioUrl: '', audioName: '',
     createdAt: new Date().toISOString()
   };
+  if (type === 'sketches') {
+    newSong.singer = document.getElementById('mf-sk-singer')?.value?.trim() || '';
+    newSong.gender = document.getElementById('mf-sk-gender')?.value || '';
+  }
   // Released songs: auto-set YouTube search URL (search-based, since we can't fetch direct video ID from browser)
   if (type === 'released') {
     const bareTitle = title.includes(' - ') ? title.split(' - ').slice(1).join(' - ') : title;
@@ -7987,7 +8028,96 @@ function addMusicItem() {
 }
 
 function renderReleased() { _renderMusicList('released'); }
-function renderSketches() { _renderMusicList('sketches'); }
+
+// ===== סקיצות — תיקיות לפי זמר/זמרת =====
+let _sketchGender = null;
+function openSketchFolder(g){ _sketchGender = g; renderSketches(); window.scrollTo(0,0); }
+function closeSketchFolder(){ _sketchGender = null; renderSketches(); window.scrollTo(0,0); }
+
+function renderSketchCard(s){
+  const playing = (typeof _miniContext !== 'undefined' && _miniContext && _miniContext.type === 'sketches' && _miniContext.id === s.id && typeof _miniAudio !== 'undefined' && _miniAudio && !_miniAudio.paused);
+  return '<div class="song-card" style="flex-wrap:wrap" onclick="openMusicDetail(\'sketches\',\'' + s.id + '\')">' +
+    '<div style="display:flex;align-items:center;gap:12px;width:100%">' +
+      '<div class="song-card-avatar">🎙</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">' + s.title + '</div>' +
+        (s.cowriters ? '<div style="font-size:13px;color:var(--text-muted)">כתיבה: ' + s.cowriters + '</div>' : '') +
+        (s.playCount ? '<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:3px">▶ ' + s.playCount + ' השמעות</div>' : '') +
+      '</div>' +
+      (s.audioUrl ? '<button onclick="event.stopPropagation();playSketchInline(\'' + s.id + '\')" id="play-btn-' + s.id + '" style="border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;padding:8px 12px;border-radius:50%;flex-shrink:0;width:38px;height:38px;box-shadow:0 4px 12px rgba(108,71,245,0.3)" title="נגן">' + (playing ? '⏸' : '▶') + '</button>' : '') +
+      '<button onclick="event.stopPropagation();quickDeleteMusic(\'sketches\',\'' + s.id + '\')" style="border:none;background:none;color:#aaa;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;flex-shrink:0" title="מחק">×</button>' +
+    '</div></div>';
+}
+
+function renderSketches(){
+  const listEl = document.getElementById('sketches-list');
+  if(!listEl) return;
+  const items = load('sketch_songs');
+
+  if(_sketchGender === null){
+    const male = items.filter(function(s){ return s.gender === 'male'; });
+    const female = items.filter(function(s){ return s.gender === 'female'; });
+    const other = items.filter(function(s){ return s.gender !== 'male' && s.gender !== 'female'; });
+    let h = '<div class="sketch-folders">' +
+      '<div class="sketch-folder" onclick="openSketchFolder(\'male\')">' +
+        '<div class="sketch-folder-icon">👨</div>' +
+        '<div class="sketch-folder-title">זמרים</div>' +
+        '<div class="sketch-folder-count">' + male.length + ' סקיצות</div></div>' +
+      '<div class="sketch-folder female" onclick="openSketchFolder(\'female\')">' +
+        '<div class="sketch-folder-icon">👩</div>' +
+        '<div class="sketch-folder-title">זמרות</div>' +
+        '<div class="sketch-folder-count">' + female.length + ' סקיצות</div></div>' +
+      '</div>';
+    if(other.length){
+      h += '<div class="sketch-folder-other" onclick="openSketchFolder(\'other\')">' +
+        '<div class="sketch-folder-icon">🎤</div>' +
+        '<div style="flex:1"><div class="sketch-folder-title" style="font-size:15px">לא משויך</div><div class="sketch-folder-count">' + other.length + ' סקיצות — לחץ לסיווג</div></div>' +
+        '<div style="font-size:22px;color:#c8985a">‹</div></div>';
+    }
+    listEl.innerHTML = h;
+    return;
+  }
+
+  let filtered = items.filter(function(s){
+    if(_sketchGender === 'male') return s.gender === 'male';
+    if(_sketchGender === 'female') return s.gender === 'female';
+    return s.gender !== 'male' && s.gender !== 'female';
+  });
+  const q = (document.getElementById('sketches-search')?.value || '').trim().toLowerCase();
+  if(q){
+    filtered = filtered.filter(function(s){
+      return (s.title||'').toLowerCase().includes(q)
+          || (s.singer||'').toLowerCase().includes(q)
+          || (s.cowriters||'').toLowerCase().includes(q);
+    });
+  }
+  const groups = {};
+  filtered.forEach(function(s){ const k = s.singer || 'ללא שם זמר'; (groups[k] = groups[k]||[]).push(s); });
+  const sortedSingers = Object.keys(groups).sort(function(a,b){ return a.localeCompare(b,'he'); });
+  const headerLabel = _sketchGender === 'male' ? '👨 זמרים' : (_sketchGender === 'female' ? '👩 זמרות' : '🎤 לא משויך');
+  let h = '<button class="sketch-back" onclick="closeSketchFolder()">← תיקיות</button>' +
+    '<h3 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:14px">' + headerLabel + '</h3>';
+  if(!filtered.length){
+    h += '<div style="text-align:center;color:var(--text-muted);padding:30px 0">אין סקיצות בקטגוריה זו</div>';
+    listEl.innerHTML = h;
+    return;
+  }
+  sortedSingers.forEach(function(singer){
+    h += '<div class="sketch-singer-head">' + singer + ' <span style="font-size:13px;color:var(--text-muted);font-weight:600">· ' + groups[singer].length + '</span></div>';
+    h += groups[singer].map(renderSketchCard).join('');
+  });
+  listEl.innerHTML = h;
+}
+
+function setSketchGender(id, g){
+  const items = load('sketch_songs');
+  const s = items.find(function(x){ return x.id === id; });
+  if(!s) return;
+  s.gender = g;
+  save('sketch_songs', items);
+  document.querySelectorAll('#music-detail-content .gender-pick .gp-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.g === g); });
+  toast('סווג ✅');
+}
 
 function _renderMusicList(type) {
   const key    = type === 'released' ? 'released_songs' : 'sketch_songs';
@@ -8134,7 +8264,18 @@ async function openMusicDetail(type, id) {
         <div class="form-group" style="margin:0">
           <label>מי הזמר</label>
           <input type="text" value="${(s.singer||'').replace(/"/g,'&quot;')}" placeholder="שם הזמר..." onchange="updateMusicField('${type}','${id}','singer',this.value)"/>
-        </div>` : ''}
+        </div>` : `
+        <div class="form-group" style="margin:0">
+          <label>שם הזמר/ת</label>
+          <input type="text" value="${(s.singer||'').replace(/"/g,'&quot;')}" placeholder="שם..." onchange="updateMusicField('${type}','${id}','singer',this.value)"/>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>קטגוריה</label>
+          <div class="gender-pick">
+            <button type="button" class="gp-btn ${s.gender==='male'?'active':''}" data-g="male" onclick="setSketchGender('${id}','male')">👨 זמר</button>
+            <button type="button" class="gp-btn ${s.gender==='female'?'active':''}" data-g="female" onclick="setSketchGender('${id}','female')">👩 זמרת</button>
+          </div>
+        </div>`}
         <div class="form-group" style="margin:0">
           <label>טקסט / מילים</label>
           <textarea style="min-height:120px" onchange="updateMusicField('${type}','${id}','text',this.value)">${s.text||''}</textarea>
