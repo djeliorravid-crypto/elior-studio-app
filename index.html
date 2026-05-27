@@ -2251,11 +2251,16 @@
       border-top: 1.5px solid var(--border);
       box-shadow: 0 -8px 24px rgba(0,0,0,0.12);
       padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
-      display: none; align-items: center; gap: 14px;
+      display: none; flex-direction: column; gap: 8px;
       z-index: 998; backdrop-filter: blur(12px);
       transform: translateY(100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
     }
     .mini-player.active { display: flex; transform: translateY(0); }
+    .mini-player-row { display: flex; align-items: center; gap: 14px; }
+    .mini-wave {
+      display: block; width: 100%; height: 40px;
+      background: rgba(0,0,0,0.18); border-radius: 8px; cursor: pointer;
+    }
     .mini-player-thumb {
       width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0;
       background: linear-gradient(135deg,#e84393,#f97316);
@@ -3603,17 +3608,19 @@
 
 <!-- ===== PERSISTENT MINI PLAYER ===== -->
 <div id="mini-player" class="mini-player">
-  <div class="mini-player-thumb" id="mini-player-thumb">🎵</div>
-  <div class="mini-player-info">
-    <div class="mini-player-title" id="mini-player-title">—</div>
-    <div class="mini-player-meta" id="mini-player-meta"></div>
+  <div class="mini-player-row">
+    <div class="mini-player-thumb" id="mini-player-thumb">🎵</div>
+    <div class="mini-player-info">
+      <div class="mini-player-title" id="mini-player-title">—</div>
+      <div class="mini-player-meta" id="mini-player-meta"></div>
+    </div>
+    <div class="mini-player-controls">
+      <button class="mini-btn" onclick="miniPlayerToggle()" id="mini-btn-play">▶</button>
+      <span class="mini-time" id="mini-time">0:00 / 0:00</span>
+    </div>
+    <button class="mini-btn-close" onclick="miniPlayerClose()" title="סגור">×</button>
   </div>
-  <div class="mini-player-controls">
-    <button class="mini-btn" onclick="miniPlayerToggle()" id="mini-btn-play">▶</button>
-    <span class="mini-time" id="mini-time">0:00 / 0:00</span>
-  </div>
-  <input type="range" id="mini-progress" class="mini-progress" min="0" max="100" value="0" oninput="miniSeek(this.value)"/>
-  <button class="mini-btn-close" onclick="miniPlayerClose()" title="סגור">×</button>
+  <canvas id="mini-wave" class="mini-wave" onclick="_miniWaveClick(event)"></canvas>
 </div>
 
 <style>
@@ -8410,7 +8417,7 @@ _miniAudio.addEventListener('timeupdate', () => {
   if (tEl) tEl.textContent = `${fmtAudioTime(cur)} / ${fmtAudioTime(dur)}`;
   if (pEl && dur) pEl.value = (cur/dur)*100;
 });
-_miniAudio.addEventListener('play',  () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '⏸'; _refreshSketchPlayBtn(); });
+_miniAudio.addEventListener('play',  () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '⏸'; _refreshSketchPlayBtn(); _miniStartWave(); });
 _miniAudio.addEventListener('pause', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '▶'; _refreshSketchPlayBtn(); });
 _miniAudio.addEventListener('ended', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = '▶'; _refreshSketchPlayBtn(); });
 
@@ -8418,6 +8425,70 @@ function _refreshSketchPlayBtn() {
   if (!_miniContext) return;
   const btn = document.getElementById('play-btn-' + _miniContext.id);
   if (btn) btn.innerHTML = _miniAudio.paused ? '▶' : '⏸';
+}
+
+// ===== Waveform visualizer for the mini-player =====
+let _miniAudioCtx = null, _miniAnalyser = null, _miniDataArr = null, _miniWaveRunning = false;
+function _miniSetupWave(){
+  if (_miniAudioCtx) return true;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return false;
+    _miniAudioCtx = new Ctx();
+    const src = _miniAudioCtx.createMediaElementSource(_miniAudio);
+    _miniAnalyser = _miniAudioCtx.createAnalyser();
+    _miniAnalyser.fftSize = 128;
+    _miniAnalyser.smoothingTimeConstant = 0.78;
+    src.connect(_miniAnalyser);
+    _miniAnalyser.connect(_miniAudioCtx.destination);
+    _miniDataArr = new Uint8Array(_miniAnalyser.frequencyBinCount);
+    return true;
+  } catch(e){ console.warn('wave setup failed', e); return false; }
+}
+function _miniDrawWave(){
+  if (!_miniAnalyser) { _miniWaveRunning = false; return; }
+  const c = document.getElementById('mini-wave');
+  if (!c) { _miniWaveRunning = false; return; }
+  const dpr = window.devicePixelRatio || 1;
+  const cw = c.clientWidth || 320, ch = c.clientHeight || 40;
+  if (c.width !== Math.round(cw*dpr)) { c.width = Math.round(cw*dpr); c.height = Math.round(ch*dpr); }
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0,0,W,H);
+  _miniAnalyser.getByteFrequencyData(_miniDataArr);
+  const bars = 38;
+  const slot = W/bars, barW = slot*0.62, gap = (slot-barW)/2;
+  const progress = (_miniAudio.duration && _miniAudio.currentTime) ? _miniAudio.currentTime / _miniAudio.duration : 0;
+  for (let i=0; i<bars; i++){
+    const di = Math.floor(i/bars * _miniDataArr.length * 0.78);
+    const v = _miniDataArr[di] / 255;
+    const h = Math.max(2*dpr, v*H*0.9);
+    const x = i*slot + gap, y = (H-h)/2;
+    const elapsed = (i/bars) <= progress;
+    ctx.fillStyle = elapsed ? '#c8985a' : 'rgba(200,152,90,0.28)';
+    const r = barW/2;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+barW,y,x+barW,y+h,r);
+    ctx.arcTo(x+barW,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+barW,y,r);
+    ctx.closePath(); ctx.fill();
+  }
+  if (!_miniAudio.paused) requestAnimationFrame(_miniDrawWave);
+  else _miniWaveRunning = false;
+}
+function _miniStartWave(){
+  if (_miniWaveRunning || !_miniAnalyser) return;
+  _miniWaveRunning = true;
+  requestAnimationFrame(_miniDrawWave);
+}
+function _miniWaveClick(e){
+  if (!_miniAudio.duration) return;
+  const c = e.currentTarget;
+  const r = c.getBoundingClientRect();
+  _miniAudio.currentTime = ((e.clientX - r.left) / r.width) * _miniAudio.duration;
+  if (!_miniWaveRunning) requestAnimationFrame(_miniDrawWave);
 }
 
 async function playInMiniPlayer(type, id) {
@@ -8445,6 +8516,8 @@ async function playInMiniPlayer(type, id) {
   }
   document.getElementById('mini-player').classList.add('active');
   _miniAudio.src = src;
+  _miniSetupWave();
+  if (_miniAudioCtx && _miniAudioCtx.state === 'suspended') _miniAudioCtx.resume();
   _miniAudio.play();
 }
 
