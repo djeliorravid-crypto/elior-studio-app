@@ -3631,8 +3631,19 @@
   .sketch-folder-other { background:linear-gradient(135deg,#2a2620,#3e3830); grid-column:1/-1; padding:14px 18px; display:flex; align-items:center; gap:14px; text-align:right; cursor:pointer; color:#fff; border-radius:14px; border:1.5px solid #4a3c2c; }
   .sketch-folder-other:hover { border-color:#c8985a; }
   .sketch-folder-other .sketch-folder-icon { font-size:30px; margin:0; }
-  .sketch-back { background:var(--surface2); border:1.5px solid var(--border); border-radius:9px; padding:8px 14px; font-size:13px; font-weight:800; cursor:pointer; color:var(--text); margin-bottom:14px; }
-  .sketch-singer-head { font-size:15px; font-weight:800; color:#c8985a; margin:20px 0 10px; padding-bottom:6px; border-bottom:1.5px solid var(--border); }
+  .sketch-back { background:#2e251b; border:1.5px solid #4a3c2c; border-radius:9px; padding:8px 14px; font-size:13px; font-weight:800; cursor:pointer; color:#f2e9dc; margin-bottom:14px; }
+  .sketch-section-title { font-size:24px; font-weight:900; color:#f7f0e6; letter-spacing:-0.02em; margin-bottom:6px; }
+  .sketch-section-sub { font-size:13px; color:#b3a690; margin-bottom:18px; }
+  .sketch-singer-head { font-size:12px; font-weight:800; color:#c8985a; margin:18px 0 8px; letter-spacing:0.08em; }
+  .sketch-item { display:flex; align-items:center; gap:12px; background:#251e16; border:1.5px solid #3a2f23; border-radius:14px; padding:12px 14px; margin-bottom:9px; cursor:pointer; transition:border-color .15s, transform .15s; }
+  .sketch-item:hover { border-color:#c8985a; }
+  .sketch-item:active { transform:scale(.99); }
+  .sketch-item-avatar { width:42px; height:42px; border-radius:11px; background:linear-gradient(135deg,#3a2818,#5c3a24); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; color:#c8985a; }
+  .sketch-item-body { flex:1; min-width:0; }
+  .sketch-item-title { font-size:15px; font-weight:800; color:#f7f0e6; line-height:1.3; }
+  .sketch-item-sub { font-size:12.5px; color:#b3a690; margin-top:3px; }
+  .sketch-play { width:38px; height:38px; border-radius:50%; background:#c8985a; color:#fff; border:none; cursor:pointer; font-size:15px; flex-shrink:0; box-shadow:0 3px 10px rgba(200,152,90,0.3); }
+  .sketch-del { background:none; border:none; color:#7d715f; font-size:22px; cursor:pointer; padding:0 4px; line-height:1; flex-shrink:0; }
 </style>
 
 <!-- ===== MUSIC ADD MODAL ===== -->
@@ -8036,17 +8047,15 @@ function closeSketchFolder(){ _sketchGender = null; renderSketches(); window.scr
 
 function renderSketchCard(s){
   const playing = (typeof _miniContext !== 'undefined' && _miniContext && _miniContext.type === 'sketches' && _miniContext.id === s.id && typeof _miniAudio !== 'undefined' && _miniAudio && !_miniAudio.paused);
-  return '<div class="song-card" style="flex-wrap:wrap" onclick="openMusicDetail(\'sketches\',\'' + s.id + '\')">' +
-    '<div style="display:flex;align-items:center;gap:12px;width:100%">' +
-      '<div class="song-card-avatar">🎙</div>' +
-      '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">' + s.title + '</div>' +
-        (s.cowriters ? '<div style="font-size:13px;color:var(--text-muted)">כתיבה: ' + s.cowriters + '</div>' : '') +
-        (s.playCount ? '<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:3px">▶ ' + s.playCount + ' השמעות</div>' : '') +
-      '</div>' +
-      (s.audioUrl ? '<button onclick="event.stopPropagation();playSketchInline(\'' + s.id + '\')" id="play-btn-' + s.id + '" style="border:none;background:var(--accent);color:#fff;font-size:16px;cursor:pointer;padding:8px 12px;border-radius:50%;flex-shrink:0;width:38px;height:38px;box-shadow:0 4px 12px rgba(108,71,245,0.3)" title="נגן">' + (playing ? '⏸' : '▶') + '</button>' : '') +
-      '<button onclick="event.stopPropagation();quickDeleteMusic(\'sketches\',\'' + s.id + '\')" style="border:none;background:none;color:#aaa;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;flex-shrink:0" title="מחק">×</button>' +
-    '</div></div>';
+  return '<div class="sketch-item" onclick="openMusicDetail(\'sketches\',\'' + s.id + '\')">' +
+    '<div class="sketch-item-avatar">🎙</div>' +
+    '<div class="sketch-item-body">' +
+      '<div class="sketch-item-title">' + s.title + '</div>' +
+      (s.cowriters ? '<div class="sketch-item-sub">' + s.cowriters + '</div>' : '') +
+    '</div>' +
+    (s.audioUrl ? '<button class="sketch-play" onclick="event.stopPropagation();playSketchInline(\'' + s.id + '\')" id="play-btn-' + s.id + '" title="נגן">' + (playing ? '⏸' : '▶') + '</button>' : '') +
+    '<button class="sketch-del" onclick="event.stopPropagation();quickDeleteMusic(\'sketches\',\'' + s.id + '\')" title="מחק">×</button>' +
+  '</div>';
 }
 
 function renderSketches(){
@@ -8094,16 +8103,18 @@ function renderSketches(){
   const groups = {};
   filtered.forEach(function(s){ const k = s.singer || 'ללא שם זמר'; (groups[k] = groups[k]||[]).push(s); });
   const sortedSingers = Object.keys(groups).sort(function(a,b){ return a.localeCompare(b,'he'); });
-  const headerLabel = _sketchGender === 'male' ? '👨 זמרים' : (_sketchGender === 'female' ? '👩 זמרות' : '🎤 לא משויך');
+  const headerLabel = _sketchGender === 'male' ? 'זמרים' : (_sketchGender === 'female' ? 'זמרות' : 'לא משויך');
+  const headerSub = _sketchGender === 'male' ? 'סקיצות מקובצות לפי שם הזמר' : (_sketchGender === 'female' ? 'סקיצות מקובצות לפי שם הזמרת' : 'סקיצות שעוד לא סווגו');
   let h = '<button class="sketch-back" onclick="closeSketchFolder()">← תיקיות</button>' +
-    '<h3 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:14px">' + headerLabel + '</h3>';
+    '<div class="sketch-section-title">' + headerLabel + '</div>' +
+    '<div class="sketch-section-sub">' + headerSub + '</div>';
   if(!filtered.length){
-    h += '<div style="text-align:center;color:var(--text-muted);padding:30px 0">אין סקיצות בקטגוריה זו</div>';
+    h += '<div style="text-align:center;color:#b3a690;padding:30px 0;font-size:14px">אין סקיצות בקטגוריה זו</div>';
     listEl.innerHTML = h;
     return;
   }
   sortedSingers.forEach(function(singer){
-    h += '<div class="sketch-singer-head">' + singer + ' <span style="font-size:13px;color:var(--text-muted);font-weight:600">· ' + groups[singer].length + '</span></div>';
+    h += '<div class="sketch-singer-head">' + singer + ' <span style="color:#7d715f;font-weight:600">· ' + groups[singer].length + '</span></div>';
     h += groups[singer].map(renderSketchCard).join('');
   });
   listEl.innerHTML = h;
