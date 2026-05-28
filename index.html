@@ -8534,9 +8534,9 @@ function shareDropboxFile(path, name){
         '🎵 שיתוף כקובץ אודיו' +
         '<span>נראה כאודיו בצ׳אט, יש סיכוי לדחיסת איכות ע״י WhatsApp</span>' +
       '</button>' +
-      '<button class="dx-share-opt" data-mode="zip" data-path="' + safeP + '" data-name="' + safeN + '">' +
-        '📦 שיתוף ב-ZIP — איכות מלאה' +
-        '<span>הנמען מחלץ ומקבל את הקובץ המקורי בית-בית</span>' +
+      '<button class="dx-share-opt" data-mode="doc" data-path="' + safeP + '" data-name="' + safeN + '">' +
+        '📄 שיתוף כמסמך — איכות מלאה' +
+        '<span>בדיוק כמו "קבצים → מסמך" ב-WhatsApp. נראה כקובץ מצורף, איכות מלאה.</span>' +
       '</button>' +
       '<button class="dx-share-cancel">ביטול</button>' +
     '</div>';
@@ -8548,7 +8548,7 @@ function shareDropboxFile(path, name){
     const p = btn.dataset.path, n = btn.dataset.name;
     m.remove();
     if (mode === 'audio') _dxShareAudio(p, n);
-    else if (mode === 'zip') _dxShareZip(p, n);
+    else if (mode === 'doc') _dxShareDoc(p, n);
   });
   document.body.appendChild(m);
 }
@@ -8562,6 +8562,27 @@ async function _dxShareAudio(path, name){
     const blob = await res.blob();
     const file = new File([blob], name, { type: blob.type || 'audio/mpeg' });
     if (navigator.canShare && navigator.canShare({ files:[file] })) await navigator.share({ files:[file], title:name });
+    else if (navigator.share) await navigator.share({ url: link, title: name });
+    else toast('שיתוף לא נתמך');
+  } catch(e){ if (e && e.name !== 'AbortError') { toast('שגיאה בשיתוף'); console.warn(e); } }
+}
+
+async function _dxShareDoc(path, name){
+  toast('מכין שיתוף כמסמך...');
+  const link = await _dxGetTempLink(path);
+  if (!link) { toast('לא ניתן להוריד את הקובץ'); return; }
+  try {
+    const res = await fetch(link);
+    const blob = await res.blob();
+    // Strip the audio extension so iOS classifies the share as public.data
+    // (= document) instead of public.audio. WhatsApp then ships it as-is
+    // without the voice-note re-encode, keeping the file 100% original.
+    const m2 = name.match(/^(.*)(\.[^.]+)$/);
+    const baseName = m2 ? m2[1] : name;
+    const origExt  = m2 ? m2[2] : '';
+    const docName = baseName + (origExt ? ' (' + origExt.slice(1).toUpperCase() + ')' : '');
+    const file = new File([blob], docName, { type: 'application/octet-stream' });
+    if (navigator.canShare && navigator.canShare({ files:[file] })) await navigator.share({ files:[file], title: docName });
     else if (navigator.share) await navigator.share({ url: link, title: name });
     else toast('שיתוף לא נתמך');
   } catch(e){ if (e && e.name !== 'AbortError') { toast('שגיאה בשיתוף'); console.warn(e); } }
