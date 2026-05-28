@@ -3641,6 +3641,13 @@
   .dx-icon-btn { width:38px; height:38px; border-radius:10px; background:#2e251b; border:1.5px solid #4a3c2c; color:#f2e9dc; font-size:16px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent; }
   .dx-icon-btn:hover { border-color:#c8985a; }
   .dx-icon-btn:active { transform:scale(.95); }
+  .dx-share-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:flex-end; justify-content:center; }
+  .dx-share-sheet { background:#1b1610; width:100%; max-width:480px; border-radius:18px 18px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:10px; border-top:1.5px solid #4a3c2c; }
+  .dx-share-title { font-size:15px; font-weight:800; color:#f7f0e6; margin-bottom:6px; text-align:center; word-break:break-word; }
+  .dx-share-opt { background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:14px 16px; color:#f2e9dc; font-size:15px; font-weight:800; cursor:pointer; text-align:right; display:flex; flex-direction:column; gap:4px; }
+  .dx-share-opt:hover { border-color:#c8985a; }
+  .dx-share-opt span { font-size:12px; font-weight:500; color:#b3a690; line-height:1.45; }
+  .dx-share-cancel { background:transparent; border:none; color:#b3a690; padding:11px; font-size:14px; font-weight:700; cursor:pointer; margin-top:4px; }
   .sketch-section-title { font-size:24px; font-weight:900; color:#f7f0e6; letter-spacing:-0.02em; margin-bottom:6px; }
   .sketch-section-sub { font-size:13px; color:#b3a690; margin-bottom:18px; }
   .sketch-singer-head { font-size:12px; font-weight:800; color:#c8985a; margin:18px 0 8px; letter-spacing:0.08em; }
@@ -8515,27 +8522,66 @@ function _zipWrap(name, bytes){
   return out;
 }
 
-async function shareDropboxFile(path, name){
-  toast('מכין שיתוף באיכות מלאה...');
+function shareDropboxFile(path, name){
+  const safeP = String(path).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const safeN = String(name).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  const m = document.createElement('div');
+  m.className = 'dx-share-overlay';
+  m.innerHTML =
+    '<div class="dx-share-sheet">' +
+      '<div class="dx-share-title">' + name + '</div>' +
+      '<button class="dx-share-opt" data-mode="audio" data-path="' + safeP + '" data-name="' + safeN + '">' +
+        '🎵 שיתוף כקובץ אודיו' +
+        '<span>נראה כאודיו בצ׳אט, יש סיכוי לדחיסת איכות ע״י WhatsApp</span>' +
+      '</button>' +
+      '<button class="dx-share-opt" data-mode="zip" data-path="' + safeP + '" data-name="' + safeN + '">' +
+        '📦 שיתוף ב-ZIP — איכות מלאה' +
+        '<span>הנמען מחלץ ומקבל את הקובץ המקורי בית-בית</span>' +
+      '</button>' +
+      '<button class="dx-share-cancel">ביטול</button>' +
+    '</div>';
+  m.addEventListener('click', function(e){
+    if (e.target === m || e.target.classList.contains('dx-share-cancel')) { m.remove(); return; }
+    const btn = e.target.closest('.dx-share-opt');
+    if (!btn) return;
+    const mode = btn.dataset.mode;
+    const p = btn.dataset.path, n = btn.dataset.name;
+    m.remove();
+    if (mode === 'audio') _dxShareAudio(p, n);
+    else if (mode === 'zip') _dxShareZip(p, n);
+  });
+  document.body.appendChild(m);
+}
+
+async function _dxShareAudio(path, name){
+  toast('מכין שיתוף...');
   const link = await _dxGetTempLink(path);
   if (!link) { toast('לא ניתן להוריד את הקובץ'); return; }
   try {
     const res = await fetch(link);
-    const ab  = await res.arrayBuffer();
+    const blob = await res.blob();
+    const file = new File([blob], name, { type: blob.type || 'audio/mpeg' });
+    if (navigator.canShare && navigator.canShare({ files:[file] })) await navigator.share({ files:[file], title:name });
+    else if (navigator.share) await navigator.share({ url: link, title: name });
+    else toast('שיתוף לא נתמך');
+  } catch(e){ if (e && e.name !== 'AbortError') { toast('שגיאה בשיתוף'); console.warn(e); } }
+}
+
+async function _dxShareZip(path, name){
+  toast('מכין באיכות מלאה...');
+  const link = await _dxGetTempLink(path);
+  if (!link) { toast('לא ניתן להוריד את הקובץ'); return; }
+  try {
+    const res = await fetch(link);
+    const ab = await res.arrayBuffer();
     const bytes = new Uint8Array(ab);
     const zipped = _zipWrap(name, bytes);
     const zipName = name.replace(/\.[^.]+$/, '') + '.zip';
     const file = new File([zipped], zipName, { type: 'application/zip' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: zipName });
-    } else if (navigator.share) {
-      await navigator.share({ url: link, title: name, text: name });
-    } else {
-      toast('שיתוף לא נתמך במכשיר הזה');
-    }
-  } catch(e){
-    if (e && e.name !== 'AbortError') { toast('שגיאה בשיתוף'); console.warn(e); }
-  }
+    if (navigator.canShare && navigator.canShare({ files:[file] })) await navigator.share({ files:[file], title: zipName });
+    else if (navigator.share) await navigator.share({ url: link, title: name });
+    else toast('שיתוף לא נתמך');
+  } catch(e){ if (e && e.name !== 'AbortError') { toast('שגיאה בשיתוף'); console.warn(e); } }
 }
 
 async function playInMiniPlayer(type, id) {
