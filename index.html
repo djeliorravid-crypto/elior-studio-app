@@ -2730,7 +2730,7 @@
       display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px;
     }
     .wk-card-emoji { font-size: 30px; line-height: 1; flex-shrink: 0; }
-    .wk-card-title { font-size: 18px; font-weight: 900; color: var(--text); line-height: 1.25; }
+    .wk-card-title { font-size: 18px; font-weight: 900; color: var(--text); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; }
     .wk-card-tagline { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
     .wk-card-meta {
       display: flex; flex-wrap: wrap; gap: 6px 14px;
@@ -2745,11 +2745,13 @@
     .wk-seats-label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
     .wk-seats-count { font-size: 20px; font-weight: 900; color: var(--accent); margin-right: auto; }
     .wk-seats-btn {
-      width: 34px; height: 34px; border-radius: 9px;
+      width: 36px; height: 36px; border-radius: 10px;
       border: 1.5px solid var(--border); background: var(--surface);
       font-size: 18px; font-weight: 900; cursor: pointer; color: var(--text);
       display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s;
     }
+    .wk-seats-btn:hover { border-color: var(--accent); }
     .wk-seats-btn:active { transform: scale(.92); }
     .wk-seats-bar {
       flex: 1; height: 6px; background: var(--surface);
@@ -3042,7 +3044,8 @@
   .studies-head p { font-size:14px; color:#b3a690; margin-top:6px; }
   .study-title { font-size:25px; font-weight:900; color:#f7f0e6; margin:6px 0 4px; }
   .study-h3 { font-size:14px; font-weight:800; color:#c9b8ff; margin:18px 0 8px; }
-  .proj-add-btn { width:100%; background:#7c5cff; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:800; color:#fff; cursor:pointer; margin-bottom:14px; }
+  .proj-add-btn { width:100%; background:#7c5cff; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:800; color:#fff; cursor:pointer; margin-bottom:14px; transition:filter .15s; }
+  .proj-add-btn:hover { filter:brightness(1.08); }
   .proj-add-btn:active { opacity:.85; }
   .proj-add-box { background:#251e16; border:1.5px solid #3a2f23; border-radius:14px; padding:14px; margin-bottom:14px; display:flex; flex-direction:column; gap:10px; }
   .proj-input { width:100%; background:#1b1610; border:1.5px solid #4a3c2c; border-radius:10px; padding:12px 14px; font-size:15px; color:#f2e9dc; outline:none; }
@@ -3053,7 +3056,7 @@
   .proj-card:active { transform:scale(.99); }
   .proj-card:hover { border-color:#7c5cff; }
   .proj-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-  .proj-name { font-size:16px; font-weight:800; color:#f7f0e6; line-height:1.3; }
+  .proj-name { font-size:16px; font-weight:800; color:#f7f0e6; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
   .proj-status { flex:0 0 auto; font-size:11.5px; font-weight:800; padding:4px 10px; border-radius:20px; border:1.5px solid; white-space:nowrap; }
   .proj-sub { font-size:13px; color:#b3a690; margin-top:5px; }
   .proj-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }
@@ -4319,7 +4322,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -4379,7 +4382,10 @@ function pushAllToCloud() {
 function syncKeyToCloud(key) { _pushKey(key); } // backward compat
 
 // ===== LOCAL STORAGE (+ CLOUD SYNC) =====
-const load = key => JSON.parse(localStorage.getItem('s_' + key) || '[]');
+const load = key => {
+  try { return JSON.parse(localStorage.getItem('s_' + key) || '[]'); }
+  catch(e) { console.warn('Corrupted localStorage for', key, '— resetting'); return []; }
+};
 
 function save(key, val) {
   const ts = Date.now();
@@ -6303,7 +6309,9 @@ function renderMiniCal(incomeData, expensesData) {
 
 // ===== PROJECTS PAGE =====
 function loadObj(key) {
-  const v = JSON.parse(localStorage.getItem('s_' + key) || '{}');
+  let v;
+  try { v = JSON.parse(localStorage.getItem('s_' + key) || '{}'); }
+  catch(e) { console.warn('Corrupted localStorage for', key, '— resetting'); return {}; }
   return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
 }
 
@@ -8464,6 +8472,7 @@ function renderSketches(){
         '<input class="proj-input" id="dx-path" value="' + dxPath.replace(/"/g,'&quot;') + '" placeholder="/סקיצות" style="flex:1">' +
         '<button class="proj-add-go" style="width:auto;padding:11px 14px" onclick="dxApplyPath()">החל</button>' +
       '</div>' +
+      '<div id="dx-hidden-section" style="margin-top:14px"></div>' +
       '<button onclick="dropboxDisconnect()" style="margin-top:14px;width:100%;background:transparent;border:1.5px solid #6e3b3b;border-radius:11px;padding:10px;font-size:13px;font-weight:800;color:#e08a8a;cursor:pointer">התנתק מ-Dropbox</button>' +
     '</div>' +
     '<div id="dx-list"></div>';
@@ -8473,7 +8482,38 @@ function renderSketches(){
 function dxToggleSettings(){
   const el = document.getElementById('dx-settings');
   if(!el) return;
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  const opening = el.style.display === 'none';
+  el.style.display = opening ? 'block' : 'none';
+  if(opening) dxRenderHiddenSection();
+}
+
+function dxRenderHiddenSection(){
+  const el = document.getElementById('dx-hidden-section');
+  if(!el) return;
+  const hidden = loadObj('sketch_hidden') || {};
+  const paths = Object.keys(hidden);
+  if(!paths.length){
+    el.innerHTML = '<div style="font-size:11px;color:#7d715f;text-align:center;padding:4px">אין סקיצות מוסתרות</div>';
+    return;
+  }
+  const rows = paths.map(function(p){
+    const name = _dxDisplay(p, (p.split('/').pop() || p));
+    const safeP = String(p).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div style="display:flex;align-items:center;gap:8px;background:#1b1610;border:1px solid #3a2f23;border-radius:9px;padding:8px 10px;margin-bottom:6px">' +
+      '<div style="flex:1;font-size:12px;color:#f2e9dc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name.replace(/</g,'&lt;') + '</div>' +
+      '<button onclick="dxUnhide(\'' + safeP + '\')" style="background:transparent;border:1px solid #4a3c2c;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:800;color:#c8985a;cursor:pointer">שחזר</button>' +
+    '</div>';
+  }).join('');
+  el.innerHTML =
+    '<label style="display:block;font-size:12px;font-weight:800;color:#b3a690;margin-bottom:8px">סקיצות שהוסתרו (' + paths.length + ')</label>' +
+    '<div style="max-height:200px;overflow-y:auto">' + rows + '</div>';
+}
+
+function dxUnhide(path){
+  _dxSetHidden(path, false);
+  dxRenderHiddenSection();
+  dxReload();
+  toast('✅ שוחזר');
 }
 
 function setSketchGender(id, g){
@@ -8823,7 +8863,6 @@ function _refreshSketchPlayBtn() {
 
 // ===== Waveform visualizer (decorative — no Web Audio so audio keeps playing in background) =====
 let _miniWaveRunning = false;
-function _miniSetupWave(){ /* removed — Web Audio analyser kills background playback on iOS */ }
 function _miniDrawWave(){
   const c = document.getElementById('mini-wave');
   if (!c) { _miniWaveRunning = false; return; }
@@ -8957,6 +8996,15 @@ function _dxGroupOf(path){
   }
   return null;
 }
+function _dxIsHidden(path){
+  return !!(loadObj('sketch_hidden') || {})[path];
+}
+function _dxSetHidden(path, hidden){
+  const o = loadObj('sketch_hidden');
+  if (hidden) o[path] = 1;
+  else delete o[path];
+  save('sketch_hidden', o);
+}
 function _dxSaveAlias(path, name){
   const a = loadObj('sketch_aliases');
   if (name && name.trim()) a[path] = name.trim();
@@ -9011,6 +9059,9 @@ function dxItemMenu(path, name){
       '</button>' +
       '<button class="dx-share-opt" data-mode="share" data-path="' + safeP + '" data-name="' + safeN + '">📤 שתף ב-WhatsApp / יישומים</button>' +
       (inGroup ? '<button class="dx-share-opt" data-mode="split" data-path="' + safeP + '" data-name="' + safeN + '" style="color:#e08a8a">🚪 הפרד מהקבוצה</button>' : '') +
+      '<button class="dx-share-opt" data-mode="hide" data-path="' + safeP + '" data-name="' + safeN + '" style="color:#e08a8a">🗑 מחק מהאפליקציה' +
+        '<span>הקובץ נשאר ב-Dropbox. אפשר לשחזר מההגדרות (⚙).</span>' +
+      '</button>' +
       '<button class="dx-share-cancel">ביטול</button>' +
     '</div>';
   document.body.appendChild(m);
@@ -9026,7 +9077,30 @@ function dxItemMenu(path, name){
     else if (mode === 'version') dxMergeAsVersion(p, n);
     else if (mode === 'share') shareDropboxFile(p, n);
     else if (mode === 'split') dxSplitFromGroup(p);
+    else if (mode === 'hide') dxHideSketch(p, n);
   });
+}
+
+function dxHideSketch(path, name){
+  const display = _dxDisplay(path, name);
+  if (!confirm('למחוק את "' + display + '" מהאפליקציה?\n\nהקובץ נשאר ב-Dropbox כפי שהוא. אפשר לשחזר מההגדרות (⚙).')) return;
+  // If this song is the primary of a version group, the other versions
+  // would disappear from the list with their primary hidden. Detach this
+  // path from its group first so the rest stay visible.
+  const g = _dxGroupOf(path);
+  if (g) {
+    const remaining = g.paths.filter(function(p){ return p !== path; });
+    if (remaining.length <= 1) _dxRemoveGroup(g.id);
+    else _dxSaveGroup(g.id, {primary: g.primary === path ? remaining[0] : g.primary, paths: remaining});
+  }
+  _dxSetHidden(path, true);
+  // If this was the active track, stop the player so we don't keep
+  // playing what the user just "deleted"
+  if (_miniContext && _miniContext.id === path) {
+    try { miniPlayerClose(); } catch(e){}
+  }
+  toast('🗑 הוסתר מהאפליקציה');
+  dxReload();
 }
 
 function shareDropboxFile(path, name){
@@ -9663,9 +9737,11 @@ async function dxReload(){
   const nameByPath = {};
   audio.forEach(function(e){ nameByPath[e.path_lower || e.path_display] = e.name; });
 
-  // Hide entries that are non-primary members of a version group
+  // Hide entries that are non-primary members of a version group,
+  // and entries the user explicitly hid from the app (Dropbox file untouched).
   const visible = audio.filter(function(e){
     const p = e.path_lower || e.path_display;
+    if (_dxIsHidden(p)) return false;
     const g = _dxGroupOf(p);
     return !g || g.primary === p;
   });
@@ -10034,6 +10110,8 @@ async function sendAIMessage() {
     } else {
       const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('\n') || data.candidates?.[0]?.content?.parts?.[0]?.text || '...';
       _aiHistory.push({ role: 'assistant', content: reply });
+      // Cap memory so long sessions don't bloat — API only ever uses last 20 anyway
+      if (_aiHistory.length > 200) _aiHistory = _aiHistory.slice(-100);
       addAIMessageToDOM(reply, 'assistant');
     }
   } catch(e) {
