@@ -1972,16 +1972,16 @@
       /* ===== מודאל — עולה מלמטה ===== */
       .modal-overlay {
         align-items: flex-end;
-        padding: 0;
+        padding: 0 0 calc(64px + env(safe-area-inset-bottom)) 0;
       }
       .modal-box, .modal {
         width: 100% !important;
         max-width: 100% !important;
         border-radius: 20px 20px 0 0 !important;
-        max-height: 88vh !important;
+        max-height: calc(88vh - 64px) !important;
         overflow-y: auto;
         margin: 0 !important;
-        padding: 20px 18px calc(16px + env(safe-area-inset-bottom)) !important;
+        padding: 20px 18px 24px !important;
       }
       .modal-box::before, .modal::before {
         content: '';
@@ -1997,7 +1997,14 @@
         padding: 12px 14px;
         border-radius: 10px;
       }
-      .modal-actions { flex-direction: column-reverse; gap: 8px; }
+      .modal-actions {
+        flex-direction: column-reverse; gap: 8px;
+        position: sticky; bottom: -24px;
+        background: var(--surface);
+        margin: 12px -18px -24px;
+        padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+        border-top: 1px solid var(--border);
+      }
       .modal-actions .btn { width: 100%; justify-content: center; }
 
       /* ===== פרופילים ===== */
