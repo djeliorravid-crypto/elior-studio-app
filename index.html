@@ -3621,6 +3621,7 @@
       </div>
       <div class="form-group"><label>שורת תיאור קצרה (כותרת משנה)</label><input type="text" id="wk-tagline" placeholder="6 מפגשים · קבוצה אינטימית · להוציא את השיר שבך"></div>
       <div class="form-group"><label>תיאור מלא</label><textarea id="wk-description" rows="5" placeholder="פירוט המפגשים, מה לומדים, איך זה עובד..."></textarea></div>
+      <div class="form-group"><label>על המנחה (פסקה אישית קצרה — לבנות אמון)</label><textarea id="wk-about" rows="4" placeholder="הפקתי לאמנים כמו... 15 שנות ניסיון... מאמין שכל אחד יכול לכתוב שיר טוב..."></textarea></div>
       <div class="form-group"><label>מה תקבלו (שורה בכל בולט · אנטר בין הפריטים)</label><textarea id="wk-bullets" rows="5" placeholder="🎯 DNA של להיט&#10;✍️ מבנה שיר מ-0 ל-1&#10;🎹 התאמת מלודיה למילים&#10;🎚️ סשן הקלטה חי באולפן"></textarea></div>
       <div class="form-row">
         <div class="form-group"><label>מס' מפגשים</label><input type="number" id="wk-sessions" value="6" min="1"></div>
@@ -8056,6 +8057,7 @@ function openWorkshopEditor(id){
   document.getElementById('wk-emoji').value = w ? (w.emoji||'🎤') : '🎤';
   document.getElementById('wk-tagline').value = w ? (w.tagline||'') : '';
   document.getElementById('wk-description').value = w ? (w.description||'') : '';
+  document.getElementById('wk-about').value = w ? (w.about||'') : '';
   document.getElementById('wk-bullets').value = w ? (w.bullets||[]).join('\n') : '';
   document.getElementById('wk-sessions').value = w ? (w.sessions||6) : 6;
   document.getElementById('wk-seats').value = w ? (w.totalSeats||8) : 8;
@@ -8086,6 +8088,7 @@ function saveWorkshop(){
   w.emoji = (document.getElementById('wk-emoji').value || '🎤').trim();
   w.tagline = (document.getElementById('wk-tagline').value || '').trim();
   w.description = (document.getElementById('wk-description').value || '').trim();
+  w.about = (document.getElementById('wk-about').value || '').trim();
   w.bullets = bullets;
   w.sessions = parseInt(document.getElementById('wk-sessions').value, 10) || 6;
   w.totalSeats = parseInt(document.getElementById('wk-seats').value, 10) || 8;
