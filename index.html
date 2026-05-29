@@ -2269,11 +2269,14 @@
       background: rgba(0,0,0,0.18); border-radius: 8px; cursor: pointer;
     }
     .mini-player-thumb {
-      width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0;
-      background: linear-gradient(135deg,#e84393,#f97316);
+      width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg,#4a3624,#2a1d10);
+      border: 1px solid rgba(200,152,90,0.22);
+      box-shadow: inset 0 1px 0 rgba(255,220,170,0.08), 0 3px 8px rgba(0,0,0,0.35);
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px; overflow: hidden;
+      color: #e8b97a; overflow: hidden;
     }
+    .mini-player-thumb svg { width: 24px; height: 24px; display: block; }
     .mini-player-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .mini-player-info { flex: 1; min-width: 0; }
     .mini-player-title {
@@ -3712,7 +3715,7 @@
 <!-- ===== PERSISTENT MINI PLAYER ===== -->
 <div id="mini-player" class="mini-player">
   <div class="mini-player-row">
-    <div class="mini-player-thumb" id="mini-player-thumb">🎵</div>
+    <div class="mini-player-thumb" id="mini-player-thumb"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="8" width="2" height="8" rx="1"/><rect x="11" y="4" width="2" height="16" rx="1"/><rect x="15" y="7" width="2" height="10" rx="1"/><rect x="19" y="10" width="2" height="4" rx="1"/></svg></div>
     <div class="mini-player-info">
       <div class="mini-player-title" id="mini-player-title">—</div>
       <div class="mini-player-meta" id="mini-player-meta"></div>
@@ -3752,11 +3755,106 @@
   .dx-share-opt:hover { border-color:#c8985a; }
   .dx-share-opt span { font-size:12px; font-weight:500; color:#b3a690; line-height:1.45; }
   .dx-share-cancel { background:transparent; border:none; color:#b3a690; padding:11px; font-size:14px; font-weight:700; cursor:pointer; margin-top:4px; }
-  .dx-versions { display:flex; gap:6px; margin-top:7px; flex-wrap:wrap; }
-  .dx-v-btn { background:#1b1610; border:1.5px solid #4a3c2c; border-radius:8px; padding:4px 10px; font-size:11px; font-weight:900; color:#b3a690; cursor:pointer; -webkit-tap-highlight-color:transparent; font-family:'Heebo',sans-serif; transition:all .15s; }
-  .dx-v-btn:hover { border-color:#c8985a; color:#f2e9dc; }
-  .dx-v-btn:active { transform:scale(.92); }
-  .dx-v-btn.active { background:linear-gradient(135deg,#c8985a,#a06c48); border-color:#c8985a; color:#1b1610; }
+  /* ── Section header (studio feel) ── */
+  .sketch-section-title { font-size:28px; font-weight:900; color:#f7f0e6; letter-spacing:-0.025em; margin-bottom:4px; font-family:'Frank Ruhl Libre','Heebo',serif; }
+  .sketch-section-sub { font-size:13px; color:#8c7e6a; margin-bottom:22px; letter-spacing:0.02em; }
+  .sketch-singer-head { font-size:11px; font-weight:800; color:#c8985a; margin:22px 0 10px; letter-spacing:0.18em; text-transform:uppercase; }
+
+  /* ── Song row card ── */
+  .sketch-item {
+    display:flex; align-items:center; gap:14px;
+    background:linear-gradient(180deg,#2a2118 0%,#1c1610 100%);
+    border:1px solid rgba(200,152,90,0.08);
+    border-radius:18px;
+    padding:14px 16px; margin-bottom:10px;
+    cursor:pointer;
+    transition:border-color .25s, transform .15s, box-shadow .25s;
+    box-shadow:0 6px 18px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,220,170,0.04);
+    -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;
+  }
+  .sketch-item:hover { border-color:rgba(200,152,90,0.35); box-shadow:0 8px 24px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,220,170,0.06); }
+  .sketch-item:active { transform:scale(.99); }
+  .sketch-item.has-versions { border-color:rgba(200,152,90,0.22); }
+
+  /* ── Avatar: elegant EQ-bars icon in a warm frame ── */
+  .sketch-item-avatar {
+    width:48px; height:48px; border-radius:14px;
+    background:linear-gradient(135deg,#4a3624,#2a1d10);
+    border:1px solid rgba(200,152,90,0.2);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    box-shadow: inset 0 1px 0 rgba(255,220,170,0.08), 0 3px 8px rgba(0,0,0,0.35);
+    color:#e8b97a;
+  }
+  .sketch-item-avatar.versions {
+    background:linear-gradient(135deg,#5c4030,#3d2818);
+    border-color:rgba(200,152,90,0.4);
+    color:#f0c896;
+  }
+  .sketch-item-avatar svg { width:22px; height:22px; display:block; }
+
+  /* ── Title + meta ── */
+  .sketch-item-body { flex:1; min-width:0; }
+  .sketch-item-title { font-size:15.5px; font-weight:800; color:#f7f0e6; line-height:1.3; letter-spacing:-0.005em; }
+  .sketch-item-sub { font-size:11.5px; color:#7d715f; margin-top:5px; font-weight:600; letter-spacing:0.03em; }
+  .sketch-item-sub b { color:#c8985a; font-weight:800; }
+
+  /* ── Pencil (secondary action) ── */
+  .sketch-rename {
+    width:36px; height:36px;
+    background:transparent;
+    border:1px solid rgba(200,152,90,0.18);
+    border-radius:10px;
+    color:#8c7e6a; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; padding:0;
+    transition:all .15s;
+  }
+  .sketch-rename svg { width:15px; height:15px; display:block; }
+  .sketch-rename:hover { border-color:rgba(200,152,90,0.5); color:#e0b27a; }
+  .sketch-rename:active { transform:scale(.92); }
+
+  /* ── Play (primary action) ── */
+  .sketch-play {
+    width:44px; height:44px; border-radius:50%;
+    background:linear-gradient(135deg,#e8b97a,#a06c48);
+    color:#1b1610;
+    border:none; cursor:pointer; flex-shrink:0;
+    box-shadow: 0 5px 16px rgba(200,152,90,0.35), inset 0 1px 0 rgba(255,235,200,0.5);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .12s, box-shadow .25s;
+    padding:0;
+  }
+  .sketch-play svg { width:18px; height:18px; display:block; margin-right:-2px; }
+  .sketch-play:hover { box-shadow:0 7px 22px rgba(200,152,90,0.5), inset 0 1px 0 rgba(255,235,200,0.6); }
+  .sketch-play:active { transform:scale(.93); }
+
+  /* ── Version pills (V1 V2 V3) ── */
+  .dx-versions { display:flex; gap:7px; margin-top:11px; flex-wrap:wrap; }
+  .dx-v-btn {
+    background:transparent;
+    border:1px solid rgba(200,152,90,0.22);
+    border-radius:999px;
+    padding:5px 13px;
+    font-size:11px; font-weight:800;
+    color:#8c7e6a;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    font-family:'Heebo',sans-serif;
+    transition:all .15s;
+    letter-spacing:0.06em;
+  }
+  .dx-v-btn:hover { color:#e0b27a; border-color:rgba(200,152,90,0.5); }
+  .dx-v-btn:active { transform:scale(.93); }
+  .dx-v-btn.active {
+    background:linear-gradient(135deg,#e8b97a,#a06c48);
+    border-color:#c8985a;
+    color:#1b1610;
+    box-shadow:0 3px 10px rgba(200,152,90,0.35);
+  }
+
+  /* ── Misc (modals etc.) ── */
   .dx-rename-input { width:100%; background:#251e16; border:1.5px solid #4a3c2c; color:#f7f0e6; border-radius:11px; padding:13px 14px; font-size:15px; font-weight:700; font-family:'Heebo',sans-serif; outline:none; direction:rtl; box-sizing:border-box; }
   .dx-rename-input:focus { border-color:#c8985a; }
   .dx-target-list { display:flex; flex-direction:column; gap:6px; max-height:50vh; overflow-y:auto; padding:2px; }
@@ -3764,20 +3862,6 @@
   .dx-target-row:hover { border-color:#c8985a; }
   .dx-target-row.disabled { opacity:.4; cursor:default; pointer-events:none; }
   .dx-target-empty { text-align:center; color:#b3a690; padding:22px 10px; font-size:13px; line-height:1.6; }
-  .sketch-rename { width:32px; height:32px; background:transparent; border:1.5px solid #4a3c2c; border-radius:8px; color:#b3a690; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0; transition:all .15s; }
-  .sketch-rename:hover { border-color:#c8985a; color:#f2e9dc; }
-  .sketch-rename:active { transform:scale(.9); }
-  .sketch-section-title { font-size:24px; font-weight:900; color:#f7f0e6; letter-spacing:-0.02em; margin-bottom:6px; }
-  .sketch-section-sub { font-size:13px; color:#b3a690; margin-bottom:18px; }
-  .sketch-singer-head { font-size:12px; font-weight:800; color:#c8985a; margin:18px 0 8px; letter-spacing:0.08em; }
-  .sketch-item { display:flex; align-items:center; gap:12px; background:#251e16; border:1.5px solid #3a2f23; border-radius:14px; padding:12px 14px; margin-bottom:9px; cursor:pointer; transition:border-color .15s, transform .15s; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
-  .sketch-item:hover { border-color:#c8985a; }
-  .sketch-item:active { transform:scale(.99); }
-  .sketch-item-avatar { width:42px; height:42px; border-radius:11px; background:linear-gradient(135deg,#3a2818,#5c3a24); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; color:#c8985a; }
-  .sketch-item-body { flex:1; min-width:0; }
-  .sketch-item-title { font-size:15px; font-weight:800; color:#f7f0e6; line-height:1.3; }
-  .sketch-item-sub { font-size:12.5px; color:#b3a690; margin-top:3px; }
-  .sketch-play { width:38px; height:38px; border-radius:50%; background:#c8985a; color:#fff; border:none; cursor:pointer; font-size:15px; flex-shrink:0; box-shadow:0 3px 10px rgba(200,152,90,0.3); }
   .sketch-del { background:none; border:none; color:#7d715f; font-size:22px; cursor:pointer; padding:0 4px; line-height:1; flex-shrink:0; }
 </style>
 
@@ -8355,7 +8439,7 @@ function renderSketches(){
 
   if (!dropboxIsConnected()) {
     listEl.innerHTML =
-      '<div class="sketch-section-title">📦 הסקיצות שלך</div>' +
+      '<div class="sketch-section-title">הסקיצות שלך</div>' +
       '<div class="sketch-section-sub">חבר את Dropbox כדי לראות את כל הסקיצות מהתיקייה שלך</div>' +
       '<button class="proj-add-btn" onclick="dropboxConnect()" style="background:#0061ff">חבר Dropbox</button>' +
       '<div style="text-align:center;color:#b3a690;padding:18px 0;font-size:13px;line-height:1.7">חיבור חד-פעמי. נפתח עמוד הרשאות של Dropbox.<br>האפליקציה תקרא רק מהתיקייה שתבחר.</div>';
@@ -8366,7 +8450,7 @@ function renderSketches(){
   listEl.innerHTML =
     '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px">' +
       '<div style="flex:1;min-width:0">' +
-        '<div class="sketch-section-title">📦 הסקיצות שלך</div>' +
+        '<div class="sketch-section-title">הסקיצות שלך</div>' +
         '<div class="sketch-section-sub" style="margin-bottom:0">מסונכרן מ-Dropbox</div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-shrink:0;margin-top:6px">' +
@@ -8809,6 +8893,12 @@ function _zipWrap(name, bytes){
   let o = 0; out.set(lfh, o); o += lfh.length; out.set(bytes, o); o += sz; out.set(cdr, o); o += cdr.length; out.set(eocd, o);
   return out;
 }
+
+// ===== Sketch design tokens (inline SVGs replace emoji icons) =====
+const _DX_SVG_EQ = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="11" width="2" height="2" rx="1"/><rect x="7" y="8" width="2" height="8" rx="1"/><rect x="11" y="4" width="2" height="16" rx="1"/><rect x="15" y="7" width="2" height="10" rx="1"/><rect x="19" y="10" width="2" height="4" rx="1"/></svg>';
+const _DX_SVG_STACK = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="14" width="14" height="3" rx="1.5" fill="currentColor" opacity="0.35"/><rect x="5" y="9.5" width="14" height="3" rx="1.5" fill="currentColor" opacity="0.7"/><rect x="7" y="5" width="14" height="3" rx="1.5" fill="currentColor"/></svg>';
+const _DX_SVG_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+const _DX_SVG_PENCIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
 
 // ===== Sketch helpers: aliases + versions =====
 function _dxAlias(path){
@@ -9408,7 +9498,7 @@ async function playDropboxFile(path, name){
   _miniContext = { type:'dropbox', id: path, title: display, singer: '', ytId: null };
   document.getElementById('mini-player-title').textContent = display;
   document.getElementById('mini-player-meta').textContent = metaText;
-  document.getElementById('mini-player-thumb').innerHTML = group ? '🔀' : '📦';
+  document.getElementById('mini-player-thumb').innerHTML = group ? _DX_SVG_STACK : _DX_SVG_EQ;
   document.getElementById('mini-player').classList.add('active');
   _miniAudio.src = link;
   _setupMediaSession(display, 'Dropbox');
@@ -9484,18 +9574,23 @@ async function dxReload(){
       }).join('');
       versionsHtml = '<div class="dx-versions">' + buttons + '</div>';
     }
-    const subText = group && group.paths.length > 1
-      ? ('Dropbox · ' + group.paths.length + ' גרסאות · ✏️ שנה שם · לחיצה ארוכה לעוד')
-      : (isAliased ? 'Dropbox · ' + name : 'Dropbox · ✏️ שנה שם · לחיצה ארוכה לעוד');
-    return '<div class="sketch-item dx-row" data-path="' + p.replace(/"/g,'&quot;') + '" data-name="' + name.replace(/"/g,'&quot;') + '" onclick="playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')">' +
-      '<div class="sketch-item-avatar">' + (group ? '🔀' : '📦') + '</div>' +
+    // Subtitle stays minimal — no instructions cluttering the visual when
+    // showing the page to singers. Just the original filename (if renamed)
+    // or version count, so the producer still has the metadata.
+    let subText = '';
+    if (group && group.paths.length > 1) subText = '<b>' + group.paths.length + ' גרסאות</b>';
+    else if (isAliased) subText = name;
+    const avatarClass = 'sketch-item-avatar' + (group ? ' versions' : '');
+    const avatarSvg = group ? _DX_SVG_STACK : _DX_SVG_EQ;
+    return '<div class="sketch-item dx-row' + (group ? ' has-versions' : '') + '" data-path="' + p.replace(/"/g,'&quot;') + '" data-name="' + name.replace(/"/g,'&quot;') + '" onclick="playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')">' +
+      '<div class="' + avatarClass + '">' + avatarSvg + '</div>' +
       '<div class="sketch-item-body">' +
         '<div class="sketch-item-title">' + display.replace(/</g,'&lt;') + '</div>' +
-        '<div class="sketch-item-sub">' + subText + '</div>' +
+        (subText ? '<div class="sketch-item-sub">' + subText + '</div>' : '') +
         versionsHtml +
       '</div>' +
-      '<button class="sketch-rename" onclick="event.stopPropagation();dxRenameSong(\'' + safeP + '\',\'' + safeN + '\')" title="שנה שם" aria-label="שנה שם">✏️</button>' +
-      '<button class="sketch-play" onclick="event.stopPropagation();playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')" title="נגן">▶</button>' +
+      '<button class="sketch-rename" onclick="event.stopPropagation();dxRenameSong(\'' + safeP + '\',\'' + safeN + '\')" title="שנה שם" aria-label="שנה שם">' + _DX_SVG_PENCIL + '</button>' +
+      '<button class="sketch-play" onclick="event.stopPropagation();playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')" title="נגן" aria-label="נגן">' + _DX_SVG_PLAY + '</button>' +
       '</div>';
   }).join('');
   // long-press → action menu
