@@ -2705,6 +2705,62 @@
       .session-pill .sp-time { font-size: 9px; }
     }
 
+    /* ===== WORKSHOPS ===== */
+    .wk-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .wk-card.inactive { opacity: .55; }
+    .wk-card-head {
+      display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px;
+    }
+    .wk-card-emoji { font-size: 30px; line-height: 1; flex-shrink: 0; }
+    .wk-card-title { font-size: 18px; font-weight: 900; color: var(--text); line-height: 1.25; }
+    .wk-card-tagline { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+    .wk-card-meta {
+      display: flex; flex-wrap: wrap; gap: 6px 14px;
+      font-size: 13px; color: var(--text-muted); margin: 10px 0 14px;
+    }
+    .wk-card-meta b { color: var(--text); font-weight: 800; }
+    .wk-seats-row {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;
+    }
+    .wk-seats-label { font-size: 12px; color: var(--text-muted); font-weight: 700; }
+    .wk-seats-count { font-size: 20px; font-weight: 900; color: var(--accent); margin-right: auto; }
+    .wk-seats-btn {
+      width: 34px; height: 34px; border-radius: 9px;
+      border: 1.5px solid var(--border); background: var(--surface);
+      font-size: 18px; font-weight: 900; cursor: pointer; color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .wk-seats-btn:active { transform: scale(.92); }
+    .wk-seats-bar {
+      flex: 1; height: 6px; background: var(--surface);
+      border-radius: 3px; overflow: hidden;
+    }
+    .wk-seats-bar > div {
+      height: 100%; background: linear-gradient(90deg, #d4a574, #a06c48);
+      transition: width .3s;
+    }
+    .wk-card-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .wk-card-actions .btn { flex: 1; min-width: 110px; }
+    .wk-empty {
+      text-align: center; padding: 50px 20px; color: var(--text-muted);
+      background: var(--surface); border: 1.5px dashed var(--border);
+      border-radius: 16px;
+    }
+    .wk-empty-emoji { font-size: 48px; margin-bottom: 10px; }
+    .wk-empty-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+
   </style>
 <style>
   /* ===== LOGIN SCREEN ===== */
@@ -3040,6 +3096,7 @@
     <!-- כרטיסיית לקוחות מוסתרת לפי בקשה — להחזרה: מחק את style="display:none" -->
     <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon">👥</span> לקוחות</a>
     <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon">✅</span> משימות יומיות</a>
+    <a onclick="showPage('workshops')" data-page="workshops"><span class="nav-icon">🎓</span> סדנאות</a>
     <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
@@ -3535,6 +3592,45 @@
 
     <!-- רשימת היום -->
     <div id="daily-list"></div>
+  </div>
+
+  <!-- ===== WORKSHOPS ===== -->
+  <div class="page" id="page-workshops">
+    <div class="page-header">
+      <div><h2>🎓 סדנאות</h2><p>צור דף נחיתה לסדנא · קישור לשיתוף · ספירת מקומות חיה</p></div>
+      <button class="btn btn-primary" onclick="openWorkshopEditor(null)">+ סדנא חדשה</button>
+    </div>
+    <div id="workshops-list"></div>
+  </div>
+
+  <!-- ===== WORKSHOP EDITOR MODAL ===== -->
+  <div class="modal-overlay" id="modal-workshop">
+    <div class="modal" style="max-width:560px">
+      <h3 id="wk-modal-title">🎓 סדנא חדשה</h3>
+      <div class="form-group"><label>כותרת הסדנא *</label><input type="text" id="wk-title" placeholder="סדנת כתיבת שירים — אליאור רביד"></div>
+      <div class="form-row">
+        <div class="form-group"><label>אימוג'י</label><input type="text" id="wk-emoji" placeholder="🎤" maxlength="4" style="text-align:center;font-size:22px"></div>
+        <div class="form-group"><label>מחיר (₪) *</label><input type="number" id="wk-price" value="2200"></div>
+      </div>
+      <div class="form-group"><label>שורת תיאור קצרה (כותרת משנה)</label><input type="text" id="wk-tagline" placeholder="6 מפגשים · קבוצה אינטימית · להוציא את השיר שבך"></div>
+      <div class="form-group"><label>תיאור מלא</label><textarea id="wk-description" rows="5" placeholder="פירוט המפגשים, מה לומדים, איך זה עובד..."></textarea></div>
+      <div class="form-group"><label>מה תקבלו (שורה בכל בולט · אנטר בין הפריטים)</label><textarea id="wk-bullets" rows="5" placeholder="🎯 DNA של להיט&#10;✍️ מבנה שיר מ-0 ל-1&#10;🎹 התאמת מלודיה למילים&#10;🎚️ סשן הקלטה חי באולפן"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label>מס' מפגשים</label><input type="number" id="wk-sessions" value="6" min="1"></div>
+        <div class="form-group"><label>מקומות סה"כ</label><input type="number" id="wk-seats" value="8" min="1"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>תאריך התחלה</label><input type="date" id="wk-start-date"></div>
+        <div class="form-group"><label>יום + שעה</label><input type="text" id="wk-when" placeholder="ימי ראשון 19:00"></div>
+      </div>
+      <div class="form-group"><label>קישור Bit</label><input type="url" id="wk-bit" placeholder="https://www.bitpay.co.il/..."></div>
+      <div class="form-group"><label>קישור Grow Payments</label><input type="url" id="wk-grow" placeholder="https://meshulam.co.il/..."></div>
+      <div class="form-group"><label>טלפון/וואטסאפ ליצירת קשר</label><input type="tel" id="wk-contact" placeholder="050-0000000"></div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="saveWorkshop()">שמירה</button>
+        <button class="btn btn-ghost" onclick="closeModal('workshop')">ביטול</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== PROJECTS ===== -->
@@ -4116,7 +4212,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -4313,7 +4409,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, dashboard:5};
+  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, workshops:5, dashboard:6};
   if (name === 'daily') _dailyDate = dailyDateStr();
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
@@ -6957,6 +7053,7 @@ function refreshAll() {
   populateClientFilter();
   renderPendingBox();
   renderDaily();
+  renderWorkshops();
 }
 
 // ===== גיבוי ושחזור =====
@@ -7875,6 +7972,172 @@ function deleteManualProject(id){
 }
 
 function backToStudies(){ renderStudies(); window.scrollTo(0, 0); }
+
+// ===== WORKSHOPS (סדנאות) =====
+let _wkEditId = null;
+
+function wkPublicUrl(id){
+  const base = location.origin + location.pathname.replace(/[^/]+$/, '');
+  return base + 'workshop.html?id=' + encodeURIComponent(id);
+}
+
+function renderWorkshops(){
+  const el = document.getElementById('workshops-list');
+  if(!el) return;
+  const list = load('workshops') || [];
+  if(!list.length){
+    el.innerHTML = '<div class="wk-empty">' +
+      '<div class="wk-empty-emoji">🎓</div>' +
+      '<div class="wk-empty-title">אין סדנאות עדיין</div>' +
+      '<div>צור סדנא ראשונה — תקבל קישור פומבי לשיתוף.</div>' +
+      '</div>';
+    return;
+  }
+  // newest first
+  const sorted = list.slice().sort(function(a,b){ return (b.createdAt||0) - (a.createdAt||0); });
+  el.innerHTML = sorted.map(wkCard).join('');
+}
+
+function wkCard(w){
+  const taken = w.seatsTaken || 0;
+  const total = w.totalSeats || 0;
+  const free = Math.max(0, total - taken);
+  const pct = total ? Math.min(100, (taken / total) * 100) : 0;
+  const startDateFmt = w.startDate ? new Date(w.startDate).toLocaleDateString('he-IL', {day:'numeric', month:'short', year:'numeric'}) : '';
+  const meta = [];
+  if(w.sessions) meta.push('<span><b>' + w.sessions + '</b> מפגשים</span>');
+  if(w.when) meta.push('<span>' + w.when + '</span>');
+  if(startDateFmt) meta.push('<span>החל מ-<b>' + startDateFmt + '</b></span>');
+  if(w.price) meta.push('<span><b>' + fmtMoney(w.price) + '</b></span>');
+  return '<div class="wk-card' + (w.active === false ? ' inactive' : '') + '">' +
+    '<div class="wk-card-head">' +
+      '<div class="wk-card-emoji">' + (w.emoji || '🎓') + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="wk-card-title">' + escapeHtml(w.title || 'סדנא') + '</div>' +
+        (w.tagline ? '<div class="wk-card-tagline">' + escapeHtml(w.tagline) + '</div>' : '') +
+      '</div>' +
+    '</div>' +
+    (meta.length ? '<div class="wk-card-meta">' + meta.join('<span style="opacity:.4">·</span>') + '</div>' : '') +
+    '<div class="wk-seats-row">' +
+      '<button class="wk-seats-btn" onclick="wkSeats(\'' + w.id + '\',-1)" aria-label="הורד">−</button>' +
+      '<button class="wk-seats-btn" onclick="wkSeats(\'' + w.id + '\',1)" aria-label="הוסף">+</button>' +
+      '<div class="wk-seats-label">תפוס</div>' +
+      '<div class="wk-seats-count">' + taken + '/' + total + '</div>' +
+      '<div class="wk-seats-bar"><div style="width:' + pct + '%"></div></div>' +
+      '<div class="wk-seats-label">' + free + ' פנויים</div>' +
+    '</div>' +
+    '<div class="wk-card-actions">' +
+      '<button class="btn btn-ghost btn-sm" onclick="shareWorkshop(\'' + w.id + '\')">🔗 שתף קישור</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openWorkshopEditor(\'' + w.id + '\')">✏️ ערוך</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="toggleWorkshopActive(\'' + w.id + '\')">' + (w.active === false ? '👁 הצג שוב' : '🙈 השבת') + '</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="deleteWorkshop(\'' + w.id + '\')" style="color:#dc2626">🗑 מחק</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+  });
+}
+
+function openWorkshopEditor(id){
+  _wkEditId = id;
+  const w = id ? (load('workshops') || []).find(function(x){ return x.id === id; }) : null;
+  document.getElementById('wk-modal-title').textContent = w ? '✏️ עריכת סדנא' : '🎓 סדנא חדשה';
+  document.getElementById('wk-title').value = w ? (w.title||'') : '';
+  document.getElementById('wk-emoji').value = w ? (w.emoji||'🎤') : '🎤';
+  document.getElementById('wk-tagline').value = w ? (w.tagline||'') : '';
+  document.getElementById('wk-description').value = w ? (w.description||'') : '';
+  document.getElementById('wk-bullets').value = w ? (w.bullets||[]).join('\n') : '';
+  document.getElementById('wk-sessions').value = w ? (w.sessions||6) : 6;
+  document.getElementById('wk-seats').value = w ? (w.totalSeats||8) : 8;
+  document.getElementById('wk-start-date').value = w ? (w.startDate||'') : '';
+  document.getElementById('wk-when').value = w ? (w.when||'') : '';
+  document.getElementById('wk-price').value = w ? (w.price||2200) : 2200;
+  document.getElementById('wk-bit').value = w ? (w.bitLink||'') : '';
+  document.getElementById('wk-grow').value = w ? (w.growLink||'') : '';
+  document.getElementById('wk-contact').value = w ? (w.contact||'') : '';
+  document.getElementById('modal-workshop').classList.add('open');
+}
+
+function saveWorkshop(){
+  const title = (document.getElementById('wk-title').value || '').trim();
+  if(!title){ toast('צריך כותרת לסדנא'); return; }
+  const bulletsText = (document.getElementById('wk-bullets').value || '').trim();
+  const bullets = bulletsText ? bulletsText.split('\n').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+  const list = load('workshops') || [];
+  let w;
+  if(_wkEditId){
+    w = list.find(function(x){ return x.id === _wkEditId; });
+    if(!w){ toast('הסדנא לא נמצאה'); return; }
+  } else {
+    w = { id: 'wk_' + genId(), createdAt: Date.now(), seatsTaken: 0, active: true };
+    list.push(w);
+  }
+  w.title = title;
+  w.emoji = (document.getElementById('wk-emoji').value || '🎤').trim();
+  w.tagline = (document.getElementById('wk-tagline').value || '').trim();
+  w.description = (document.getElementById('wk-description').value || '').trim();
+  w.bullets = bullets;
+  w.sessions = parseInt(document.getElementById('wk-sessions').value, 10) || 6;
+  w.totalSeats = parseInt(document.getElementById('wk-seats').value, 10) || 8;
+  w.startDate = (document.getElementById('wk-start-date').value || '').trim();
+  w.when = (document.getElementById('wk-when').value || '').trim();
+  w.price = parseInt(document.getElementById('wk-price').value, 10) || 0;
+  w.bitLink = (document.getElementById('wk-bit').value || '').trim();
+  w.growLink = (document.getElementById('wk-grow').value || '').trim();
+  w.contact = (document.getElementById('wk-contact').value || '').trim();
+  save('workshops', list);
+  closeModal('workshop');
+  renderWorkshops();
+  toast('✅ נשמר');
+}
+
+function wkSeats(id, dir){
+  const list = load('workshops') || [];
+  const w = list.find(function(x){ return x.id === id; });
+  if(!w) return;
+  const t = (w.seatsTaken || 0) + dir;
+  if(t < 0) return;
+  if(t > (w.totalSeats || 0)){ toast('אין יותר מקומות'); return; }
+  w.seatsTaken = t;
+  save('workshops', list);
+  renderWorkshops();
+}
+
+function toggleWorkshopActive(id){
+  const list = load('workshops') || [];
+  const w = list.find(function(x){ return x.id === id; });
+  if(!w) return;
+  w.active = w.active === false ? true : false;
+  save('workshops', list);
+  renderWorkshops();
+}
+
+function deleteWorkshop(id){
+  if(!confirm('למחוק את הסדנא? פעולה זו לא ניתנת לביטול.')) return;
+  const list = (load('workshops') || []).filter(function(x){ return x.id !== id; });
+  save('workshops', list);
+  renderWorkshops();
+  toast('🗑 נמחק');
+}
+
+async function shareWorkshop(id){
+  const url = wkPublicUrl(id);
+  const w = (load('workshops') || []).find(function(x){ return x.id === id; });
+  const title = w ? w.title : 'סדנא';
+  if(navigator.share){
+    try { await navigator.share({ title: title, url: url }); return; }
+    catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('🔗 הקישור הועתק');
+  } catch(e){
+    prompt('הקישור:', url);
+  }
+}
 
 // ===== AUDIO LOCAL STORAGE (IndexedDB) =====
 const AudioDB = (() => {
