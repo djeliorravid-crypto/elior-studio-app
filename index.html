@@ -9023,32 +9023,105 @@ function dxSplitFromGroup(path){
   dxReload();
 }
 
+// ===== Version pre-load pool (for near-instant switching) =====
+let _dxVersionLinks = {};   // path → temp link (already fetched)
+let _dxVersionAudios = {};  // path → hidden <Audio> that pre-buffers the file
+
+function _dxCleanupVersionPool(){
+  Object.values(_dxVersionAudios).forEach(function(a){
+    try { a.pause(); a.removeAttribute('src'); a.load(); } catch(e){}
+  });
+  _dxVersionLinks = {};
+  _dxVersionAudios = {};
+}
+
+async function _dxPrepareVersionPool(activePath){
+  const group = _dxGroupOf(activePath);
+  if (!group || group.paths.length <= 1) { _dxCleanupVersionPool(); return; }
+  // Cleanup paths no longer in this group
+  Object.keys(_dxVersionAudios).forEach(function(p){
+    if (!group.paths.includes(p) || p === activePath) {
+      try { _dxVersionAudios[p].pause(); _dxVersionAudios[p].removeAttribute('src'); _dxVersionAudios[p].load(); } catch(e){}
+      delete _dxVersionAudios[p];
+      delete _dxVersionLinks[p];
+    }
+  });
+  // Fetch + pre-buffer non-active siblings in parallel
+  const tasks = group.paths
+    .filter(function(p){ return p !== activePath && !_dxVersionLinks[p]; })
+    .map(async function(p){
+      try {
+        const link = await _dxGetTempLink(p);
+        if (!link) return;
+        _dxVersionLinks[p] = link;
+        // Hidden Audio element to force browser-level HTTP caching
+        const a = new Audio();
+        a.crossOrigin = 'anonymous';
+        a.preload = 'auto';
+        a.muted = true;
+        a.src = link;
+        try { a.load(); } catch(e){}
+        _dxVersionAudios[p] = a;
+      } catch(e){}
+    });
+  await Promise.all(tasks);
+}
+
 // Switch to a different version mid-playback (or start fresh)
 async function dxSwitchVersion(path, name){
+  // No-op if already on this version
+  if (_miniContext && _miniContext.type === 'dropbox' && _miniContext.id === path) return;
   // If we're playing this group already, preserve currentTime
   const playing = _miniContext && _miniContext.type === 'dropbox';
   const oldGroup = playing ? _dxGroupOf(_miniContext.id) : null;
   const newGroup = _dxGroupOf(path);
   const sameGroup = playing && oldGroup && newGroup && oldGroup.id === newGroup.id;
   if (!sameGroup) { playDropboxFile(path, name); return; }
-  // Same group → seamless switch at currentTime
+  // Same group → near-instant switch
   const t = _miniAudio.currentTime || 0;
   const wasPlaying = !_miniAudio.paused;
-  toast('מחליף גרסה...');
-  const link = await _dxGetTempLink(path);
-  if (!link) { toast('לא ניתן לטעון את הגרסה'); return; }
+  const cachedLink = _dxVersionLinks[path];
+
+  // Update context + UI immediately (don't wait for audio)
   _miniContext.id = path;
   _miniContext.title = _dxDisplay(path, name);
   const titleEl = document.getElementById('mini-player-title');
   if (titleEl) titleEl.textContent = _miniContext.title;
+  const metaEl = document.getElementById('mini-player-meta');
+  if (metaEl) metaEl.textContent = 'Dropbox · גרסה ' + (newGroup.paths.indexOf(path) + 1) + '/' + newGroup.paths.length;
   _setupMediaSession(_miniContext.title, 'Dropbox');
+  // Re-render list to update active V button highlight
+  dxReload();
+
+  // Fast path: link + file already cached → ~30ms swap
+  if (cachedLink) {
+    _miniAudio.src = cachedLink;
+    if (wasPlaying) {
+      // Call play() synchronously in user-gesture context
+      const pr = _miniAudio.play();
+      if (pr && pr.catch) pr.catch(function(){});
+    }
+    const onMeta = function(){
+      _miniAudio.removeEventListener('loadedmetadata', onMeta);
+      try { _miniAudio.currentTime = Math.min(t, (_miniAudio.duration || t) - 0.05); } catch(e){}
+    };
+    _miniAudio.addEventListener('loadedmetadata', onMeta);
+    // Fire-and-forget — refresh pool (former active now becomes a sibling)
+    _dxPrepareVersionPool(path).catch(function(){});
+    return;
+  }
+
+  // Slow fallback (pool not ready yet — e.g. clicked V2 before V1 finished pre-loading)
+  const link = await _dxGetTempLink(path);
+  if (!link) { toast('לא ניתן לטעון את הגרסה'); return; }
   _miniAudio.src = link;
-  const onMeta = function(){
-    _miniAudio.removeEventListener('loadedmetadata', onMeta);
+  const onMeta2 = function(){
+    _miniAudio.removeEventListener('loadedmetadata', onMeta2);
     try { _miniAudio.currentTime = Math.min(t, (_miniAudio.duration || t) - 0.05); } catch(e){}
     if (wasPlaying) _miniAudio.play().catch(function(){});
   };
-  _miniAudio.addEventListener('loadedmetadata', onMeta);
+  _miniAudio.addEventListener('loadedmetadata', onMeta2);
+  _dxPrepareVersionPool(path).catch(function(){});
 }
 
 async function _dxShareAudio(path, name){
@@ -9282,6 +9355,11 @@ async function _dxGetTempLink(path){
 }
 
 async function playDropboxFile(path, name){
+  // If already playing this exact track, just resume
+  if (_miniContext && _miniContext.id === path && _miniAudio.src) {
+    if (_miniAudio.paused) _miniAudio.play().catch(function(){});
+    return;
+  }
   toast('טוען מ-Dropbox...');
   const link = await _dxGetTempLink(path);
   if (!link) { toast('לא ניתן לטעון את הקובץ'); return; }
@@ -9297,6 +9375,13 @@ async function playDropboxFile(path, name){
   _setupMediaSession(display, 'Dropbox');
   _miniAudio.play();
   _miniStartWave();
+  // Pre-load other versions in background for near-instant switching.
+  // Cleanup any pool that belonged to a different group.
+  if (group && group.paths.length > 1) {
+    _dxPrepareVersionPool(path).catch(function(){});
+  } else {
+    _dxCleanupVersionPool();
+  }
 }
 
 function dxApplyPath(){
