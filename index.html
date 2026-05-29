@@ -3764,6 +3764,9 @@
   .dx-target-row:hover { border-color:#c8985a; }
   .dx-target-row.disabled { opacity:.4; cursor:default; pointer-events:none; }
   .dx-target-empty { text-align:center; color:#b3a690; padding:22px 10px; font-size:13px; line-height:1.6; }
+  .sketch-rename { width:32px; height:32px; background:transparent; border:1.5px solid #4a3c2c; border-radius:8px; color:#b3a690; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0; transition:all .15s; }
+  .sketch-rename:hover { border-color:#c8985a; color:#f2e9dc; }
+  .sketch-rename:active { transform:scale(.9); }
   .sketch-section-title { font-size:24px; font-weight:900; color:#f7f0e6; letter-spacing:-0.02em; margin-bottom:6px; }
   .sketch-section-sub { font-size:13px; color:#b3a690; margin-bottom:18px; }
   .sketch-singer-head { font-size:12px; font-weight:800; color:#c8985a; margin:18px 0 8px; letter-spacing:0.08em; }
@@ -8840,6 +8843,20 @@ function _dxRemoveGroup(id){
   save('sketch_versions', v);
 }
 
+// Suppress the synthetic click that fires when a finger lifts after a long-press.
+// Without this, the menu appearing under the finger immediately gets a click on
+// whichever button is at that position. We block both touchend and click for the
+// first 400ms after the sheet opens.
+function _dxArmSheet(m){
+  const openTs = Date.now();
+  const guard = function(e){
+    if (Date.now() - openTs < 400) { e.preventDefault(); e.stopPropagation(); }
+  };
+  m.addEventListener('touchend', guard, {passive:false, capture:true});
+  m.addEventListener('click', guard, {capture:true});
+  return function isArmed(){ return Date.now() - openTs >= 400; };
+}
+
 // Open action menu for a Dropbox song (long-press → here)
 function dxItemMenu(path, name){
   const display = _dxDisplay(path, name);
@@ -8853,10 +8870,6 @@ function dxItemMenu(path, name){
     '<div class="dx-share-sheet">' +
       '<div class="dx-share-title">' + display.replace(/</g,'&lt;') + '</div>' +
       '<button class="dx-share-opt" data-mode="play" data-path="' + safeP + '" data-name="' + safeN + '">▶ נגן</button>' +
-      '<button class="dx-share-opt" data-mode="rename" data-path="' + safeP + '" data-name="' + safeN + '">' +
-        '✏️ שנה שם' +
-        '<span>שינוי השם רק באפליקציה — הקובץ ב-Dropbox לא משתנה</span>' +
-      '</button>' +
       '<button class="dx-share-opt" data-mode="version" data-path="' + safeP + '" data-name="' + safeN + '">' +
         '🔀 הפוך לגרסה של…' +
         '<span>לקבץ עם שיר אחר כ-V2/V3. אפשר להחליף ביניהם מיד תוך כדי נגינה.</span>' +
@@ -8865,6 +8878,8 @@ function dxItemMenu(path, name){
       (inGroup ? '<button class="dx-share-opt" data-mode="split" data-path="' + safeP + '" data-name="' + safeN + '" style="color:#e08a8a">🚪 הפרד מהקבוצה</button>' : '') +
       '<button class="dx-share-cancel">ביטול</button>' +
     '</div>';
+  document.body.appendChild(m);
+  _dxArmSheet(m);
   m.addEventListener('click', function(e){
     if (e.target === m || e.target.classList.contains('dx-share-cancel')) { m.remove(); return; }
     const btn = e.target.closest('.dx-share-opt');
@@ -8873,12 +8888,10 @@ function dxItemMenu(path, name){
     const p = btn.dataset.path, n = btn.dataset.name;
     m.remove();
     if (mode === 'play') playDropboxFile(p, n);
-    else if (mode === 'rename') dxRenameSong(p, n);
     else if (mode === 'version') dxMergeAsVersion(p, n);
     else if (mode === 'share') shareDropboxFile(p, n);
     else if (mode === 'split') dxSplitFromGroup(p);
   });
-  document.body.appendChild(m);
 }
 
 function shareDropboxFile(path, name){
@@ -8899,6 +8912,8 @@ function shareDropboxFile(path, name){
       '</button>' +
       '<button class="dx-share-cancel">ביטול</button>' +
     '</div>';
+  document.body.appendChild(m);
+  _dxArmSheet(m);
   m.addEventListener('click', function(e){
     if (e.target === m || e.target.classList.contains('dx-share-cancel')) { m.remove(); return; }
     const btn = e.target.closest('.dx-share-opt');
@@ -8909,7 +8924,6 @@ function shareDropboxFile(path, name){
     if (mode === 'audio') _dxShareAudio(p, n);
     else if (mode === 'doc') _dxShareDoc(p, n);
   });
-  document.body.appendChild(m);
 }
 
 // Rename a song (alias-only — does NOT touch Dropbox)
@@ -8925,21 +8939,26 @@ function dxRenameSong(path, origName){
       '<button class="dx-share-opt" id="_dxRenameSave" style="justify-content:center;text-align:center;background:linear-gradient(135deg,#c8985a,#a06c48);color:#1b1610;border-color:#c8985a">שמור</button>' +
       '<button class="dx-share-cancel">ביטול</button>' +
     '</div>';
+  document.body.appendChild(m);
+  _dxArmSheet(m);
+  const doSave = function(){
+    const v = (m.querySelector('#_dxRenameInp').value || '').trim();
+    _dxSaveAlias(path, v);
+    m.remove();
+    dxReload();
+    toast(v ? '✅ השם עודכן' : '✅ השם המקורי הוחזר');
+  };
   m.addEventListener('click', function(e){
     if (e.target === m || e.target.classList.contains('dx-share-cancel')) { m.remove(); return; }
-    if (e.target.id === '_dxRenameSave' || e.target.closest('#_dxRenameSave')) {
-      const v = (m.querySelector('#_dxRenameInp').value || '').trim();
-      _dxSaveAlias(path, v);
-      m.remove();
-      dxReload();
-      toast(v ? '✅ השם עודכן' : '✅ השם המקורי הוחזר');
-    }
+    if (e.target.id === '_dxRenameSave' || e.target.closest('#_dxRenameSave')) doSave();
   });
-  document.body.appendChild(m);
+  // Submit on Enter
+  m.addEventListener('keydown', function(e){ if (e.key === 'Enter') doSave(); });
+  // Pre-fill + focus (slightly after 400ms guard so iOS opens the keyboard)
   setTimeout(function(){
     const inp = m.querySelector('#_dxRenameInp');
     if (inp) { inp.value = current; inp.focus(); inp.select(); }
-  }, 30);
+  }, 420);
 }
 
 // Pick a target song to merge this one into as another version
@@ -8976,6 +8995,8 @@ async function dxMergeAsVersion(path, name){
   }
   inner += '<button class="dx-share-cancel">ביטול</button></div>';
   m.innerHTML = inner;
+  document.body.appendChild(m);
+  _dxArmSheet(m);
   m.addEventListener('click', function(e){
     if (e.target === m || e.target.classList.contains('dx-share-cancel')) { m.remove(); return; }
     const btn = e.target.closest('.dx-target-row');
@@ -8986,7 +9007,6 @@ async function dxMergeAsVersion(path, name){
     toast('🔀 קובץ נוסף כגרסה');
     dxReload();
   });
-  document.body.appendChild(m);
 }
 
 // Merge sourcePath as a new version of targetPath
@@ -9446,8 +9466,8 @@ async function dxReload(){
       versionsHtml = '<div class="dx-versions">' + buttons + '</div>';
     }
     const subText = group && group.paths.length > 1
-      ? ('Dropbox · ' + group.paths.length + ' גרסאות · לחיצה ארוכה לתפריט')
-      : (isAliased ? 'Dropbox · ' + name + ' · לחיצה ארוכה לתפריט' : 'Dropbox · לחיצה ארוכה לתפריט');
+      ? ('Dropbox · ' + group.paths.length + ' גרסאות · ✏️ שנה שם · לחיצה ארוכה לעוד')
+      : (isAliased ? 'Dropbox · ' + name : 'Dropbox · ✏️ שנה שם · לחיצה ארוכה לעוד');
     return '<div class="sketch-item dx-row" data-path="' + p.replace(/"/g,'&quot;') + '" data-name="' + name.replace(/"/g,'&quot;') + '" onclick="playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')">' +
       '<div class="sketch-item-avatar">' + (group ? '🔀' : '📦') + '</div>' +
       '<div class="sketch-item-body">' +
@@ -9455,6 +9475,7 @@ async function dxReload(){
         '<div class="sketch-item-sub">' + subText + '</div>' +
         versionsHtml +
       '</div>' +
+      '<button class="sketch-rename" onclick="event.stopPropagation();dxRenameSong(\'' + safeP + '\',\'' + safeN + '\')" title="שנה שם" aria-label="שנה שם">✏️</button>' +
       '<button class="sketch-play" onclick="event.stopPropagation();playDropboxFile(\'' + safeP + '\',\'' + safeN + '\')" title="נגן">▶</button>' +
       '</div>';
   }).join('');
