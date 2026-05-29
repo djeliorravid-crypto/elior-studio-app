@@ -8756,23 +8756,79 @@ function uploadMusicAudio(event, type, id) {
 }
 
 // ===== MINI PERSISTENT PLAYER =====
-const _miniAudio = new Audio();
-_miniAudio.crossOrigin = 'anonymous'; // needed for Web Audio analyser on cross-origin (e.g. Dropbox) sources
-let _miniContext = null; // {type, id, title, singer, thumbUrl}
-
-_miniAudio.addEventListener('timeupdate', () => {
-  const cur = _miniAudio.currentTime || 0;
-  const dur = _miniAudio.duration || 0;
-  const tEl = document.getElementById('mini-time');
-  const pEl = document.getElementById('mini-progress');
-  if (tEl) tEl.textContent = `${fmtAudioTime(cur)} / ${fmtAudioTime(dur)}`;
-  if (pEl && dur) pEl.value = (cur/dur)*100;
-});
+// `_miniAudio` is the currently active audio element. It's `let` (not const)
+// because during version-group playback we keep N audios alive at once
+// (one per version, all sync-playing, all muted except the active one), and
+// switching V1↔V2 just swaps which one is unmuted — zero src reload, zero
+// loadedmetadata wait, instant like Samply.
 const _PLAY_SVG  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
 const _PAUSE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/></svg>';
-_miniAudio.addEventListener('play',  () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = _PAUSE_SVG; _refreshSketchPlayBtn(); _miniStartWave(); });
-_miniAudio.addEventListener('pause', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = _PLAY_SVG; _refreshSketchPlayBtn(); });
-_miniAudio.addEventListener('ended', () => { const b = document.getElementById('mini-btn-play'); if (b) b.innerHTML = _PLAY_SVG; _refreshSketchPlayBtn(); });
+
+let _miniAudio = new Audio();
+_miniAudio.crossOrigin = 'anonymous';
+let _miniContext = null; // {type, id, title, singer, thumbUrl}
+let _dxAudioPool = null; // {groupId, audios: Map<path → HTMLAudioElement>}
+
+// Same listeners are attached to every Audio we ever create (main + pool members).
+// All UI / sync logic gates on `this !== _miniAudio` so muted pool members
+// don't fight the active one for control of the mini-player UI.
+function _attachMiniHandlers(audio){
+  audio.addEventListener('timeupdate', function(){
+    if (this !== _miniAudio) return;
+    const cur = this.currentTime || 0;
+    const dur = this.duration || 0;
+    const tEl = document.getElementById('mini-time');
+    const pEl = document.getElementById('mini-progress');
+    if (tEl) tEl.textContent = fmtAudioTime(cur) + ' / ' + fmtAudioTime(dur);
+    if (pEl && dur) pEl.value = (cur/dur)*100;
+  });
+  audio.addEventListener('play', function(){
+    if (this !== _miniAudio) return;
+    const b = document.getElementById('mini-btn-play');
+    if (b) b.innerHTML = _PAUSE_SVG;
+    _refreshSketchPlayBtn();
+    _miniStartWave();
+    // Sync + resume any muted pool members so they stay drift-free
+    if (_dxAudioPool) {
+      const t = _miniAudio.currentTime;
+      _dxAudioPool.audios.forEach(function(a){
+        if (a === _miniAudio) return;
+        try { a.currentTime = t; } catch(e){}
+        if (a.paused) { const pr = a.play(); if (pr && pr.catch) pr.catch(function(){}); }
+      });
+    }
+  });
+  audio.addEventListener('pause', function(){
+    if (this !== _miniAudio) return;
+    const b = document.getElementById('mini-btn-play');
+    if (b) b.innerHTML = _PLAY_SVG;
+    _refreshSketchPlayBtn();
+    // Pause pool members too so they don't run while playback is paused
+    if (_dxAudioPool) {
+      _dxAudioPool.audios.forEach(function(a){
+        if (a !== _miniAudio && !a.paused) a.pause();
+      });
+    }
+  });
+  audio.addEventListener('ended', function(){
+    if (this !== _miniAudio) return;
+    const b = document.getElementById('mini-btn-play');
+    if (b) b.innerHTML = _PLAY_SVG;
+    _refreshSketchPlayBtn();
+  });
+  audio.addEventListener('seeked', function(){
+    if (this !== _miniAudio) return;
+    // User scrubbed — sync pool members to keep them ready for instant switch
+    if (_dxAudioPool) {
+      const t = _miniAudio.currentTime;
+      _dxAudioPool.audios.forEach(function(a){
+        if (a === _miniAudio) return;
+        try { a.currentTime = t; } catch(e){}
+      });
+    }
+  });
+}
+_attachMiniHandlers(_miniAudio);
 
 function _refreshSketchPlayBtn() {
   if (!_miniContext) return;
@@ -9155,57 +9211,133 @@ async function _dxGetTempLinkCached(path){
 }
 
 function _dxCleanupVersionPool(){
+  // Destroy every pool member EXCEPT the currently active _miniAudio
+  // (which we keep alive — it might be playing the song the user is hearing)
+  if (_dxAudioPool) {
+    _dxAudioPool.audios.forEach(function(a){
+      if (a === _miniAudio) return;
+      try { a.pause(); a.muted = true; a.removeAttribute('src'); a.load(); } catch(e){}
+    });
+    _dxAudioPool = null;
+  }
   Object.values(_dxVersionBlobUrls).forEach(function(url){
     try { URL.revokeObjectURL(url); } catch(e){}
   });
   _dxVersionBlobUrls = {};
 }
 
+// Adds one sibling audio to the active pool, fully downloaded into a blob URL
+// and sync-playing (muted) so a future switch to it is instant.
+async function _dxAddPoolAudio(p){
+  try {
+    if (!_dxAudioPool) return;
+    if (_dxAudioPool.audios.has(p)) return;
+    // Get the blob URL (either cached or fetched fresh)
+    let blobUrl = _dxVersionBlobUrls[p];
+    if (!blobUrl) {
+      const link = await _dxGetTempLinkCached(p);
+      if (!link) return;
+      _dxVersionLinks[p] = link;
+      const res = await fetch(link);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      blobUrl = URL.createObjectURL(blob);
+      _dxVersionBlobUrls[p] = blobUrl;
+    }
+    if (!_dxAudioPool) return; // group changed while we were fetching
+    const a = new Audio();
+    a.crossOrigin = 'anonymous';
+    a.preload = 'auto';
+    a.muted = true;
+    a.src = blobUrl;
+    _attachMiniHandlers(a);
+    // Once it knows its duration, sync it to where _miniAudio is now and
+    // start playing it silently. From here it tracks the active audio
+    // (via the play/pause/seeked handlers above) so switching is instant.
+    await new Promise(function(resolve){
+      let done = false;
+      const finish = function(){ if (done) return; done = true; resolve(); };
+      const onMeta = function(){
+        a.removeEventListener('loadedmetadata', onMeta);
+        try { a.currentTime = _miniAudio.currentTime || 0; } catch(e){}
+        if (!_miniAudio.paused) {
+          const pr = a.play();
+          if (pr && pr.catch) pr.catch(function(){});
+        }
+        finish();
+      };
+      a.addEventListener('loadedmetadata', onMeta);
+      setTimeout(finish, 6000); // safety
+    });
+    if (_dxAudioPool) _dxAudioPool.audios.set(p, a);
+    else { try { a.pause(); a.removeAttribute('src'); a.load(); } catch(e){} }
+  } catch(e){}
+}
+
 async function _dxPrepareVersionPool(activePath){
   const group = _dxGroupOf(activePath);
   if (!group || group.paths.length <= 1) { _dxCleanupVersionPool(); return; }
-  // Drop blobs for paths no longer in this group
-  Object.keys(_dxVersionBlobUrls).forEach(function(p){
-    if (!group.paths.includes(p)) {
-      try { URL.revokeObjectURL(_dxVersionBlobUrls[p]); } catch(e){}
-      delete _dxVersionBlobUrls[p];
-    }
-  });
-  // Fetch full audio bytes for non-active siblings, in parallel
-  const tasks = group.paths
-    .filter(function(p){ return p !== activePath && !_dxVersionBlobUrls[p]; })
-    .map(async function(p){
-      try {
-        const link = await _dxGetTempLinkCached(p);
-        if (!link) return;
-        _dxVersionLinks[p] = link;
-        const res = await fetch(link);
-        if (!res.ok) return;
-        const blob = await res.blob();
-        _dxVersionBlobUrls[p] = URL.createObjectURL(blob);
-      } catch(e){}
-    });
-  await Promise.all(tasks);
+  // Same group as already pooled? Just make sure every sibling has an audio.
+  if (_dxAudioPool && _dxAudioPool.groupId === group.id) {
+    if (!_dxAudioPool.audios.has(activePath)) _dxAudioPool.audios.set(activePath, _miniAudio);
+    await Promise.all(group.paths.filter(function(p){ return !_dxAudioPool.audios.has(p); })
+                                  .map(_dxAddPoolAudio));
+    return;
+  }
+  // Different group — tear down old, start fresh
+  _dxCleanupVersionPool();
+  _dxAudioPool = { groupId: group.id, audios: new Map() };
+  _dxAudioPool.audios.set(activePath, _miniAudio);
+  await Promise.all(group.paths.filter(function(p){ return p !== activePath; })
+                                .map(_dxAddPoolAudio));
 }
 
-// Switch to a different version mid-playback (or start fresh)
+// Switch to a different version mid-playback (or start fresh).
+// When the pool is ready, this is a true zero-latency swap: the target
+// audio is already sync-playing muted; we mute the active and unmute
+// the target. No src reload, no loadedmetadata wait, no decode delay.
 async function dxSwitchVersion(path, name){
-  // No-op if already on this version
   if (_miniContext && _miniContext.type === 'dropbox' && _miniContext.id === path) return;
-  // If we're playing this group already, preserve currentTime
   const playing = _miniContext && _miniContext.type === 'dropbox';
   const oldGroup = playing ? _dxGroupOf(_miniContext.id) : null;
   const newGroup = _dxGroupOf(path);
   const sameGroup = playing && oldGroup && newGroup && oldGroup.id === newGroup.id;
   if (!sameGroup) { playDropboxFile(path, name); return; }
-  // Same group → near-instant switch
+
+  // FAST PATH — instant pool swap
+  if (_dxAudioPool && _dxAudioPool.groupId === newGroup.id && _dxAudioPool.audios.has(path)) {
+    const newAudio = _dxAudioPool.audios.get(path);
+    const oldAudio = _miniAudio;
+    if (newAudio !== oldAudio) {
+      // Tiny drift correction — keep the new audio exactly where the old one is
+      try { newAudio.currentTime = oldAudio.currentTime; } catch(e){}
+      // Make sure new is playing (it should already be, but covers iOS edge cases)
+      if (newAudio.paused && !oldAudio.paused) {
+        const pr = newAudio.play();
+        if (pr && pr.catch) pr.catch(function(){});
+      }
+      // *** The actual switch — pure mute/unmute, no decode latency ***
+      newAudio.muted = false;
+      oldAudio.muted = true;
+      _miniAudio = newAudio;
+    }
+    _miniContext.id = path;
+    _miniContext.title = _dxDisplay(path, name);
+    const titleEl = document.getElementById('mini-player-title');
+    if (titleEl) titleEl.textContent = _miniContext.title;
+    const metaEl = document.getElementById('mini-player-meta');
+    if (metaEl) metaEl.textContent = 'Dropbox · גרסה ' + (newGroup.paths.indexOf(path) + 1) + '/' + newGroup.paths.length;
+    _setupMediaSession(_miniContext.title, 'Dropbox');
+    dxReload();
+    return;
+  }
+
+  // SLOW FALLBACK — pool hasn't warmed up yet (user clicked V2 before its
+  // blob finished downloading). Do a src swap on the active audio.
   const t = _miniAudio.currentTime || 0;
   const wasPlaying = !_miniAudio.paused;
-  const oldPath = _miniContext.id;
   const blobUrl = _dxVersionBlobUrls[path];
   const cachedLink = _dxVersionLinks[path];
-
-  // Update context + UI immediately (don't wait for audio)
   _miniContext.id = path;
   _miniContext.title = _dxDisplay(path, name);
   const titleEl = document.getElementById('mini-player-title');
@@ -9213,28 +9345,18 @@ async function dxSwitchVersion(path, name){
   const metaEl = document.getElementById('mini-player-meta');
   if (metaEl) metaEl.textContent = 'Dropbox · גרסה ' + (newGroup.paths.indexOf(path) + 1) + '/' + newGroup.paths.length;
   _setupMediaSession(_miniContext.title, 'Dropbox');
-  // Re-render list to update active V button highlight
   dxReload();
-
-  // Fastest path: blob URL → bytes are in RAM, loadedmetadata fires ~10-30ms
   if (blobUrl || cachedLink) {
-    const source = blobUrl || cachedLink;
-    // Seek before play to avoid the brief "blip from 0" you'd otherwise hear.
-    // The src swap pauses the element; we set currentTime once metadata is
-    // available, then resume play() within the user-gesture window.
-    _miniAudio.src = source;
+    _miniAudio.src = blobUrl || cachedLink;
     const onMeta = function(){
       _miniAudio.removeEventListener('loadedmetadata', onMeta);
       try { _miniAudio.currentTime = Math.min(t, (_miniAudio.duration || t) - 0.05); } catch(e){}
       if (wasPlaying) _miniAudio.play().catch(function(){});
     };
     _miniAudio.addEventListener('loadedmetadata', onMeta);
-    // Refresh pool — the version we just left now becomes a "sibling" to pre-buffer
     _dxPrepareVersionPool(path).catch(function(){});
     return;
   }
-
-  // Slow fallback (pool wasn't ready — e.g. clicked V2 before V1's siblings finished loading)
   const link = await _dxGetTempLinkCached(path);
   if (!link) { toast('לא ניתן לטעון את הגרסה'); return; }
   _miniAudio.src = link;
@@ -9336,8 +9458,10 @@ function miniSeek(pct) {
   if (_miniAudio.duration) _miniAudio.currentTime = (pct/100) * _miniAudio.duration;
 }
 function miniPlayerClose() {
+  _dxCleanupVersionPool();
   _miniAudio.pause();
   _miniAudio.src = '';
+  _miniAudio.muted = false;
   document.getElementById('mini-player').classList.remove('active');
   _miniContext = null;
 }
@@ -9478,12 +9602,24 @@ async function _dxGetTempLink(path){
 }
 
 async function playDropboxFile(path, name){
-  // If already playing this exact track, just resume
+  // Already playing this exact track? Just resume.
   if (_miniContext && _miniContext.id === path && _miniAudio.src) {
     if (_miniAudio.paused) _miniAudio.play().catch(function(){});
     return;
   }
-  // Reuse a cached blob (if we already pre-fetched this path as a sibling) or temp link
+  // Same group — route through the instant-swap path
+  if (_miniContext && _miniContext.type === 'dropbox') {
+    const oldGroup = _dxGroupOf(_miniContext.id);
+    const newGroup = _dxGroupOf(path);
+    if (oldGroup && newGroup && oldGroup.id === newGroup.id) {
+      dxSwitchVersion(path, name);
+      return;
+    }
+  }
+  // Different song (different group, or no group) — tear down any pool we had
+  _dxCleanupVersionPool();
+  // _miniAudio may have been left muted from a previous in-group swap — restore it
+  _miniAudio.muted = false;
   const cachedBlob = _dxVersionBlobUrls[path];
   const cachedLink = !cachedBlob ? (_dxLinkCache[path] && (Date.now() - _dxLinkCache[path].ts) < 3*3600*1000 ? _dxLinkCache[path].link : null) : null;
   let link = cachedBlob || cachedLink;
@@ -9504,12 +9640,9 @@ async function playDropboxFile(path, name){
   _setupMediaSession(display, 'Dropbox');
   _miniAudio.play();
   _miniStartWave();
-  // Pre-load other versions in background for near-instant switching.
-  // Cleanup any pool that belonged to a different group.
+  // Spin up the pool so siblings are ready for instant switching
   if (group && group.paths.length > 1) {
     _dxPrepareVersionPool(path).catch(function(){});
-  } else {
-    _dxCleanupVersionPool();
   }
 }
 
@@ -9562,14 +9695,18 @@ async function dxReload(){
     const safeP = p.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const safeN = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const isAliased = !!_dxAlias(p);
-    // Build version buttons row (if part of a group)
+    // Build version buttons row (if part of a group).
+    // The "active" V (gold-filled) follows the currently playing version,
+    // not just the group's primary — so the gold moves with playback.
     let versionsHtml = '';
     if (group && group.paths.length > 1) {
+      const playingFromThisGroup = _miniContext && _miniContext.type === 'dropbox' && group.paths.includes(_miniContext.id);
+      const activeVer = playingFromThisGroup ? _miniContext.id : p;
       const buttons = group.paths.map(function(vp, i){
         const vn = nameByPath[vp] || vp.split('/').pop();
         const vSafeP = vp.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         const vSafeN = vn.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        const isActive = vp === p;
+        const isActive = vp === activeVer;
         return '<button class="dx-v-btn' + (isActive ? ' active' : '') + '" onclick="event.stopPropagation();dxSwitchVersion(\'' + vSafeP + '\',\'' + vSafeN + '\')" title="' + vn.replace(/"/g,'&quot;') + '">V' + (i+1) + '</button>';
       }).join('');
       versionsHtml = '<div class="dx-versions">' + buttons + '</div>';
