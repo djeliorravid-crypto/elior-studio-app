@@ -8788,27 +8788,12 @@ function _attachMiniHandlers(audio){
     if (b) b.innerHTML = _PAUSE_SVG;
     _refreshSketchPlayBtn();
     _miniStartWave();
-    // Sync + resume any muted pool members so they stay drift-free
-    if (_dxAudioPool) {
-      const t = _miniAudio.currentTime;
-      _dxAudioPool.audios.forEach(function(a){
-        if (a === _miniAudio) return;
-        try { a.currentTime = t; } catch(e){}
-        if (a.paused) { const pr = a.play(); if (pr && pr.catch) pr.catch(function(){}); }
-      });
-    }
   });
   audio.addEventListener('pause', function(){
     if (this !== _miniAudio) return;
     const b = document.getElementById('mini-btn-play');
     if (b) b.innerHTML = _PLAY_SVG;
     _refreshSketchPlayBtn();
-    // Pause pool members too so they don't run while playback is paused
-    if (_dxAudioPool) {
-      _dxAudioPool.audios.forEach(function(a){
-        if (a !== _miniAudio && !a.paused) a.pause();
-      });
-    }
   });
   audio.addEventListener('ended', function(){
     if (this !== _miniAudio) return;
@@ -9248,29 +9233,27 @@ async function _dxAddPoolAudio(p){
     const a = new Audio();
     a.crossOrigin = 'anonymous';
     a.preload = 'auto';
-    a.muted = true;
     a.src = blobUrl;
     _attachMiniHandlers(a);
-    // Once it knows its duration, sync it to where _miniAudio is now and
-    // start playing it silently. From here it tracks the active audio
-    // (via the play/pause/seeked handlers above) so switching is instant.
+    // Load the file (decoded into the element's internal buffer) and align
+    // its position with the active audio. We do NOT keep it playing in the
+    // background — iOS doesn't reliably switch a muted-then-unmuted audio
+    // to producing sound mid-playback. Instead the switch path calls play()
+    // explicitly. Since the file is fully buffered and decoded, that play()
+    // resumes near-instantly with no loadedmetadata wait.
     await new Promise(function(resolve){
       let done = false;
       const finish = function(){ if (done) return; done = true; resolve(); };
       const onMeta = function(){
         a.removeEventListener('loadedmetadata', onMeta);
         try { a.currentTime = _miniAudio.currentTime || 0; } catch(e){}
-        if (!_miniAudio.paused) {
-          const pr = a.play();
-          if (pr && pr.catch) pr.catch(function(){});
-        }
         finish();
       };
       a.addEventListener('loadedmetadata', onMeta);
       setTimeout(finish, 6000); // safety
     });
     if (_dxAudioPool) _dxAudioPool.audios.set(p, a);
-    else { try { a.pause(); a.removeAttribute('src'); a.load(); } catch(e){} }
+    else { try { a.removeAttribute('src'); a.load(); } catch(e){} }
   } catch(e){}
 }
 
@@ -9304,22 +9287,29 @@ async function dxSwitchVersion(path, name){
   const sameGroup = playing && oldGroup && newGroup && oldGroup.id === newGroup.id;
   if (!sameGroup) { playDropboxFile(path, name); return; }
 
-  // FAST PATH — instant pool swap
+  // FAST PATH — pool member is preloaded, switch is just pause(old) + play(new).
+  // No src reload, no loadedmetadata wait. The new audio's file is already
+  // decoded into its internal buffer, so play() resumes immediately.
   if (_dxAudioPool && _dxAudioPool.groupId === newGroup.id && _dxAudioPool.audios.has(path)) {
     const newAudio = _dxAudioPool.audios.get(path);
     const oldAudio = _miniAudio;
     if (newAudio !== oldAudio) {
-      // Tiny drift correction — keep the new audio exactly where the old one is
-      try { newAudio.currentTime = oldAudio.currentTime; } catch(e){}
-      // Make sure new is playing (it should already be, but covers iOS edge cases)
-      if (newAudio.paused && !oldAudio.paused) {
+      const t = oldAudio.currentTime || 0;
+      const wasPlaying = !oldAudio.paused;
+      // Reassign reference FIRST so any pause event on oldAudio (and any
+      // play event on newAudio that we trigger below) routes correctly.
+      _miniAudio = newAudio;
+      // Definitively silence + stop the previous version. On iOS muted
+      // alone won't reliably cut the audio out mid-playback.
+      oldAudio.muted = true;
+      try { oldAudio.pause(); } catch(e){}
+      // Activate new audio with sound. unmuted + synced + played.
+      newAudio.muted = false;
+      try { newAudio.currentTime = t; } catch(e){}
+      if (wasPlaying) {
         const pr = newAudio.play();
         if (pr && pr.catch) pr.catch(function(){});
       }
-      // *** The actual switch — pure mute/unmute, no decode latency ***
-      newAudio.muted = false;
-      oldAudio.muted = true;
-      _miniAudio = newAudio;
     }
     _miniContext.id = path;
     _miniContext.title = _dxDisplay(path, name);
