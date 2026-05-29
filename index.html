@@ -8843,18 +8843,22 @@ function _dxRemoveGroup(id){
   save('sketch_versions', v);
 }
 
-// Suppress the synthetic click that fires when a finger lifts after a long-press.
-// Without this, the menu appearing under the finger immediately gets a click on
-// whichever button is at that position. We block both touchend and click for the
-// first 400ms after the sheet opens.
+// Suppress the synthetic click that fires when a finger lifts after a long-press
+// (the menu appears under the finger and the next click hits it immediately).
+// Strategy: block clicks ONLY until the user does a fresh touchstart on the
+// sheet itself. That way the synthetic click after long-press release — which
+// happens BEFORE any touchstart on the modal — is blocked, but any subsequent
+// deliberate tap (touchstart → touchend → click on the sheet) is allowed.
 function _dxArmSheet(m){
-  const openTs = Date.now();
+  let touched = false;
+  const arm = function(){ touched = true; };
+  m.addEventListener('touchstart', arm, {passive: true});
+  m.addEventListener('mousedown', arm, {passive: true});
   const guard = function(e){
-    if (Date.now() - openTs < 400) { e.preventDefault(); e.stopPropagation(); }
+    if (!touched) { e.preventDefault(); e.stopPropagation(); }
   };
-  m.addEventListener('touchend', guard, {passive:false, capture:true});
-  m.addEventListener('click', guard, {capture:true});
-  return function isArmed(){ return Date.now() - openTs >= 400; };
+  m.addEventListener('touchend', guard, {passive: false, capture: true});
+  m.addEventListener('click', guard, {capture: true});
 }
 
 // Open action menu for a Dropbox song (long-press → here)
