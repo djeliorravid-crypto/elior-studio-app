@@ -9044,44 +9044,51 @@ function dxSplitFromGroup(path){
 }
 
 // ===== Version pre-load pool (for near-instant switching) =====
-let _dxVersionLinks = {};   // path → temp link (already fetched)
-let _dxVersionAudios = {};  // path → hidden <Audio> that pre-buffers the file
+// Strategy: fetch the entire sibling audio file as a Blob → create an
+// object URL. Setting _miniAudio.src to an object URL is near-instant
+// because the audio bytes are already in RAM (no network involved).
+let _dxVersionLinks = {};   // path → Dropbox temp link
+let _dxVersionBlobUrls = {}; // path → blob: object URL (full file in memory)
+let _dxLinkCache = {};      // path → {link, ts} — temp links live ~4h, cache them in memory
+
+async function _dxGetTempLinkCached(path){
+  const c = _dxLinkCache[path];
+  // Re-use any link cached within the last 3 hours (Dropbox links live 4h)
+  if (c && (Date.now() - c.ts) < 3 * 3600 * 1000) return c.link;
+  const link = await _dxGetTempLink(path);
+  if (link) _dxLinkCache[path] = {link: link, ts: Date.now()};
+  return link;
+}
 
 function _dxCleanupVersionPool(){
-  Object.values(_dxVersionAudios).forEach(function(a){
-    try { a.pause(); a.removeAttribute('src'); a.load(); } catch(e){}
+  Object.values(_dxVersionBlobUrls).forEach(function(url){
+    try { URL.revokeObjectURL(url); } catch(e){}
   });
-  _dxVersionLinks = {};
-  _dxVersionAudios = {};
+  _dxVersionBlobUrls = {};
 }
 
 async function _dxPrepareVersionPool(activePath){
   const group = _dxGroupOf(activePath);
   if (!group || group.paths.length <= 1) { _dxCleanupVersionPool(); return; }
-  // Cleanup paths no longer in this group
-  Object.keys(_dxVersionAudios).forEach(function(p){
-    if (!group.paths.includes(p) || p === activePath) {
-      try { _dxVersionAudios[p].pause(); _dxVersionAudios[p].removeAttribute('src'); _dxVersionAudios[p].load(); } catch(e){}
-      delete _dxVersionAudios[p];
-      delete _dxVersionLinks[p];
+  // Drop blobs for paths no longer in this group
+  Object.keys(_dxVersionBlobUrls).forEach(function(p){
+    if (!group.paths.includes(p)) {
+      try { URL.revokeObjectURL(_dxVersionBlobUrls[p]); } catch(e){}
+      delete _dxVersionBlobUrls[p];
     }
   });
-  // Fetch + pre-buffer non-active siblings in parallel
+  // Fetch full audio bytes for non-active siblings, in parallel
   const tasks = group.paths
-    .filter(function(p){ return p !== activePath && !_dxVersionLinks[p]; })
+    .filter(function(p){ return p !== activePath && !_dxVersionBlobUrls[p]; })
     .map(async function(p){
       try {
-        const link = await _dxGetTempLink(p);
+        const link = await _dxGetTempLinkCached(p);
         if (!link) return;
         _dxVersionLinks[p] = link;
-        // Hidden Audio element to force browser-level HTTP caching
-        const a = new Audio();
-        a.crossOrigin = 'anonymous';
-        a.preload = 'auto';
-        a.muted = true;
-        a.src = link;
-        try { a.load(); } catch(e){}
-        _dxVersionAudios[p] = a;
+        const res = await fetch(link);
+        if (!res.ok) return;
+        const blob = await res.blob();
+        _dxVersionBlobUrls[p] = URL.createObjectURL(blob);
       } catch(e){}
     });
   await Promise.all(tasks);
@@ -9100,6 +9107,8 @@ async function dxSwitchVersion(path, name){
   // Same group → near-instant switch
   const t = _miniAudio.currentTime || 0;
   const wasPlaying = !_miniAudio.paused;
+  const oldPath = _miniContext.id;
+  const blobUrl = _dxVersionBlobUrls[path];
   const cachedLink = _dxVersionLinks[path];
 
   // Update context + UI immediately (don't wait for audio)
@@ -9113,26 +9122,26 @@ async function dxSwitchVersion(path, name){
   // Re-render list to update active V button highlight
   dxReload();
 
-  // Fast path: link + file already cached → ~30ms swap
-  if (cachedLink) {
-    _miniAudio.src = cachedLink;
-    if (wasPlaying) {
-      // Call play() synchronously in user-gesture context
-      const pr = _miniAudio.play();
-      if (pr && pr.catch) pr.catch(function(){});
-    }
+  // Fastest path: blob URL → bytes are in RAM, loadedmetadata fires ~10-30ms
+  if (blobUrl || cachedLink) {
+    const source = blobUrl || cachedLink;
+    // Seek before play to avoid the brief "blip from 0" you'd otherwise hear.
+    // The src swap pauses the element; we set currentTime once metadata is
+    // available, then resume play() within the user-gesture window.
+    _miniAudio.src = source;
     const onMeta = function(){
       _miniAudio.removeEventListener('loadedmetadata', onMeta);
       try { _miniAudio.currentTime = Math.min(t, (_miniAudio.duration || t) - 0.05); } catch(e){}
+      if (wasPlaying) _miniAudio.play().catch(function(){});
     };
     _miniAudio.addEventListener('loadedmetadata', onMeta);
-    // Fire-and-forget — refresh pool (former active now becomes a sibling)
+    // Refresh pool — the version we just left now becomes a "sibling" to pre-buffer
     _dxPrepareVersionPool(path).catch(function(){});
     return;
   }
 
-  // Slow fallback (pool not ready yet — e.g. clicked V2 before V1 finished pre-loading)
-  const link = await _dxGetTempLink(path);
+  // Slow fallback (pool wasn't ready — e.g. clicked V2 before V1's siblings finished loading)
+  const link = await _dxGetTempLinkCached(path);
   if (!link) { toast('לא ניתן לטעון את הגרסה'); return; }
   _miniAudio.src = link;
   const onMeta2 = function(){
@@ -9380,9 +9389,15 @@ async function playDropboxFile(path, name){
     if (_miniAudio.paused) _miniAudio.play().catch(function(){});
     return;
   }
-  toast('טוען מ-Dropbox...');
-  const link = await _dxGetTempLink(path);
-  if (!link) { toast('לא ניתן לטעון את הקובץ'); return; }
+  // Reuse a cached blob (if we already pre-fetched this path as a sibling) or temp link
+  const cachedBlob = _dxVersionBlobUrls[path];
+  const cachedLink = !cachedBlob ? (_dxLinkCache[path] && (Date.now() - _dxLinkCache[path].ts) < 3*3600*1000 ? _dxLinkCache[path].link : null) : null;
+  let link = cachedBlob || cachedLink;
+  if (!link) {
+    toast('טוען מ-Dropbox...');
+    link = await _dxGetTempLinkCached(path);
+    if (!link) { toast('לא ניתן לטעון את הקובץ'); return; }
+  }
   const display = _dxDisplay(path, name);
   const group = _dxGroupOf(path);
   const metaText = group && group.paths.length > 1 ? 'Dropbox · גרסה ' + (group.paths.indexOf(path) + 1) + '/' + group.paths.length : 'Dropbox';
@@ -9485,6 +9500,21 @@ async function dxReload(){
     const n = el.getAttribute('data-name');
     _attachLongPress(el, function(){ dxItemMenu(p, n); });
   });
+  // Background — warm up the temp-link cache for every song in the list,
+  // 3 at a time, so the FIRST tap of any song skips the Dropbox API hop.
+  (async function _warm(){
+    const items = visible.slice();
+    const queue = items.map(function(e){ return e.path_lower || e.path_display; })
+                       .filter(function(p){ return p && !_dxLinkCache[p]; });
+    const concurrency = 3;
+    async function worker(){
+      while (queue.length) {
+        const p = queue.shift();
+        try { await _dxGetTempLinkCached(p); } catch(e){}
+      }
+    }
+    await Promise.all(Array.from({length: concurrency}, worker));
+  })().catch(function(){});
 }
 
 // Run OAuth callback on script load (if redirected back from Dropbox)
