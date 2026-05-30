@@ -4552,9 +4552,15 @@ function setMonthLabels() {
 function openModal(type) {
   const today = new Date().toISOString().split('T')[0];
   if (type === 'income') {
+    _incomeEditId = null;
     document.getElementById('inc-date').value = today;
     ['inc-amount','inc-desc','inc-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('inc-client').value = '';
+    document.getElementById('inc-cat').value = 'הקלטה';
     populateClientSel('inc-client');
+    document.querySelector('#modal-income h3').textContent = '💰 הכנסה חדשה';
+    const sBtn = document.querySelector('#modal-income .btn-primary');
+    if (sBtn) sBtn.textContent = 'שמירה';
   }
   if (type === 'expense') {
     document.getElementById('exp-date').value = today;
@@ -5045,6 +5051,31 @@ function updateClientPhoto(clientId, input) {
 }
 
 // ===== SAVE INCOME =====
+let _incomeEditId = null;
+
+function openIncomeEdit(id) {
+  const income = load('income');
+  const i = income.find(x => x.id === id);
+  if (!i) return;
+  if (i.fromPlan) {
+    // Plan-linked rows are auto-generated — edit those via the plan, not here
+    toast('הכנסה זו נוצרה מתוכנית תשלום — ערוך אותה דרך התוכנית');
+    return;
+  }
+  _incomeEditId = id;
+  populateClientSel('inc-client');
+  document.getElementById('inc-date').value = i.date || '';
+  document.getElementById('inc-amount').value = i.amount || '';
+  document.getElementById('inc-desc').value = i.description || '';
+  document.getElementById('inc-client').value = i.clientId || '';
+  document.getElementById('inc-cat').value = i.category || 'הקלטה';
+  document.getElementById('inc-notes').value = i.notes || '';
+  document.querySelector('#modal-income h3').textContent = '✏️ עריכת הכנסה';
+  const sBtn = document.querySelector('#modal-income .btn-primary');
+  if (sBtn) sBtn.textContent = 'עדכן';
+  document.getElementById('modal-income').classList.add('open');
+}
+
 function saveIncome() {
   const date = document.getElementById('inc-date').value;
   const amount = parseFloat(document.getElementById('inc-amount').value);
@@ -5054,12 +5085,26 @@ function saveIncome() {
   const clients = load('clients');
   const client = clients.find(c => c.id === clientId);
   const income = load('income');
+  const cat = document.getElementById('inc-cat').value;
+  const notes = document.getElementById('inc-notes').value.trim();
+  if (_incomeEditId) {
+    const i = income.find(x => x.id === _incomeEditId);
+    if (i) {
+      i.date = date; i.amount = amount; i.clientId = clientId;
+      i.clientName = client ? client.name : '';
+      i.description = desc; i.category = cat; i.notes = notes;
+    }
+    _incomeEditId = null;
+    income.sort((a,b) => new Date(b.date) - new Date(a.date));
+    save('income', income);
+    closeModal('income');
+    toast('✅ עודכן'); refreshAll();
+    return;
+  }
   income.push({
     id: genId(), date, amount, clientId,
     clientName: client ? client.name : '',
-    description: desc,
-    category: document.getElementById('inc-cat').value,
-    notes: document.getElementById('inc-notes').value.trim(),
+    description: desc, category: cat, notes,
     status: 'pending'
   });
   income.sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -5321,7 +5366,12 @@ function renderIncome() {
         </span>
       </td>
       ${statusCell(i)}
-      <td>${i.fromPlan ? '' : `<button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')">🗑</button>`}</td>
+      <td>${i.fromPlan ? '' : `
+        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-weight:700;padding:3px 9px" onclick="openIncomeEdit('${i.id}')" title="ערוך">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')" title="מחק">🗑</button>
+        </div>
+      `}</td>
     </tr>
   `; }).join('');
 
