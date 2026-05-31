@@ -3008,12 +3008,6 @@
       <div class="mode-card-title">עסקי ואישי</div>
       <div class="mode-card-sub">הכנסות · הוצאות · לקוחות · משימות</div>
     </div>
-    <div class="mode-card studies" onclick="chooseMode('studies')">
-      <div class="mode-card-glow"></div>
-      <div class="mode-card-icon">🎚️</div>
-      <div class="mode-card-title">הפקות</div>
-      <div class="mode-card-sub">כל הפרויקטים · שלבים · הפעולה הבאה</div>
-    </div>
     <div class="mode-card music" onclick="chooseMode('music')">
       <div class="mode-card-glow"></div>
       <div class="mode-card-icon">
@@ -3082,18 +3076,6 @@
   .proj-delivered-toggle { width:100%; background:#251e16; border:1.5px solid #3a2f23; border-radius:12px; padding:13px 15px; font-size:14px; font-weight:800; color:#8aa888; cursor:pointer; margin-top:10px; display:flex; justify-content:space-between; align-items:center; }
   @media (max-width:768px) { .studies-lobby-btn, .studies-detail-back { display:none; } }
 </style>
-<main class="main" id="studies-main" style="display:none">
-  <div class="studies-wrap">
-    <div class="studies-head">
-      <button class="studies-back studies-lobby-btn" onclick="switchMode()">← לובי</button>
-      <h1>🎚️ הפקות</h1>
-      <p>כל ההפקות שלך במקום אחד — שלב, הפעולה הבאה והערות</p>
-    </div>
-    <div id="studies-list"></div>
-    <div id="studies-detail" style="display:none"></div>
-  </div>
-</main>
-
 <!-- ===== BUSINESS SIDEBAR ===== -->
 <aside class="sidebar" id="business-sidebar">
   <div class="sidebar-logo lobby-btn" onclick="switchMode()" title="חזרה ללובי">
@@ -7949,7 +7931,7 @@ function chooseMode(mode) {
 }
 
 function switchMode() {
-  ['business-sidebar','business-main','music-sidebar','music-main','studies-main'].forEach(id => {
+  ['business-sidebar','business-main','music-sidebar','music-main'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -7957,15 +7939,13 @@ function switchMode() {
 }
 
 function showMode(mode) {
-  const biz = mode === 'business', music = mode === 'music', studies = mode === 'studies';
+  const biz = mode === 'business', music = mode === 'music';
   document.getElementById('business-sidebar').style.display = biz   ? 'flex'  : 'none';
   document.getElementById('business-main').style.display    = biz   ? 'block' : 'none';
   document.getElementById('music-sidebar').style.display    = music ? 'flex'  : 'none';
   document.getElementById('music-main').style.display       = music ? 'block' : 'none';
-  const sm = document.getElementById('studies-main');
-  if (sm) sm.style.display = studies ? 'block' : 'none';
   localStorage.setItem('app_mode', mode);
-  if (biz) refreshAll(); else if (music) renderReleased(); else if (studies) renderStudies();
+  if (biz) refreshAll(); else if (music) renderReleased();
   if (biz && _pendingAction) { const a = _pendingAction; _pendingAction = null; runShortcutAction(a); }
 }
 
