@@ -26,6 +26,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
   <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+  <!-- SortableJS: battle-tested touch/mouse drag-to-reorder for the lobby tasks -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <!-- Google Identity Services (for Google Calendar OAuth) -->
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- פונט Heebo — עברית פרמיום -->
@@ -2052,8 +2054,9 @@
       position: fixed; inset: 0; z-index: 9998;
       background: linear-gradient(135deg, #1c1410 0%, #3e2820 50%, #5c3a28 100%);
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 48px;
-      overflow: hidden;
+      align-items: center; justify-content: safe center; gap: 36px;
+      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(env(safe-area-inset-bottom, 0px) + 18px);
+      overflow-y: auto; overflow-x: hidden;
     }
     #mode-screen::before {
       content: '';
@@ -2133,10 +2136,38 @@
     .lobby-task {
       display: flex; align-items: center; gap: 12px;
       padding: 11px 10px; border-radius: 11px;
-      cursor: pointer; transition: background .15s;
+      cursor: pointer;
+      transition: background .15s;
       -webkit-tap-highlight-color: transparent;
     }
     .lobby-task:hover, .lobby-task:active { background: rgba(255,255,255,0.06); }
+    /* Grab handle — only this initiates drag, so the rest of the row stays
+       safely tap-to-check. Sortable hooks the drag on this element. */
+    .lobby-task-handle {
+      flex-shrink: 0;
+      width: 28px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.35);
+      font-size: 18px; line-height: 1;
+      cursor: grab;
+      touch-action: none;
+      -webkit-user-select: none; user-select: none;
+      transition: color .15s;
+    }
+    .lobby-task-handle:hover, .lobby-task-handle:active { color: rgba(255,255,255,0.85); }
+    .lobby-task-handle:active { cursor: grabbing; }
+    /* SortableJS drag states */
+    .lobby-task-ghost {
+      opacity: 0.35;
+      background: rgba(255,213,130,0.12) !important;
+    }
+    .lobby-task-chosen { background: rgba(255,255,255,0.1); }
+    .lobby-task-drag {
+      background: rgba(40,28,18,0.95) !important;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.18);
+      transform: scale(1.03);
+      cursor: grabbing;
+    }
     .lobby-task-check {
       width: 22px; height: 22px; border-radius: 50%;
       border: 1.5px solid rgba(255,255,255,0.4);
@@ -2271,7 +2302,7 @@
       line-height: 1.5;
     }
     @media (max-width: 500px) {
-      #mode-screen { gap: 24px; padding: 0 0 24px; justify-content: center; }
+      #mode-screen { gap: 22px; padding: calc(env(safe-area-inset-top, 0px) + 14px) 14px calc(env(safe-area-inset-bottom, 0px) + 16px); justify-content: safe center; }
       .mode-screen-title { font-size: 25px; padding: 0 20px; }
       .mode-screen-title small { margin-top: 6px; }
       .mode-cards-row { flex-direction: column; gap: 13px; }
@@ -11565,14 +11596,24 @@ function _lobbyRelativeDate(date) {
   return d1.toLocaleDateString('he-IL', {day:'numeric', month:'numeric'});
 }
 
+function _lobbyOpenTasks() {
+  const today = dailyDateStr();
+  const open = load('daily_tasks').filter(t => !t.done && t.date <= today);
+  // Manually dragged priority first (lower order = higher up = more urgent),
+  // then anything without an order falls back to date / creation time.
+  open.sort((a,b) => {
+    const ao = typeof a.order === 'number' ? a.order : 9e9;
+    const bo = typeof b.order === 'number' ? b.order : 9e9;
+    if (ao !== bo) return ao - bo;
+    return a.date.localeCompare(b.date) || new Date(a.createdAt||0) - new Date(b.createdAt||0);
+  });
+  return open;
+}
+
 function renderLobbyTasks() {
   const listEl = document.getElementById('lobby-tasks-list');
   if (!listEl) return;
-  const today = dailyDateStr();
-  // "Open" = not done, and dated today or any earlier day so yesterday's
-  // unfinished items keep showing up until you check them off.
-  const open = load('daily_tasks').filter(t => !t.done && t.date <= today);
-  open.sort((a,b) => a.date.localeCompare(b.date) || new Date(a.createdAt||0) - new Date(b.createdAt||0));
+  const open = _lobbyOpenTasks();
   const countEl = document.getElementById('lobby-tasks-count');
   if (countEl) {
     if (!open.length) countEl.textContent = '☀️ הכל סגור';
@@ -11589,12 +11630,46 @@ function renderLobbyTasks() {
   listEl.innerHTML = visible.map(t => {
     const rel = _lobbyRelativeDate(t.date);
     const dateChip = rel ? '<div class="lobby-task-date">' + rel + '</div>' : '';
-    return '<div class="lobby-task" onclick="toggleLobbyTask(\'' + t.id + '\')">' +
+    return '<div class="lobby-task" data-task-id="' + t.id + '" onclick="toggleLobbyTask(event,\'' + t.id + '\')">' +
+      '<div class="lobby-task-handle" aria-label="גרור לסידור">⋮⋮</div>' +
       '<div class="lobby-task-check"></div>' +
       '<div class="lobby-task-text">' + _escHtml(t.text) + '</div>' +
       dateChip +
     '</div>';
   }).join('') + (overflow > 0 ? '<div class="lobby-task-more">ועוד ' + overflow + ' משימות</div>' : '');
+  _initLobbySortable();
+}
+
+function _initLobbySortable() {
+  const list = document.getElementById('lobby-tasks-list');
+  if (!list || typeof Sortable === 'undefined') return;
+  if (list._sortable) { try { list._sortable.destroy(); } catch(e){} }
+  list._sortable = Sortable.create(list, {
+    handle: '.lobby-task-handle',
+    animation: 180,
+    ghostClass: 'lobby-task-ghost',
+    chosenClass: 'lobby-task-chosen',
+    dragClass: 'lobby-task-drag',
+    forceFallback: true,   // use Sortable's own drag implementation — more
+    fallbackOnBody: true,  // reliable on iOS PWA than the HTML5 drag-and-drop
+    fallbackTolerance: 4,
+    filter: '.lobby-task-more',
+    onEnd: function() {
+      // Persist whatever order is now visible. Only the visible rows
+      // (top 5) get explicit orders so dragging stays local to the
+      // "above the fold" list.
+      const rows = Array.from(list.querySelectorAll('.lobby-task'));
+      const ids = rows.map(el => el.getAttribute('data-task-id'));
+      const all = load('daily_tasks');
+      ids.forEach((id, i) => {
+        const t = all.find(x => x.id === id);
+        if (t) t.order = i;
+      });
+      save('daily_tasks', all);
+      // Re-sort the main daily page if it's mounted
+      if (document.getElementById('daily-list')) { try { renderDaily(); } catch(e){} }
+    },
+  });
 }
 
 function addLobbyTask() {
@@ -11603,25 +11678,30 @@ function addLobbyTask() {
   if (!text) { if (inp) inp.focus(); return; }
   const today = dailyDateStr();
   const all = load('daily_tasks');
-  all.push({ id: genId(), date: today, text, done: false, createdAt: new Date().toISOString() });
+  // New tasks land at the BOTTOM of the priority list (max order + 1) so
+  // they don't shove existing urgent items the user already arranged.
+  const orders = all.filter(t => !t.done && typeof t.order === 'number').map(t => t.order);
+  const nextOrder = orders.length ? Math.max.apply(null, orders) + 1 : 0;
+  all.push({ id: genId(), date: today, text, done: false, order: nextOrder, createdAt: new Date().toISOString() });
   save('daily_tasks', all);
   if (inp) { inp.value = ''; inp.focus(); }
   renderLobbyTasks();
-  // Keep the main daily page in sync if it's mounted
   if (document.getElementById('daily-list')) { try { renderDaily(); } catch(e){} }
 }
 
-function toggleLobbyTask(id) {
+function toggleLobbyTask(ev, id) {
+  // Ignore clicks that originate from the drag handle so the row doesn't
+  // toggle when the user grabs it.
+  if (ev && ev.target && ev.target.closest('.lobby-task-handle')) return;
   const all = load('daily_tasks');
   const t = all.find(x => x.id === id);
   if (!t) return;
   t.done = !t.done;
   save('daily_tasks', all);
-  // Tiny visual satisfaction: render check state before removing the row,
-  // then re-render after a beat so completed items slide out of the list.
-  const row = event && event.currentTarget;
+  const row = ev && ev.currentTarget;
   if (row && t.done) {
     row.classList.add('done');
+    row.querySelector('.lobby-task-check').textContent = '✓';
     setTimeout(renderLobbyTasks, 220);
   } else {
     renderLobbyTasks();
