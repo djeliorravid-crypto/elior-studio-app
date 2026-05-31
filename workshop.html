@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#f5e8d3">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
@@ -532,25 +533,66 @@ const id = getId();
 if(!id){
   renderError('לא צוין מזהה סדנא. בדוק את הקישור.');
 } else {
-  // SDK .once() = single fetch, no permanent websocket. Works through
-  // restricted in-app browsers AND honors the same auth-via-apiKey that
-  // the main app's reads rely on.
+  // Multi-strategy load. Try the cheapest path first, fall back step by
+  // step. Each strategy logs which one finally succeeded so we can tell
+  // which environment the viewer is in.
   let attempt = 0;
-  function loadWorkshop(){
+  async function loadWorkshop(){
     attempt++;
-    db.ref('studio_data/workshops').once('value').then(function(snap){
-      const data = snap.val();
-      if (!data) { renderError('הסדנא לא נמצאה.'); return; }
-      const list = Array.isArray(data) ? data : Object.values(data);
-      const w = list.find(function(x){ return x && x.id === id; });
-      if (!w) { renderError('הסדנא לא נמצאה.'); return; }
-      if (w.active === false) { renderError('הסדנא הזו לא פעילה כרגע.'); return; }
-      render(w);
-    }).catch(function(err){
+    try {
+      // STRATEGY 1: plain anonymous read via SDK.
+      try {
+        const snap = await db.ref('studio_data/workshops').once('value');
+        const data = snap.val();
+        if (data) { handleData(data); return; }
+        renderError('הסדנא לא נמצאה.');
+        return;
+      } catch (sdkErr) {
+        console.warn('SDK direct read failed, trying anonymous auth:', sdkErr && sdkErr.code, sdkErr);
+      }
+
+      // STRATEGY 2: sign in anonymously, retry the read.
+      // This satisfies rules of the form `.read: "auth != null"` without
+      // requiring the user to log in.
+      try {
+        await firebase.auth().signInAnonymously();
+        const snap = await db.ref('studio_data/workshops').once('value');
+        const data = snap.val();
+        if (data) { handleData(data); return; }
+        renderError('הסדנא לא נמצאה.');
+        return;
+      } catch (anonErr) {
+        console.warn('Anonymous auth path failed:', anonErr && anonErr.code, anonErr);
+        // STRATEGY 3: last resort — plain REST.
+        try {
+          const res = await fetch('https://elior-studio-default-rtdb.firebaseio.com/studio_data/workshops.json?ts=' + Date.now(), {cache: 'no-store'});
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          if (data) { handleData(data); return; }
+          renderError('הסדנא לא נמצאה.');
+          return;
+        } catch (restErr) {
+          throw restErr; // bubble to outer catch
+        }
+      }
+    } catch (err) {
       console.error('workshop load attempt ' + attempt + ' failed:', err);
       if (attempt < 2) { setTimeout(loadWorkshop, 1500); return; }
-      renderError('שגיאה בטעינה: ' + (err && (err.message || err.code) || err) + '\nאם פתחת מתוך וואטסאפ — נסה לפתוח דרך Safari.');
-    });
+      const code = (err && (err.code || err.message)) || 'לא ידוע';
+      renderError(
+        'שגיאה: ' + code + '\n\n' +
+        'הקישור לא הצליח להתחבר ל-Firebase שלך. ' +
+        'אם פתחת מתוך וואטסאפ — נסה לפתוח דרך Safari. ' +
+        'אם זה עדיין לא עובד — הגדרות ה-Firebase שלך דורשות התאמה קצרה.'
+      );
+    }
+  }
+  function handleData(data){
+    const list = Array.isArray(data) ? data : Object.values(data);
+    const w = list.find(function(x){ return x && x.id === id; });
+    if (!w) { renderError('הסדנא לא נמצאה.'); return; }
+    if (w.active === false) { renderError('הסדנא הזו לא פעילה כרגע.'); return; }
+    render(w);
   }
   loadWorkshop();
 }
