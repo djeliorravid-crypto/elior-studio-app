@@ -2115,7 +2115,6 @@
     .lobby-tasks {
       position: relative; z-index: 1;
       width: 100%; max-width: 580px; padding: 18px 22px 14px;
-      max-height: min(38vh, 320px);
       background: rgba(255,255,255,0.07);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -2127,14 +2126,48 @@
       box-sizing: border-box;
     }
     #lobby-tasks-list {
-      flex: 1; min-height: 0;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      margin: 0 -6px;
-      padding: 0 6px;
+      display: flex; flex-direction: column;
     }
-    #lobby-tasks-list::-webkit-scrollbar { width: 4px; }
-    #lobby-tasks-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+    /* ====== ADAPTIVE DENSITY ======
+       The lobby never scrolls — instead it tightens itself in tiers
+       depending on how many open tasks the user has. */
+    #mode-screen.density-cozy   { gap: 32px; }
+    #mode-screen.density-medium { gap: 18px; }
+    #mode-screen.density-medium .mode-screen-title { font-size: 30px; }
+    #mode-screen.density-medium .mode-screen-title small { display: none; }
+    #mode-screen.density-medium .mode-card { padding: 18px 26px; }
+    #mode-screen.density-medium .mode-card-icon { font-size: 30px; margin-bottom: 4px; }
+    #mode-screen.density-medium .mode-card-icon svg { width: 32px; height: 32px; }
+    #mode-screen.density-medium .mode-card-title { font-size: 16px; }
+    #mode-screen.density-medium .mode-card-sub { font-size: 11px; margin-top: 3px; }
+    #mode-screen.density-medium .mode-cards-row { gap: 10px; }
+    #mode-screen.density-medium .lobby-task { padding: 9px 8px; }
+
+    #mode-screen.density-tight { gap: 12px; }
+    #mode-screen.density-tight .mode-screen-title { font-size: 24px; }
+    #mode-screen.density-tight .mode-screen-title small { display: none; }
+    #mode-screen.density-tight .mode-card { padding: 12px 14px; }
+    #mode-screen.density-tight .mode-card-icon { font-size: 24px; margin-bottom: 2px; }
+    #mode-screen.density-tight .mode-card-icon svg { width: 26px; height: 26px; }
+    #mode-screen.density-tight .mode-card-title { font-size: 14px; }
+    #mode-screen.density-tight .mode-card-sub { display: none; }
+    #mode-screen.density-tight .mode-cards-row { gap: 8px; }
+    #mode-screen.density-tight .lobby-tasks { padding: 14px 18px 12px; }
+    #mode-screen.density-tight .lobby-task { padding: 7px 6px; }
+    #mode-screen.density-tight .lobby-task-text { font-size: 13.5px; }
+    #mode-screen.density-tight .lobby-task-check { width: 19px; height: 19px; font-size: 12px; }
+    /* On phones: when tight, the 2 mode cards switch from stacked to
+       side-by-side so they take far less vertical room. */
+    @media (max-width: 500px) {
+      #mode-screen.density-tight .mode-cards-row {
+        flex-direction: row !important;
+        width: 100%; max-width: 580px;
+      }
+      #mode-screen.density-tight .mode-card {
+        width: auto !important; flex: 1; min-width: 0;
+      }
+    }
     .lobby-tasks-head {
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 14px;
@@ -2168,6 +2201,33 @@
     }
     .lobby-task-handle:hover, .lobby-task-handle:active { color: rgba(255,255,255,0.85); }
     .lobby-task-handle:active { cursor: grabbing; }
+    /* Edit button (sits at the visual left of every task) */
+    .lobby-task-edit-btn {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: none;
+      color: rgba(255,255,255,0.32);
+      font-size: 13px;
+      cursor: pointer; padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      transition: color .15s, background .15s;
+      border-radius: 6px;
+    }
+    .lobby-task-edit-btn:hover, .lobby-task-edit-btn:active { color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.08); }
+    /* Inline edit input (replaces .lobby-task-text while editing) */
+    .lobby-task-edit-input {
+      flex: 1; min-width: 0;
+      background: rgba(0,0,0,0.32);
+      border: 1.5px solid rgba(255,213,130,0.45);
+      border-radius: 9px;
+      padding: 7px 11px;
+      color: #fff;
+      font-size: 14.5px; font-weight: 500;
+      font-family: 'Heebo', sans-serif;
+      outline: none; direction: rtl;
+    }
+    .lobby-task-edit-input:focus { border-color: rgba(255,213,130,0.85); background: rgba(0,0,0,0.4); }
     /* SortableJS drag states */
     .lobby-task-ghost {
       opacity: 0.35;
@@ -11633,6 +11693,14 @@ function renderLobbyTasks() {
     else if (open.length === 1) countEl.textContent = 'משימה אחת פתוחה';
     else countEl.textContent = open.length + ' פתוחות';
   }
+  // Adaptive density: tighten the rest of the lobby as task count grows
+  const ms = document.getElementById('mode-screen');
+  if (ms) {
+    ms.classList.remove('density-cozy', 'density-medium', 'density-tight');
+    if (open.length >= 5) ms.classList.add('density-tight');
+    else if (open.length >= 3) ms.classList.add('density-medium');
+    else ms.classList.add('density-cozy');
+  }
   if (!open.length) {
     listEl.innerHTML = '<div class="lobby-empty">אין משימות פתוחות. מה רוצה להוסיף?</div>';
     return;
@@ -11643,14 +11711,56 @@ function renderLobbyTasks() {
   listEl.innerHTML = visible.map(t => {
     const rel = _lobbyRelativeDate(t.date);
     const dateChip = rel ? '<div class="lobby-task-date">' + rel + '</div>' : '';
-    return '<div class="lobby-task" data-task-id="' + t.id + '" onclick="toggleLobbyTask(event,\'' + t.id + '\')">' +
+    const safeId = t.id.replace(/'/g, "\\'");
+    return '<div class="lobby-task" data-task-id="' + t.id + '" onclick="toggleLobbyTask(event,\'' + safeId + '\')">' +
       '<div class="lobby-task-handle" aria-label="גרור לסידור">⋮⋮</div>' +
       '<div class="lobby-task-check"></div>' +
       '<div class="lobby-task-text">' + _escHtml(t.text) + '</div>' +
       dateChip +
+      '<button class="lobby-task-edit-btn" onclick="editLobbyTask(event,\'' + safeId + '\')" aria-label="ערוך">✏️</button>' +
     '</div>';
   }).join('') + (overflow > 0 ? '<div class="lobby-task-more">ועוד ' + overflow + ' משימות</div>' : '');
   _initLobbySortable();
+}
+
+// Inline text editing — click the ✏️ button, the text turns into an
+// input pre-filled and focused. Enter/blur saves, Escape cancels.
+function editLobbyTask(ev, id) {
+  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+  const row = (ev && ev.target && ev.target.closest('.lobby-task')) || document.querySelector('.lobby-task[data-task-id="' + id + '"]');
+  if (!row) return;
+  const textEl = row.querySelector('.lobby-task-text');
+  if (!textEl || row.querySelector('.lobby-task-edit-input')) return;
+  const original = textEl.textContent;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'lobby-task-edit-input';
+  input.value = original;
+  input.maxLength = 200;
+  textEl.replaceWith(input);
+  // Temporarily disable Sortable on this row so the keyboard interaction
+  // doesn't get hijacked by long-press detection.
+  const list = document.getElementById('lobby-tasks-list');
+  if (list && list._sortable) list._sortable.option('disabled', true);
+  let committed = false;
+  function commit(saveIt) {
+    if (committed) return; committed = true;
+    const newText = (input.value || '').trim();
+    if (saveIt && newText && newText !== original) {
+      const all = load('daily_tasks');
+      const t = all.find(x => x.id === id);
+      if (t) { t.text = newText; save('daily_tasks', all); }
+      if (document.getElementById('daily-list')) { try { renderDaily(); } catch(e){} }
+    }
+    if (list && list._sortable) list._sortable.option('disabled', false);
+    renderLobbyTasks();
+  }
+  input.addEventListener('blur', function() { commit(true); });
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); commit(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); committed = true; renderLobbyTasks(); }
+  });
+  setTimeout(function() { input.focus(); input.select(); }, 10);
 }
 
 function _initLobbySortable() {
@@ -11703,9 +11813,14 @@ function addLobbyTask() {
 }
 
 function toggleLobbyTask(ev, id) {
-  // Ignore clicks that originate from the drag handle so the row doesn't
-  // toggle when the user grabs it.
-  if (ev && ev.target && ev.target.closest('.lobby-task-handle')) return;
+  // Ignore clicks that originate from interactive children (drag handle,
+  // edit button, or the inline-edit input) so they don't double-fire as
+  // a "toggle done".
+  if (ev && ev.target && (
+        ev.target.closest('.lobby-task-handle') ||
+        ev.target.closest('.lobby-task-edit-btn') ||
+        ev.target.closest('.lobby-task-edit-input')
+      )) return;
   const all = load('daily_tasks');
   const t = all.find(x => x.id === id);
   if (!t) return;
