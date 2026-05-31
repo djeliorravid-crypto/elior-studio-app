@@ -5473,6 +5473,49 @@ function toggleRecurringPaid(id) {
   refreshAll();
 }
 
+// Per-month amount override for recurring expenses.
+// Use cases: rent gets a one-off discount, plugin subscription jumps once, etc.
+// The base `amount` stays as-is so future months still use it.
+function _recAmt(r, monthKey) {
+  if (r && r.amountOverrides && monthKey in r.amountOverrides) {
+    const v = Number(r.amountOverrides[monthKey]);
+    if (!isNaN(v)) return v;
+  }
+  return Number(r ? r.amount : 0) || 0;
+}
+
+function editRecurringForMonth(id) {
+  const monthKey = `${curYear}-${String(curMonth+1).padStart(2,'0')}`;
+  const monthLabel = MONTHS_HE[curMonth] + ' ' + curYear;
+  const recurring = load('recurring_expenses');
+  const r = recurring.find(x => x.id === id);
+  if (!r) return;
+  const current = _recAmt(r, monthKey);
+  const msg = 'סכום של "' + r.description + '" ל-' + monthLabel + ':\n' +
+              '(הקבוע הוא ₪' + r.amount + '. השאר ריק כדי להחזיר לקבוע)';
+  const input = prompt(msg, current === r.amount ? '' : String(current));
+  if (input === null) return; // cancel
+  const trimmed = String(input).trim();
+  if (!r.amountOverrides) r.amountOverrides = {};
+  if (trimmed === '') {
+    delete r.amountOverrides[monthKey];
+    save('recurring_expenses', recurring);
+    refreshAll();
+    toast('✅ הוחזר לסכום הקבוע');
+    return;
+  }
+  const n = parseFloat(trimmed);
+  if (isNaN(n) || n < 0) { toast('סכום לא תקין'); return; }
+  if (n === Number(r.amount)) {
+    delete r.amountOverrides[monthKey];
+  } else {
+    r.amountOverrides[monthKey] = n;
+  }
+  save('recurring_expenses', recurring);
+  refreshAll();
+  toast('✅ עודכן לחודש זה');
+}
+
 function deleteRecurring(id) {
   if (!confirm('למחוק הוצאה חוזרת זו לחלוטין (מכל החודשים)?')) return;
   save('recurring_expenses', load('recurring_expenses').filter(r => r.id !== id));
@@ -5509,8 +5552,8 @@ function renderExpenses() {
   const allExpenses = expenses.filter(e => inCurMonth(e.date));
 
   // הוצאות קבועות — שולמו / לא שולמו החודש
-  const recurPaidAmt   = activeRecurring.filter(r => r.paidMonths && r.paidMonths[curMonthKey]).reduce((s,r) => s + Number(r.amount), 0);
-  const recurUnpaidAmt = activeRecurring.filter(r => !(r.paidMonths && r.paidMonths[curMonthKey])).reduce((s,r) => s + Number(r.amount), 0);
+  const recurPaidAmt   = activeRecurring.filter(r => r.paidMonths && r.paidMonths[curMonthKey]).reduce((s,r) => s + _recAmt(r, curMonthKey), 0);
+  const recurUnpaidAmt = activeRecurring.filter(r => !(r.paidMonths && r.paidMonths[curMonthKey])).reduce((s,r) => s + _recAmt(r, curMonthKey), 0);
 
   // סה"כ הוצאות החודש — כולל הוצאות קבועות
   const totalExpenses = allExpenses.reduce((s,e) => s + Number(e.amount), 0) + recurPaidAmt + recurUnpaidAmt;
@@ -5639,14 +5682,24 @@ function renderExpenses() {
             ${allRecurring.map(r => {
               const isPaidThisMonth = !!(r.paidMonths && r.paidMonths[curMonthKey]);
               const isActive = r.startMonth <= curMonthKey && (!r.endMonth || r.endMonth >= curMonthKey);
+              const monthAmt = _recAmt(r, curMonthKey);
+              const hasOverride = monthAmt !== Number(r.amount);
               return `<tr style="${isPaidThisMonth ? 'opacity:0.55;background:var(--surface2)' : ''}">
                 <td style="${isPaidThisMonth?'text-decoration:line-through;color:var(--text-muted)':''};font-weight:600">${r.description}</td>
                 <td><span class="badge ${catBadge[r.category]||'badge-orange'}">${r.category}</span></td>
-                <td style="font-weight:800;${isPaidThisMonth?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">-${fmtMoney(r.amount)}</td>
+                <td style="font-weight:800;${isPaidThisMonth?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">
+                  -${fmtMoney(monthAmt)}
+                  ${hasOverride ? `<div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-top:2px">קבוע: ${fmtMoney(r.amount)}</div>` : ''}
+                </td>
                 <td style="color:var(--text-muted);font-size:14px">${r.startMonth}</td>
                 <td style="color:var(--text-muted);font-size:14px">${r.endMonth || '∞ ללא הגבלה'}</td>
                 <td>${isActive ? `<button onclick="toggleRecurringPaid('${r.id}')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;${isPaidThisMonth?'background:var(--pill-green-bg);color:var(--pill-green-text)':'background:var(--red-light);color:var(--red)'}">${isPaidThisMonth?'✓ שולם':'שולם'}</button>` : '<span style="color:var(--text-muted);font-size:14px">לא פעיל</span>'}</td>
-                <td><button class="btn btn-danger btn-sm" onclick="deleteRecurring('${r.id}')">🗑</button></td>
+                <td>
+                  <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+                    <button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-weight:700;padding:3px 9px" onclick="editRecurringForMonth('${r.id}')" title="סכום שונה לחודש זה">✏️</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteRecurring('${r.id}')" title="מחק לחלוטין">🗑</button>
+                  </div>
+                </td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -7159,8 +7212,8 @@ function renderPendingBox() {
   const allRecurring = load('recurring_expenses');
   const activeRec    = allRecurring.filter(r => r.startMonth <= monthKey2 && (!r.endMonth || r.endMonth >= monthKey2));
   const unpaidRec    = activeRec.filter(r => !(r.paidMonths && r.paidMonths[monthKey2]));
-  const paidRecAmt   = activeRec.filter(r => r.paidMonths && r.paidMonths[monthKey2]).reduce((s,r) => s + Number(r.amount), 0);
-  const unpaidRecAmt = unpaidRec.reduce((s,r) => s + Number(r.amount), 0);
+  const paidRecAmt   = activeRec.filter(r => r.paidMonths && r.paidMonths[monthKey2]).reduce((s,r) => s + _recAmt(r, monthKey2), 0);
+  const unpaidRecAmt = unpaidRec.reduce((s,r) => s + _recAmt(r, monthKey2), 0);
 
   const monthExp     = expenses.filter(e => inMonth(e.date));
   const unpaidExp    = monthExp.filter(e => !e.paid);
