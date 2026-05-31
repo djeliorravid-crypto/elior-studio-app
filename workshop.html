@@ -6,8 +6,6 @@
 <title>סדנא · אליאור רביד</title>
 <meta name="theme-color" content="#f5e8d3">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   html, body {
@@ -346,17 +344,10 @@
   </div>
 
 <script>
-const firebaseConfig = {
-  apiKey:            "AIzaSyB1c6rZVcGrX50UbhEMx3Ra6uaO_S5Fb5o",
-  authDomain:        "elior-studio.firebaseapp.com",
-  databaseURL:       "https://elior-studio-default-rtdb.firebaseio.com",
-  projectId:         "elior-studio",
-  storageBucket:     "elior-studio.firebasestorage.app",
-  messagingSenderId: "719956484293",
-  appId:             "1:719956484293:web:4e1be740d9e49a709350ac"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+// Plain REST fetch to Firebase Realtime Database — no SDK, no WebSocket,
+// no compat layer. Works inside restricted in-app browsers (WhatsApp,
+// Instagram on iOS) where the SDK's websocket handshake silently fails.
+const DB_URL = 'https://elior-studio-default-rtdb.firebaseio.com/studio_data/workshops.json';
 
 function getId(){
   const p = new URLSearchParams(location.search);
@@ -528,23 +519,24 @@ const id = getId();
 if(!id){
   renderError('לא צוין מזהה סדנא. בדוק את הקישור.');
 } else {
-  // Single-shot HTTP fetch (not a WebSocket subscription) — survives
-  // restricted in-app browsers (WhatsApp, Instagram, etc. on iOS) that
-  // block persistent connections. One retry with a short delay.
   let attempt = 0;
-  function loadWorkshop(){
+  async function loadWorkshop(){
     attempt++;
-    db.ref('studio_data/workshops').once('value').then(snap => {
-      const list = snap.val() || [];
-      const w = (Array.isArray(list) ? list : Object.values(list)).find(x => x && x.id === id);
-      if(!w){ renderError('הסדנא לא נמצאה.'); return; }
-      if(w.active === false){ renderError('הסדנא הזו לא פעילה כרגע.'); return; }
+    try {
+      const res = await fetch(DB_URL + '?ts=' + Date.now(), {cache: 'no-store'});
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!data) { renderError('הסדנא לא נמצאה.'); return; }
+      const list = Array.isArray(data) ? data : Object.values(data);
+      const w = list.find(x => x && x.id === id);
+      if (!w) { renderError('הסדנא לא נמצאה.'); return; }
+      if (w.active === false) { renderError('הסדנא הזו לא פעילה כרגע.'); return; }
       render(w);
-    }).catch(err => {
+    } catch (err) {
       console.error('workshop load attempt ' + attempt + ' failed:', err);
       if (attempt < 2) { setTimeout(loadWorkshop, 1500); return; }
-      renderError('שגיאה בטעינה. בדוק חיבור אינטרנט ונסה שוב.\nאם פתחת מתוך וואטסאפ — נסה לפתוח דרך Safari.');
-    });
+      renderError('שגיאה בטעינה: ' + (err && err.message || err) + '\nבדוק חיבור אינטרנט.\nאם פתחת מתוך וואטסאפ — נסה לפתוח דרך Safari.');
+    }
   }
   loadWorkshop();
 }
