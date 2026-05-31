@@ -2054,9 +2054,9 @@
       position: fixed; inset: 0; z-index: 9998;
       background: linear-gradient(135deg, #1c1410 0%, #3e2820 50%, #5c3a28 100%);
       display: flex; flex-direction: column;
-      align-items: center; justify-content: safe center; gap: 36px;
-      padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(env(safe-area-inset-bottom, 0px) + 18px);
-      overflow-y: auto; overflow-x: hidden;
+      align-items: center; justify-content: center; gap: 32px;
+      padding: calc(env(safe-area-inset-top, 0px) + 4px) 16px env(safe-area-inset-bottom, 0px);
+      overflow: hidden;
     }
     #mode-screen::before {
       content: '';
@@ -2114,7 +2114,8 @@
     /* ===== LOBBY TASKS (visible before picking a mode) ===== */
     .lobby-tasks {
       position: relative; z-index: 1;
-      width: 100%; max-width: 580px; padding: 22px 26px 18px;
+      width: 100%; max-width: 580px; padding: 18px 22px 14px;
+      max-height: min(38vh, 320px);
       background: rgba(255,255,255,0.07);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -2122,7 +2123,18 @@
       border-radius: 22px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
       animation: cardsIn 1s cubic-bezier(.4,0,.2,1) 0.4s both;
+      display: flex; flex-direction: column;
+      box-sizing: border-box;
     }
+    #lobby-tasks-list {
+      flex: 1; min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -6px;
+      padding: 0 6px;
+    }
+    #lobby-tasks-list::-webkit-scrollbar { width: 4px; }
+    #lobby-tasks-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
     .lobby-tasks-head {
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 14px;
@@ -2200,8 +2212,9 @@
       color: rgba(255,255,255,0.7); font-size: 14px; font-weight: 500;
     }
     .lobby-task-add {
-      display: flex; gap: 8px; margin-top: 12px;
-      padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex; gap: 8px; margin-top: 10px;
+      padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
     }
     .lobby-task-add input {
       flex: 1; min-width: 0;
@@ -2302,7 +2315,7 @@
       line-height: 1.5;
     }
     @media (max-width: 500px) {
-      #mode-screen { gap: 22px; padding: calc(env(safe-area-inset-top, 0px) + 14px) 14px calc(env(safe-area-inset-bottom, 0px) + 16px); justify-content: safe center; }
+      #mode-screen { gap: 20px; padding: calc(env(safe-area-inset-top, 0px) + 6px) 14px env(safe-area-inset-bottom, 0px); justify-content: center; }
       .mode-screen-title { font-size: 25px; padding: 0 20px; }
       .mode-screen-title small { margin-top: 6px; }
       .mode-cards-row { flex-direction: column; gap: 13px; }
