@@ -2107,6 +2107,104 @@
       display: flex; gap: 28px; position: relative; z-index: 1;
       animation: cardsIn 1s cubic-bezier(.4,0,.2,1) 0.2s both;
     }
+
+    /* ===== LOBBY TASKS (visible before picking a mode) ===== */
+    .lobby-tasks {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 580px; padding: 22px 26px 18px;
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(255,255,255,0.18);
+      border-radius: 22px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+      animation: cardsIn 1s cubic-bezier(.4,0,.2,1) 0.4s both;
+    }
+    .lobby-tasks-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .lobby-tasks-title {
+      font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.04em;
+    }
+    .lobby-tasks-count {
+      font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 700;
+    }
+    .lobby-task {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 10px; border-radius: 11px;
+      cursor: pointer; transition: background .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .lobby-task:hover, .lobby-task:active { background: rgba(255,255,255,0.06); }
+    .lobby-task-check {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.4);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all .15s;
+      font-size: 13px; color: #fff; font-weight: 900;
+    }
+    .lobby-task.done .lobby-task-check {
+      background: linear-gradient(135deg, #34d399, #16a34a);
+      border-color: #16a34a;
+    }
+    .lobby-task-text {
+      flex: 1; font-size: 14.5px; color: #fff;
+      font-weight: 500; line-height: 1.4;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    }
+    .lobby-task.done .lobby-task-text {
+      text-decoration: line-through; color: rgba(255,255,255,0.45);
+    }
+    .lobby-task-date {
+      font-size: 10.5px; color: #ff9558; font-weight: 800;
+      letter-spacing: 0.04em; flex-shrink: 0;
+    }
+    .lobby-task-more {
+      text-align: center; color: rgba(255,255,255,0.6);
+      font-size: 12px; font-weight: 700; margin: 6px 0 2px;
+    }
+    .lobby-empty {
+      text-align: center; padding: 14px 12px 4px;
+      color: rgba(255,255,255,0.7); font-size: 14px; font-weight: 500;
+    }
+    .lobby-task-add {
+      display: flex; gap: 8px; margin-top: 12px;
+      padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .lobby-task-add input {
+      flex: 1; min-width: 0;
+      background: rgba(0,0,0,0.25);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 11px 14px;
+      color: #fff;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      direction: rtl;
+    }
+    .lobby-task-add input::placeholder { color: rgba(255,255,255,0.5); }
+    .lobby-task-add input:focus { border-color: rgba(255,255,255,0.4); background: rgba(0,0,0,0.35); }
+    .lobby-task-add button {
+      background: linear-gradient(135deg, #d4a574, #a06c48);
+      border: none;
+      border-radius: 12px;
+      padding: 0 18px; min-width: 44px;
+      color: #fff;
+      font-weight: 900;
+      font-size: 20px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: filter .15s;
+    }
+    .lobby-task-add button:hover { filter: brightness(1.1); }
+    .lobby-task-add button:active { transform: scale(.95); }
+    @media (max-width: 600px) {
+      .lobby-tasks { padding: 18px 18px 14px; }
+      .lobby-task { padding: 12px 8px; }
+      .lobby-task-text { font-size: 14px; }
+    }
     @keyframes cardsIn {
       from { opacity: 0; transform: translateY(40px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -3023,6 +3121,20 @@
       </div>
       <div class="mode-card-title">סטודיו</div>
       <div class="mode-card-sub">שירים · סקיצות · מיקסים · הפקה</div>
+    </div>
+  </div>
+
+  <!-- ===== Lobby tasks: visible BEFORE you pick a mode ===== -->
+  <div class="lobby-tasks" id="lobby-tasks">
+    <div class="lobby-tasks-head">
+      <div class="lobby-tasks-title">📋 היום</div>
+      <div class="lobby-tasks-count" id="lobby-tasks-count"></div>
+    </div>
+    <div id="lobby-tasks-list"></div>
+    <div class="lobby-task-add">
+      <input type="text" id="lobby-task-input" placeholder="הוסף משימה במהירות..." autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addLobbyTask();}"/>
+      <button onclick="addLobbyTask()">+</button>
     </div>
   </div>
 </div>
@@ -7969,6 +8081,7 @@ function doLogin() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('login-pass').value = '';
     document.getElementById('mode-screen').classList.remove('hidden');
+    try { renderLobbyTasks(); } catch(e) {}
   } else {
     const err = document.getElementById('login-err');
     err.textContent = '❌ סיסמא שגויה';
@@ -7989,6 +8102,7 @@ function switchMode() {
     if (el) el.style.display = 'none';
   });
   document.getElementById('mode-screen').classList.remove('hidden');
+  try { renderLobbyTasks(); } catch(e) {}
 }
 
 function showMode(mode) {
@@ -11436,6 +11550,83 @@ function toggleDailyDone(id) {
 function deleteDailyTask(id) {
   save('daily_tasks', load('daily_tasks').filter(t => t.id !== id));
   renderDaily();
+}
+
+// ===== LOBBY TASKS — visible before picking a mode =====
+function _lobbyRelativeDate(date) {
+  const today = dailyDateStr();
+  if (date === today) return '';
+  const d1 = new Date(date + 'T00:00:00');
+  const d2 = new Date(today + 'T00:00:00');
+  const diff = Math.round((d2 - d1) / 86400000);
+  if (diff === 1) return 'אתמול';
+  if (diff > 0 && diff < 7) return 'לפני ' + diff + ' ימים';
+  if (diff < 0) return 'מחר';
+  return d1.toLocaleDateString('he-IL', {day:'numeric', month:'numeric'});
+}
+
+function renderLobbyTasks() {
+  const listEl = document.getElementById('lobby-tasks-list');
+  if (!listEl) return;
+  const today = dailyDateStr();
+  // "Open" = not done, and dated today or any earlier day so yesterday's
+  // unfinished items keep showing up until you check them off.
+  const open = load('daily_tasks').filter(t => !t.done && t.date <= today);
+  open.sort((a,b) => a.date.localeCompare(b.date) || new Date(a.createdAt||0) - new Date(b.createdAt||0));
+  const countEl = document.getElementById('lobby-tasks-count');
+  if (countEl) {
+    if (!open.length) countEl.textContent = '☀️ הכל סגור';
+    else if (open.length === 1) countEl.textContent = 'משימה אחת פתוחה';
+    else countEl.textContent = open.length + ' פתוחות';
+  }
+  if (!open.length) {
+    listEl.innerHTML = '<div class="lobby-empty">אין משימות פתוחות. מה רוצה להוסיף?</div>';
+    return;
+  }
+  const max = 5;
+  const visible = open.slice(0, max);
+  const overflow = open.length - max;
+  listEl.innerHTML = visible.map(t => {
+    const rel = _lobbyRelativeDate(t.date);
+    const dateChip = rel ? '<div class="lobby-task-date">' + rel + '</div>' : '';
+    return '<div class="lobby-task" onclick="toggleLobbyTask(\'' + t.id + '\')">' +
+      '<div class="lobby-task-check"></div>' +
+      '<div class="lobby-task-text">' + _escHtml(t.text) + '</div>' +
+      dateChip +
+    '</div>';
+  }).join('') + (overflow > 0 ? '<div class="lobby-task-more">ועוד ' + overflow + ' משימות</div>' : '');
+}
+
+function addLobbyTask() {
+  const inp = document.getElementById('lobby-task-input');
+  const text = (inp && inp.value || '').trim();
+  if (!text) { if (inp) inp.focus(); return; }
+  const today = dailyDateStr();
+  const all = load('daily_tasks');
+  all.push({ id: genId(), date: today, text, done: false, createdAt: new Date().toISOString() });
+  save('daily_tasks', all);
+  if (inp) { inp.value = ''; inp.focus(); }
+  renderLobbyTasks();
+  // Keep the main daily page in sync if it's mounted
+  if (document.getElementById('daily-list')) { try { renderDaily(); } catch(e){} }
+}
+
+function toggleLobbyTask(id) {
+  const all = load('daily_tasks');
+  const t = all.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  save('daily_tasks', all);
+  // Tiny visual satisfaction: render check state before removing the row,
+  // then re-render after a beat so completed items slide out of the list.
+  const row = event && event.currentTarget;
+  if (row && t.done) {
+    row.classList.add('done');
+    setTimeout(renderLobbyTasks, 220);
+  } else {
+    renderLobbyTasks();
+  }
+  if (document.getElementById('daily-list')) { try { renderDaily(); } catch(e){} }
 }
 
 function renderDaily() {
