@@ -2052,8 +2052,9 @@
       position: fixed; inset: 0; z-index: 9998;
       background: linear-gradient(135deg, #1c1410 0%, #3e2820 50%, #5c3a28 100%);
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 48px;
-      overflow: hidden;
+      align-items: center; justify-content: safe center; gap: 32px;
+      padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+      overflow-y: auto; overflow-x: hidden;
     }
     #mode-screen::before {
       content: '';
@@ -2133,10 +2134,42 @@
     .lobby-task {
       display: flex; align-items: center; gap: 12px;
       padding: 11px 10px; border-radius: 11px;
-      cursor: pointer; transition: background .15s;
+      cursor: pointer;
+      transition: background .15s, transform .25s cubic-bezier(.34,1.4,.64,1), box-shadow .25s;
       -webkit-tap-highlight-color: transparent;
+      position: relative;
+      --pulse-alpha: 0;
+      box-shadow: inset 0 0 0 0 rgba(255, 200, 100, 0);
+      animation: lobbyTaskPulse 2.4s ease-in-out infinite;
+      animation-delay: calc(var(--pulse-delay, 0s));
+      touch-action: pan-y;
+    }
+    @keyframes lobbyTaskPulse {
+      0%, 100% { box-shadow: inset 0 0 0 0 rgba(255, 213, 130, 0); background: rgba(255,255,255,0); }
+      50% {
+        box-shadow: inset 0 0 0 calc(var(--pulse-alpha) * 2px) rgba(255, 213, 130, var(--pulse-alpha)),
+                    0 0 calc(var(--pulse-alpha) * 24px) calc(var(--pulse-alpha) * 4px) rgba(255, 180, 100, calc(var(--pulse-alpha) * 0.35));
+        background: rgba(255, 213, 130, calc(var(--pulse-alpha) * 0.08));
+      }
     }
     .lobby-task:hover, .lobby-task:active { background: rgba(255,255,255,0.06); }
+    .lobby-task.dragging {
+      z-index: 50;
+      animation: none !important;
+      background: rgba(255,255,255,0.14) !important;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+      transition: none;
+      cursor: grabbing;
+    }
+    .lobby-task-handle {
+      width: 18px; height: 18px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.35);
+      font-size: 16px; line-height: 1;
+      cursor: grab;
+      user-select: none; -webkit-user-select: none;
+    }
+    .lobby-task.dragging .lobby-task-handle { color: #fff; }
     .lobby-task-check {
       width: 22px; height: 22px; border-radius: 50%;
       border: 1.5px solid rgba(255,255,255,0.4);
@@ -2271,7 +2304,7 @@
       line-height: 1.5;
     }
     @media (max-width: 500px) {
-      #mode-screen { gap: 24px; padding: 0 0 24px; justify-content: center; }
+      #mode-screen { gap: 20px; padding: calc(env(safe-area-inset-top, 0px) + 14px) 14px calc(env(safe-area-inset-bottom, 0px) + 18px); justify-content: safe center; }
       .mode-screen-title { font-size: 25px; padding: 0 20px; }
       .mode-screen-title small { margin-top: 6px; }
       .mode-cards-row { flex-direction: column; gap: 13px; }
@@ -11565,14 +11598,24 @@ function _lobbyRelativeDate(date) {
   return d1.toLocaleDateString('he-IL', {day:'numeric', month:'numeric'});
 }
 
+function _lobbyOpenTasks() {
+  const today = dailyDateStr();
+  const open = load('daily_tasks').filter(t => !t.done && t.date <= today);
+  // Sort by manual priority order first (lower = more urgent / higher up),
+  // tasks without an order get sent to the bottom in date order.
+  open.sort((a,b) => {
+    const ao = typeof a.order === 'number' ? a.order : 9e9;
+    const bo = typeof b.order === 'number' ? b.order : 9e9;
+    if (ao !== bo) return ao - bo;
+    return a.date.localeCompare(b.date) || new Date(a.createdAt||0) - new Date(b.createdAt||0);
+  });
+  return open;
+}
+
 function renderLobbyTasks() {
   const listEl = document.getElementById('lobby-tasks-list');
   if (!listEl) return;
-  const today = dailyDateStr();
-  // "Open" = not done, and dated today or any earlier day so yesterday's
-  // unfinished items keep showing up until you check them off.
-  const open = load('daily_tasks').filter(t => !t.done && t.date <= today);
-  open.sort((a,b) => a.date.localeCompare(b.date) || new Date(a.createdAt||0) - new Date(b.createdAt||0));
+  const open = _lobbyOpenTasks();
   const countEl = document.getElementById('lobby-tasks-count');
   if (countEl) {
     if (!open.length) countEl.textContent = '☀️ הכל סגור';
@@ -11586,15 +11629,22 @@ function renderLobbyTasks() {
   const max = 5;
   const visible = open.slice(0, max);
   const overflow = open.length - max;
-  listEl.innerHTML = visible.map(t => {
+  listEl.innerHTML = visible.map((t, i) => {
     const rel = _lobbyRelativeDate(t.date);
     const dateChip = rel ? '<div class="lobby-task-date">' + rel + '</div>' : '';
-    return '<div class="lobby-task" onclick="toggleLobbyTask(\'' + t.id + '\')">' +
+    // Pulse: top task strongest, fades over the first 3, then no pulse.
+    const pulseTable = [0.55, 0.32, 0.16, 0, 0];
+    const pulse = pulseTable[i] || 0;
+    const delay = (i * 0.2) + 's'; // staggered so they don't all flash together
+    return '<div class="lobby-task" data-task-id="' + t.id + '" style="--pulse-alpha:' + pulse + ';--pulse-delay:' + delay + '">' +
+      '<div class="lobby-task-handle">⋮⋮</div>' +
       '<div class="lobby-task-check"></div>' +
       '<div class="lobby-task-text">' + _escHtml(t.text) + '</div>' +
       dateChip +
     '</div>';
   }).join('') + (overflow > 0 ? '<div class="lobby-task-more">ועוד ' + overflow + ' משימות</div>' : '');
+  // Wire tap-to-check + long-press-to-drag on every row
+  listEl.querySelectorAll('.lobby-task').forEach(_attachLobbyTaskHandlers);
 }
 
 function addLobbyTask() {
@@ -11603,30 +11653,126 @@ function addLobbyTask() {
   if (!text) { if (inp) inp.focus(); return; }
   const today = dailyDateStr();
   const all = load('daily_tasks');
-  all.push({ id: genId(), date: today, text, done: false, createdAt: new Date().toISOString() });
+  // New tasks go to the BOTTOM of the priority list by default — top is
+  // reserved for the items the user explicitly dragged up.
+  const openOrders = all.filter(t => !t.done && typeof t.order === 'number').map(t => t.order);
+  const nextOrder = openOrders.length ? Math.max.apply(null, openOrders) + 1 : 0;
+  all.push({ id: genId(), date: today, text, done: false, order: nextOrder, createdAt: new Date().toISOString() });
   save('daily_tasks', all);
   if (inp) { inp.value = ''; inp.focus(); }
   renderLobbyTasks();
-  // Keep the main daily page in sync if it's mounted
   if (document.getElementById('daily-list')) { try { renderDaily(); } catch(e){} }
 }
 
-function toggleLobbyTask(id) {
+function toggleLobbyTask(id, rowEl) {
   const all = load('daily_tasks');
   const t = all.find(x => x.id === id);
   if (!t) return;
   t.done = !t.done;
   save('daily_tasks', all);
-  // Tiny visual satisfaction: render check state before removing the row,
-  // then re-render after a beat so completed items slide out of the list.
-  const row = event && event.currentTarget;
-  if (row && t.done) {
-    row.classList.add('done');
+  if (rowEl && t.done) {
+    rowEl.classList.add('done');
+    rowEl.querySelector('.lobby-task-check').textContent = '✓';
     setTimeout(renderLobbyTasks, 220);
   } else {
     renderLobbyTasks();
   }
   if (document.getElementById('daily-list')) { try { renderDaily(); } catch(e){} }
+}
+
+// Long-press → drag-to-reorder. A normal tap still toggles done.
+function _attachLobbyTaskHandlers(el) {
+  const taskId = el.getAttribute('data-task-id');
+  let startY = null, startX = null;
+  let dragging = false;
+  let pressTimer = null;
+  let cancelled = false;
+
+  const onMove = function(ev) {
+    if (startY === null) return;
+    const t = ev.touches ? ev.touches[0] : ev;
+    const dy = t.clientY - startY;
+    const dx = (t.clientX || 0) - (startX || 0);
+    if (dragging) {
+      ev.preventDefault();
+      el.style.transform = 'translateY(' + dy + 'px) scale(1.04)';
+    } else if (Math.abs(dy) > 8 || Math.abs(dx) > 8) {
+      clearTimeout(pressTimer);
+      cancelled = true;
+    }
+  };
+  const onEnd = function(ev) {
+    clearTimeout(pressTimer);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    document.removeEventListener('touchcancel', onEnd);
+    if (dragging) {
+      // Compute new index from where the finger landed
+      const t = (ev.changedTouches && ev.changedTouches[0]) || ev;
+      const finalY = t.clientY;
+      _commitLobbyDrag(taskId, el, finalY);
+      el.classList.remove('dragging');
+      el.style.transform = '';
+      dragging = false;
+    } else if (!cancelled) {
+      // Was a regular tap — toggle done
+      toggleLobbyTask(taskId, el);
+    }
+    startY = null; startX = null; cancelled = false;
+  };
+
+  el.addEventListener('touchstart', function(ev) {
+    const t = ev.touches[0];
+    startY = t.clientY; startX = t.clientX;
+    cancelled = false;
+    pressTimer = setTimeout(function() {
+      dragging = true;
+      el.classList.add('dragging');
+      if (navigator.vibrate) try { navigator.vibrate(30); } catch(_){}
+    }, 320);
+    document.addEventListener('touchmove', onMove, {passive: false});
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchcancel', onEnd);
+  }, {passive: true});
+
+  // Desktop fallback — plain click toggles
+  el.addEventListener('click', function() {
+    if (cancelled || dragging || startY !== null) return;
+    toggleLobbyTask(taskId, el);
+  });
+}
+
+function _commitLobbyDrag(taskId, el, finalY) {
+  const list = el.parentElement;
+  if (!list) return;
+  const rows = Array.from(list.querySelectorAll('.lobby-task'));
+  const currentIdx = rows.indexOf(el);
+  // Use the BOUNDING-RECT centers of OTHER rows (not the dragged one,
+  // which has a transform applied right now) to find the drop slot.
+  let targetIdx = rows.length - 1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i] === el) continue;
+    const r = rows[i].getBoundingClientRect();
+    if (finalY < r.top + r.height / 2) { targetIdx = i; break; }
+  }
+  // Adjust for the dragged row "being removed"
+  if (targetIdx > currentIdx) targetIdx -= 1;
+  if (targetIdx === currentIdx) return;
+  // Build the new full ordering of OPEN tasks
+  const open = _lobbyOpenTasks();
+  const ids = open.map(t => t.id);
+  const oldPos = ids.indexOf(taskId);
+  if (oldPos < 0) return;
+  ids.splice(oldPos, 1);
+  ids.splice(targetIdx, 0, taskId);
+  // Persist as integer order on each task
+  const all = load('daily_tasks');
+  ids.forEach((id, i) => {
+    const t = all.find(x => x.id === id);
+    if (t) t.order = i;
+  });
+  save('daily_tasks', all);
+  renderLobbyTasks();
 }
 
 function renderDaily() {
