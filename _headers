@@ -6,3 +6,6 @@
 
 /elior-studio-app/version.txt
   Cache-Control: no-cache, no-store, must-revalidate
+
+/elior-studio-app/workshop.html
+  Cache-Control: no-cache, no-store, must-revalidate

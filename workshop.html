@@ -519,29 +519,34 @@ function render(w){
 
 function renderError(msg){
   document.getElementById('root').innerHTML =
-    '<div class="error"><b>אופס</b>' + escHtml(msg) + '</div>';
+    '<div class="error"><b>אופס</b><div style="white-space:pre-line">' + escHtml(msg) + '</div>' +
+    '<div style="margin-top:18px"><button onclick="location.reload()" style="background:linear-gradient(135deg,#ff9558,#ff6b4a);color:#fff;border:none;border-radius:12px;padding:11px 22px;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit">🔄 נסה שוב</button></div>' +
+    '</div>';
 }
 
 const id = getId();
 if(!id){
   renderError('לא צוין מזהה סדנא. בדוק את הקישור.');
 } else {
-  db.ref('studio_data/workshops').on('value', snap => {
-    const list = snap.val() || [];
-    const w = (Array.isArray(list) ? list : Object.values(list)).find(x => x && x.id === id);
-    if(!w){
-      renderError('הסדנא לא נמצאה.');
-      return;
-    }
-    if(w.active === false){
-      renderError('הסדנא הזו לא פעילה כרגע.');
-      return;
-    }
-    render(w);
-  }, err => {
-    console.error(err);
-    renderError('שגיאה בטעינה. נסה לרענן.');
-  });
+  // Single-shot HTTP fetch (not a WebSocket subscription) — survives
+  // restricted in-app browsers (WhatsApp, Instagram, etc. on iOS) that
+  // block persistent connections. One retry with a short delay.
+  let attempt = 0;
+  function loadWorkshop(){
+    attempt++;
+    db.ref('studio_data/workshops').once('value').then(snap => {
+      const list = snap.val() || [];
+      const w = (Array.isArray(list) ? list : Object.values(list)).find(x => x && x.id === id);
+      if(!w){ renderError('הסדנא לא נמצאה.'); return; }
+      if(w.active === false){ renderError('הסדנא הזו לא פעילה כרגע.'); return; }
+      render(w);
+    }).catch(err => {
+      console.error('workshop load attempt ' + attempt + ' failed:', err);
+      if (attempt < 2) { setTimeout(loadWorkshop, 1500); return; }
+      renderError('שגיאה בטעינה. בדוק חיבור אינטרנט ונסה שוב.\nאם פתחת מתוך וואטסאפ — נסה לפתוח דרך Safari.');
+    });
+  }
+  loadWorkshop();
 }
 </script>
 </body>
