@@ -361,7 +361,141 @@ function render(c){
 
   if (!c.signature) initSignaturePad();
 
+  window._currentContract = c;
   document.title = 'סיכום הפקה — ' + (songsLabel || c.clientName || 'אליאור רביד');
+}
+
+// ===== PDF-only layout =====
+// Builds a dedicated, A4-tight DOM tree off-screen — used only as the
+// source for html2pdf. Keeps the live page free to be spacious while
+// the PDF stays compact, single-page, with visible signatures and
+// clean RTL (which html2canvas struggles with on the live layout).
+function buildPdfPrintable(c){
+  const songs = (c.songs && c.songs.length) ? c.songs : (c.songTitle ? [c.songTitle] : []);
+  const kind = _ctrKindLabel(c);
+  const songsLabel = songs.length <= 1 ? (songs[0] || '—') : songs.join(', ');
+  const total = (c.basePrice || 0) + (c.extras || []).reduce(function(s,e){ return s + (parseFloat(e.price)||0); }, 0);
+  const halfA = Math.round(total / 2);
+  const halfB = total - halfA;
+
+  const baseDesc = kind.plural
+    ? 'חבילת הפקה — ' + kind.metaLabel + ' · הפקה, מיקס, מאסטר, נגן אחד פר שיר, עד 5 סבבי תיקונים לשיר'
+    : 'חבילת הפקה בסיסית — הפקה, מיקס, מאסטר, נגן אחד, עד 5 סבבי תיקונים';
+
+  const rightsTarget = kind.plural ? 'השירים (מילים ולחן)' : 'השיר (מילים ולחן)';
+  let rightsHtml;
+  if (c.rightsMode === 'split' && Array.isArray(c.splitShares) && c.splitShares.length) {
+    const parts = c.splitShares.filter(function(s){ return s.name && s.percent > 0; })
+                               .map(function(s){ return s.percent + '% ' + escHtml(s.name); });
+    rightsHtml = 'זכויות הכתיבה של ' + rightsTarget + ' מתחלקות: ' + parts.join(' · ') + ', ורשומות בהתאם באקו"ם.';
+  } else {
+    rightsHtml = 'זכויות הכתיבה של ' + rightsTarget + ' רשומות על שם <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> באקו"ם.';
+  }
+
+  let priceRows = '<tr><td style="padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);font-size:12px;color:#3d2818">' + baseDesc + '</td>' +
+                  '<td style="padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);text-align:left;font-weight:700;font-size:12px;color:#3d2818;white-space:nowrap">' + fmtMoney(c.basePrice || 0) + '</td></tr>';
+  (c.extras || []).forEach(function(e){
+    priceRows += '<tr><td style="padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);font-size:12px;color:#3d2818">' + escHtml(e.label || '') + '</td>' +
+                 '<td style="padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);text-align:left;font-weight:700;font-size:12px;color:#3d2818;white-space:nowrap">' + fmtMoney(e.price || 0) + '</td></tr>';
+  });
+  priceRows += '<tr><td style="padding:8px 0 0;font-weight:900;font-size:14px;border-top:1.5px solid #b07c3e;color:#2a1810">סה"כ</td>' +
+               '<td style="padding:8px 0 0;font-weight:900;font-size:15px;border-top:1.5px solid #b07c3e;color:#a06c48;text-align:left;white-space:nowrap">' + fmtMoney(total) + '</td></tr>';
+
+  const songsBlock = songs.length > 1
+    ? '<div style="margin-bottom:10px"><div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13px;font-weight:900;color:#2a1810;margin-bottom:3px">השירים בפרויקט</div>' +
+      '<ol style="padding-right:18px;margin:0;font-size:12px;line-height:1.5;color:#3d2818">' +
+      songs.map(function(s){ return '<li>' + escHtml(s) + '</li>'; }).join('') + '</ol></div>'
+    : '';
+
+  const producerImg = c.producerSignature
+    ? '<img src="' + c.producerSignature + '" style="max-height:52px;display:block;margin:4px auto 2px" crossorigin="anonymous">'
+    : '<div style="color:#b07c3e;font-style:italic;padding:10px 4px;font-size:10px">— ללא חתימה דיגיטלית —</div>';
+  const producerWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') :
+                       (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
+
+  const clientImg = c.signature && c.signature.dataUrl
+    ? '<img src="' + c.signature.dataUrl + '" style="max-height:52px;display:block;margin:4px auto 2px" crossorigin="anonymous">'
+    : '<div style="color:#b07c3e;font-style:italic;padding:10px 4px;font-size:10px">— טרם נחתם —</div>';
+  const clientWhen = c.signature && c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '';
+  const clientFullName = (c.signature && c.signature.clientName) || c.clientName || '';
+
+  const wrap = document.createElement('div');
+  wrap.dir = 'rtl';
+  wrap.lang = 'he';
+  // Fixed off-screen so layout is real but invisible to the user.
+  wrap.style.cssText =
+    'position:fixed;left:-10000px;top:0;width:760px;' +
+    'background:#fdf8f0;padding:30px 34px;box-sizing:border-box;' +
+    "font-family:'Heebo',system-ui,sans-serif;color:#2a1810;line-height:1.5;direction:rtl;text-align:right;";
+
+  wrap.innerHTML =
+    '<div style="text-align:center;padding-bottom:12px;border-bottom:1px solid rgba(176,124,62,0.3);margin-bottom:14px">' +
+      '<div style="font-size:10px;letter-spacing:2.5px;color:#a06c48;font-weight:800;text-transform:uppercase">אליאור רביד · אולפן</div>' +
+      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:28px;font-weight:900;margin:6px 0 3px;color:#2a1810">סיכום הפקה</div>' +
+      '<div style="font-size:12px;color:#6b4423">בין <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> לבין <b>' + escHtml(c.clientName || '') + '</b></div>' +
+    '</div>' +
+
+    '<div style="display:flex;gap:10px;margin-bottom:12px;direction:rtl">' +
+      '<div style="flex:1;background:rgba(212,165,116,0.10);border-radius:8px;padding:8px 12px">' +
+        '<div style="font-size:9px;color:#a06c48;font-weight:800;text-transform:uppercase;letter-spacing:1.2px">שם הפרויקט</div>' +
+        '<div style="font-size:14px;font-weight:800;margin-top:2px;color:#2a1810">' + escHtml(songsLabel) + '</div>' +
+      '</div>' +
+      '<div style="flex:1;background:rgba(212,165,116,0.10);border-radius:8px;padding:8px 12px">' +
+        '<div style="font-size:9px;color:#a06c48;font-weight:800;text-transform:uppercase;letter-spacing:1.2px">סוג / תאריך</div>' +
+        '<div style="font-size:14px;font-weight:800;margin-top:2px;color:#2a1810">' + kind.metaLabel + ' · ' + escHtml(fmtDate(c.projectDate) || '—') + '</div>' +
+      '</div>' +
+    '</div>' +
+
+    songsBlock +
+
+    '<div style="margin-bottom:10px">' +
+      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-bottom:4px">מה כולל הפרויקט</div>' +
+      '<div style="font-size:12px;line-height:1.55;color:#3d2818">' +
+        (kind.plural
+          ? 'חבילת ההפקה כוללת לכל שיר: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים</b>. בסיום תקבל/י את השירים מוגמרים, מוכנים לחלוטין להעלאה לכל הפלטפורמות.'
+          : 'חבילת ההפקה כוללת: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים על המיקס</b>. בסיום תקבל/י שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.') +
+      '</div>' +
+      ((c.extras || []).length
+        ? '<div style="margin-top:5px;font-size:12px;color:#3d2818"><b>תוספות שנבחרו:</b> ' +
+          c.extras.map(function(e){ return escHtml(e.label || ''); }).join(' · ') + '</div>'
+        : '') +
+    '</div>' +
+
+    '<div style="margin-bottom:10px">' +
+      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-bottom:4px">מחיר</div>' +
+      '<table style="width:100%;border-collapse:collapse;direction:rtl">' + priceRows + '</table>' +
+      '<div style="margin-top:8px;font-size:11px;color:#6b4423"><b>תנאי תשלום:</b> ' + fmtMoney(halfA) + ' עם תחילת העבודה · ' + fmtMoney(halfB) + ' בשלב המיקס. הקבצים הסופיים נמסרים לאחר השלמת התשלום.</div>' +
+    '</div>' +
+
+    '<div style="margin-bottom:10px">' +
+      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-bottom:4px">תיקונים</div>' +
+      '<div style="font-size:11.5px;line-height:1.55;color:#3d2818">המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס' + (kind.plural ? ' לכל שיר' : '') + ' — מספר נדיב שמכסה כמעט כל פרויקט. כל סבב הוא רשימת הערות אחת. אם במקרה נדיר יידרשו סבבים נוספים, כל אחד הוא <b>₪300</b>. שינוי כיוון מהותי של ההפקה נחשב לעבודה חדשה ומתומחר בנפרד.</div>' +
+    '</div>' +
+
+    '<div style="margin-bottom:14px">' +
+      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-bottom:4px">זכויות</div>' +
+      '<div style="font-size:11.5px;line-height:1.55;color:#3d2818">ההקלטה הסופית (המאסטר) שלך לחלוטין — חופשי/ה לעשות בה כל שתרצה/י.</div>' +
+      '<div style="font-size:11.5px;line-height:1.55;color:#3d2818;margin-top:3px">' + rightsHtml + '</div>' +
+    '</div>' +
+
+    '<div style="display:flex;gap:10px;margin-top:14px;page-break-inside:avoid;direction:rtl">' +
+      '<div style="flex:1;background:rgba(212,165,116,0.08);border:1.5px solid rgba(176,124,62,0.35);border-radius:10px;padding:10px 12px;text-align:center">' +
+        '<div style="font-size:9px;color:#a06c48;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px">חתימת המפיק</div>' +
+        producerImg +
+        '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-top:3px">' + escHtml(c.producerName || 'אליאור רביד') + '</div>' +
+        (producerWhen ? '<div style="font-size:10px;color:#6b4423;margin-top:2px">' + producerWhen + '</div>' : '') +
+      '</div>' +
+      '<div style="flex:1;background:rgba(52,199,89,0.10);border:1.5px solid rgba(52,199,89,0.4);border-radius:10px;padding:10px 12px;text-align:center">' +
+        '<div style="font-size:9px;color:#16a34a;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px">✓ חתימת הזמר/ת</div>' +
+        clientImg +
+        '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-top:3px">' + escHtml(clientFullName) + '</div>' +
+        (clientWhen ? '<div style="font-size:10px;color:#6b4423;margin-top:2px">' + clientWhen + '</div>' : '') +
+      '</div>' +
+    '</div>' +
+
+    '<div style="text-align:center;margin-top:14px;padding-top:8px;border-top:1px solid rgba(176,124,62,0.25);color:#a06c48;font-size:10px;font-weight:600">סיכום הפקה של <b>אליאור רביד</b> · מפיק מוזיקלי</div>';
+
+  return wrap;
 }
 
 // ===== Signature pad =====
@@ -503,28 +637,51 @@ function closeEmailModal(){
   if (m) m.remove();
 }
 
-// Generate a PDF Blob of the current signed contract (the .wrap element).
-// The email modal is temporarily hidden so it doesn't appear in the output.
+// Generate a PDF Blob of the signed contract using the dedicated
+// off-screen printable layout (not the live page). Waits for embedded
+// signature images to load so they actually render into the PDF.
 async function generateContractPdf(filename){
   if (typeof html2pdf === 'undefined') throw new Error('PDF library not loaded');
-  const wrap = document.querySelector('.wrap');
-  if (!wrap) throw new Error('contract not rendered');
-  const modal = document.getElementById('email-modal');
-  const prevDisplay = modal ? modal.style.display : null;
-  if (modal) modal.style.display = 'none';
+  const c = window._currentContract;
+  if (!c) throw new Error('contract not loaded');
+
+  const el = buildPdfPrintable(c);
+  document.body.appendChild(el);
   try {
+    // Wait for the signature <img> tags (data: URLs) to be fully decoded
+    // before html2canvas snapshots, otherwise the PDF can be missing them.
+    const imgs = Array.from(el.querySelectorAll('img'));
+    await Promise.all(imgs.map(function(img){
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise(function(resolve){
+        img.onload = resolve;
+        img.onerror = resolve;
+        setTimeout(resolve, 2000);
+      });
+    }));
+    // Give the browser a paint tick.
+    await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
+
     const opt = {
-      margin:       [8, 8, 10, 8],
+      margin:       [8, 8, 8, 8],
       filename:     filename || 'contract.pdf',
-      image:        { type: 'jpeg', quality: 0.72 },
-      html2canvas:  { scale: 1.25, useCORS: true, backgroundColor: '#fdf8f0', letterRendering: true },
+      image:        { type: 'jpeg', quality: 0.85 },
+      html2canvas:  {
+        scale: 1.5,
+        useCORS: true,
+        backgroundColor: '#fdf8f0',
+        letterRendering: true,
+        windowWidth: 760,
+        scrollX: 0,
+        scrollY: 0
+      },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+      pagebreak:    { mode: ['css', 'legacy'] }
     };
-    const blob = await html2pdf().set(opt).from(wrap).output('blob');
+    const blob = await html2pdf().set(opt).from(el).output('blob');
     return blob;
   } finally {
-    if (modal) modal.style.display = prevDisplay || '';
+    el.remove();
   }
 }
 
