@@ -2976,6 +2976,54 @@
     .wk-empty-emoji { font-size: 48px; margin-bottom: 10px; }
     .wk-empty-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
 
+    /* ===== CONTRACTS ===== */
+    .ctr-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+      transition: transform .15s, box-shadow .15s, border-color .15s;
+    }
+    .ctr-card:hover { border-color: var(--accent); }
+    .ctr-card-head {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+    }
+    .ctr-card-title { flex: 1; font-size: 16px; font-weight: 900; color: var(--text); line-height: 1.3; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .ctr-card-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+    .ctr-card-amt { font-size: 16px; font-weight: 900; color: var(--accent); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .ctr-status { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; flex-shrink: 0; }
+    .ctr-status.draft   { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+    .ctr-status.sent    { background: rgba(74,163,255,0.12); color: #4aa3ff; border: 1px solid rgba(74,163,255,0.3); }
+    .ctr-status.signed  { background: rgba(52,199,89,0.12); color: #16a34a; border: 1px solid rgba(52,199,89,0.3); }
+    .ctr-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .ctr-actions .btn { flex: 1; min-width: 110px; }
+    .ctr-empty {
+      text-align: center; padding: 50px 20px; color: var(--text-muted);
+      background: var(--surface); border: 1.5px dashed var(--border); border-radius: 16px;
+    }
+    .ctr-empty-emoji { font-size: 48px; margin-bottom: 10px; }
+    .ctr-empty-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+
+    .ctr-extra-row {
+      display: flex; gap: 8px; align-items: center;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 10px; margin-top: 8px;
+    }
+    .ctr-extra-row input[type="text"] { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; font-size: 13px; color: var(--text); font-family: 'Heebo', inherit; }
+    .ctr-extra-row input[type="number"] { width: 90px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; font-size: 13px; color: var(--text); text-align: right; font-family: 'Heebo', inherit; font-variant-numeric: tabular-nums; }
+    .ctr-extra-row button { background: transparent; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 6px; line-height: 1; }
+    .ctr-extra-row button:hover { color: var(--red); }
+
+    .ctr-split-row {
+      display: flex; gap: 8px; align-items: center;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 10px; margin-top: 6px;
+    }
+    .ctr-split-row input[type="text"] { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; font-size: 13px; color: var(--text); font-family: 'Heebo', inherit; }
+    .ctr-split-row input[type="number"] { width: 70px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; font-size: 13px; color: var(--text); text-align: right; font-family: 'Heebo', inherit; font-variant-numeric: tabular-nums; }
+
   </style>
 <style>
   /* ===== LOGIN SCREEN ===== */
@@ -3309,6 +3357,7 @@
     <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon">👥</span> לקוחות</a>
     <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon">✅</span> משימות יומיות</a>
     <a onclick="showPage('workshops')" data-page="workshops"><span class="nav-icon">🎓</span> סדנאות</a>
+    <a onclick="showPage('contracts')" data-page="contracts"><span class="nav-icon">📜</span> סיכומי הפקה</a>
     <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
@@ -3842,6 +3891,63 @@
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="saveWorkshop()">שמירה</button>
         <button class="btn btn-ghost" onclick="closeModal('workshop')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CONTRACTS (סיכומי הפקה) ===== -->
+  <div class="page" id="page-contracts">
+    <div class="page-header">
+      <div><h2>📜 סיכומי הפקה</h2><p>מסמכי עבודה דינמיים לכל פרויקט · לקוח חותם בקישור באצבע</p></div>
+      <button class="btn btn-primary" onclick="openContractEditor(null)">+ סיכום חדש</button>
+    </div>
+    <div id="contracts-list"></div>
+  </div>
+
+  <div class="modal-overlay" id="modal-contract">
+    <div class="modal" style="max-width:580px">
+      <h3 id="ctr-modal-title">📜 סיכום הפקה חדש</h3>
+
+      <div class="form-row">
+        <div class="form-group"><label>שם הזמר/לקוח *</label><input type="text" id="ctr-client" placeholder="שם מלא"></div>
+        <div class="form-group"><label>תאריך</label><input type="date" id="ctr-date"></div>
+      </div>
+      <div class="form-group"><label>שם השיר / הפרויקט *</label><input type="text" id="ctr-song" placeholder="שם השיר או הפרויקט"></div>
+
+      <div class="form-group" style="margin-top:18px">
+        <label>מחיר הבסיס (₪)</label>
+        <input type="number" id="ctr-base" value="12000" min="0">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">כולל: הפקה · מיקס · מאסטר · נגן אחד · עד 5 סבבי תיקונים</div>
+      </div>
+
+      <div class="form-group">
+        <label>תוספות</label>
+        <div id="ctr-extras-list"></div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="ctrAddExtra('musician')" style="margin-top:8px">+ נגן נוסף (₪700)</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="ctrAddExtra('revisions')" style="margin-top:8px;margin-right:6px">+ סבב תיקונים נוסף (₪300)</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="ctrAddExtra('custom')" style="margin-top:8px;margin-right:6px">+ פריט מותאם</button>
+      </div>
+
+      <div class="form-group" style="margin-top:18px">
+        <label>זכויות הכתיבה (פאבלישינג)</label>
+        <div style="display:flex;gap:8px">
+          <button type="button" id="ctr-rights-solo" class="gp-btn" onclick="ctrSetRights('solo')">100% למפיק</button>
+          <button type="button" id="ctr-rights-split" class="gp-btn" onclick="ctrSetRights('split')">כתיבה משותפת</button>
+        </div>
+        <div id="ctr-split-shares" style="display:none;margin-top:10px"></div>
+      </div>
+
+      <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-top:18px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:13px;font-weight:800;color:var(--text-muted)">סה"כ</span>
+          <span style="font-size:22px;font-weight:900;color:var(--text)" id="ctr-total">₪12,000</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">חצי מראש · חצי במיקס · קבצים סופיים אחרי תשלום</div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="saveContract()">שמור</button>
+        <button class="btn btn-ghost" onclick="closeModal('contract')">ביטול</button>
       </div>
     </div>
   </div>
@@ -4521,7 +4627,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -4721,7 +4827,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, workshops:5, dashboard:6};
+  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, workshops:5, contracts:6, dashboard:7};
   if (name === 'daily') _dailyDate = dailyDateStr();
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
@@ -7473,6 +7579,7 @@ function refreshAll() {
   renderPendingBox();
   renderDaily();
   renderWorkshops();
+  renderContracts();
 }
 
 // ===== גיבוי ושחזור =====
@@ -8554,6 +8661,198 @@ async function shareWorkshop(id){
   } catch(e){
     prompt('הקישור:', url);
   }
+}
+
+// ============================================================
+// ===== CONTRACTS / סיכומי הפקה ============================
+// ============================================================
+let _ctrEditId = null;
+let _ctrExtras = [];   // [{type:'musician'|'revisions'|'custom', label, price}]
+let _ctrRights = 'solo'; // 'solo' | 'split'
+let _ctrShares = [{name:'אליאור רביד', percent:50},{name:'', percent:50}];
+
+function ctrPublicUrl(id){
+  const base = location.origin + location.pathname.replace(/[^/]+$/, '');
+  return base + 'contract.html?id=' + encodeURIComponent(id);
+}
+
+function _ctrTotal(){
+  const base = parseFloat(document.getElementById('ctr-base')?.value) || 0;
+  const extrasTotal = _ctrExtras.reduce((s, e) => s + (parseFloat(e.price) || 0), 0);
+  return base + extrasTotal;
+}
+
+function _ctrRefreshTotal(){
+  const el = document.getElementById('ctr-total');
+  if (el) el.textContent = fmtMoney(_ctrTotal());
+}
+
+function ctrAddExtra(type){
+  const presets = {
+    musician:  { label: 'נגן נוסף (גיטרה)', price: 700 },
+    revisions: { label: 'סבב תיקונים נוסף', price: 300 },
+    custom:    { label: '', price: 0 }
+  };
+  _ctrExtras.push(Object.assign({type}, presets[type]));
+  _ctrRenderExtras();
+  _ctrRefreshTotal();
+}
+
+function _ctrRenderExtras(){
+  const el = document.getElementById('ctr-extras-list');
+  if (!el) return;
+  if (!_ctrExtras.length) { el.innerHTML = '<div style="font-size:11px;color:var(--text-muted);padding:6px 2px">אין תוספות. הבסיס לבד.</div>'; return; }
+  el.innerHTML = _ctrExtras.map((e, i) => (
+    '<div class="ctr-extra-row">' +
+      '<input type="text" placeholder="תיאור" value="' + String(e.label||'').replace(/"/g,'&quot;') + '" oninput="_ctrExtras[' + i + '].label = this.value">' +
+      '<input type="number" min="0" value="' + (e.price||0) + '" oninput="_ctrExtras[' + i + '].price = parseFloat(this.value)||0; _ctrRefreshTotal();">' +
+      '<span style="font-size:12px;color:var(--text-muted)">₪</span>' +
+      '<button type="button" onclick="_ctrRemoveExtra(' + i + ')" aria-label="מחק">×</button>' +
+    '</div>'
+  )).join('');
+}
+
+function _ctrRemoveExtra(i){
+  _ctrExtras.splice(i, 1);
+  _ctrRenderExtras();
+  _ctrRefreshTotal();
+}
+
+function ctrSetRights(mode){
+  _ctrRights = mode;
+  document.getElementById('ctr-rights-solo')?.classList.toggle('active', mode === 'solo');
+  document.getElementById('ctr-rights-split')?.classList.toggle('active', mode === 'split');
+  const box = document.getElementById('ctr-split-shares');
+  if (!box) return;
+  if (mode === 'split') {
+    box.style.display = 'block';
+    _ctrRenderShares();
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function _ctrRenderShares(){
+  const box = document.getElementById('ctr-split-shares');
+  if (!box) return;
+  if (!_ctrShares.length) _ctrShares = [{name:'אליאור רביד', percent:50},{name:'', percent:50}];
+  box.innerHTML = _ctrShares.map((s, i) => (
+    '<div class="ctr-split-row">' +
+      '<input type="text" placeholder="שם" value="' + String(s.name||'').replace(/"/g,'&quot;') + '" oninput="_ctrShares[' + i + '].name = this.value">' +
+      '<input type="number" min="0" max="100" value="' + (s.percent||0) + '" oninput="_ctrShares[' + i + '].percent = parseFloat(this.value)||0">' +
+      '<span style="font-size:12px;color:var(--text-muted)">%</span>' +
+      (_ctrShares.length > 2 ? '<button type="button" onclick="_ctrRemoveShare(' + i + ')" style="background:transparent;border:none;color:var(--text-muted);font-size:16px;cursor:pointer">×</button>' : '') +
+    '</div>'
+  )).join('') +
+  '<button type="button" class="btn btn-ghost btn-sm" onclick="_ctrAddShare()" style="margin-top:8px">+ הוסף שותף</button>';
+}
+function _ctrAddShare(){ _ctrShares.push({name:'', percent:0}); _ctrRenderShares(); }
+function _ctrRemoveShare(i){ _ctrShares.splice(i,1); _ctrRenderShares(); }
+
+function openContractEditor(id){
+  _ctrEditId = id;
+  const c = id ? (load('contracts') || []).find(x => x.id === id) : null;
+  if (c && c.status === 'signed') { toast('סיכום שכבר נחתם — נפתח לצפייה בלבד'); }
+
+  document.getElementById('ctr-modal-title').textContent = c ? (c.status === 'signed' ? '📜 סיכום חתום' : '✏️ עריכת סיכום') : '📜 סיכום הפקה חדש';
+  document.getElementById('ctr-client').value = c ? (c.clientName || '') : '';
+  document.getElementById('ctr-date').value   = c ? (c.projectDate || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10);
+  document.getElementById('ctr-song').value   = c ? (c.songTitle || '') : '';
+  document.getElementById('ctr-base').value   = c ? (c.basePrice ?? 12000) : 12000;
+
+  _ctrExtras = c && Array.isArray(c.extras) ? c.extras.map(e => Object.assign({}, e)) : [];
+  _ctrRights = c && c.rightsMode ? c.rightsMode : 'solo';
+  _ctrShares = c && Array.isArray(c.splitShares) && c.splitShares.length
+    ? c.splitShares.map(s => Object.assign({}, s))
+    : [{name:'אליאור רביד', percent:50},{name: (c && c.clientName) || '', percent:50}];
+
+  _ctrRenderExtras();
+  ctrSetRights(_ctrRights);
+  _ctrRefreshTotal();
+
+  document.getElementById('modal-contract').classList.add('open');
+}
+
+function saveContract(){
+  const clientName = (document.getElementById('ctr-client').value || '').trim();
+  const songTitle  = (document.getElementById('ctr-song').value || '').trim();
+  if (!clientName) { toast('צריך שם של זמר'); return; }
+  if (!songTitle)  { toast('צריך שם של שיר/פרויקט'); return; }
+  const projectDate = document.getElementById('ctr-date').value;
+  const basePrice = parseFloat(document.getElementById('ctr-base').value) || 0;
+
+  const list = load('contracts') || [];
+  let c;
+  if (_ctrEditId) {
+    c = list.find(x => x.id === _ctrEditId);
+    if (!c) { toast('סיכום לא נמצא'); return; }
+    if (c.status === 'signed') { closeModal('contract'); return; } // read-only
+  } else {
+    c = { id: 'ctr_' + genId(), createdAt: Date.now(), status: 'draft', producerName: 'אליאור רביד', signature: null };
+    list.push(c);
+  }
+  c.updatedAt = Date.now();
+  c.clientName = clientName;
+  c.songTitle = songTitle;
+  c.projectDate = projectDate;
+  c.basePrice = basePrice;
+  c.extras = _ctrExtras.slice();
+  c.rightsMode = _ctrRights;
+  c.splitShares = _ctrRights === 'split' ? _ctrShares.slice() : [];
+
+  save('contracts', list);
+  closeModal('contract');
+  renderContracts();
+  toast('✅ נשמר');
+}
+
+function deleteContract(id){
+  if (!confirm('למחוק את הסיכום?')) return;
+  save('contracts', (load('contracts') || []).filter(x => x.id !== id));
+  renderContracts();
+  toast('🗑 נמחק');
+}
+
+async function shareContract(id){
+  const url = ctrPublicUrl(id);
+  const c = (load('contracts') || []).find(x => x.id === id);
+  const title = c ? ('סיכום הפקה — ' + (c.songTitle || '')) : 'סיכום הפקה';
+  const msg = 'היי ' + (c ? c.clientName : '') + ', שולח לך דף קצר שמסכם את כל מה שדיברנו עליו. תעבור, ואם הכל בסדר תחתום בקישור.\n' + url;
+  if (navigator.share) {
+    try { await navigator.share({ title: title, text: msg, url: url }); return; }
+    catch(e){ if (e && e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); toast('🔗 הקישור הועתק'); }
+  catch(e){ prompt('הקישור לחתימה:', url); }
+}
+
+function renderContracts(){
+  const el = document.getElementById('contracts-list');
+  if (!el) return;
+  const list = (load('contracts') || []).slice().sort((a,b) => (b.updatedAt||b.createdAt||0) - (a.updatedAt||a.createdAt||0));
+  if (!list.length){
+    el.innerHTML = '<div class="ctr-empty"><div class="ctr-empty-emoji">📜</div><div class="ctr-empty-title">אין עדיין סיכומי הפקה</div><div>לחץ "+ סיכום חדש" ליצור את הראשון.</div></div>';
+    return;
+  }
+  el.innerHTML = list.map(c => {
+    const total = (c.basePrice||0) + (c.extras||[]).reduce((s,e)=>s+(parseFloat(e.price)||0),0);
+    const dateLabel = c.projectDate ? new Date(c.projectDate).toLocaleDateString('he-IL', {day:'numeric', month:'short', year:'numeric'}) : '';
+    const statusLabel = c.status === 'signed' ? '✓ נחתם' : c.status === 'sent' ? '↗ נשלח' : '✎ טיוטה';
+    const signedAtLabel = c.signature && c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '';
+    return '<div class="ctr-card">' +
+      '<div class="ctr-card-head">' +
+        '<div class="ctr-card-title">' + escapeHtml(c.songTitle || 'ללא שם') + '</div>' +
+        '<span class="ctr-status ' + (c.status || 'draft') + '">' + statusLabel + '</span>' +
+        '<div class="ctr-card-amt">' + fmtMoney(total) + '</div>' +
+      '</div>' +
+      '<div class="ctr-card-sub">' + escapeHtml(c.clientName || 'ללא לקוח') + (dateLabel ? ' · ' + dateLabel : '') + (signedAtLabel ? ' · נחתם ' + signedAtLabel : '') + '</div>' +
+      '<div class="ctr-actions">' +
+        '<button class="btn btn-ghost btn-sm" onclick="shareContract(\'' + c.id + '\')">🔗 שלח קישור</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="openContractEditor(\'' + c.id + '\')">' + (c.status === 'signed' ? '👁 צפה' : '✏️ ערוך') + '</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="deleteContract(\'' + c.id + '\')" style="color:#dc2626">🗑 מחק</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 // ===== AUDIO LOCAL STORAGE (IndexedDB) =====

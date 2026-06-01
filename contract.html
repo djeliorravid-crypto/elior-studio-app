@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>סיכום הפקה · אליאור רביד</title>
+<meta name="theme-color" content="#f5e8d3">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'Heebo', system-ui, sans-serif;
+    background: #fdf8f0;
+    color: #2a1810;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding: 0 18px 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding-top: 34px; }
+  .brand {
+    text-align: center; font-size: 11px; letter-spacing: .25em;
+    color: #a06c48; font-weight: 800; margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-family: 'Frank Ruhl Libre', 'Heebo', serif;
+    font-size: 32px; font-weight: 900; text-align: center;
+    margin: 0 0 4px; letter-spacing: -.02em; color: #2a1810;
+  }
+  .subline { text-align: center; font-size: 14px; color: #6b4423; margin-bottom: 24px; }
+  .card {
+    background: #fff;
+    border: 1px solid rgba(176,124,62,0.2);
+    border-radius: 18px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 10px 30px -10px rgba(160,108,72,0.2);
+  }
+  .card h2 {
+    font-family: 'Frank Ruhl Libre','Heebo',serif;
+    font-size: 19px; font-weight: 900; color: #2a1810;
+    margin: 0 0 12px; letter-spacing: -.015em;
+  }
+  .card p { font-size: 15px; line-height: 1.7; color: #3d2818; margin: 0 0 10px; }
+  .card p:last-child { margin-bottom: 0; }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .meta-cell { background: rgba(212,165,116,0.08); border-radius: 12px; padding: 12px 14px; }
+  .meta-label { font-size: 10.5px; color: #a06c48; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+  .meta-val { font-size: 16px; color: #2a1810; font-weight: 800; margin-top: 4px; word-break: break-word; }
+
+  table.price {
+    width: 100%; border-collapse: collapse; margin-bottom: 8px;
+  }
+  table.price td {
+    padding: 10px 4px;
+    border-bottom: 1px dashed rgba(176,124,62,0.25);
+    font-size: 15px; color: #3d2818;
+  }
+  table.price tr:last-child td { border-bottom: none; }
+  table.price td:last-child { text-align: left; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+  table.price tr.total td {
+    font-weight: 900; font-size: 18px; color: #2a1810;
+    border-top: 2px solid #b07c3e; padding-top: 14px;
+  }
+  table.price tr.total td:last-child { color: #a06c48; }
+
+  /* Signature block */
+  .sig-card { background: linear-gradient(135deg, #fff 0%, #fef5e3 100%); border: 2px solid rgba(176,124,62,0.25); }
+  .sig-canvas-wrap {
+    background: #fff;
+    border: 1.5px dashed rgba(176,124,62,0.45);
+    border-radius: 12px;
+    height: 180px;
+    position: relative;
+    touch-action: none;
+    overflow: hidden;
+  }
+  #sig-canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+  .sig-hint {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(160,108,72,0.4); font-size: 14px; pointer-events: none;
+    transition: opacity .2s;
+  }
+  .sig-clear {
+    margin-top: 8px; background: transparent; border: none; color: #a06c48;
+    font-size: 13px; font-weight: 700; cursor: pointer; padding: 4px 0;
+  }
+  .name-input {
+    width: 100%; background: #fff; border: 1.5px solid rgba(176,124,62,0.35);
+    border-radius: 12px; padding: 12px 14px;
+    font-size: 16px; font-weight: 700; color: #2a1810; direction: rtl;
+    font-family: inherit; outline: none; margin-top: 14px;
+  }
+  .name-input:focus { border-color: #a06c48; }
+  .btn-confirm {
+    display: block; width: 100%; margin-top: 16px;
+    background: linear-gradient(135deg, #ff9558, #ff6b4a); color: #fff;
+    border: none; border-radius: 14px; padding: 16px;
+    font-size: 16px; font-weight: 900; cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 12px 30px -8px rgba(255,107,74,0.45);
+    transition: transform .12s;
+  }
+  .btn-confirm:active { transform: scale(.98); }
+  .btn-confirm:disabled { opacity: .55; cursor: not-allowed; }
+
+  .signed-stamp {
+    text-align: center; padding: 24px;
+    background: rgba(52,199,89,0.08); border-radius: 14px; border: 1.5px solid rgba(52,199,89,0.3);
+  }
+  .signed-stamp .check { font-size: 42px; color: #16a34a; }
+  .signed-stamp .name { font-family: 'Frank Ruhl Libre','Heebo',serif; font-size: 22px; font-weight: 900; color: #2a1810; margin-top: 8px; }
+  .signed-stamp .when { font-size: 12px; color: #6b4423; margin-top: 4px; }
+  .signed-stamp img.sig-img { display: block; margin: 14px auto 4px; max-height: 80px; }
+
+  .loading, .error {
+    text-align: center; padding: 100px 20px; color: #a06c48;
+    font-size: 16px; font-weight: 700;
+  }
+  .error b { color: #c2410c; display: block; margin-bottom: 6px; font-size: 18px; }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 26px; }
+    .meta { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div id="root"><div class="loading">⏳ טוען...</div></div>
+
+<script>
+const DB_BASE = 'https://elior-studio-default-rtdb.firebaseio.com/studio_data';
+
+function getId(){ return new URLSearchParams(location.search).get('id') || ''; }
+function fmtMoney(n){ return '₪' + Math.abs(n).toLocaleString('he-IL', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+function fmtDate(s){ if(!s) return ''; try { return new Date(s).toLocaleDateString('he-IL', {day:'numeric', month:'long', year:'numeric'}); } catch(e){ return s; } }
+function escHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+
+function render(c){
+  const total = (c.basePrice || 0) + (c.extras || []).reduce((s,e) => s + (parseFloat(e.price)||0), 0);
+  const halfA = Math.round(total / 2);
+  const halfB = total - halfA;
+
+  // Pricing rows
+  let priceRows = '<tr><td>חבילת הפקה בסיסית — הפקה, מיקס, מאסטר, נגן אחד, עד 5 סבבי תיקונים</td><td>' + fmtMoney(c.basePrice || 0) + '</td></tr>';
+  (c.extras || []).forEach(function(e){
+    priceRows += '<tr><td>' + escHtml(e.label || (e.type === 'musician' ? 'נגן נוסף' : e.type === 'revisions' ? 'סבב תיקונים נוסף' : 'תוספת')) + '</td><td>' + fmtMoney(e.price || 0) + '</td></tr>';
+  });
+  priceRows += '<tr class="total"><td>סה"כ</td><td>' + fmtMoney(total) + '</td></tr>';
+
+  // Rights paragraph
+  let rightsHtml = '';
+  if (c.rightsMode === 'split' && Array.isArray(c.splitShares) && c.splitShares.length) {
+    const parts = c.splitShares.filter(s => s.name && s.percent > 0).map(s => s.percent + '% ' + escHtml(s.name));
+    rightsHtml = 'זכויות הכתיבה של השיר (מילים ולחן) מתחלקות: ' + parts.join(' · ') + ', ורשומות בהתאם באקו"ם.';
+  } else {
+    rightsHtml = 'זכויות הכתיבה של השיר (מילים ולחן) רשומות על שם <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> באקו"ם.';
+  }
+
+  const signedBlock = c.signature && c.signature.dataUrl ? (
+    '<div class="signed-stamp">' +
+      '<div class="check">✓</div>' +
+      '<div style="font-weight:800;color:#16a34a">סיכום ההפקה אושר</div>' +
+      '<img class="sig-img" src="' + c.signature.dataUrl + '" alt="חתימה">' +
+      '<div class="name">' + escHtml(c.signature.clientName || c.clientName) + '</div>' +
+      '<div class="when">' + (c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleString('he-IL') : '') + '</div>' +
+    '</div>'
+  ) : (
+    '<div class="card sig-card">' +
+      '<h2>אישור וחתימה</h2>' +
+      '<p style="margin-bottom:14px">חתום/י כאן באצבע ואשר/י את התנאים למעלה. עותק חתום יישמר אצל המפיק ויישלח אליך.</p>' +
+      '<div class="sig-canvas-wrap"><canvas id="sig-canvas"></canvas><div class="sig-hint" id="sig-hint">חתום פה באצבע</div></div>' +
+      '<button class="sig-clear" onclick="clearSig()">↺ נקה חתימה</button>' +
+      '<input class="name-input" id="signer-name" type="text" placeholder="השם המלא שלי" value="' + escHtml(c.clientName || '') + '">' +
+      '<button class="btn-confirm" id="confirm-btn" onclick="submitSignature()">✓ אני מאשר/ת את התנאים</button>' +
+    '</div>'
+  );
+
+  document.getElementById('root').innerHTML =
+    '<div class="wrap">' +
+      '<div class="brand">אליאור רביד · אולפן</div>' +
+      '<h1>סיכום הפקה</h1>' +
+      '<div class="subline">בין <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> לבין <b>' + escHtml(c.clientName || '') + '</b></div>' +
+
+      '<div class="card">' +
+        '<div class="meta">' +
+          '<div class="meta-cell"><div class="meta-label">שם הפרויקט</div><div class="meta-val">' + escHtml(c.songTitle || '') + '</div></div>' +
+          '<div class="meta-cell"><div class="meta-label">תאריך</div><div class="meta-val">' + escHtml(fmtDate(c.projectDate) || '—') + '</div></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="card"><h2>מה כולל הפרויקט</h2><p>חבילת ההפקה כוללת: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים על המיקס</b>. בסיום תקבל/י שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.</p>' +
+      ((c.extras || []).length ? '<p style="margin-top:12px"><b>תוספות שנבחרו:</b><br>' + c.extras.map(e => '• ' + escHtml(e.label || '')).join('<br>') + '</p>' : '') +
+      '</div>' +
+
+      '<div class="card"><h2>מחיר</h2><table class="price">' + priceRows + '</table>' +
+        '<p style="margin-top:12px;font-size:13px;color:#6b4423"><b>תנאי תשלום:</b> ' + fmtMoney(halfA) + ' עם תחילת העבודה · ' + fmtMoney(halfB) + ' בשלב המיקס. הקבצים הסופיים נמסרים לאחר השלמת התשלום.</p>' +
+      '</div>' +
+
+      '<div class="card"><h2>תיקונים</h2><p>המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס — מספר נדיב שמכסה כמעט כל פרויקט. כל סבב הוא רשימת הערות אחת. אם במקרה נדיר יידרשו סבבים נוספים, כל אחד הוא <b>₪300</b>. שינוי כיוון מהותי של ההפקה נחשב לעבודה חדשה ומתומחר בנפרד.</p></div>' +
+
+      '<div class="card"><h2>זכויות</h2><p>ההקלטה הסופית (המאסטר) שלך לחלוטין — חופשי/ה לעשות בה כל שתרצה/י.</p><p>' + rightsHtml + '</p></div>' +
+
+      signedBlock +
+
+      '<div style="text-align:center;margin-top:30px;color:#a06c48;font-size:12px;font-weight:600">סיכום הפקה של <b>אליאור רביד</b> · מפיק מוזיקלי</div>' +
+    '</div>';
+
+  if (!c.signature) initSignaturePad();
+
+  document.title = 'סיכום הפקה — ' + (c.songTitle || c.clientName || 'אליאור רביד');
+}
+
+// ===== Signature pad =====
+let _sigCtx = null, _sigCanvas = null, _sigDrawing = false, _sigLastX = 0, _sigLastY = 0, _sigDirty = false;
+
+function initSignaturePad(){
+  _sigCanvas = document.getElementById('sig-canvas');
+  if (!_sigCanvas) return;
+  function fit(){
+    const rect = _sigCanvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    _sigCanvas.width = Math.max(1, rect.width * dpr);
+    _sigCanvas.height = Math.max(1, rect.height * dpr);
+    _sigCtx = _sigCanvas.getContext('2d');
+    _sigCtx.scale(dpr, dpr);
+    _sigCtx.lineWidth = 2.4;
+    _sigCtx.lineCap = 'round';
+    _sigCtx.lineJoin = 'round';
+    _sigCtx.strokeStyle = '#1a1410';
+  }
+  fit();
+  function pos(e){
+    const r = _sigCanvas.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return { x: p.clientX - r.left, y: p.clientY - r.top };
+  }
+  function start(e){ e.preventDefault(); _sigDrawing = true; const p = pos(e); _sigLastX = p.x; _sigLastY = p.y; }
+  function move(e){
+    if (!_sigDrawing) return;
+    e.preventDefault();
+    const p = pos(e);
+    _sigCtx.beginPath();
+    _sigCtx.moveTo(_sigLastX, _sigLastY);
+    _sigCtx.lineTo(p.x, p.y);
+    _sigCtx.stroke();
+    _sigLastX = p.x; _sigLastY = p.y;
+    if (!_sigDirty) { _sigDirty = true; const hint = document.getElementById('sig-hint'); if (hint) hint.style.opacity = '0'; }
+  }
+  function end(){ _sigDrawing = false; }
+  _sigCanvas.addEventListener('touchstart', start, {passive: false});
+  _sigCanvas.addEventListener('touchmove', move, {passive: false});
+  _sigCanvas.addEventListener('touchend', end);
+  _sigCanvas.addEventListener('touchcancel', end);
+  _sigCanvas.addEventListener('mousedown', start);
+  _sigCanvas.addEventListener('mousemove', move);
+  _sigCanvas.addEventListener('mouseup', end);
+  _sigCanvas.addEventListener('mouseleave', end);
+}
+function clearSig(){
+  if (!_sigCtx || !_sigCanvas) return;
+  _sigCtx.clearRect(0, 0, _sigCanvas.width, _sigCanvas.height);
+  _sigDirty = false;
+  const hint = document.getElementById('sig-hint'); if (hint) hint.style.opacity = '1';
+}
+
+async function submitSignature(){
+  if (!_sigDirty) { alert('נא לחתום באזור החתימה'); return; }
+  const name = (document.getElementById('signer-name').value || '').trim();
+  if (!name) { alert('נא להזין שם מלא'); return; }
+  const btn = document.getElementById('confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ שולח...';
+  const dataUrl = _sigCanvas.toDataURL('image/png');
+  const id = getId();
+  try {
+    // Fetch current contracts, mark the one with `id` as signed, push back
+    const listRes = await fetch(DB_BASE + '/contracts.json?ts=' + Date.now(), {cache:'no-store'});
+    if (!listRes.ok) throw new Error('HTTP ' + listRes.status);
+    const all = (await listRes.json()) || [];
+    const arr = Array.isArray(all) ? all : Object.values(all);
+    const idx = arr.findIndex(x => x && x.id === id);
+    if (idx < 0) throw new Error('not found');
+    arr[idx].signature = { dataUrl: dataUrl, clientName: name, signedAt: Date.now() };
+    arr[idx].status = 'signed';
+    arr[idx].updatedAt = Date.now();
+    const putRes = await fetch(DB_BASE + '/contracts.json', {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(arr)
+    });
+    if (!putRes.ok) throw new Error('PUT HTTP ' + putRes.status);
+    // also nudge studio_meta so the producer's app re-syncs
+    await fetch('https://elior-studio-default-rtdb.firebaseio.com/studio_meta/contracts.json', {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(Date.now())
+    });
+    render(arr[idx]);
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  } catch(err) {
+    console.error('signature submit failed:', err);
+    btn.disabled = false;
+    btn.textContent = '✓ אני מאשר/ת את התנאים';
+    alert('שגיאה בשליחה: ' + (err.message || err) + '\nנסה שוב או רענן.');
+  }
+}
+
+function renderError(msg){
+  document.getElementById('root').innerHTML =
+    '<div class="error"><b>אופס</b><div style="white-space:pre-line">' + escHtml(msg) + '</div>' +
+    '<div style="margin-top:18px"><button onclick="location.reload()" style="background:linear-gradient(135deg,#ff9558,#ff6b4a);color:#fff;border:none;border-radius:12px;padding:11px 22px;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit">🔄 נסה שוב</button></div>' +
+    '</div>';
+}
+
+const id = getId();
+if (!id) {
+  renderError('לא צוין מזהה סיכום. בדוק את הקישור.');
+} else {
+  (async function load(){
+    let attempt = 0;
+    while (attempt < 2) {
+      attempt++;
+      try {
+        const res = await fetch(DB_BASE + '/contracts.json?ts=' + Date.now(), {cache: 'no-store'});
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!data) { renderError('הסיכום לא נמצא.'); return; }
+        const arr = Array.isArray(data) ? data : Object.values(data);
+        const c = arr.find(x => x && x.id === id);
+        if (!c) { renderError('הסיכום לא נמצא.'); return; }
+        render(c);
+        return;
+      } catch(err) {
+        console.error('contract load failed attempt ' + attempt + ':', err);
+        if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
+        else renderError('שגיאה בטעינה: ' + (err.message || err) + '\nאם פתחת מתוך וואטסאפ — נסה לפתוח דרך Safari.');
+      }
+    }
+  })();
+}
+</script>
+</body>
+</html>

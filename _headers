@@ -9,3 +9,6 @@
 
 /elior-studio-app/workshop.html
   Cache-Control: no-cache, no-store, must-revalidate
+
+/elior-studio-app/contract.html
+  Cache-Control: no-cache, no-store, must-revalidate
