@@ -514,23 +514,31 @@ async function generateContractPdf(filename){
   }
 }
 
-// Upload a Blob to tmpfiles.org — free, anonymous, 1-hour retention.
-// Returns a direct download URL that EmailJS fetches at send time and
-// embeds permanently into the recipient's email as an attachment.
+// Upload a Blob to catbox.moe — free, anonymous, permanent retention,
+// open CORS. Returns a direct download URL that EmailJS fetches at
+// send time and embeds permanently into the recipient's email.
 async function uploadPdfTemporary(blob, filename){
-  const form = new FormData();
-  form.append('file', blob, filename || 'contract.pdf');
-  const res = await fetch('https://tmpfiles.org/api/v1/upload', {
-    method: 'POST',
-    body: form
-  });
-  if (!res.ok) throw new Error('Upload HTTP ' + res.status);
-  const data = await res.json().catch(function(){ return null; });
-  if (!data || data.status !== 'success' || !data.data || !data.data.url) {
-    throw new Error('Unexpected upload response');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function(){ controller.abort(); }, 30000);
+  try {
+    const form = new FormData();
+    form.append('reqtype', 'fileupload');
+    form.append('fileToUpload', blob, filename || 'contract.pdf');
+    const res = await fetch('https://catbox.moe/user/api.php', {
+      method: 'POST',
+      body: form,
+      signal: controller.signal
+    });
+    if (!res.ok) throw new Error('Upload HTTP ' + res.status);
+    const url = (await res.text()).trim();
+    if (!/^https?:\/\//i.test(url)) throw new Error('Unexpected response: ' + url.slice(0, 80));
+    return url;
+  } catch(e) {
+    if (e && e.name === 'AbortError') throw new Error('העלאה ארכה יותר מ-30 שניות');
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  // tmpfiles returns a "view" URL; the direct download URL has /dl/ in it.
-  return data.data.url.replace('://tmpfiles.org/', '://tmpfiles.org/dl/');
 }
 
 async function sendContractEmail(){
