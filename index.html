@@ -3079,6 +3079,62 @@
     #ctr-print-wrap .signed-stamp .name { font-family: 'Frank Ruhl Libre', serif; font-size: 24px; font-weight: 900; color: #2a1810; margin-top: 10px; }
     #ctr-print-wrap .signed-stamp .when { font-size: 12px; color: #6b4423; margin-top: 6px; }
     #ctr-print-wrap .signed-stamp img { display: block; margin: 14px auto 4px; max-height: 90px; }
+    /* Two-up signature block: producer (left) + client (right) */
+    #ctr-print-wrap .sign-pair {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      margin-top: 26px;
+    }
+    #ctr-print-wrap .sign-cell {
+      background: rgba(212,165,116,0.06);
+      border: 1.5px solid rgba(176,124,62,0.25);
+      border-radius: 14px;
+      padding: 16px 14px;
+      text-align: center;
+    }
+    #ctr-print-wrap .sign-cell.client-signed { background: rgba(52,199,89,0.08); border-color: rgba(52,199,89,0.3); }
+    #ctr-print-wrap .sign-cell .role { font-size: 11px; color: #a06c48; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 6px; }
+    #ctr-print-wrap .sign-cell img { display: block; margin: 6px auto; max-height: 70px; max-width: 90%; }
+    #ctr-print-wrap .sign-cell .name { font-family: 'Frank Ruhl Libre', serif; font-size: 18px; font-weight: 900; color: #2a1810; margin-top: 4px; }
+    #ctr-print-wrap .sign-cell .when { font-size: 11px; color: #6b4423; margin-top: 4px; }
+    #ctr-print-wrap .sign-cell.pending { background: rgba(255,255,255,0.5); border-style: dashed; }
+    #ctr-print-wrap .sign-cell.pending .placeholder { color: #b07c3e; font-size: 13px; font-style: italic; padding: 18px 6px; }
+
+    /* In-app signature pad (producer setup) */
+    .sig-pad-frame {
+      position: relative; width: 100%; aspect-ratio: 5 / 2;
+      background: #fff;
+      border: 1.5px dashed rgba(200,152,90,0.5);
+      border-radius: 12px;
+      margin: 8px 0 6px;
+      overflow: hidden;
+    }
+    .sig-pad-frame canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+    .sig-pad-hint {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: #b07c3e; font-size: 14px; pointer-events: none; opacity: 0.7;
+    }
+    .sig-pad-frame.dirty .sig-pad-hint { display: none; }
+    /* Multi-song input rows in the editor */
+    .ctr-song-row { display: flex; gap: 8px; margin-bottom: 6px; }
+    .ctr-song-row input { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 14px; color: var(--text); font-family: 'Heebo', inherit; }
+    .ctr-song-row button { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 0 12px; color: #dc2626; cursor: pointer; font-size: 14px; }
+    .ctr-kind-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .ctr-kind-tab { flex: 1; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 8px; font-size: 13px; font-weight: 800; color: var(--text); cursor: pointer; text-align: center; transition: all .15s; font-family: 'Heebo', inherit; }
+    .ctr-kind-tab.active { background: linear-gradient(135deg, #d4a574, #a06c48); border-color: #c8985a; color: #fff; }
+    /* Producer-signature status banner shown above the contracts list */
+    .ctr-sig-banner {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(212,165,116,0.08);
+      border: 1px solid rgba(212,165,116,0.3);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .ctr-sig-banner.set { background: rgba(52,199,89,0.06); border-color: rgba(52,199,89,0.3); }
+    .ctr-sig-banner img { max-height: 36px; max-width: 90px; background: #fff; border-radius: 6px; padding: 2px 6px; }
+    .ctr-sig-banner .label { flex: 1; font-size: 13px; color: var(--text); font-weight: 600; }
+    .ctr-sig-banner button { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: var(--text); cursor: pointer; }
+    .ctr-sig-banner button:hover { border-color: var(--accent); }
 
   </style>
 <style>
@@ -3968,12 +4024,22 @@
         <div class="form-group"><label>שם הזמר/לקוח *</label><input type="text" id="ctr-client" placeholder="שם מלא"></div>
         <div class="form-group"><label>תאריך</label><input type="date" id="ctr-date"></div>
       </div>
-      <div class="form-group"><label>שם השיר / הפרויקט *</label><input type="text" id="ctr-song" placeholder="שם השיר או הפרויקט"></div>
+      <div class="form-group">
+        <label>סוג הפרויקט</label>
+        <div class="ctr-kind-tabs">
+          <button type="button" class="ctr-kind-tab active" id="ctr-kind-single" onclick="ctrSetKind('single')">שיר בודד</button>
+          <button type="button" class="ctr-kind-tab" id="ctr-kind-multi" onclick="ctrSetKind('multi')">2–3 שירים</button>
+          <button type="button" class="ctr-kind-tab" id="ctr-kind-ep" onclick="ctrSetKind('ep')">EP</button>
+          <button type="button" class="ctr-kind-tab" id="ctr-kind-album" onclick="ctrSetKind('album')">אלבום</button>
+        </div>
+        <div id="ctr-songs-list"></div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="ctrAddSong()" id="ctr-add-song-btn" style="margin-top:4px;display:none">+ הוסף שיר</button>
+      </div>
 
       <div class="form-group" style="margin-top:18px">
         <label>מחיר הבסיס (₪)</label>
         <input type="number" id="ctr-base" value="12000" min="0">
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">כולל: הפקה · מיקס · מאסטר · נגן אחד · עד 5 סבבי תיקונים</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px" id="ctr-base-hint">כולל: הפקה · מיקס · מאסטר · נגן אחד · עד 5 סבבי תיקונים</div>
       </div>
 
       <div class="form-group">
@@ -4078,6 +4144,27 @@
 
 <!-- Off-screen render target for the signed-contract image export -->
 <div id="ctr-print-wrap"></div>
+
+<!-- ===== PRODUCER SIGNATURE PAD ===== -->
+<div class="modal-overlay" id="modal-prod-sig">
+  <div class="modal" style="max-width:520px">
+    <h3>✍️ החתימה שלי</h3>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;line-height:1.6">
+      צייר את החתימה שלך פעם אחת. היא תוטבע אוטומטית על כל סיכום הפקה שתשלח. כשמישהו מאשר —
+      תופיע גם החתימה של הלקוח לידה.
+    </div>
+    <div class="sig-pad-frame" id="prod-sig-frame">
+      <canvas id="prod-sig-canvas"></canvas>
+      <div class="sig-pad-hint">— חתום פה באצבע —</div>
+    </div>
+    <div class="form-group" style="margin-top:8px"><label>שמך המלא (כפי שאתה רוצה שיופיע)</label><input type="text" id="prod-sig-name" placeholder="אליאור רביד"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveProducerSignature()">שמור חתימה</button>
+      <button class="btn btn-ghost" onclick="_prodSigClear()">נקה</button>
+      <button class="btn btn-ghost" onclick="closeModal('prod-sig')">ביטול</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== SIGNED CONTRACT VIEWER ===== -->
 <div class="modal-overlay" id="modal-ctr-viewer">
@@ -4697,7 +4784,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -8821,6 +8908,55 @@ function _ctrRenderShares(){
 function _ctrAddShare(){ _ctrShares.push({name:'', percent:0}); _ctrRenderShares(); }
 function _ctrRemoveShare(i){ _ctrShares.splice(i,1); _ctrRenderShares(); }
 
+let _ctrSongs = [];
+let _ctrKind  = 'single';
+const _CTR_KIND_DEFAULTS = { single: 12000, multi: 25000, ep: 45000, album: 80000 };
+const _CTR_KIND_HINTS = {
+  single: 'כולל: הפקה · מיקס · מאסטר · נגן אחד · עד 5 סבבי תיקונים',
+  multi:  'כולל: הפקה מלאה לכל שיר · נגן אחד פר שיר · עד 5 סבבי תיקונים לשיר',
+  ep:     'EP — חבילת הפקה לכל השירים יחד · מיקס + מאסטר · עד 5 סבבי תיקונים לשיר',
+  album:  'אלבום — חבילת הפקה מלאה לכל השירים · מיקס + מאסטר · עד 5 סבבי תיקונים לשיר'
+};
+
+function ctrSetKind(kind){
+  _ctrKind = kind;
+  document.querySelectorAll('.ctr-kind-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('ctr-kind-' + kind)?.classList.add('active');
+  if (kind === 'single' && _ctrSongs.length > 1) _ctrSongs = [_ctrSongs[0] || ''];
+  if (!_ctrSongs.length) _ctrSongs = [''];
+  const baseInp = document.getElementById('ctr-base');
+  if (baseInp && !baseInp.dataset.touched) baseInp.value = _CTR_KIND_DEFAULTS[kind] || 12000;
+  const hint = document.getElementById('ctr-base-hint');
+  if (hint) hint.textContent = _CTR_KIND_HINTS[kind] || _CTR_KIND_HINTS.single;
+  const addBtn = document.getElementById('ctr-add-song-btn');
+  if (addBtn) addBtn.style.display = kind === 'single' ? 'none' : 'inline-block';
+  _ctrRenderSongs();
+  _ctrRefreshTotal();
+}
+
+function ctrAddSong(){
+  _ctrSongs.push('');
+  _ctrRenderSongs();
+  setTimeout(() => {
+    const ins = document.querySelectorAll('#ctr-songs-list input');
+    if (ins.length) ins[ins.length - 1].focus();
+  }, 30);
+}
+
+function _ctrRemoveSong(i){ _ctrSongs.splice(i, 1); if (!_ctrSongs.length) _ctrSongs = ['']; _ctrRenderSongs(); }
+
+function _ctrRenderSongs(){
+  const el = document.getElementById('ctr-songs-list');
+  if (!el) return;
+  if (!_ctrSongs.length) _ctrSongs = [''];
+  el.innerHTML = _ctrSongs.map((s, i) => (
+    '<div class="ctr-song-row">' +
+      '<input type="text" placeholder="' + (_ctrKind === 'single' ? 'שם השיר / הפרויקט' : 'שם שיר ' + (i+1)) + '" value="' + String(s||'').replace(/"/g,'&quot;') + '" oninput="_ctrSongs[' + i + '] = this.value">' +
+      (_ctrSongs.length > 1 ? '<button type="button" onclick="_ctrRemoveSong(' + i + ')" aria-label="מחק">×</button>' : '') +
+    '</div>'
+  )).join('');
+}
+
 function openContractEditor(id){
   _ctrEditId = id;
   const c = id ? (load('contracts') || []).find(x => x.id === id) : null;
@@ -8829,8 +8965,21 @@ function openContractEditor(id){
   document.getElementById('ctr-modal-title').textContent = c ? (c.status === 'signed' ? '📜 סיכום חתום' : '✏️ עריכת סיכום') : '📜 סיכום הפקה חדש';
   document.getElementById('ctr-client').value = c ? (c.clientName || '') : '';
   document.getElementById('ctr-date').value   = c ? (c.projectDate || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10);
-  document.getElementById('ctr-song').value   = c ? (c.songTitle || '') : '';
-  document.getElementById('ctr-base').value   = c ? (c.basePrice ?? 12000) : 12000;
+
+  // Songs: prefer the new `songs` array; fall back to legacy single songTitle.
+  _ctrSongs = c && Array.isArray(c.songs) && c.songs.length
+    ? c.songs.slice()
+    : (c && c.songTitle ? [c.songTitle] : ['']);
+  _ctrKind = c && c.projectKind
+    ? c.projectKind
+    : (_ctrSongs.length >= 7 ? 'album' : _ctrSongs.length >= 4 ? 'ep' : _ctrSongs.length > 1 ? 'multi' : 'single');
+
+  const baseInp = document.getElementById('ctr-base');
+  baseInp.value = c ? (c.basePrice ?? _CTR_KIND_DEFAULTS[_ctrKind] ?? 12000) : (_CTR_KIND_DEFAULTS[_ctrKind] || 12000);
+  // Mark as "touched" only when editing an existing contract so kind-switches
+  // don't blow away the producer's custom price.
+  if (c) baseInp.dataset.touched = '1'; else delete baseInp.dataset.touched;
+  baseInp.oninput = function(){ this.dataset.touched = '1'; };
 
   _ctrExtras = c && Array.isArray(c.extras) ? c.extras.map(e => Object.assign({}, e)) : [];
   _ctrRights = c && c.rightsMode ? c.rightsMode : 'solo';
@@ -8838,6 +8987,7 @@ function openContractEditor(id){
     ? c.splitShares.map(s => Object.assign({}, s))
     : [{name:'אליאור רביד', percent:50},{name: (c && c.clientName) || '', percent:50}];
 
+  ctrSetKind(_ctrKind);
   _ctrRenderExtras();
   ctrSetRights(_ctrRights);
   _ctrRefreshTotal();
@@ -8847,30 +8997,48 @@ function openContractEditor(id){
 
 function saveContract(){
   const clientName = (document.getElementById('ctr-client').value || '').trim();
-  const songTitle  = (document.getElementById('ctr-song').value || '').trim();
+  const songs = _ctrSongs.map(s => (s || '').trim()).filter(Boolean);
   if (!clientName) { toast('צריך שם של זמר'); return; }
-  if (!songTitle)  { toast('צריך שם של שיר/פרויקט'); return; }
+  if (!songs.length) { toast('צריך לפחות שיר אחד'); return; }
   const projectDate = document.getElementById('ctr-date').value;
   const basePrice = parseFloat(document.getElementById('ctr-base').value) || 0;
 
   const list = load('contracts') || [];
+  const settings = loadObj('producer_settings');
   let c;
   if (_ctrEditId) {
     c = list.find(x => x.id === _ctrEditId);
     if (!c) { toast('סיכום לא נמצא'); return; }
     if (c.status === 'signed') { closeModal('contract'); return; } // read-only
   } else {
-    c = { id: 'ctr_' + genId(), createdAt: Date.now(), status: 'draft', producerName: 'אליאור רביד', signature: null };
+    c = {
+      id: 'ctr_' + genId(),
+      createdAt: Date.now(),
+      status: 'draft',
+      producerName: (settings && settings.signatureName) || 'אליאור רביד',
+      producerSignature: (settings && settings.signature) || null,
+      producerSignedAt: settings && settings.signature ? Date.now() : null,
+      signature: null
+    };
     list.push(c);
   }
   c.updatedAt = Date.now();
   c.clientName = clientName;
-  c.songTitle = songTitle;
+  c.songs = songs;
+  c.songTitle = songs.join(' · '); // back-compat for places that still read songTitle
+  c.projectKind = _ctrKind;
   c.projectDate = projectDate;
   c.basePrice = basePrice;
   c.extras = _ctrExtras.slice();
   c.rightsMode = _ctrRights;
   c.splitShares = _ctrRights === 'split' ? _ctrShares.slice() : [];
+  // Always refresh the producer's stamp to the current saved one (so changing
+  // the signature later updates older drafts that haven't been sent yet).
+  if (c.status !== 'signed' && settings && settings.signature) {
+    c.producerSignature = settings.signature;
+    c.producerName = settings.signatureName || c.producerName || 'אליאור רביד';
+    c.producerSignedAt = c.producerSignedAt || Date.now();
+  }
 
   save('contracts', list);
   closeModal('contract');
@@ -8928,14 +9096,31 @@ function _ctrCardHtml(c){
 function renderContracts(){
   const el = document.getElementById('contracts-list');
   if (!el) return;
+  const settings = loadObj('producer_settings');
+  const hasSig = !!(settings && settings.signature);
+  // Persistent producer-signature banner up top — invites a one-time setup;
+  // afterwards shows a thumbnail + a "החלף" button so it's easy to redo.
+  const banner = hasSig
+    ? '<div class="ctr-sig-banner set">' +
+        '<img src="' + settings.signature + '" alt="החתימה שלך">' +
+        '<div class="label"><b>החתימה שלך</b> מוטבעת אוטומטית על כל סיכום</div>' +
+        '<button onclick="openProducerSignatureModal()">החלף</button>' +
+      '</div>'
+    : '<div class="ctr-sig-banner">' +
+        '<div style="font-size:26px">✍️</div>' +
+        '<div class="label">צייר את החתימה שלך פעם אחת — היא תופיע מתחת על כל סיכום שתשלח</div>' +
+        '<button onclick="openProducerSignatureModal()">צייר עכשיו</button>' +
+      '</div>';
+
   const list = (load('contracts') || []).slice().sort((a,b) => (b.updatedAt||b.createdAt||0) - (a.updatedAt||a.createdAt||0));
   if (!list.length){
-    el.innerHTML = '<div class="ctr-empty"><div class="ctr-empty-emoji">📜</div><div class="ctr-empty-title">אין עדיין סיכומי הפקה</div><div>לחץ "+ סיכום חדש" ליצור את הראשון.</div></div>';
+    el.innerHTML = banner +
+      '<div class="ctr-empty"><div class="ctr-empty-emoji">📜</div><div class="ctr-empty-title">אין עדיין סיכומי הפקה</div><div>לחץ "+ סיכום חדש" ליצור את הראשון.</div></div>';
     return;
   }
   const signed = list.filter(c => c.status === 'signed');
   const drafts = list.filter(c => c.status !== 'signed');
-  let html = '';
+  let html = banner;
   if (signed.length) {
     html += '<div class="ctr-section-title signed">✓ הסכמים חתומים (' + signed.length + ')</div>';
     html += signed.map(_ctrCardHtml).join('');
@@ -8950,51 +9135,100 @@ function renderContracts(){
 // ===== Signed contract viewer + share-as-image =====
 let _ctrViewingId = null;
 
+function _ctrKindLabel(c){
+  const songs = (c.songs && c.songs.length) ? c.songs : (c.songTitle ? [c.songTitle] : []);
+  const k = c.projectKind || (songs.length >= 7 ? 'album' : songs.length >= 4 ? 'ep' : songs.length > 1 ? 'multi' : 'single');
+  if (k === 'album') return { metaLabel: 'אלבום (' + songs.length + ' שירים)', noun: 'האלבום', plural: true };
+  if (k === 'ep')    return { metaLabel: 'EP (' + songs.length + ' שירים)',      noun: 'ה-EP',   plural: true };
+  if (k === 'multi') return { metaLabel: songs.length + ' שירים',                noun: 'הפרויקט', plural: true };
+  return { metaLabel: 'שיר בודד', noun: 'השיר', plural: false };
+}
+
 function _ctrRenderPrintable(c, opts){
   opts = opts || {};
+  const songs = (c.songs && c.songs.length) ? c.songs : (c.songTitle ? [c.songTitle] : []);
+  const kind = _ctrKindLabel(c);
   const total = (c.basePrice||0) + (c.extras||[]).reduce((s,e)=>s+(parseFloat(e.price)||0),0);
   const halfA = Math.round(total/2), halfB = total - halfA;
   const dateStr = c.projectDate ? new Date(c.projectDate).toLocaleDateString('he-IL', {day:'numeric', month:'long', year:'numeric'}) : '—';
-  let priceRows = '<tr><td>חבילת הפקה בסיסית — הפקה, מיקס, מאסטר, נגן אחד, עד 5 סבבי תיקונים</td><td>' + fmtMoney(c.basePrice || 0) + '</td></tr>';
+
+  // Meta cells: project name list (or first song) + total-count chip + date.
+  const songsLabel = songs.length <= 1 ? (songs[0] || '—') : songs.join(', ');
+
+  // Price table — base description adapts to project kind.
+  const baseDesc = kind.plural
+    ? 'חבילת הפקה — ' + kind.metaLabel + ' · הפקה, מיקס, מאסטר, נגן אחד פר שיר, עד 5 סבבי תיקונים לשיר'
+    : 'חבילת הפקה בסיסית — הפקה, מיקס, מאסטר, נגן אחד, עד 5 סבבי תיקונים';
+  let priceRows = '<tr><td>' + baseDesc + '</td><td>' + fmtMoney(c.basePrice || 0) + '</td></tr>';
   (c.extras || []).forEach(e => {
     priceRows += '<tr><td>' + escapeHtml(e.label || (e.type === 'musician' ? 'נגן נוסף' : e.type === 'revisions' ? 'סבב תיקונים נוסף' : 'תוספת')) + '</td><td>' + fmtMoney(e.price || 0) + '</td></tr>';
   });
   priceRows += '<tr class="total"><td>סה"כ</td><td>' + fmtMoney(total) + '</td></tr>';
-  let rightsHtml = '';
+
+  // Rights paragraph — wording depends on single vs multi.
+  const rightsTarget = kind.plural ? 'השירים (מילים ולחן)' : 'השיר (מילים ולחן)';
+  let rightsHtml;
   if (c.rightsMode === 'split' && Array.isArray(c.splitShares) && c.splitShares.length) {
     const parts = c.splitShares.filter(s => s.name && s.percent > 0).map(s => s.percent + '% ' + escapeHtml(s.name));
-    rightsHtml = 'זכויות הכתיבה של השיר (מילים ולחן) מתחלקות: ' + parts.join(' · ') + ', ורשומות בהתאם באקו"ם.';
+    rightsHtml = 'זכויות הכתיבה של ' + rightsTarget + ' מתחלקות: ' + parts.join(' · ') + ', ורשומות בהתאם באקו"ם.';
   } else {
-    rightsHtml = 'זכויות הכתיבה של השיר (מילים ולחן) רשומות על שם <b>' + escapeHtml(c.producerName || 'אליאור רביד') + '</b> באקו"ם.';
+    rightsHtml = 'זכויות הכתיבה של ' + rightsTarget + ' רשומות על שם <b>' + escapeHtml(c.producerName || 'אליאור רביד') + '</b> באקו"ם.';
   }
-  const signedBlock = c.signature && c.signature.dataUrl ? (
-    '<div class="signed-stamp">' +
-      '<div class="check">✓</div>' +
-      '<div style="font-weight:800;color:#16a34a">סיכום ההפקה אושר</div>' +
-      '<img src="' + c.signature.dataUrl + '" alt="חתימה">' +
-      '<div class="name">' + escapeHtml(c.signature.clientName || c.clientName) + '</div>' +
-      '<div class="when">' + (c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleString('he-IL') : '') + '</div>' +
-    '</div>'
-  ) : '';
+
+  // Songs list block (only when multi)
+  const songsBlock = songs.length > 1
+    ? '<h2>השירים בפרויקט</h2><ol style="padding-right:20px;margin:6px 0;font-size:15px;line-height:1.7;color:#3d2818">' +
+      songs.map(s => '<li>' + escapeHtml(s) + '</li>').join('') + '</ol>'
+    : '';
+
+  // Two-up signature block — producer always shown if a signature exists,
+  // client shown signed or pending depending on status.
+  const producerImg = c.producerSignature
+    ? '<img src="' + c.producerSignature + '" alt="חתימת המפיק">'
+    : '<div class="placeholder">— ללא חתימה דיגיטלית —</div>';
+  const producerWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') : (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
+  const producerCell = '<div class="sign-cell">' +
+    '<div class="role">חתימת המפיק</div>' +
+    producerImg +
+    '<div class="name">' + escapeHtml(c.producerName || 'אליאור רביד') + '</div>' +
+    (producerWhen ? '<div class="when">' + producerWhen + '</div>' : '') +
+  '</div>';
+  const clientCell = (c.signature && c.signature.dataUrl)
+    ? '<div class="sign-cell client-signed">' +
+        '<div class="role" style="color:#16a34a">✓ חתימת הזמר/ת</div>' +
+        '<img src="' + c.signature.dataUrl + '" alt="חתימה">' +
+        '<div class="name">' + escapeHtml(c.signature.clientName || c.clientName) + '</div>' +
+        '<div class="when">' + (c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleString('he-IL') : '') + '</div>' +
+      '</div>'
+    : '<div class="sign-cell pending">' +
+        '<div class="role">חתימת הזמר/ת</div>' +
+        '<div class="placeholder">ממתין לחתימה דיגיטלית</div>' +
+      '</div>';
+
   return (
     '<div style="text-align:center;font-size:11px;letter-spacing:.25em;color:#a06c48;font-weight:800;text-transform:uppercase;margin-bottom:14px">אליאור רביד · אולפן</div>' +
     '<h1>סיכום הפקה</h1>' +
     '<div class="sub-line">בין <b>' + escapeHtml(c.producerName || 'אליאור רביד') + '</b> לבין <b>' + escapeHtml(c.clientName || '') + '</b></div>' +
     '<div class="meta-grid">' +
-      '<div class="meta-cell"><div class="meta-label">שם הפרויקט</div><div class="meta-val">' + escapeHtml(c.songTitle || '') + '</div></div>' +
-      '<div class="meta-cell"><div class="meta-label">תאריך</div><div class="meta-val">' + escapeHtml(dateStr) + '</div></div>' +
+      '<div class="meta-cell"><div class="meta-label">שם הפרויקט</div><div class="meta-val">' + escapeHtml(songsLabel) + '</div></div>' +
+      '<div class="meta-cell"><div class="meta-label">סוג / תאריך</div><div class="meta-val">' + kind.metaLabel + ' · ' + escapeHtml(dateStr) + '</div></div>' +
     '</div>' +
+    songsBlock +
     '<h2>מה כולל הפרויקט</h2>' +
-    '<p>חבילת ההפקה כוללת: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים על המיקס</b>. בסיום מתקבל שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.</p>' +
+    '<p>' + (kind.plural
+        ? 'חבילת ההפקה כוללת לכל שיר: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים</b>. בסיום מתקבלים השירים מוגמרים, מוכנים לחלוטין להעלאה לכל הפלטפורמות.'
+        : 'חבילת ההפקה כוללת: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים על המיקס</b>. בסיום מתקבל שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.'
+    ) + '</p>' +
     ((c.extras||[]).length ? '<p style="margin-top:10px"><b>תוספות שנבחרו:</b><br>' + c.extras.map(e => '• ' + escapeHtml(e.label || '')).join('<br>') + '</p>' : '') +
     '<h2>מחיר</h2>' +
     '<table class="price">' + priceRows + '</table>' +
     '<p style="margin-top:10px;font-size:13px;color:#6b4423"><b>תנאי תשלום:</b> ' + fmtMoney(halfA) + ' עם תחילת העבודה · ' + fmtMoney(halfB) + ' בשלב המיקס. הקבצים הסופיים נמסרים לאחר השלמת התשלום.</p>' +
     '<h2>תיקונים</h2>' +
-    '<p>המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס. כל סבב הוא רשימת הערות אחת. סבב נוסף (אם נדרש) — <b>₪300</b>. שינוי כיוון מהותי של ההפקה נחשב לעבודה חדשה ומתומחר בנפרד.</p>' +
+    '<p>המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס' + (kind.plural ? ' לכל שיר' : '') + '. כל סבב הוא רשימת הערות אחת. סבב נוסף (אם נדרש) — <b>₪300</b>. שינוי כיוון מהותי של ההפקה נחשב לעבודה חדשה ומתומחר בנפרד.</p>' +
     '<h2>זכויות</h2>' +
     '<p>ההקלטה הסופית (המאסטר) שייכת לזמר/ת לחלוטין.</p><p>' + rightsHtml + '</p>' +
-    signedBlock
+    '<h2 style="margin-top:24px">חתימות</h2>' +
+    '<div class="sign-pair">' + producerCell + clientCell + '</div>'
   );
 }
 
@@ -9063,6 +9297,116 @@ async function ctrShareCopy(){
   if (!_ctrViewingId) return;
   const c = (load('contracts') || []).find(x => x.id === _ctrViewingId);
   await _ctrGenerateAndShare(c);
+}
+
+// ===== Producer signature pad =====
+let _prodSigCtx = null, _prodSigDrawing = false, _prodSigLastX = 0, _prodSigLastY = 0, _prodSigDirty = false;
+
+function _initProdSigPad(){
+  const canvas = document.getElementById('prod-sig-canvas');
+  if (!canvas) return;
+  const frame = document.getElementById('prod-sig-frame');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  _prodSigCtx = canvas.getContext('2d');
+  _prodSigCtx.scale(dpr, dpr);
+  _prodSigCtx.lineWidth = 2.4;
+  _prodSigCtx.lineCap = 'round';
+  _prodSigCtx.lineJoin = 'round';
+  _prodSigCtx.strokeStyle = '#1a1410';
+  _prodSigDirty = false;
+  frame.classList.remove('dirty');
+
+  function pos(e){
+    const r = canvas.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return { x: p.clientX - r.left, y: p.clientY - r.top };
+  }
+  function start(e){
+    e.preventDefault();
+    _prodSigDrawing = true;
+    const p = pos(e);
+    _prodSigLastX = p.x; _prodSigLastY = p.y;
+    if (!_prodSigDirty) { _prodSigDirty = true; frame.classList.add('dirty'); }
+  }
+  function move(e){
+    if (!_prodSigDrawing) return;
+    e.preventDefault();
+    const p = pos(e);
+    _prodSigCtx.beginPath();
+    _prodSigCtx.moveTo(_prodSigLastX, _prodSigLastY);
+    _prodSigCtx.lineTo(p.x, p.y);
+    _prodSigCtx.stroke();
+    _prodSigLastX = p.x; _prodSigLastY = p.y;
+  }
+  function end(){ _prodSigDrawing = false; }
+
+  canvas.ontouchstart = start;
+  canvas.ontouchmove  = move;
+  canvas.ontouchend   = end;
+  canvas.ontouchcancel= end;
+  canvas.onmousedown  = start;
+  canvas.onmousemove  = move;
+  canvas.onmouseup    = end;
+  canvas.onmouseleave = end;
+}
+
+function _prodSigClear(){
+  if (!_prodSigCtx) return;
+  const canvas = document.getElementById('prod-sig-canvas');
+  _prodSigCtx.clearRect(0, 0, canvas.width, canvas.height);
+  _prodSigDirty = false;
+  document.getElementById('prod-sig-frame').classList.remove('dirty');
+}
+
+function openProducerSignatureModal(){
+  const existing = loadObj('producer_settings');
+  document.getElementById('prod-sig-name').value = existing.signatureName || 'אליאור רביד';
+  document.getElementById('modal-prod-sig').classList.add('open');
+  setTimeout(() => {
+    _initProdSigPad();
+    // Prefill: if the user already saved one, draw it on the canvas so
+    // they can tweak rather than start from scratch.
+    if (existing.signature) {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.getElementById('prod-sig-canvas');
+        const dpr = window.devicePixelRatio || 1;
+        _prodSigCtx.drawImage(img, 0, 0, canvas.width / dpr, canvas.height / dpr);
+        _prodSigDirty = true;
+        document.getElementById('prod-sig-frame').classList.add('dirty');
+      };
+      img.src = existing.signature;
+    }
+  }, 60);
+}
+
+function saveProducerSignature(){
+  if (!_prodSigDirty) { toast('נא לצייר חתימה תחילה'); return; }
+  const name = (document.getElementById('prod-sig-name').value || 'אליאור רביד').trim();
+  const dataUrl = document.getElementById('prod-sig-canvas').toDataURL('image/png');
+  const settings = loadObj('producer_settings');
+  settings.signature = dataUrl;
+  settings.signatureName = name;
+  settings.signedAt = Date.now();
+  save('producer_settings', settings);
+  // Sweep through all draft contracts so the new signature lands on them
+  // immediately too (signed contracts are frozen, so we leave them alone).
+  const list = load('contracts') || [];
+  let touched = false;
+  list.forEach(c => {
+    if (c.status === 'signed') return;
+    c.producerSignature = dataUrl;
+    c.producerName = name;
+    if (!c.producerSignedAt) c.producerSignedAt = Date.now();
+    touched = true;
+  });
+  if (touched) save('contracts', list);
+  closeModal('prod-sig');
+  toast('✅ החתימה נשמרה');
+  renderContracts();
 }
 
 // ===== Real-time sync for contracts =====
