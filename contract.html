@@ -9,6 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   html, body {
@@ -128,6 +129,69 @@
     h1 { font-size: 26px; }
     .meta { grid-template-columns: 1fr; }
   }
+
+  /* Email-copy popup */
+  .email-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(20,12,6,0.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; padding: 18px;
+    animation: emailFade .22s ease;
+  }
+  .email-modal {
+    background: #fff;
+    border-radius: 22px;
+    padding: 28px 24px 22px;
+    max-width: 400px; width: 100%;
+    text-align: center;
+    box-shadow: 0 22px 60px rgba(0,0,0,0.32);
+    animation: emailSlide .28s cubic-bezier(.2,.8,.25,1);
+  }
+  .email-modal-icon {
+    font-size: 42px; margin-bottom: 10px; line-height: 1;
+  }
+  .email-modal h3 {
+    font-family: 'Frank Ruhl Libre', 'Heebo', serif;
+    font-size: 22px; font-weight: 900; margin: 0 0 6px; color: #2a1810;
+  }
+  .email-modal-sub {
+    font-size: 14px; color: #6b4423; margin: 0 0 18px; line-height: 1.5;
+  }
+  #email-input {
+    width: 100%; padding: 14px 16px;
+    border: 1.5px solid rgba(176,124,62,0.4); border-radius: 12px;
+    font-family: inherit; font-size: 16px;
+    direction: ltr; text-align: left;
+    outline: none; margin-bottom: 14px; color: #2a1810;
+    background: #fff;
+  }
+  #email-input:focus { border-color: #a06c48; }
+  .email-modal-actions { display: flex; gap: 10px; }
+  .email-skip {
+    flex: 1; background: transparent;
+    border: 1.5px solid rgba(176,124,62,0.3);
+    border-radius: 12px; padding: 13px;
+    font-family: inherit; font-size: 15px; font-weight: 700; color: #6b4423;
+    cursor: pointer;
+  }
+  .email-send {
+    flex: 1.6;
+    background: linear-gradient(135deg, #ff9558, #ff6b4a); color: #fff;
+    border: none; border-radius: 12px; padding: 13px;
+    font-family: inherit; font-size: 15px; font-weight: 900;
+    cursor: pointer; box-shadow: 0 8px 22px -6px rgba(255,107,74,0.45);
+  }
+  .email-send:disabled { opacity: .6; cursor: wait; }
+  .email-result {
+    margin-top: 14px; font-size: 14px; font-weight: 700; min-height: 18px;
+  }
+  .email-result.success { color: #16a34a; }
+  .email-result.error { color: #c2410c; }
+  @keyframes emailFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes emailSlide {
+    from { transform: translateY(18px) scale(.97); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+  }
 </style>
 </head>
 <body>
@@ -145,6 +209,12 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
+// EmailJS — for sending the signed-contract copy to the client
+const EMAILJS_PUBLIC_KEY  = 'JfYv9AU0fN__BBKEO';
+const EMAILJS_SERVICE_ID  = 'service_mpegg49';
+const EMAILJS_TEMPLATE_ID = 'template_a82ajz9';
+try { if (window.emailjs) emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); } catch(_) {}
 
 function getId(){ return new URLSearchParams(location.search).get('id') || ''; }
 function fmtMoney(n){ return '₪' + Math.abs(n).toLocaleString('he-IL', {minimumFractionDigits:0, maximumFractionDigits:0}); }
@@ -374,12 +444,92 @@ async function submitSignature(){
     });
     render(arr[idx]);
     window.scrollTo({top: 0, behavior: 'smooth'});
+    setTimeout(function(){ openEmailModal(name); }, 700);
   } catch(err) {
     console.error('signature submit failed:', err);
     btn.disabled = false;
     btn.textContent = '✓ אני מאשר/ת את התנאים';
     const code = err && (err.code || err.message) || err;
     alert('שגיאה בשליחה: ' + code + '\nנסה שוב או רענן.');
+  }
+}
+
+// ===== Email-copy popup =====
+function openEmailModal(clientName){
+  closeEmailModal();
+  const wrap = document.createElement('div');
+  wrap.id = 'email-modal';
+  wrap.className = 'email-modal-overlay';
+  wrap.dataset.clientName = clientName || '';
+  wrap.innerHTML =
+    '<div class="email-modal" role="dialog" aria-modal="true">' +
+      '<div class="email-modal-icon">📧</div>' +
+      '<h3>קבל עותק במייל</h3>' +
+      '<div class="email-modal-sub">נשמח לשלוח אליך עותק של החוזה החתום.<br>הכנס/י כתובת מייל:</div>' +
+      '<input id="email-input" type="email" placeholder="your@email.com" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false">' +
+      '<div class="email-modal-actions">' +
+        '<button class="email-skip" type="button" onclick="closeEmailModal()">לא, תודה</button>' +
+        '<button class="email-send" id="email-send-btn" type="button" onclick="sendContractEmail()">שלח לי</button>' +
+      '</div>' +
+      '<div id="email-result" class="email-result"></div>' +
+    '</div>';
+  document.body.appendChild(wrap);
+  setTimeout(function(){
+    const i = document.getElementById('email-input');
+    if (i) {
+      i.focus();
+      i.addEventListener('keydown', function(e){ if (e.key === 'Enter') sendContractEmail(); });
+    }
+  }, 180);
+}
+
+function closeEmailModal(){
+  const m = document.getElementById('email-modal');
+  if (m) m.remove();
+}
+
+async function sendContractEmail(){
+  const input = document.getElementById('email-input');
+  const result = document.getElementById('email-result');
+  const btn = document.getElementById('email-send-btn');
+  if (!input || !result || !btn) return;
+  const email = (input.value || '').trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    result.className = 'email-result error';
+    result.textContent = 'נא להזין כתובת מייל תקינה';
+    input.focus();
+    return;
+  }
+  if (typeof emailjs === 'undefined') {
+    result.className = 'email-result error';
+    result.textContent = 'שירות המייל לא טעון. בדוק חיבור אינטרנט ונסה שוב.';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⏳ שולח...';
+  result.className = 'email-result';
+  result.textContent = '';
+  try {
+    const modal = document.getElementById('email-modal');
+    const clientName = (modal && modal.dataset.clientName) || 'לקוח';
+    const contractLink = window.location.href;
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      client_name: clientName,
+      client_email: email,
+      contract_link: contractLink
+    });
+    result.className = 'email-result success';
+    result.innerHTML = '✓ נשלח אליך ל-<b dir="ltr">' + email.replace(/[<>&]/g,'') + '</b>';
+    btn.style.display = 'none';
+    const skip = document.querySelector('#email-modal .email-skip');
+    if (skip) { skip.textContent = 'סגור'; skip.style.flex = '1'; }
+  } catch(err) {
+    console.error('emailjs send failed:', err);
+    btn.disabled = false;
+    btn.textContent = 'שלח לי';
+    result.className = 'email-result error';
+    const txt = (err && (err.text || err.message)) || 'שגיאה לא ידועה';
+    result.textContent = 'שגיאה בשליחה: ' + txt;
   }
 }
 
