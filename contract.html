@@ -9,7 +9,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -211,7 +210,6 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const storage = firebase.storage();
 
 // EmailJS — for sending the signed-contract copy to the client
 const EMAILJS_PUBLIC_KEY  = 'JfYv9AU0fN__BBKEO';
@@ -502,10 +500,10 @@ async function generateContractPdf(filename){
   if (modal) modal.style.display = 'none';
   try {
     const opt = {
-      margin:       [10, 10, 12, 10],
+      margin:       [8, 8, 10, 8],
       filename:     filename || 'contract.pdf',
-      image:        { type: 'jpeg', quality: 0.96 },
-      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#fdf8f0', letterRendering: true },
+      image:        { type: 'jpeg', quality: 0.78 },
+      html2canvas:  { scale: 1.6, useCORS: true, backgroundColor: '#fdf8f0', letterRendering: true },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
       pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
     };
@@ -516,13 +514,18 @@ async function generateContractPdf(filename){
   }
 }
 
-// Upload PDF to Firebase Storage and return its public download URL.
-async function uploadContractPdf(blob, contractId){
-  try { await firebase.auth().signInAnonymously(); } catch(_) {}
-  const path = 'signed-contracts/' + (contractId || ('contract-' + Date.now())) + '.pdf';
-  const ref = storage.ref().child(path);
-  const snap = await ref.put(blob, { contentType: 'application/pdf' });
-  return await snap.ref.getDownloadURL();
+// Convert a Blob into a plain base64 string (without the data: prefix).
+function blobToBase64(blob){
+  return new Promise(function(resolve, reject){
+    const reader = new FileReader();
+    reader.onloadend = function(){
+      const s = String(reader.result || '');
+      const comma = s.indexOf(',');
+      resolve(comma >= 0 ? s.slice(comma + 1) : s);
+    };
+    reader.onerror = function(){ reject(reader.error || new Error('read failed')); };
+    reader.readAsDataURL(blob);
+  });
 }
 
 async function sendContractEmail(){
@@ -555,16 +558,14 @@ async function sendContractEmail(){
 
     btn.textContent = '⏳ מכין PDF...';
     const pdfBlob = await generateContractPdf(filename);
-
-    btn.textContent = '⏳ מעלה...';
-    const pdfUrl = await uploadContractPdf(pdfBlob, contractId);
+    const pdfBase64 = await blobToBase64(pdfBlob);
 
     btn.textContent = '⏳ שולח...';
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       client_name: clientName,
       client_email: email,
       contract_link: contractLink,
-      contract_pdf_url: pdfUrl,
+      contract_pdf_url: pdfBase64,
       contract_pdf_name: filename
     });
 
