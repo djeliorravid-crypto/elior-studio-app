@@ -9,6 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
@@ -210,6 +211,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const storage = firebase.storage();
 
 // EmailJS — for sending the signed-contract copy to the client
 const EMAILJS_PUBLIC_KEY  = 'JfYv9AU0fN__BBKEO';
@@ -526,31 +528,19 @@ async function generateContractPdf(filename){
   }
 }
 
-// Upload a Blob to catbox.moe — free, anonymous, permanent retention,
-// open CORS. Returns a direct download URL that EmailJS fetches at
-// send time and embeds permanently into the recipient's email.
+// Upload a Blob to Firebase Storage — same Google infra as the rest of
+// the app, no third-party CORS quirks. Returns the public download URL
+// (with the access token embedded) that EmailJS fetches at send time
+// and embeds permanently into the recipient's email.
 async function uploadPdfTemporary(blob, filename){
-  const controller = new AbortController();
-  const timeoutId = setTimeout(function(){ controller.abort(); }, 30000);
-  try {
-    const form = new FormData();
-    form.append('reqtype', 'fileupload');
-    form.append('fileToUpload', blob, filename || 'contract.pdf');
-    const res = await fetch('https://catbox.moe/user/api.php', {
-      method: 'POST',
-      body: form,
-      signal: controller.signal
-    });
-    if (!res.ok) throw new Error('Upload HTTP ' + res.status);
-    const url = (await res.text()).trim();
-    if (!/^https?:\/\//i.test(url)) throw new Error('Unexpected response: ' + url.slice(0, 80));
-    return url;
-  } catch(e) {
-    if (e && e.name === 'AbortError') throw new Error('העלאה ארכה יותר מ-30 שניות');
-    throw e;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  try { await firebase.auth().signInAnonymously(); } catch(_) {}
+  const id = getId() || ('contract-' + Date.now());
+  const ref = storage.ref().child('signed-contracts/' + id + '.pdf');
+  const snap = await ref.put(blob, {
+    contentType: 'application/pdf',
+    contentDisposition: 'attachment; filename="' + (filename || 'contract.pdf') + '"'
+  });
+  return await snap.ref.getDownloadURL();
 }
 
 async function sendContractEmail(){
