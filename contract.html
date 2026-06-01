@@ -482,6 +482,18 @@ function openEmailModal(clientName){
       i.addEventListener('keydown', function(e){ if (e.key === 'Enter') sendContractEmail(); });
     }
   }, 180);
+
+  // Pre-generate the PDF + upload in the background while the user
+  // is reading and typing their email. By the time they click "שלח",
+  // the file is already hosted and we only wait for the EmailJS call.
+  const safeName = (clientName || 'signed').replace(/[^֐-׿a-zA-Z0-9\s_-]/g, '').trim() || 'signed';
+  const filename = 'הסכם - ' + safeName + '.pdf';
+  wrap._pdfFilename = filename;
+  wrap._pdfPromise = (async function(){
+    const blob = await generateContractPdf(filename);
+    const url  = await uploadPdfTemporary(blob, filename);
+    return { url: url, filename: filename };
+  })().catch(function(err){ return { error: err }; });
 }
 
 function closeEmailModal(){
@@ -502,8 +514,8 @@ async function generateContractPdf(filename){
     const opt = {
       margin:       [8, 8, 10, 8],
       filename:     filename || 'contract.pdf',
-      image:        { type: 'jpeg', quality: 0.78 },
-      html2canvas:  { scale: 1.6, useCORS: true, backgroundColor: '#fdf8f0', letterRendering: true },
+      image:        { type: 'jpeg', quality: 0.72 },
+      html2canvas:  { scale: 1.25, useCORS: true, backgroundColor: '#fdf8f0', letterRendering: true },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
       pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
     };
@@ -559,29 +571,27 @@ async function sendContractEmail(){
     return;
   }
   btn.disabled = true;
+  btn.textContent = '⏳ שולח...';
   result.className = 'email-result';
   result.textContent = '';
   try {
     const modal = document.getElementById('email-modal');
     const clientName = (modal && modal.dataset.clientName) || 'לקוח';
     const contractLink = window.location.href;
-    const contractId = getId();
-    const safeName = (clientName || 'signed').replace(/[^֐-׿a-zA-Z0-9\s_-]/g, '').trim() || 'signed';
-    const filename = 'הסכם - ' + safeName + '.pdf';
 
-    btn.textContent = '⏳ מכין PDF...';
-    const pdfBlob = await generateContractPdf(filename);
+    // The PDF was kicked off in the background when the modal opened —
+    // by now it's almost certainly already uploaded.
+    const pdfResult = await (modal && modal._pdfPromise);
+    if (!pdfResult || pdfResult.error) {
+      throw (pdfResult && pdfResult.error) || new Error('PDF לא הוכן');
+    }
 
-    btn.textContent = '⏳ מעלה...';
-    const pdfUrl = await uploadPdfTemporary(pdfBlob, filename);
-
-    btn.textContent = '⏳ שולח...';
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       client_name: clientName,
       client_email: email,
       contract_link: contractLink,
-      contract_pdf_url: pdfUrl,
-      contract_pdf_name: filename
+      contract_pdf_url: pdfResult.url,
+      contract_pdf_name: pdfResult.filename
     });
 
     result.className = 'email-result success';
