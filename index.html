@@ -26,6 +26,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
   <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+  <!-- html2canvas: renders the signed contract viewer to an image so we can share it as a WhatsApp document -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <!-- SortableJS: battle-tested touch/mouse drag-to-reorder for the lobby tasks -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <!-- Google Identity Services (for Google Calendar OAuth) -->
@@ -3024,6 +3026,56 @@
     .ctr-split-row input[type="text"] { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; font-size: 13px; color: var(--text); font-family: 'Heebo', inherit; }
     .ctr-split-row input[type="number"] { width: 70px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; font-size: 13px; color: var(--text); text-align: right; font-family: 'Heebo', inherit; font-variant-numeric: tabular-nums; }
 
+    /* Signed-section header inside the contracts list */
+    .ctr-section-title {
+      font-size: 12px; font-weight: 800; color: var(--text-muted);
+      letter-spacing: 0.12em; text-transform: uppercase;
+      margin: 6px 4px 8px;
+    }
+    .ctr-section-title.signed { color: #16a34a; }
+    .ctr-section-title.draft  { color: var(--text-muted); margin-top: 22px; }
+
+    /* Signed contract — visual ribbon */
+    .ctr-card.signed {
+      background: linear-gradient(135deg, var(--surface) 0%, rgba(52,199,89,0.05) 100%);
+      border-color: rgba(52,199,89,0.35);
+    }
+    .ctr-card.signed::before {
+      content: '✓'; position: absolute; top: -1px; left: -1px;
+      width: 26px; height: 26px;
+      background: linear-gradient(135deg, #34d399, #16a34a);
+      color: #fff; font-weight: 900; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 16px 0 16px 0;
+    }
+    .ctr-card { position: relative; }
+
+    /* Hidden render target for html2canvas — gets positioned off-screen but laid out */
+    #ctr-print-wrap {
+      position: fixed; left: -10000px; top: 0;
+      width: 720px; padding: 40px; background: #fff;
+      font-family: 'Heebo', sans-serif; color: #2a1810;
+      direction: rtl;
+    }
+    #ctr-print-wrap h1 { font-family: 'Frank Ruhl Libre', serif; font-size: 36px; text-align: center; margin: 0 0 6px; color: #2a1810; font-weight: 900; }
+    #ctr-print-wrap .sub-line { text-align: center; font-size: 15px; color: #6b4423; margin-bottom: 28px; }
+    #ctr-print-wrap .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px; }
+    #ctr-print-wrap .meta-cell { background: rgba(212,165,116,0.08); border-radius: 12px; padding: 14px 16px; }
+    #ctr-print-wrap .meta-label { font-size: 11px; color: #a06c48; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; margin-bottom: 4px; }
+    #ctr-print-wrap .meta-val { font-size: 17px; font-weight: 800; }
+    #ctr-print-wrap h2 { font-family: 'Frank Ruhl Libre', serif; font-size: 22px; color: #2a1810; margin: 22px 0 10px; }
+    #ctr-print-wrap p { font-size: 15px; line-height: 1.7; color: #3d2818; margin: 0 0 8px; }
+    #ctr-print-wrap table.price { width: 100%; border-collapse: collapse; margin: 8px 0; }
+    #ctr-print-wrap table.price td { padding: 10px 4px; border-bottom: 1px dashed rgba(176,124,62,0.25); font-size: 15px; color: #3d2818; }
+    #ctr-print-wrap table.price td:last-child { text-align: left; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    #ctr-print-wrap table.price tr.total td { font-weight: 900; font-size: 18px; color: #2a1810; border-top: 2px solid #b07c3e; padding-top: 14px; }
+    #ctr-print-wrap table.price tr.total td:last-child { color: #a06c48; }
+    #ctr-print-wrap .signed-stamp { text-align: center; padding: 24px; background: rgba(52,199,89,0.08); border-radius: 14px; border: 1.5px solid rgba(52,199,89,0.3); margin-top: 26px; }
+    #ctr-print-wrap .signed-stamp .check { font-size: 42px; color: #16a34a; line-height: 1; }
+    #ctr-print-wrap .signed-stamp .name { font-family: 'Frank Ruhl Libre', serif; font-size: 24px; font-weight: 900; color: #2a1810; margin-top: 10px; }
+    #ctr-print-wrap .signed-stamp .when { font-size: 12px; color: #6b4423; margin-top: 6px; }
+    #ctr-print-wrap .signed-stamp img { display: block; margin: 14px auto 4px; max-height: 90px; }
+
   </style>
 <style>
   /* ===== LOGIN SCREEN ===== */
@@ -4019,6 +4071,20 @@
   </div>
 
 </main>
+
+<!-- Off-screen render target for the signed-contract image export -->
+<div id="ctr-print-wrap"></div>
+
+<!-- ===== SIGNED CONTRACT VIEWER ===== -->
+<div class="modal-overlay" id="modal-ctr-viewer">
+  <div class="modal" style="max-width:640px;padding:0;overflow:hidden">
+    <div id="ctr-viewer-body" style="padding:24px 24px 8px;max-height:75vh;overflow-y:auto;background:linear-gradient(180deg,#fdf8f0 0%,#fff 100%);color:#2a1810;border-radius:20px 20px 0 0"></div>
+    <div style="padding:14px 18px calc(14px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="ctrShareCopy()">📤 שלח עותק ללקוח</button>
+      <button class="btn btn-ghost" onclick="closeModal('ctr-viewer')">סגור</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== PERSISTENT MINI PLAYER ===== -->
 <div id="mini-player" class="mini-player">
@@ -7768,6 +7834,8 @@ function autoMarkOverdue() {
 initFirebase().then(() => {
   autoMarkOverdue();
   refreshAll();
+  // Live listener: pick up signed contracts within seconds, no reload needed
+  try { _attachContractsListener(); } catch(e){}
   // שחזר טוקן גוגל שמור אם עדיין תקף
   if (gcalLoadToken()) {
     _gcalUser = localStorage.getItem('gcal_user_email') || '';
@@ -8826,6 +8894,30 @@ async function shareContract(id){
   catch(e){ prompt('הקישור לחתימה:', url); }
 }
 
+function _ctrCardHtml(c){
+  const total = (c.basePrice||0) + (c.extras||[]).reduce((s,e)=>s+(parseFloat(e.price)||0),0);
+  const dateLabel = c.projectDate ? new Date(c.projectDate).toLocaleDateString('he-IL', {day:'numeric', month:'short', year:'numeric'}) : '';
+  const signed = c.status === 'signed';
+  const statusLabel = signed ? '✓ נחתם' : c.status === 'sent' ? '↗ נשלח' : '✎ טיוטה';
+  const signedAtLabel = signed && c.signature && c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '';
+  const primaryAction = signed
+    ? '<button class="btn btn-primary btn-sm" onclick="openContractViewer(\'' + c.id + '\')">📄 עותק חתום</button>'
+    : '<button class="btn btn-ghost btn-sm" onclick="shareContract(\'' + c.id + '\')">🔗 שלח לחתימה</button>';
+  return '<div class="ctr-card' + (signed ? ' signed' : '') + '">' +
+    '<div class="ctr-card-head">' +
+      '<div class="ctr-card-title">' + escapeHtml(c.songTitle || 'ללא שם') + '</div>' +
+      '<span class="ctr-status ' + (c.status || 'draft') + '">' + statusLabel + '</span>' +
+      '<div class="ctr-card-amt">' + fmtMoney(total) + '</div>' +
+    '</div>' +
+    '<div class="ctr-card-sub">' + escapeHtml(c.clientName || 'ללא לקוח') + (dateLabel ? ' · ' + dateLabel : '') + (signedAtLabel ? ' · נחתם ' + signedAtLabel : '') + '</div>' +
+    '<div class="ctr-actions">' +
+      primaryAction +
+      '<button class="btn btn-ghost btn-sm" onclick="openContractEditor(\'' + c.id + '\')">' + (signed ? '👁 פרטים' : '✏️ ערוך') + '</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="deleteContract(\'' + c.id + '\')" style="color:#dc2626">🗑 מחק</button>' +
+    '</div>' +
+  '</div>';
+}
+
 function renderContracts(){
   const el = document.getElementById('contracts-list');
   if (!el) return;
@@ -8834,25 +8926,152 @@ function renderContracts(){
     el.innerHTML = '<div class="ctr-empty"><div class="ctr-empty-emoji">📜</div><div class="ctr-empty-title">אין עדיין סיכומי הפקה</div><div>לחץ "+ סיכום חדש" ליצור את הראשון.</div></div>';
     return;
   }
-  el.innerHTML = list.map(c => {
-    const total = (c.basePrice||0) + (c.extras||[]).reduce((s,e)=>s+(parseFloat(e.price)||0),0);
-    const dateLabel = c.projectDate ? new Date(c.projectDate).toLocaleDateString('he-IL', {day:'numeric', month:'short', year:'numeric'}) : '';
-    const statusLabel = c.status === 'signed' ? '✓ נחתם' : c.status === 'sent' ? '↗ נשלח' : '✎ טיוטה';
-    const signedAtLabel = c.signature && c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '';
-    return '<div class="ctr-card">' +
-      '<div class="ctr-card-head">' +
-        '<div class="ctr-card-title">' + escapeHtml(c.songTitle || 'ללא שם') + '</div>' +
-        '<span class="ctr-status ' + (c.status || 'draft') + '">' + statusLabel + '</span>' +
-        '<div class="ctr-card-amt">' + fmtMoney(total) + '</div>' +
-      '</div>' +
-      '<div class="ctr-card-sub">' + escapeHtml(c.clientName || 'ללא לקוח') + (dateLabel ? ' · ' + dateLabel : '') + (signedAtLabel ? ' · נחתם ' + signedAtLabel : '') + '</div>' +
-      '<div class="ctr-actions">' +
-        '<button class="btn btn-ghost btn-sm" onclick="shareContract(\'' + c.id + '\')">🔗 שלח קישור</button>' +
-        '<button class="btn btn-ghost btn-sm" onclick="openContractEditor(\'' + c.id + '\')">' + (c.status === 'signed' ? '👁 צפה' : '✏️ ערוך') + '</button>' +
-        '<button class="btn btn-ghost btn-sm" onclick="deleteContract(\'' + c.id + '\')" style="color:#dc2626">🗑 מחק</button>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+  const signed = list.filter(c => c.status === 'signed');
+  const drafts = list.filter(c => c.status !== 'signed');
+  let html = '';
+  if (signed.length) {
+    html += '<div class="ctr-section-title signed">✓ הסכמים חתומים (' + signed.length + ')</div>';
+    html += signed.map(_ctrCardHtml).join('');
+  }
+  if (drafts.length) {
+    html += '<div class="ctr-section-title draft">בעבודה / ממתין לחתימה (' + drafts.length + ')</div>';
+    html += drafts.map(_ctrCardHtml).join('');
+  }
+  el.innerHTML = html;
+}
+
+// ===== Signed contract viewer + share-as-image =====
+let _ctrViewingId = null;
+
+function _ctrRenderPrintable(c, opts){
+  opts = opts || {};
+  const total = (c.basePrice||0) + (c.extras||[]).reduce((s,e)=>s+(parseFloat(e.price)||0),0);
+  const halfA = Math.round(total/2), halfB = total - halfA;
+  const dateStr = c.projectDate ? new Date(c.projectDate).toLocaleDateString('he-IL', {day:'numeric', month:'long', year:'numeric'}) : '—';
+  let priceRows = '<tr><td>חבילת הפקה בסיסית — הפקה, מיקס, מאסטר, נגן אחד, עד 5 סבבי תיקונים</td><td>' + fmtMoney(c.basePrice || 0) + '</td></tr>';
+  (c.extras || []).forEach(e => {
+    priceRows += '<tr><td>' + escapeHtml(e.label || (e.type === 'musician' ? 'נגן נוסף' : e.type === 'revisions' ? 'סבב תיקונים נוסף' : 'תוספת')) + '</td><td>' + fmtMoney(e.price || 0) + '</td></tr>';
+  });
+  priceRows += '<tr class="total"><td>סה"כ</td><td>' + fmtMoney(total) + '</td></tr>';
+  let rightsHtml = '';
+  if (c.rightsMode === 'split' && Array.isArray(c.splitShares) && c.splitShares.length) {
+    const parts = c.splitShares.filter(s => s.name && s.percent > 0).map(s => s.percent + '% ' + escapeHtml(s.name));
+    rightsHtml = 'זכויות הכתיבה של השיר (מילים ולחן) מתחלקות: ' + parts.join(' · ') + ', ורשומות בהתאם באקו"ם.';
+  } else {
+    rightsHtml = 'זכויות הכתיבה של השיר (מילים ולחן) רשומות על שם <b>' + escapeHtml(c.producerName || 'אליאור רביד') + '</b> באקו"ם.';
+  }
+  const signedBlock = c.signature && c.signature.dataUrl ? (
+    '<div class="signed-stamp">' +
+      '<div class="check">✓</div>' +
+      '<div style="font-weight:800;color:#16a34a">סיכום ההפקה אושר</div>' +
+      '<img src="' + c.signature.dataUrl + '" alt="חתימה">' +
+      '<div class="name">' + escapeHtml(c.signature.clientName || c.clientName) + '</div>' +
+      '<div class="when">' + (c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleString('he-IL') : '') + '</div>' +
+    '</div>'
+  ) : '';
+  return (
+    '<div style="text-align:center;font-size:11px;letter-spacing:.25em;color:#a06c48;font-weight:800;text-transform:uppercase;margin-bottom:14px">אליאור רביד · אולפן</div>' +
+    '<h1>סיכום הפקה</h1>' +
+    '<div class="sub-line">בין <b>' + escapeHtml(c.producerName || 'אליאור רביד') + '</b> לבין <b>' + escapeHtml(c.clientName || '') + '</b></div>' +
+    '<div class="meta-grid">' +
+      '<div class="meta-cell"><div class="meta-label">שם הפרויקט</div><div class="meta-val">' + escapeHtml(c.songTitle || '') + '</div></div>' +
+      '<div class="meta-cell"><div class="meta-label">תאריך</div><div class="meta-val">' + escapeHtml(dateStr) + '</div></div>' +
+    '</div>' +
+    '<h2>מה כולל הפרויקט</h2>' +
+    '<p>חבילת ההפקה כוללת: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים על המיקס</b>. בסיום מתקבל שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.</p>' +
+    ((c.extras||[]).length ? '<p style="margin-top:10px"><b>תוספות שנבחרו:</b><br>' + c.extras.map(e => '• ' + escapeHtml(e.label || '')).join('<br>') + '</p>' : '') +
+    '<h2>מחיר</h2>' +
+    '<table class="price">' + priceRows + '</table>' +
+    '<p style="margin-top:10px;font-size:13px;color:#6b4423"><b>תנאי תשלום:</b> ' + fmtMoney(halfA) + ' עם תחילת העבודה · ' + fmtMoney(halfB) + ' בשלב המיקס. הקבצים הסופיים נמסרים לאחר השלמת התשלום.</p>' +
+    '<h2>תיקונים</h2>' +
+    '<p>המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס. כל סבב הוא רשימת הערות אחת. סבב נוסף (אם נדרש) — <b>₪300</b>. שינוי כיוון מהותי של ההפקה נחשב לעבודה חדשה ומתומחר בנפרד.</p>' +
+    '<h2>זכויות</h2>' +
+    '<p>ההקלטה הסופית (המאסטר) שייכת לזמר/ת לחלוטין.</p><p>' + rightsHtml + '</p>' +
+    signedBlock
+  );
+}
+
+function openContractViewer(id){
+  const c = (load('contracts') || []).find(x => x.id === id);
+  if (!c) return;
+  _ctrViewingId = id;
+  document.getElementById('ctr-viewer-body').innerHTML = _ctrRenderPrintable(c);
+  document.getElementById('modal-ctr-viewer').classList.add('open');
+}
+
+async function ctrShareCopy(){
+  if (!_ctrViewingId) return;
+  const c = (load('contracts') || []).find(x => x.id === _ctrViewingId);
+  if (!c) return;
+  if (typeof html2canvas === 'undefined') { toast('הספריה עדיין נטענת — נסה שוב בעוד שניה'); return; }
+  toast('מכין עותק...');
+  const wrap = document.getElementById('ctr-print-wrap');
+  wrap.innerHTML = _ctrRenderPrintable(c);
+  // Wait one frame so fonts and the embedded signature image have laid out
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  try {
+    const canvas = await html2canvas(wrap, {
+      backgroundColor: '#ffffff',
+      scale: window.devicePixelRatio >= 2 ? 2 : 1.6,
+      useCORS: true, allowTaint: true, logging: false
+    });
+    wrap.innerHTML = '';
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.95));
+    if (!blob) { toast('שגיאה ביצירת התמונה'); return; }
+    const safeName = (c.clientName || 'לקוח').replace(/[\\/:*?"<>|]/g, '').slice(0, 40);
+    const fileName = 'סיכום-הפקה-' + safeName + '-' + (c.songTitle || '').replace(/[\\/:*?"<>|]/g, '').slice(0, 40) + '.png';
+    const file = new File([blob], fileName, {type: 'image/png'});
+    if (navigator.canShare && navigator.canShare({files:[file]})) {
+      try { await navigator.share({files:[file], title: 'סיכום הפקה'}); }
+      catch(e) { if (e && e.name !== 'AbortError') throw e; }
+    } else {
+      // Fallback: download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      toast('עותק הורד למכשיר');
+    }
+  } catch(err) {
+    wrap.innerHTML = '';
+    console.error('share copy failed:', err);
+    toast('שגיאה: ' + (err.message || err));
+  }
+}
+
+// ===== Real-time sync for contracts =====
+// When the public signing page bumps studio_meta/contracts, this listener
+// fires within seconds on the producer's device and refreshes the list
+// without requiring a manual reload.
+let _ctrListenerAttached = false;
+let _ctrLastSeenSignedIds = null;
+
+function _attachContractsListener(){
+  if (_ctrListenerAttached || !firebaseDB) return;
+  _ctrListenerAttached = true;
+  _ctrLastSeenSignedIds = new Set((load('contracts') || []).filter(c => c.status === 'signed').map(c => c.id));
+  firebaseDB.ref('studio_meta/contracts').on('value', function(snap){
+    const remoteTs = parseInt(snap.val() || '0', 10);
+    const localTs  = parseInt(localStorage.getItem('s_contracts_ts') || '0', 10);
+    if (!remoteTs || remoteTs <= localTs) return;
+    firebaseDB.ref('studio_data/contracts').once('value').then(function(s){
+      const data = s.val();
+      if (!data) return;
+      localStorage.setItem('s_contracts', JSON.stringify(data));
+      localStorage.setItem('s_contracts_ts', String(remoteTs));
+      // Detect newly-signed contracts so we can toast the producer
+      const arr = Array.isArray(data) ? data : Object.values(data);
+      const newSignedIds = new Set(arr.filter(c => c && c.status === 'signed').map(c => c.id));
+      const newlySigned = [];
+      newSignedIds.forEach(id => { if (!_ctrLastSeenSignedIds.has(id)) newlySigned.push(arr.find(c => c.id === id)); });
+      _ctrLastSeenSignedIds = newSignedIds;
+      newlySigned.forEach(c => {
+        toast('🎉 ' + (c.clientName || 'לקוח') + ' חתם על הסיכום');
+      });
+      renderContracts();
+    }).catch(() => {});
+  });
 }
 
 // ===== AUDIO LOCAL STORAGE (IndexedDB) =====
