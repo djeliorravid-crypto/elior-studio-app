@@ -466,7 +466,7 @@ function openEmailModal(clientName){
     '<div class="email-modal" role="dialog" aria-modal="true">' +
       '<div class="email-modal-icon">📧</div>' +
       '<h3>קבל עותק במייל</h3>' +
-      '<div class="email-modal-sub">נשמח לשלוח אליך עותק של החוזה החתום.<br>הכנס/י כתובת מייל:</div>' +
+      '<div class="email-modal-sub">נשמח לשלוח אליך עותק של ההסכם החתום.<br>הכנס/י כתובת מייל:</div>' +
       '<input id="email-input" type="email" placeholder="your@email.com" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false">' +
       '<div class="email-modal-actions">' +
         '<button class="email-skip" type="button" onclick="closeEmailModal()">לא, תודה</button>' +
@@ -554,7 +554,7 @@ async function sendContractEmail(){
     const contractLink = window.location.href;
     const contractId = getId();
     const safeName = (clientName || 'signed').replace(/[^֐-׿a-zA-Z0-9\s_-]/g, '').trim() || 'signed';
-    const filename = 'חוזה - ' + safeName + '.pdf';
+    const filename = 'הסכם - ' + safeName + '.pdf';
 
     btn.textContent = '⏳ מכין PDF...';
     const pdfBlob = await generateContractPdf(filename);
