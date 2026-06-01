@@ -9,7 +9,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   html, body {
@@ -209,6 +211,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const storage = firebase.storage();
 
 // EmailJS — for sending the signed-contract copy to the client
 const EMAILJS_PUBLIC_KEY  = 'JfYv9AU0fN__BBKEO';
@@ -488,6 +491,40 @@ function closeEmailModal(){
   if (m) m.remove();
 }
 
+// Generate a PDF Blob of the current signed contract (the .wrap element).
+// The email modal is temporarily hidden so it doesn't appear in the output.
+async function generateContractPdf(filename){
+  if (typeof html2pdf === 'undefined') throw new Error('PDF library not loaded');
+  const wrap = document.querySelector('.wrap');
+  if (!wrap) throw new Error('contract not rendered');
+  const modal = document.getElementById('email-modal');
+  const prevDisplay = modal ? modal.style.display : null;
+  if (modal) modal.style.display = 'none';
+  try {
+    const opt = {
+      margin:       [10, 10, 12, 10],
+      filename:     filename || 'contract.pdf',
+      image:        { type: 'jpeg', quality: 0.96 },
+      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#fdf8f0', letterRendering: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+    const blob = await html2pdf().set(opt).from(wrap).output('blob');
+    return blob;
+  } finally {
+    if (modal) modal.style.display = prevDisplay || '';
+  }
+}
+
+// Upload PDF to Firebase Storage and return its public download URL.
+async function uploadContractPdf(blob, contractId){
+  try { await firebase.auth().signInAnonymously(); } catch(_) {}
+  const path = 'signed-contracts/' + (contractId || ('contract-' + Date.now())) + '.pdf';
+  const ref = storage.ref().child(path);
+  const snap = await ref.put(blob, { contentType: 'application/pdf' });
+  return await snap.ref.getDownloadURL();
+}
+
 async function sendContractEmail(){
   const input = document.getElementById('email-input');
   const result = document.getElementById('email-result');
@@ -506,25 +543,38 @@ async function sendContractEmail(){
     return;
   }
   btn.disabled = true;
-  btn.textContent = '⏳ שולח...';
   result.className = 'email-result';
   result.textContent = '';
   try {
     const modal = document.getElementById('email-modal');
     const clientName = (modal && modal.dataset.clientName) || 'לקוח';
     const contractLink = window.location.href;
+    const contractId = getId();
+    const safeName = (clientName || 'signed').replace(/[^֐-׿a-zA-Z0-9\s_-]/g, '').trim() || 'signed';
+    const filename = 'חוזה - ' + safeName + '.pdf';
+
+    btn.textContent = '⏳ מכין PDF...';
+    const pdfBlob = await generateContractPdf(filename);
+
+    btn.textContent = '⏳ מעלה...';
+    const pdfUrl = await uploadContractPdf(pdfBlob, contractId);
+
+    btn.textContent = '⏳ שולח...';
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       client_name: clientName,
       client_email: email,
-      contract_link: contractLink
+      contract_link: contractLink,
+      contract_pdf_url: pdfUrl,
+      contract_pdf_name: filename
     });
+
     result.className = 'email-result success';
-    result.innerHTML = '✓ נשלח אליך ל-<b dir="ltr">' + email.replace(/[<>&]/g,'') + '</b>';
+    result.innerHTML = '✓ נשלח אליך ל-<b dir="ltr">' + email.replace(/[<>&]/g,'') + '</b><br><span style="font-weight:600;font-size:12px;color:#6b4423">קובץ PDF מצורף</span>';
     btn.style.display = 'none';
     const skip = document.querySelector('#email-modal .email-skip');
     if (skip) { skip.textContent = 'סגור'; skip.style.flex = '1'; }
   } catch(err) {
-    console.error('emailjs send failed:', err);
+    console.error('email send failed:', err);
     btn.disabled = false;
     btn.textContent = 'שלח לי';
     result.className = 'email-result error';
