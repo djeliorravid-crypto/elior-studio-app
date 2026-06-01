@@ -6,6 +6,9 @@
 <title>סיכום הפקה · אליאור רביד</title>
 <meta name="theme-color" content="#f5e8d3">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   html, body {
@@ -131,7 +134,17 @@
   <div id="root"><div class="loading">⏳ טוען...</div></div>
 
 <script>
-const DB_BASE = 'https://elior-studio-default-rtdb.firebaseio.com/studio_data';
+const firebaseConfig = {
+  apiKey:            "AIzaSyB1c6rZVcGrX50UbhEMx3Ra6uaO_S5Fb5o",
+  authDomain:        "elior-studio.firebaseapp.com",
+  databaseURL:       "https://elior-studio-default-rtdb.firebaseio.com",
+  projectId:         "elior-studio",
+  storageBucket:     "elior-studio.firebasestorage.app",
+  messagingSenderId: "719956484293",
+  appId:             "1:719956484293:web:4e1be740d9e49a709350ac"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 function getId(){ return new URLSearchParams(location.search).get('id') || ''; }
 function fmtMoney(n){ return '₪' + Math.abs(n).toLocaleString('he-IL', {minimumFractionDigits:0, maximumFractionDigits:0}); }
@@ -276,25 +289,23 @@ async function submitSignature(){
   const dataUrl = _sigCanvas.toDataURL('image/png');
   const id = getId();
   try {
-    // Fetch current contracts, mark the one with `id` as signed, push back
-    const listRes = await fetch(DB_BASE + '/contracts.json?ts=' + Date.now(), {cache:'no-store'});
-    if (!listRes.ok) throw new Error('HTTP ' + listRes.status);
-    const all = (await listRes.json()) || [];
-    const arr = Array.isArray(all) ? all : Object.values(all);
+    // Try anonymous auth first so writes are allowed under rules that
+    // require auth != null. Harmless if it fails.
+    try { await firebase.auth().signInAnonymously(); } catch(_) {}
+    // Fetch current contracts via SDK, mark the one with `id` as signed,
+    // push the whole array back at studio_data/contracts.
+    const snap = await db.ref('studio_data/contracts').once('value');
+    const data = snap.val();
+    if (!data) throw new Error('not-found');
+    const arr = Array.isArray(data) ? data : Object.values(data);
     const idx = arr.findIndex(x => x && x.id === id);
-    if (idx < 0) throw new Error('not found');
+    if (idx < 0) throw new Error('not-found');
     arr[idx].signature = { dataUrl: dataUrl, clientName: name, signedAt: Date.now() };
     arr[idx].status = 'signed';
     arr[idx].updatedAt = Date.now();
-    const putRes = await fetch(DB_BASE + '/contracts.json', {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(arr)
-    });
-    if (!putRes.ok) throw new Error('PUT HTTP ' + putRes.status);
-    // also nudge studio_meta so the producer's app re-syncs
-    await fetch('https://elior-studio-default-rtdb.firebaseio.com/studio_meta/contracts.json', {
-      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(Date.now())
+    await db.ref().update({
+      'studio_data/contracts': arr,
+      'studio_meta/contracts': Date.now() // nudges producer's device to re-sync
     });
     render(arr[idx]);
     window.scrollTo({top: 0, behavior: 'smooth'});
@@ -302,7 +313,8 @@ async function submitSignature(){
     console.error('signature submit failed:', err);
     btn.disabled = false;
     btn.textContent = '✓ אני מאשר/ת את התנאים';
-    alert('שגיאה בשליחה: ' + (err.message || err) + '\nנסה שוב או רענן.');
+    const code = err && (err.code || err.message) || err;
+    alert('שגיאה בשליחה: ' + code + '\nנסה שוב או רענן.');
   }
 }
 
@@ -317,24 +329,40 @@ const id = getId();
 if (!id) {
   renderError('לא צוין מזהה סיכום. בדוק את הקישור.');
 } else {
+  // Multi-strategy load: SDK direct → anonymous-auth + SDK → REST.
+  // Identical pattern to workshop.html; one of them survives any
+  // restricted-browser / restrictive-rules combination we've seen so far.
   (async function load(){
-    let attempt = 0;
-    while (attempt < 2) {
-      attempt++;
+    function handle(data){
+      if (!data) { renderError('הסיכום לא נמצא.'); return false; }
+      const arr = Array.isArray(data) ? data : Object.values(data);
+      const c = arr.find(x => x && x.id === id);
+      if (!c) { renderError('הסיכום לא נמצא.'); return false; }
+      render(c);
+      return true;
+    }
+    // 1) SDK direct
+    try {
+      const snap = await db.ref('studio_data/contracts').once('value');
+      if (handle(snap.val())) return;
+    } catch(e1) {
+      console.warn('SDK read failed, trying anon auth:', e1 && e1.code);
+      // 2) Anon auth + SDK
       try {
-        const res = await fetch(DB_BASE + '/contracts.json?ts=' + Date.now(), {cache: 'no-store'});
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        if (!data) { renderError('הסיכום לא נמצא.'); return; }
-        const arr = Array.isArray(data) ? data : Object.values(data);
-        const c = arr.find(x => x && x.id === id);
-        if (!c) { renderError('הסיכום לא נמצא.'); return; }
-        render(c);
-        return;
-      } catch(err) {
-        console.error('contract load failed attempt ' + attempt + ':', err);
-        if (attempt < 2) await new Promise(r => setTimeout(r, 1500));
-        else renderError('שגיאה בטעינה: ' + (err.message || err) + '\nאם פתחת מתוך וואטסאפ — נסה לפתוח דרך Safari.');
+        await firebase.auth().signInAnonymously();
+        const snap2 = await db.ref('studio_data/contracts').once('value');
+        if (handle(snap2.val())) return;
+      } catch(e2) {
+        console.warn('Anon auth read failed, trying REST:', e2 && e2.code);
+        // 3) Plain REST
+        try {
+          const res = await fetch('https://elior-studio-default-rtdb.firebaseio.com/studio_data/contracts.json?ts=' + Date.now(), {cache:'no-store'});
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          if (handle(data)) return;
+        } catch(e3) {
+          renderError('שגיאה בטעינה: ' + (e3 && (e3.code || e3.message) || e3) + '\nאם פתחת מתוך וואטסאפ — נסה לפתוח דרך Safari.');
+        }
       }
     }
   })();
