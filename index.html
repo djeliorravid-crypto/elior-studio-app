@@ -3035,10 +3035,13 @@
     .ctr-section-title.signed { color: #16a34a; }
     .ctr-section-title.draft  { color: var(--text-muted); margin-top: 22px; }
 
-    /* Signed contract — visual ribbon */
+    /* Signed contract — keep the clean surface, mark it only with a corner
+       ribbon and a thin green left rail so the text inside stays legible. */
+    .ctr-card { position: relative; }
     .ctr-card.signed {
-      background: linear-gradient(135deg, var(--surface) 0%, rgba(52,199,89,0.05) 100%);
+      background: var(--surface);
       border-color: rgba(52,199,89,0.35);
+      border-right: 3px solid #34d399;
     }
     .ctr-card.signed::before {
       content: '✓'; position: absolute; top: -1px; left: -1px;
@@ -3048,7 +3051,8 @@
       display: flex; align-items: center; justify-content: center;
       border-radius: 16px 0 16px 0;
     }
-    .ctr-card { position: relative; }
+    /* Brighter green pill text in dark mode so "✓ נחתם" reads cleanly */
+    [data-theme="dark"] .ctr-status.signed { background: rgba(52,199,89,0.18); color: #6ee7a3; border-color: rgba(110,231,163,0.45); }
 
     /* Hidden render target for html2canvas — gets positioned off-screen but laid out */
     #ctr-print-wrap {
@@ -8900,8 +8904,11 @@ function _ctrCardHtml(c){
   const signed = c.status === 'signed';
   const statusLabel = signed ? '✓ נחתם' : c.status === 'sent' ? '↗ נשלח' : '✎ טיוטה';
   const signedAtLabel = signed && c.signature && c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '';
+  // Signed: primary = one-tap share, secondary = preview.
+  // Draft/sent: primary = send link to client.
   const primaryAction = signed
-    ? '<button class="btn btn-primary btn-sm" onclick="openContractViewer(\'' + c.id + '\')">📄 עותק חתום</button>'
+    ? '<button class="btn btn-primary btn-sm" onclick="shareSignedCopy(\'' + c.id + '\', this)">📤 שלח עותק</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openContractViewer(\'' + c.id + '\')">👁 צפה</button>'
     : '<button class="btn btn-ghost btn-sm" onclick="shareContract(\'' + c.id + '\')">🔗 שלח לחתימה</button>';
   return '<div class="ctr-card' + (signed ? ' signed' : '') + '">' +
     '<div class="ctr-card-head">' +
@@ -8912,7 +8919,7 @@ function _ctrCardHtml(c){
     '<div class="ctr-card-sub">' + escapeHtml(c.clientName || 'ללא לקוח') + (dateLabel ? ' · ' + dateLabel : '') + (signedAtLabel ? ' · נחתם ' + signedAtLabel : '') + '</div>' +
     '<div class="ctr-actions">' +
       primaryAction +
-      '<button class="btn btn-ghost btn-sm" onclick="openContractEditor(\'' + c.id + '\')">' + (signed ? '👁 פרטים' : '✏️ ערוך') + '</button>' +
+      (signed ? '' : '<button class="btn btn-ghost btn-sm" onclick="openContractEditor(\'' + c.id + '\')">✏️ ערוך</button>') +
       '<button class="btn btn-ghost btn-sm" onclick="deleteContract(\'' + c.id + '\')" style="color:#dc2626">🗑 מחק</button>' +
     '</div>' +
   '</div>';
@@ -8999,15 +9006,18 @@ function openContractViewer(id){
   document.getElementById('modal-ctr-viewer').classList.add('open');
 }
 
-async function ctrShareCopy(){
-  if (!_ctrViewingId) return;
-  const c = (load('contracts') || []).find(x => x.id === _ctrViewingId);
+// Core: render the contract as a PNG and hand it to iOS's native share
+// sheet. Used by both the in-list one-tap share and the viewer's "📤"
+// button.
+async function _ctrGenerateAndShare(c, sourceBtn){
   if (!c) return;
-  if (typeof html2canvas === 'undefined') { toast('הספריה עדיין נטענת — נסה שוב בעוד שניה'); return; }
-  toast('מכין עותק...');
+  if (typeof html2canvas === 'undefined') { toast('הספריה עדיין נטענת — נסה שוב'); return; }
+  const origLabel = sourceBtn ? sourceBtn.innerHTML : null;
+  if (sourceBtn) { sourceBtn.disabled = true; sourceBtn.innerHTML = '⏳ מכין...'; }
+  else toast('מכין עותק...');
   const wrap = document.getElementById('ctr-print-wrap');
   wrap.innerHTML = _ctrRenderPrintable(c);
-  // Wait one frame so fonts and the embedded signature image have laid out
+  // Two frames so fonts and the embedded signature image have laid out
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   try {
     const canvas = await html2canvas(wrap, {
@@ -9025,7 +9035,6 @@ async function ctrShareCopy(){
       try { await navigator.share({files:[file], title: 'סיכום הפקה'}); }
       catch(e) { if (e && e.name !== 'AbortError') throw e; }
     } else {
-      // Fallback: download
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = fileName;
@@ -9037,7 +9046,23 @@ async function ctrShareCopy(){
     wrap.innerHTML = '';
     console.error('share copy failed:', err);
     toast('שגיאה: ' + (err.message || err));
+  } finally {
+    if (sourceBtn) { sourceBtn.disabled = false; sourceBtn.innerHTML = origLabel; }
   }
+}
+
+// One-tap share from the contracts list — no viewer modal first.
+async function shareSignedCopy(id, btn){
+  const c = (load('contracts') || []).find(x => x.id === id);
+  await _ctrGenerateAndShare(c, btn);
+}
+
+// Viewer's button still works the same way for those who want to preview
+// before sending.
+async function ctrShareCopy(){
+  if (!_ctrViewingId) return;
+  const c = (load('contracts') || []).find(x => x.id === _ctrViewingId);
+  await _ctrGenerateAndShare(c);
 }
 
 // ===== Real-time sync for contracts =====
