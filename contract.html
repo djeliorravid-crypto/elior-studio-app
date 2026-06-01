@@ -514,18 +514,23 @@ async function generateContractPdf(filename){
   }
 }
 
-// Convert a Blob into a plain base64 string (without the data: prefix).
-function blobToBase64(blob){
-  return new Promise(function(resolve, reject){
-    const reader = new FileReader();
-    reader.onloadend = function(){
-      const s = String(reader.result || '');
-      const comma = s.indexOf(',');
-      resolve(comma >= 0 ? s.slice(comma + 1) : s);
-    };
-    reader.onerror = function(){ reject(reader.error || new Error('read failed')); };
-    reader.readAsDataURL(blob);
+// Upload a Blob to tmpfiles.org — free, anonymous, 1-hour retention.
+// Returns a direct download URL that EmailJS fetches at send time and
+// embeds permanently into the recipient's email as an attachment.
+async function uploadPdfTemporary(blob, filename){
+  const form = new FormData();
+  form.append('file', blob, filename || 'contract.pdf');
+  const res = await fetch('https://tmpfiles.org/api/v1/upload', {
+    method: 'POST',
+    body: form
   });
+  if (!res.ok) throw new Error('Upload HTTP ' + res.status);
+  const data = await res.json().catch(function(){ return null; });
+  if (!data || data.status !== 'success' || !data.data || !data.data.url) {
+    throw new Error('Unexpected upload response');
+  }
+  // tmpfiles returns a "view" URL; the direct download URL has /dl/ in it.
+  return data.data.url.replace('://tmpfiles.org/', '://tmpfiles.org/dl/');
 }
 
 async function sendContractEmail(){
@@ -558,14 +563,16 @@ async function sendContractEmail(){
 
     btn.textContent = '⏳ מכין PDF...';
     const pdfBlob = await generateContractPdf(filename);
-    const pdfBase64 = await blobToBase64(pdfBlob);
+
+    btn.textContent = '⏳ מעלה...';
+    const pdfUrl = await uploadPdfTemporary(pdfBlob, filename);
 
     btn.textContent = '⏳ שולח...';
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       client_name: clientName,
       client_email: email,
       contract_link: contractLink,
-      contract_pdf_url: pdfBase64,
+      contract_pdf_url: pdfUrl,
       contract_pdf_name: filename
     });
 
