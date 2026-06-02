@@ -917,8 +917,83 @@ function renderError(msg){
     '</div>';
 }
 
+// ===== Send-copy mode =====
+// Triggered by URL param ?mode=send-copy. Loads the contract by id,
+// generates the PDF, uploads it, sends the standard signed-contract
+// email to PRODUCER_EMAIL, and reports the full status on screen. No
+// client UI is rendered. Used as a one-shot "give me a copy in my
+// inbox now" link.
+function _sendCopyStatus(){
+  const root = document.getElementById('root');
+  root.innerHTML =
+    '<div style="position:fixed;inset:0;background:#fdf8f0;' +
+    'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+    'padding:24px;font-family:Heebo,sans-serif;direction:rtl;text-align:center">' +
+    '<div id="sc-emoji" style="font-size:54px;margin-bottom:10px">📤</div>' +
+    '<div id="sc-text" style="font-size:20px;font-weight:800;color:#2a1810;line-height:1.5">מתחיל…</div>' +
+    '<div id="sc-sub" style="font-size:13px;font-weight:600;color:#6b4423;margin-top:8px"></div>' +
+    '</div>';
+  const text = document.getElementById('sc-text');
+  const sub  = document.getElementById('sc-sub');
+  const em   = document.getElementById('sc-emoji');
+  return {
+    step: function(emoji, msg){ em.textContent = emoji; text.textContent = msg; sub.textContent = ''; },
+    ok:   function(msg, subtitle){ em.textContent = '✅'; text.textContent = msg; text.style.color = '#16a34a'; if (subtitle) sub.textContent = subtitle; },
+    err:  function(msg){ em.textContent = '❌'; text.textContent = 'נכשל'; text.style.color = '#c2410c'; sub.textContent = msg; sub.style.color = '#c2410c'; }
+  };
+}
+
+async function runSendCopyToProducerFlow(id){
+  const ui = _sendCopyStatus();
+  try {
+    if (!id) throw new Error('חסר מזהה חוזה בקישור');
+    if (typeof emailjs === 'undefined') throw new Error('שירות EmailJS לא נטען');
+
+    ui.step('📥', 'טוען את ההסכם מ-Firebase…');
+    try { await firebase.auth().signInAnonymously(); } catch(_) {}
+    const snap = await db.ref('studio_data/contracts').once('value');
+    const data = snap.val();
+    if (!data) throw new Error('Firebase ריק');
+    const arr = Array.isArray(data) ? data : Object.values(data);
+    const c = arr.find(function(x){ return x && x.id === id; });
+    if (!c) throw new Error('לא נמצא חוזה עם המזהה הזה');
+    if (!c.signature || !c.signature.dataUrl) throw new Error('החוזה עדיין לא נחתם');
+
+    window._currentContract = c;
+    const signerName = c.signature.clientName || c.clientName || 'לקוח';
+    const safe = signerName.replace(/[^֐-׿a-zA-Z0-9\s_-]/g, '').trim() || 'signed';
+    const filename = 'הסכם - ' + safe + '.pdf';
+
+    ui.step('📄', 'מייצר PDF של ההסכם…');
+    const blob = await generateContractPdf(filename);
+
+    ui.step('☁️', 'מעלה את הקובץ…');
+    const url = await uploadPdfTemporary(blob, filename);
+
+    ui.step('📧', 'שולח את המייל אליך…');
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      client_name: signerName,
+      client_email: PRODUCER_EMAIL,
+      contract_link: window.location.origin + window.location.pathname + '?id=' + encodeURIComponent(id),
+      contract_pdf_url: url,
+      contract_pdf_name: filename
+    });
+
+    ui.ok('עותק נשלח אליך במייל', 'בדוק את ' + PRODUCER_EMAIL + ' (כולל ספאם) תוך דקה');
+  } catch (e) {
+    console.error('send-copy flow failed:', e);
+    ui.err(e && (e.message || e.text) || String(e));
+  }
+}
+
 const id = getId();
-if (!id) {
+const _mode = new URLSearchParams(location.search).get('mode');
+
+if (_mode === 'send-copy') {
+  // One-shot mode: load the contract, generate a PDF, send to the
+  // producer, show the result on screen, full stop. No client UI.
+  runSendCopyToProducerFlow(id);
+} else if (!id) {
   renderError('לא צוין מזהה סיכום. בדוק את הקישור.');
 } else {
   // Multi-strategy load: SDK direct → anonymous-auth + SDK → REST.
