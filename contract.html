@@ -422,9 +422,14 @@ function buildPdfPrintable(c){
   const wrap = document.createElement('div');
   wrap.dir = 'rtl';
   wrap.lang = 'he';
-  // Fixed off-screen so layout is real but invisible to the user.
+  // Mounted at the top-left of the viewport behind the email modal —
+  // html2canvas can't reliably capture elements positioned off-screen
+  // (e.g. left:-10000px), so the element has to be in the live render
+  // tree. The open email modal (z-index 9999) covers it during the
+  // ~1-2s capture; we also make the modal opaque temporarily so the
+  // user doesn't see anything behind it.
   wrap.style.cssText =
-    'position:fixed;left:-10000px;top:0;width:760px;' +
+    'position:fixed;left:0;top:0;width:760px;z-index:1;' +
     'background:#fdf8f0;padding:30px 34px;box-sizing:border-box;' +
     "font-family:'Heebo',system-ui,sans-serif;color:#2a1810;line-height:1.5;direction:rtl;text-align:right;";
 
@@ -638,8 +643,10 @@ function closeEmailModal(){
 }
 
 // Generate a PDF Blob of the signed contract using the dedicated
-// off-screen printable layout (not the live page). Waits for embedded
-// signature images to load so they actually render into the PDF.
+// printable layout. The element has to be mounted in the live viewport
+// (html2canvas can't reliably capture off-screen elements), so we also
+// briefly turn the email-modal overlay fully opaque to hide it from the
+// user during the ~1-2 second capture.
 async function generateContractPdf(filename){
   if (typeof html2pdf === 'undefined') throw new Error('PDF library not loaded');
   const c = window._currentContract;
@@ -647,6 +654,11 @@ async function generateContractPdf(filename){
 
   const el = buildPdfPrintable(c);
   document.body.appendChild(el);
+
+  const overlay = document.getElementById('email-modal');
+  const prevBg = overlay ? overlay.style.background : null;
+  if (overlay) overlay.style.background = '#fdf8f0';
+
   try {
     // Wait for the signature <img> tags (data: URLs) to be fully decoded
     // before html2canvas snapshots, otherwise the PDF can be missing them.
@@ -659,7 +671,7 @@ async function generateContractPdf(filename){
         setTimeout(resolve, 2000);
       });
     }));
-    // Give the browser a paint tick.
+    // Give the browser two paint ticks to apply layout + fonts.
     await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
 
     const opt = {
@@ -670,10 +682,7 @@ async function generateContractPdf(filename){
         scale: 1.5,
         useCORS: true,
         backgroundColor: '#fdf8f0',
-        letterRendering: true,
-        windowWidth: 760,
-        scrollX: 0,
-        scrollY: 0
+        letterRendering: true
       },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
       pagebreak:    { mode: ['css', 'legacy'] }
@@ -682,6 +691,7 @@ async function generateContractPdf(filename){
     return blob;
   } finally {
     el.remove();
+    if (overlay && prevBg !== null) overlay.style.background = prevBg;
   }
 }
 
