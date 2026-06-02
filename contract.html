@@ -374,8 +374,10 @@ function render(c){
         ((c.extras || []).length ? '<p style="margin-top:12px"><b>תוספות שנבחרו:</b><br>' + c.extras.map(e => '• ' + escHtml(e.label || '')).join('<br>') + '</p>' : '') +
       '</div>' +
 
-      '<div class="card"><h2>נגנים נוספים</h2>' +
-        '<p>במידה והזמר או המפיק ימצאו לנכון לשלב <b>נגן לייב נוסף</b> בהפקה — מעבר להקלטת הנגן הכלולה בחבילה — התשלום עבור עבודתו של אותו נגן ישולם על-ידי הזמר <b>ישירות לנגן</b>, ולא דרך המפיק.</p>' +
+      '<div class="card"><h2>זכויות</h2>' +
+        '<p style="font-weight:600;color:#2a1810"><b>ההקלטה הסופית (המאסטר) שייכת לזמר לחלוטין.</b></p>' +
+        '<p style="font-weight:600;color:#2a1810">הזמר רשאי לעשות בה כל שימוש שיחפוץ.</p>' +
+        '<p style="font-weight:600;color:#2a1810">' + rightsHtml + '</p>' +
       '</div>' +
 
       '<div class="card"><h2>התחייבויות המפיק</h2>' +
@@ -396,17 +398,15 @@ function render(c){
         '</ul>' +
       '</div>' +
 
-      '<div class="card"><h2>זכויות</h2>' +
-        '<p style="font-weight:600;color:#2a1810"><b>ההקלטה הסופית (המאסטר) שייכת לזמר לחלוטין.</b></p>' +
-        '<p style="font-weight:600;color:#2a1810">הזמר רשאי לעשות בה כל שימוש שיחפוץ.</p>' +
-        '<p style="font-weight:600;color:#2a1810">' + rightsHtml + '</p>' +
-      '</div>' +
-
       '<div class="card"><h2>תיקונים</h2>' +
         '<p>המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס' + (kind.plural ? ' לכל שיר' : '') + '.</p>' +
         '<p>כל סבב הוא רשימת הערות אחת.</p>' +
         '<p>סבב נוסף (אם יידרש) — <b>₪300</b>.</p>' +
         '<p>כל שינוי מהותי בהפקה שהזמר יבקש לאחר שההפקה אושרה, ייחשב לעבודה חדשה ויתומחר בנפרד.</p>' +
+      '</div>' +
+
+      '<div class="card"><h2>נגנים נוספים</h2>' +
+        '<p>במידה והזמר או המפיק ימצאו לנכון לשלב <b>נגן לייב נוסף</b> בהפקה — מעבר להקלטת הנגן הכלולה בחבילה — התשלום עבור עבודתו של אותו נגן ישולם על-ידי הזמר <b>ישירות לנגן</b>, ולא דרך המפיק.</p>' +
       '</div>' +
 
       '<div class="card"><h2>מחיר</h2><table class="price">' + priceRows + '</table></div>' +
@@ -543,8 +543,10 @@ function buildPdfPrintable(c){
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">נגנים נוספים</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">במידה והזמר או המפיק ימצאו לנכון לשלב <b>נגן לייב נוסף</b> בהפקה — מעבר להקלטת הנגן הכלולה בחבילה — התשלום עבור עבודתו של אותו נגן ישולם על-ידי הזמר <b>ישירות לנגן</b>, ולא דרך המפיק.</div>' +
+      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">זכויות</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;font-weight:600"><b>ההקלטה הסופית (המאסטר) שייכת לזמר לחלוטין.</b></div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;font-weight:600">הזמר רשאי לעשות בה כל שימוש שיחפוץ.</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;font-weight:600;margin-top:2px">' + rightsHtml + '</div>' +
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
@@ -568,18 +570,16 @@ function buildPdfPrintable(c){
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">זכויות</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;font-weight:600"><b>ההקלטה הסופית (המאסטר) שייכת לזמר לחלוטין.</b></div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;font-weight:600">הזמר רשאי לעשות בה כל שימוש שיחפוץ.</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;font-weight:600;margin-top:2px">' + rightsHtml + '</div>' +
-    '</div>' +
-
-    '<div style="margin-bottom:9px">' +
       '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">תיקונים</div>' +
       '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס' + (kind.plural ? ' לכל שיר' : '') + '.</div>' +
       '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">כל סבב הוא רשימת הערות אחת.</div>' +
       '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">סבב נוסף (אם יידרש) — <b>₪300</b>.</div>' +
       '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">כל שינוי מהותי בהפקה שהזמר יבקש לאחר שההפקה אושרה, ייחשב לעבודה חדשה ויתומחר בנפרד.</div>' +
+    '</div>' +
+
+    '<div style="margin-bottom:9px">' +
+      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">נגנים נוספים</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">במידה והזמר או המפיק ימצאו לנכון לשלב <b>נגן לייב נוסף</b> בהפקה — מעבר להקלטת הנגן הכלולה בחבילה — התשלום עבור עבודתו של אותו נגן ישולם על-ידי הזמר <b>ישירות לנגן</b>, ולא דרך המפיק.</div>' +
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
