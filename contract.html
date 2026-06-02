@@ -218,6 +218,7 @@ const storage = firebase.storage();
 const EMAILJS_PUBLIC_KEY  = 'JfYv9AU0fN__BBKEO';
 const EMAILJS_SERVICE_ID  = 'service_mpegg49';
 const EMAILJS_TEMPLATE_ID = 'template_a82ajz9';
+const PRODUCER_EMAIL      = 'djeliorravid@gmail.com';
 try { if (window.emailjs) emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); } catch(_) {}
 
 function getId(){ return new URLSearchParams(location.search).get('id') || ''; }
@@ -428,6 +429,13 @@ function render(c){
 
   window._currentContract = c;
   document.title = 'סיכום הפקה — ' + (songsLabel || c.clientName || 'אליאור רביד');
+
+  // If this contract is already signed but the producer has never
+  // received an email copy (older contract, or auto-CC missed), send
+  // one now in the background. Marks the contract so it won't repeat.
+  if (c.signature && c.signature.dataUrl && !c.producerEmailSent) {
+    _sendProducerCopyForSignedContract(c);
+  }
 }
 
 // ===== PDF-only layout =====
@@ -745,6 +753,74 @@ function openEmailModal(clientName){
     const url  = await uploadPdfTemporary(blob, filename);
     return { url: url, filename: filename };
   })().catch(function(err){ return { error: err }; });
+
+  // Auto-CC the producer with the same PDF the client gets (or would
+  // get). Fires regardless of whether the client chooses to receive
+  // a copy, so the producer always has a record. Idempotent via the
+  // producerEmailSent flag on the contract.
+  wrap._pdfPromise.then(function(result){
+    if (!result || result.error) return;
+    if (typeof emailjs === 'undefined') return;
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      client_name: clientName || 'לקוח',
+      client_email: PRODUCER_EMAIL,
+      contract_link: window.location.href,
+      contract_pdf_url: result.url,
+      contract_pdf_name: result.filename
+    }).then(function(){
+      return markProducerEmailSent(getId());
+    }).catch(function(e){ console.error('producer cc failed:', e); });
+  });
+}
+
+// Mark a contract in Firebase so the producer auto-CC doesn't fire
+// a second time on later page loads.
+async function markProducerEmailSent(id){
+  if (!id) return;
+  try {
+    try { await firebase.auth().signInAnonymously(); } catch(_) {}
+    const snap = await db.ref('studio_data/contracts').once('value');
+    const data = snap.val();
+    if (!data) return;
+    const arr = Array.isArray(data) ? data : Object.values(data);
+    const idx = arr.findIndex(function(x){ return x && x.id === id; });
+    if (idx < 0) return;
+    arr[idx].producerEmailSent = Date.now();
+    await db.ref().update({
+      'studio_data/contracts': arr,
+      'studio_meta/contracts': Date.now()
+    });
+  } catch (e) {
+    console.error('mark producer sent failed:', e);
+  }
+}
+
+// Catch-up flow: when an already-signed contract is loaded and the
+// producer has never been emailed a copy (older contracts, or any
+// signing where the auto-CC failed/was skipped), generate the PDF
+// and send a copy now. Runs silently in the background.
+async function _sendProducerCopyForSignedContract(c){
+  if (!c || !c.signature || !c.signature.dataUrl) return;
+  if (c.producerEmailSent) return;
+  if (typeof emailjs === 'undefined') return;
+  try {
+    await new Promise(function(r){ setTimeout(r, 900); });
+    const signerName = c.signature.clientName || c.clientName || 'לקוח';
+    const safe = signerName.replace(/[^֐-׿a-zA-Z0-9\s_-]/g, '').trim() || 'signed';
+    const filename = 'הסכם - ' + safe + '.pdf';
+    const blob = await generateContractPdf(filename);
+    const url  = await uploadPdfTemporary(blob, filename);
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      client_name: signerName,
+      client_email: PRODUCER_EMAIL,
+      contract_link: window.location.href,
+      contract_pdf_url: url,
+      contract_pdf_name: filename
+    });
+    await markProducerEmailSent(getId());
+  } catch (e) {
+    console.error('producer copy (retroactive) failed:', e);
+  }
 }
 
 function closeEmailModal(){
