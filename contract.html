@@ -11,7 +11,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   html, body {
@@ -408,13 +409,13 @@ function buildPdfPrintable(c){
     : '';
 
   const producerImg = c.producerSignature
-    ? '<img src="' + c.producerSignature + '" style="max-height:52px;display:block;margin:4px auto 2px" crossorigin="anonymous">'
+    ? '<img src="' + c.producerSignature + '" style="max-height:52px;display:block;margin:4px auto 2px">'
     : '<div style="color:#b07c3e;font-style:italic;padding:10px 4px;font-size:10px">— ללא חתימה דיגיטלית —</div>';
   const producerWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') :
                        (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
 
   const clientImg = c.signature && c.signature.dataUrl
-    ? '<img src="' + c.signature.dataUrl + '" style="max-height:52px;display:block;margin:4px auto 2px" crossorigin="anonymous">'
+    ? '<img src="' + c.signature.dataUrl + '" style="max-height:52px;display:block;margin:4px auto 2px">'
     : '<div style="color:#b07c3e;font-style:italic;padding:10px 4px;font-size:10px">— טרם נחתם —</div>';
   const clientWhen = c.signature && c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '';
   const clientFullName = (c.signature && c.signature.clientName) || c.clientName || '';
@@ -642,13 +643,15 @@ function closeEmailModal(){
   if (m) m.remove();
 }
 
-// Generate a PDF Blob of the signed contract using the dedicated
-// printable layout. The element has to be mounted in the live viewport
-// (html2canvas can't reliably capture off-screen elements), so we also
-// briefly turn the email-modal overlay fully opaque to hide it from the
-// user during the ~1-2 second capture.
+// Generate a PDF Blob of the signed contract — drives html2canvas
+// and jsPDF directly (instead of via the html2pdf wrapper) so we can
+// surface the real failure mode if the canvas comes back empty, and
+// guarantee a single-page A4 by fitting the canvas into the page.
 async function generateContractPdf(filename){
-  if (typeof html2pdf === 'undefined') throw new Error('PDF library not loaded');
+  const jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+  if (typeof html2canvas === 'undefined') throw new Error('html2canvas missing');
+  if (!jsPDFCtor) throw new Error('jsPDF missing');
+
   const c = window._currentContract;
   if (!c) throw new Error('contract not loaded');
 
@@ -660,8 +663,12 @@ async function generateContractPdf(filename){
   if (overlay) overlay.style.background = '#fdf8f0';
 
   try {
-    // Wait for the signature <img> tags (data: URLs) to be fully decoded
-    // before html2canvas snapshots, otherwise the PDF can be missing them.
+    // Wait for web fonts to load — otherwise the snapshot may use a
+    // fallback font and render at the wrong size, or not render at all.
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch(_) {}
+    }
+    // Wait for embedded signature <img> tags (data: URLs) to decode.
     const imgs = Array.from(el.querySelectorAll('img'));
     await Promise.all(imgs.map(function(img){
       if (img.complete && img.naturalWidth > 0) return Promise.resolve();
@@ -671,24 +678,36 @@ async function generateContractPdf(filename){
         setTimeout(resolve, 2000);
       });
     }));
-    // Give the browser two paint ticks to apply layout + fonts.
+    // Two paint ticks so layout + fonts apply.
     await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
 
-    const opt = {
-      margin:       [8, 8, 8, 8],
-      filename:     filename || 'contract.pdf',
-      image:        { type: 'jpeg', quality: 0.85 },
-      html2canvas:  {
-        scale: 1.5,
-        useCORS: true,
-        backgroundColor: '#fdf8f0',
-        letterRendering: true
-      },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
-      pagebreak:    { mode: ['css', 'legacy'] }
-    };
-    const blob = await html2pdf().set(opt).from(el).output('blob');
-    return blob;
+    const canvas = await html2canvas(el, {
+      scale: 1.5,
+      useCORS: true,
+      backgroundColor: '#fdf8f0',
+      letterRendering: true,
+      logging: false,
+      windowWidth: document.documentElement.clientWidth,
+      windowHeight: document.documentElement.clientHeight
+    });
+    if (!canvas || !canvas.width || !canvas.height) {
+      throw new Error('canvas blank (' + (canvas && canvas.width) + 'x' + (canvas && canvas.height) + ')');
+    }
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.86);
+    const pdf = new jsPDFCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 8;
+    const maxW = pageW - margin * 2;
+    const maxH = pageH - margin * 2;
+    const ratio = canvas.height / canvas.width;
+    let imgW = maxW;
+    let imgH = imgW * ratio;
+    if (imgH > maxH) { imgH = maxH; imgW = imgH / ratio; }
+    const x = (pageW - imgW) / 2;
+    pdf.addImage(imgData, 'JPEG', x, margin, imgW, imgH, undefined, 'FAST');
+    return pdf.output('blob');
   } finally {
     el.remove();
     if (overlay && prevBg !== null) overlay.style.background = prevBg;
