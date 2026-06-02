@@ -807,7 +807,7 @@ async function generateContractPdf(filename){
     await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
 
     const canvas = await html2canvas(el, {
-      scale: 1.5,
+      scale: 1.0,
       useCORS: true,
       backgroundColor: '#fdf8f0',
       letterRendering: true,
@@ -819,7 +819,10 @@ async function generateContractPdf(filename){
       throw new Error('canvas blank (' + (canvas && canvas.width) + 'x' + (canvas && canvas.height) + ')');
     }
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.86);
+    // EmailJS Personal caps attachments at 500KB. The grown contract
+    // (extra obligation/musician sections) pushed past that at higher
+    // settings, so keep scale modest and quality on the lower side.
+    const imgData = canvas.toDataURL('image/jpeg', 0.6);
     const pdf = new jsPDFCtor({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
