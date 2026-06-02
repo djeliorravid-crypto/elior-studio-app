@@ -231,22 +231,46 @@ function _ctrKindLabel(c){
   if (k === 'album') return { metaLabel: 'אלבום (' + songs.length + ' שירים)', plural: true };
   if (k === 'ep')    return { metaLabel: 'EP (' + songs.length + ' שירים)',      plural: true };
   if (k === 'multi') return { metaLabel: songs.length + ' שירים',                plural: true };
-  return { metaLabel: 'שיר בודד', plural: false };
+  return { metaLabel: 'הפקת סינגל', plural: false };
+}
+
+// Itemized price breakdown when the contract has the new fields;
+// otherwise falls back to the single legacy `basePrice` line.
+function _ctrPriceBreakdown(c){
+  const r = parseFloat(c.priceRecording);
+  const m = parseFloat(c.priceMastering);
+  const p = parseFloat(c.priceProductionMix);
+  if (!isNaN(r) || !isNaN(m) || !isNaN(p)) {
+    const rec = isNaN(r) ? 0 : r;
+    const mas = isNaN(m) ? 0 : m;
+    const prd = isNaN(p) ? 0 : p;
+    return { itemized: true, recording: rec, mastering: mas, productionMix: prd, base: rec + mas + prd };
+  }
+  return { itemized: false, base: parseFloat(c.basePrice) || 0 };
 }
 
 function render(c){
   const songs = (c.songs && c.songs.length) ? c.songs : (c.songTitle ? [c.songTitle] : []);
   const kind = _ctrKindLabel(c);
   const songsLabel = songs.length <= 1 ? (songs[0] || '—') : songs.join(', ');
-  const total = (c.basePrice || 0) + (c.extras || []).reduce((s,e) => s + (parseFloat(e.price)||0), 0);
+  const breakdown = _ctrPriceBreakdown(c);
+  const extrasTotal = (c.extras || []).reduce(function(s,e){ return s + (parseFloat(e.price)||0); }, 0);
+  const total = breakdown.base + extrasTotal;
   const halfA = Math.round(total / 2);
   const halfB = total - halfA;
 
-  // Pricing rows
-  const baseDesc = kind.plural
-    ? 'חבילת הפקה — ' + kind.metaLabel + ' · הפקה, מיקס, מאסטר, נגן אחד פר שיר, עד 5 סבבי תיקונים לשיר'
-    : 'חבילת הפקה בסיסית — הפקה, מיקס, מאסטר, נגן אחד, עד 5 סבבי תיקונים';
-  let priceRows = '<tr><td>' + baseDesc + '</td><td>' + fmtMoney(c.basePrice || 0) + '</td></tr>';
+  // Itemized price rows — recording, mastering, production+mix, then extras.
+  let priceRows = '';
+  if (breakdown.itemized) {
+    priceRows += '<tr><td>הקלטת נגן</td><td>' + fmtMoney(breakdown.recording) + '</td></tr>';
+    priceRows += '<tr><td>מאסטרינג</td><td>' + fmtMoney(breakdown.mastering) + '</td></tr>';
+    priceRows += '<tr><td>הפקה מוזיקלית + מיקס</td><td>' + fmtMoney(breakdown.productionMix) + '</td></tr>';
+  } else {
+    const baseDesc = kind.plural
+      ? 'חבילת הפקה — ' + kind.metaLabel
+      : 'חבילת הפקה בסיסית';
+    priceRows += '<tr><td>' + baseDesc + '</td><td>' + fmtMoney(breakdown.base) + '</td></tr>';
+  }
   (c.extras || []).forEach(function(e){
     priceRows += '<tr><td>' + escHtml(e.label || (e.type === 'musician' ? 'נגן נוסף' : e.type === 'revisions' ? 'סבב תיקונים נוסף' : 'תוספת')) + '</td><td>' + fmtMoney(e.price || 0) + '</td></tr>';
   });
@@ -270,7 +294,7 @@ function render(c){
 
   // Two-up signature block — producer always shown if exists, client signed/pending
   const producerImg = c.producerSignature
-    ? '<img class="sig-img" src="' + c.producerSignature + '" alt="חתימת מפיק" style="max-height:70px;display:block;margin:6px auto">'
+    ? '<img class="sig-img" src="' + c.producerSignature + '" alt="חתימת מפיק" style="max-width:100%;max-height:70px;height:auto;display:block;margin:6px auto">'
     : '<div style="color:#b07c3e;font-style:italic;padding:18px 4px">— ללא חתימה דיגיטלית —</div>';
   const producerWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') : (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
   const producerCell =
@@ -287,7 +311,7 @@ function render(c){
     clientCell =
       '<div style="background:rgba(52,199,89,0.08);border:1.5px solid rgba(52,199,89,0.3);border-radius:14px;padding:16px 14px;text-align:center">' +
         '<div style="font-size:11px;color:#16a34a;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">✓ חתימת הזמר/ת</div>' +
-        '<img class="sig-img" src="' + c.signature.dataUrl + '" alt="חתימה" style="max-height:70px;display:block;margin:6px auto">' +
+        '<img class="sig-img" src="' + c.signature.dataUrl + '" alt="חתימה" style="max-width:100%;max-height:70px;height:auto;display:block;margin:6px auto">' +
         '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:18px;font-weight:900;color:#2a1810;margin-top:4px">' + escHtml(c.signature.clientName || c.clientName) + '</div>' +
         '<div style="font-size:11px;color:#6b4423;margin-top:4px">' + (c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleString('he-IL') : '') + '</div>' +
       '</div>';
@@ -339,19 +363,26 @@ function render(c){
       songsBlock +
 
       '<div class="card"><h2>מה כולל הפרויקט</h2><p>' + (kind.plural
-        ? 'חבילת ההפקה כוללת לכל שיר: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים</b>. בסיום תקבל/י את השירים מוגמרים, מוכנים לחלוטין להעלאה לכל הפלטפורמות.'
-        : 'חבילת ההפקה כוללת: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים על המיקס</b>. בסיום תקבל/י שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.'
+        ? 'חבילת ההפקה כוללת לכל שיר הקלטת נגן, הפקה מוזיקלית, מיקס ומאסטרינג. <b>בסיום תקבל/י את השירים מוגמרים, מוכנים לחלוטין להעלאה לכל הפלטפורמות.</b>'
+        : 'חבילת ההפקה כוללת הקלטת נגן, הפקה מוזיקלית, מיקס ומאסטרינג. <b>בסיום תקבל/י שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.</b>'
       ) + '</p>' +
       ((c.extras || []).length ? '<p style="margin-top:12px"><b>תוספות שנבחרו:</b><br>' + c.extras.map(e => '• ' + escHtml(e.label || '')).join('<br>') + '</p>' : '') +
       '</div>' +
 
-      '<div class="card"><h2>מחיר</h2><table class="price">' + priceRows + '</table>' +
-        '<p style="margin-top:12px;font-size:13px;color:#6b4423"><b>תנאי תשלום:</b> ' + fmtMoney(halfA) + ' עם תחילת העבודה · ' + fmtMoney(halfB) + ' בשלב המיקס. הקבצים הסופיים נמסרים לאחר השלמת התשלום.</p>' +
+      '<div class="card"><h2>מחיר</h2><table class="price">' + priceRows + '</table></div>' +
+
+      '<div class="card"><h2>תנאי תשלום</h2>' +
+        '<p><b>' + fmtMoney(halfA) + '</b> עם תחילת העבודה.</p>' +
+        '<p><b>' + fmtMoney(halfB) + '</b> בשלב המיקס.</p>' +
+        '<p style="margin-top:10px;font-size:13.5px;color:#6b4423">הקבצים הסופיים נמסרים לאחר השלמת התשלום.</p>' +
       '</div>' +
 
       '<div class="card"><h2>תיקונים</h2><p>המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס' + (kind.plural ? ' לכל שיר' : '') + ' — מספר נדיב שמכסה כמעט כל פרויקט. כל סבב הוא רשימת הערות אחת. אם במקרה נדיר יידרשו סבבים נוספים, כל אחד הוא <b>₪300</b>. שינוי כיוון מהותי של ההפקה נחשב לעבודה חדשה ומתומחר בנפרד.</p></div>' +
 
-      '<div class="card"><h2>זכויות</h2><p>ההקלטה הסופית (המאסטר) שלך לחלוטין — חופשי/ה לעשות בה כל שתרצה/י.</p><p>' + rightsHtml + '</p></div>' +
+      '<div class="card"><h2>זכויות</h2>' +
+        '<p style="font-weight:600;color:#2a1810"><b>ההקלטה הסופית (המאסטר) שלך לחלוטין</b> — חופשי/ה לעשות בה כל שתרצה/י.</p>' +
+        '<p style="font-weight:600;color:#2a1810">' + rightsHtml + '</p>' +
+      '</div>' +
 
       signaturesBlock +
       signPad +
@@ -375,13 +406,11 @@ function buildPdfPrintable(c){
   const songs = (c.songs && c.songs.length) ? c.songs : (c.songTitle ? [c.songTitle] : []);
   const kind = _ctrKindLabel(c);
   const songsLabel = songs.length <= 1 ? (songs[0] || '—') : songs.join(', ');
-  const total = (c.basePrice || 0) + (c.extras || []).reduce(function(s,e){ return s + (parseFloat(e.price)||0); }, 0);
+  const breakdown = _ctrPriceBreakdown(c);
+  const extrasTotal = (c.extras || []).reduce(function(s,e){ return s + (parseFloat(e.price)||0); }, 0);
+  const total = breakdown.base + extrasTotal;
   const halfA = Math.round(total / 2);
   const halfB = total - halfA;
-
-  const baseDesc = kind.plural
-    ? 'חבילת הפקה — ' + kind.metaLabel + ' · הפקה, מיקס, מאסטר, נגן אחד פר שיר, עד 5 סבבי תיקונים לשיר'
-    : 'חבילת הפקה בסיסית — הפקה, מיקס, מאסטר, נגן אחד, עד 5 סבבי תיקונים';
 
   const rightsTarget = kind.plural ? 'השירים (מילים ולחן)' : 'השיר (מילים ולחן)';
   let rightsHtml;
@@ -393,11 +422,19 @@ function buildPdfPrintable(c){
     rightsHtml = 'זכויות הכתיבה של ' + rightsTarget + ' רשומות על שם <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> באקו"ם.';
   }
 
-  let priceRows = '<tr><td style="padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);font-size:12px;color:#3d2818">' + baseDesc + '</td>' +
-                  '<td style="padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);text-align:left;font-weight:700;font-size:12px;color:#3d2818;white-space:nowrap">' + fmtMoney(c.basePrice || 0) + '</td></tr>';
+  const rowCellL = 'padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);font-size:12px;color:#3d2818';
+  const rowCellR = 'padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);text-align:left;font-weight:700;font-size:12px;color:#3d2818;white-space:nowrap';
+  let priceRows = '';
+  if (breakdown.itemized) {
+    priceRows += '<tr><td style="' + rowCellL + '">הקלטת נגן</td><td style="' + rowCellR + '">' + fmtMoney(breakdown.recording) + '</td></tr>';
+    priceRows += '<tr><td style="' + rowCellL + '">מאסטרינג</td><td style="' + rowCellR + '">' + fmtMoney(breakdown.mastering) + '</td></tr>';
+    priceRows += '<tr><td style="' + rowCellL + '">הפקה מוזיקלית + מיקס</td><td style="' + rowCellR + '">' + fmtMoney(breakdown.productionMix) + '</td></tr>';
+  } else {
+    const baseDesc = kind.plural ? 'חבילת הפקה — ' + kind.metaLabel : 'חבילת הפקה בסיסית';
+    priceRows += '<tr><td style="' + rowCellL + '">' + baseDesc + '</td><td style="' + rowCellR + '">' + fmtMoney(breakdown.base) + '</td></tr>';
+  }
   (c.extras || []).forEach(function(e){
-    priceRows += '<tr><td style="padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);font-size:12px;color:#3d2818">' + escHtml(e.label || '') + '</td>' +
-                 '<td style="padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);text-align:left;font-weight:700;font-size:12px;color:#3d2818;white-space:nowrap">' + fmtMoney(e.price || 0) + '</td></tr>';
+    priceRows += '<tr><td style="' + rowCellL + '">' + escHtml(e.label || '') + '</td><td style="' + rowCellR + '">' + fmtMoney(e.price || 0) + '</td></tr>';
   });
   priceRows += '<tr><td style="padding:8px 0 0;font-weight:900;font-size:14px;border-top:1.5px solid #b07c3e;color:#2a1810">סה"כ</td>' +
                '<td style="padding:8px 0 0;font-weight:900;font-size:15px;border-top:1.5px solid #b07c3e;color:#a06c48;text-align:left;white-space:nowrap">' + fmtMoney(total) + '</td></tr>';
@@ -458,8 +495,8 @@ function buildPdfPrintable(c){
       '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-bottom:4px">מה כולל הפרויקט</div>' +
       '<div style="font-size:12px;line-height:1.55;color:#3d2818">' +
         (kind.plural
-          ? 'חבילת ההפקה כוללת לכל שיר: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים</b>. בסיום תקבל/י את השירים מוגמרים, מוכנים לחלוטין להעלאה לכל הפלטפורמות.'
-          : 'חבילת ההפקה כוללת: <b>הפקה מלאה, מיקס, מאסטרינג, נגן אחד, ועד 5 סבבי תיקונים על המיקס</b>. בסיום תקבל/י שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.') +
+          ? 'חבילת ההפקה כוללת לכל שיר הקלטת נגן, הפקה מוזיקלית, מיקס ומאסטרינג. <b>בסיום תקבל/י את השירים מוגמרים, מוכנים לחלוטין להעלאה לכל הפלטפורמות.</b>'
+          : 'חבילת ההפקה כוללת הקלטת נגן, הפקה מוזיקלית, מיקס ומאסטרינג. <b>בסיום תקבל/י שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.</b>') +
       '</div>' +
       ((c.extras || []).length
         ? '<div style="margin-top:5px;font-size:12px;color:#3d2818"><b>תוספות שנבחרו:</b> ' +
@@ -470,7 +507,12 @@ function buildPdfPrintable(c){
     '<div style="margin-bottom:10px">' +
       '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-bottom:4px">מחיר</div>' +
       '<table style="width:100%;border-collapse:collapse;direction:rtl">' + priceRows + '</table>' +
-      '<div style="margin-top:8px;font-size:11px;color:#6b4423"><b>תנאי תשלום:</b> ' + fmtMoney(halfA) + ' עם תחילת העבודה · ' + fmtMoney(halfB) + ' בשלב המיקס. הקבצים הסופיים נמסרים לאחר השלמת התשלום.</div>' +
+    '</div>' +
+
+    '<div style="margin-bottom:10px;background:rgba(212,165,116,0.06);border:1px solid rgba(176,124,62,0.25);border-radius:8px;padding:9px 12px">' +
+      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-bottom:3px">תנאי תשלום</div>' +
+      '<div style="font-size:12px;line-height:1.55;color:#3d2818"><b>' + fmtMoney(halfA) + '</b> עם תחילת העבודה · <b>' + fmtMoney(halfB) + '</b> בשלב המיקס.</div>' +
+      '<div style="font-size:11px;color:#6b4423;margin-top:2px">הקבצים הסופיים נמסרים לאחר השלמת התשלום.</div>' +
     '</div>' +
 
     '<div style="margin-bottom:10px">' +
@@ -480,8 +522,8 @@ function buildPdfPrintable(c){
 
     '<div style="margin-bottom:14px">' +
       '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-bottom:4px">זכויות</div>' +
-      '<div style="font-size:11.5px;line-height:1.55;color:#3d2818">ההקלטה הסופית (המאסטר) שלך לחלוטין — חופשי/ה לעשות בה כל שתרצה/י.</div>' +
-      '<div style="font-size:11.5px;line-height:1.55;color:#3d2818;margin-top:3px">' + rightsHtml + '</div>' +
+      '<div style="font-size:12px;line-height:1.55;color:#2a1810;font-weight:600"><b>ההקלטה הסופית (המאסטר) שלך לחלוטין</b> — חופשי/ה לעשות בה כל שתרצה/י.</div>' +
+      '<div style="font-size:12px;line-height:1.55;color:#2a1810;font-weight:600;margin-top:3px">' + rightsHtml + '</div>' +
     '</div>' +
 
     '<div style="display:flex;gap:10px;margin-top:14px;page-break-inside:avoid;direction:rtl">' +
