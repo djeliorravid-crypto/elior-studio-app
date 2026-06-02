@@ -429,13 +429,6 @@ function render(c){
 
   window._currentContract = c;
   document.title = 'סיכום הפקה — ' + (songsLabel || c.clientName || 'אליאור רביד');
-
-  // If this contract is already signed but the producer has never
-  // received an email copy (older contract, or auto-CC missed), send
-  // one now in the background. Marks the contract so it won't repeat.
-  if (c.signature && c.signature.dataUrl && !c.producerEmailSent) {
-    _sendProducerCopyForSignedContract(c);
-  }
 }
 
 // ===== PDF-only layout =====
@@ -756,8 +749,7 @@ function openEmailModal(clientName){
 
   // Auto-CC the producer with the same PDF the client gets (or would
   // get). Fires regardless of whether the client chooses to receive
-  // a copy, so the producer always has a record. Idempotent via the
-  // producerEmailSent flag on the contract.
+  // a copy, so the producer always has a record.
   wrap._pdfPromise.then(function(result){
     if (!result || result.error) return;
     if (typeof emailjs === 'undefined') return;
@@ -767,97 +759,8 @@ function openEmailModal(clientName){
       contract_link: window.location.href,
       contract_pdf_url: result.url,
       contract_pdf_name: result.filename
-    }).then(function(){
-      return markProducerEmailSent(getId());
     }).catch(function(e){ console.error('producer cc failed:', e); });
   });
-}
-
-// Mark a contract in Firebase so the producer auto-CC doesn't fire
-// a second time on later page loads.
-async function markProducerEmailSent(id){
-  if (!id) return;
-  try {
-    try { await firebase.auth().signInAnonymously(); } catch(_) {}
-    const snap = await db.ref('studio_data/contracts').once('value');
-    const data = snap.val();
-    if (!data) return;
-    const arr = Array.isArray(data) ? data : Object.values(data);
-    const idx = arr.findIndex(function(x){ return x && x.id === id; });
-    if (idx < 0) return;
-    arr[idx].producerEmailSent = Date.now();
-    await db.ref().update({
-      'studio_data/contracts': arr,
-      'studio_meta/contracts': Date.now()
-    });
-  } catch (e) {
-    console.error('mark producer sent failed:', e);
-  }
-}
-
-// Visible debug status banner (only when ?debug=1 in the URL).
-function _isDebug(){ return new URLSearchParams(location.search).get('debug') === '1'; }
-function _showDebugStatus(initial){
-  if (!_isDebug()) return { update: function(){}, ok: function(){}, err: function(){} };
-  let el = document.getElementById('debug-status');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'debug-status';
-    el.style.cssText =
-      'position:fixed;top:max(env(safe-area-inset-top),14px);left:50%;transform:translateX(-50%);' +
-      'background:#fff;border:2px solid #b07c3e;border-radius:14px;' +
-      'padding:10px 18px;font-size:13px;font-weight:800;color:#2a1810;' +
-      'box-shadow:0 14px 30px -8px rgba(176,124,62,0.5);z-index:99999;' +
-      'font-family:Heebo,sans-serif;direction:rtl;max-width:90vw;text-align:center';
-    document.body.appendChild(el);
-  }
-  el.textContent = initial;
-  return {
-    update: function(t){ el.textContent = t; },
-    ok:  function(t){ el.textContent = t; el.style.borderColor = '#16a34a'; el.style.color = '#16a34a'; },
-    err: function(t){ el.textContent = t; el.style.borderColor = '#c2410c'; el.style.color = '#c2410c'; }
-  };
-}
-
-// Catch-up flow: when an already-signed contract is loaded and the
-// producer has never been emailed a copy (older contracts, or any
-// signing where the auto-CC failed/was skipped), generate the PDF
-// and send a copy now. Runs silently in the background (or with a
-// visible status banner if ?debug=1 is in the URL).
-async function _sendProducerCopyForSignedContract(c){
-  if (!c || !c.signature || !c.signature.dataUrl) return;
-  if (c.producerEmailSent) return;
-  const dbg = _showDebugStatus('🟡 מתחיל…');
-  if (typeof emailjs === 'undefined') { dbg.err('✗ emailjs לא נטען'); return; }
-  try {
-    await new Promise(function(r){ setTimeout(r, 900); });
-    const signerName = c.signature.clientName || c.clientName || 'לקוח';
-    const safe = signerName.replace(/[^֐-׿a-zA-Z0-9\s_-]/g, '').trim() || 'signed';
-    const filename = 'הסכם - ' + safe + '.pdf';
-
-    dbg.update('📄 מייצר PDF…');
-    const blob = await generateContractPdf(filename);
-
-    dbg.update('☁️ מעלה ל-Firebase…');
-    const url = await uploadPdfTemporary(blob, filename);
-
-    dbg.update('📧 שולח מייל…');
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      client_name: signerName,
-      client_email: PRODUCER_EMAIL,
-      contract_link: window.location.href,
-      contract_pdf_url: url,
-      contract_pdf_name: filename
-    });
-
-    dbg.update('💾 מסמן בFirebase…');
-    await markProducerEmailSent(getId());
-    dbg.ok('✓ עותק נשלח ל-' + PRODUCER_EMAIL);
-  } catch (e) {
-    console.error('producer copy (retroactive) failed:', e);
-    const msg = (e && (e.text || e.message)) || 'שגיאה לא ידועה';
-    dbg.err('✗ ' + msg);
-  }
 }
 
 function closeEmailModal(){
