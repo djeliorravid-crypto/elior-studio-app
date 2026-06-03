@@ -2920,6 +2920,126 @@
       .session-pill .sp-time { font-size: 9px; }
     }
 
+    /* ===== STUDENTS ===== */
+    .stu-summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .stu-summary-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .stu-summary-val {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--text);
+      margin-top: 4px;
+    }
+    .stu-section-head {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--text);
+      margin: 14px 0 8px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .stu-lesson-row {
+      border-radius: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+    }
+    .stu-lesson-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .stu-lesson-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 900;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .stu-lesson-topic {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .stu-lesson-area {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .stu-lesson-fields {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .stu-lesson-fields label {
+      display: block;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .stu-lesson-fields input,
+    .stu-lesson-fields textarea {
+      width: 100%;
+      font-size: 12.5px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+    }
+    .stu-done-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .stu-done-checkbox input { transform: scale(1.2); }
+    .stu-payment-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .stu-payment-row:last-child { border-bottom: none; }
+    .stu-add-payment input {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+    }
+    @media (max-width: 600px) {
+      .stu-lesson-fields { grid-template-columns: 1fr; }
+    }
+
     /* ===== WORKSHOPS ===== */
     .wk-card {
       background: var(--surface);
@@ -3470,6 +3590,7 @@
     <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon">✅</span> משימות יומיות</a>
     <a onclick="showPage('workshops')" data-page="workshops"><span class="nav-icon">🎓</span> סדנאות</a>
     <a onclick="showPage('contracts')" data-page="contracts"><span class="nav-icon">📜</span> סיכומי הפקה</a>
+    <a onclick="showPage('students')" data-page="students"><span class="nav-icon">🎹</span> תלמידים</a>
     <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
     <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
@@ -4077,6 +4198,62 @@
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="saveContract()">שמור</button>
         <button class="btn btn-ghost" onclick="closeModal('contract')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STUDENTS ===== -->
+  <div class="page" id="page-students">
+    <div class="page-header">
+      <div><h2>🎹 תלמידים</h2><p>קורסי הפקה פרטניים · 6 שיעורים · מסלולי תשלום · התקדמות</p></div>
+      <button class="btn btn-primary" onclick="openStudentEditor(null)">+ תלמיד חדש</button>
+    </div>
+    <div id="students-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px"></div>
+    <div id="students-list"></div>
+  </div>
+
+  <!-- ===== STUDENT EDITOR MODAL (add / edit basic info) ===== -->
+  <div class="modal-overlay" id="modal-student">
+    <div class="modal" style="max-width:560px">
+      <h3 id="stu-modal-title">🎹 תלמיד חדש</h3>
+      <div class="form-row">
+        <div class="form-group"><label>שם מלא *</label><input type="text" id="stu-name" placeholder="ישראל ישראלי"></div>
+        <div class="form-group"><label>טלפון</label><input type="tel" id="stu-phone" placeholder="050-0000000"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>מייל</label><input type="email" id="stu-email" placeholder="name@example.com"></div>
+        <div class="form-group"><label>תאריך התחלת הקורס</label><input type="date" id="stu-start"></div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label>מסלול תשלום *</label>
+        <div id="stu-plan-tabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+          <button type="button" class="ctr-kind-tab" data-plan="upfront" onclick="stuSetPlan('upfront')">מראש · ₪2,500</button>
+          <button type="button" class="ctr-kind-tab" data-plan="two" onclick="stuSetPlan('two')">2 תשלומים · ₪2,700</button>
+          <button type="button" class="ctr-kind-tab" data-plan="three" onclick="stuSetPlan('three')">3 תשלומים · ₪2,700</button>
+          <button type="button" class="ctr-kind-tab" data-plan="per" onclick="stuSetPlan('per')">לפי שיעור · ₪2,700</button>
+        </div>
+        <div id="stu-plan-hint" style="font-size:11.5px;color:var(--text-muted);margin-top:6px"></div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label>הערות כלליות</label>
+        <textarea id="stu-notes" rows="3" placeholder="לאן הוא רוצה להגיע, מה הניסיון הקודם שלו..."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="saveStudent()">שמור</button>
+        <button class="btn btn-ghost" onclick="closeModal('student')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STUDENT DETAIL MODAL (lessons / payments / notes) ===== -->
+  <div class="modal-overlay" id="modal-student-detail">
+    <div class="modal" style="max-width:640px">
+      <div id="stu-detail-body"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('student-detail')">סגור</button>
       </div>
     </div>
   </div>
@@ -4791,7 +4968,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -4991,7 +5168,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, workshops:5, contracts:6, dashboard:7};
+  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, workshops:5, contracts:6, students:7, dashboard:8};
   if (name === 'daily') _dailyDate = dailyDateStr();
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
@@ -7744,6 +7921,7 @@ function refreshAll() {
   renderDaily();
   renderWorkshops();
   renderContracts();
+  renderStudents();
 }
 
 // ===== גיבוי ושחזור =====
@@ -9090,6 +9268,297 @@ function saveContract(){
   closeModal('contract');
   renderContracts();
   toast('✅ נשמר');
+}
+
+// ===== STUDENTS — private lessons (6-week production course) =====
+const STU_LESSONS_DEFAULT = [
+  { num: 1, topic: 'שלבי הסקיצה, כללי יסוד',                                area: 'הפקה' },
+  { num: 2, topic: 'שלבי הקלטת ווקאל ועריכה',                                area: 'הפקה + מיקס' },
+  { num: 3, topic: 'סטריאו, מונו, היפוך פאזות, באלנס, EQ, דינמיקה',         area: 'מיקס' },
+  { num: 4, topic: 'מיקס לתופים ובס לייב',                                   area: 'מיקס' },
+  { num: 5, topic: 'הקלטת גיטרות חשמליות ואקוסטיות + מיקס',                area: 'הפקה + מיקס' },
+  { num: 6, topic: 'מאסטרינג, כללי יסוד',                                    area: 'מאסטרינג' }
+];
+
+const STU_PLANS = {
+  upfront: { label: 'תשלום מראש',  total: 2500, hint: '₪2,500 לפני שיעור 1 · חיסכון של ₪200' },
+  two:     { label: '2 תשלומים',   total: 2700, hint: '₪1,350 לפני שיעור 1 · ₪1,350 לפני שיעור 4' },
+  three:   { label: '3 תשלומים',   total: 2700, hint: '₪900 לפני שיעורים 1, 3, 5' },
+  per:     { label: 'לפי שיעור',   total: 2700, hint: '₪450 לפני כל שיעור' }
+};
+
+let _stuEditId   = null;
+let _stuPlan     = 'upfront';
+let _stuViewingId = null;
+
+function stuSetPlan(plan){
+  _stuPlan = plan;
+  document.querySelectorAll('#stu-plan-tabs .ctr-kind-tab').forEach(t => t.classList.remove('active'));
+  const btn = document.querySelector('#stu-plan-tabs [data-plan="' + plan + '"]');
+  if (btn) btn.classList.add('active');
+  const hint = document.getElementById('stu-plan-hint');
+  if (hint) hint.textContent = (STU_PLANS[plan] && STU_PLANS[plan].hint) || '';
+}
+
+function openStudentEditor(id){
+  _stuEditId = id;
+  const s = id ? (load('students') || []).find(x => x.id === id) : null;
+  document.getElementById('stu-modal-title').textContent = s ? '✏️ עריכת תלמיד' : '🎹 תלמיד חדש';
+  document.getElementById('stu-name').value  = s ? (s.name  || '') : '';
+  document.getElementById('stu-phone').value = s ? (s.phone || '') : '';
+  document.getElementById('stu-email').value = s ? (s.email || '') : '';
+  document.getElementById('stu-start').value = s ? (s.startDate || '') : new Date().toISOString().slice(0,10);
+  document.getElementById('stu-notes').value = s ? (s.generalNotes || '') : '';
+  stuSetPlan(s ? (s.plan || 'upfront') : 'upfront');
+  document.getElementById('modal-student').classList.add('open');
+}
+
+function saveStudent(){
+  const name = (document.getElementById('stu-name').value || '').trim();
+  if (!name) { toast('צריך שם'); return; }
+  const phone = (document.getElementById('stu-phone').value || '').trim();
+  const email = (document.getElementById('stu-email').value || '').trim();
+  const startDate = document.getElementById('stu-start').value;
+  const notes = (document.getElementById('stu-notes').value || '').trim();
+  const plan = STU_PLANS[_stuPlan] ? _stuPlan : 'upfront';
+
+  const list = load('students') || [];
+  let s;
+  if (_stuEditId) {
+    s = list.find(x => x.id === _stuEditId);
+    if (!s) { toast('תלמיד לא נמצא'); return; }
+  } else {
+    s = {
+      id: 'stu_' + genId(),
+      createdAt: Date.now(),
+      status: 'active',
+      payments: [],
+      lessons: STU_LESSONS_DEFAULT.map(l => Object.assign({}, l, { scheduledDate: '', completedDate: null, notes: '' }))
+    };
+    list.push(s);
+  }
+  s.updatedAt = Date.now();
+  s.name = name;
+  s.phone = phone;
+  s.email = email;
+  s.startDate = startDate;
+  s.generalNotes = notes;
+  s.plan = plan;
+  s.totalPrice = STU_PLANS[plan].total;
+
+  save('students', list);
+  closeModal('student');
+  renderStudents();
+  toast('✅ נשמר');
+}
+
+function deleteStudent(id){
+  if (!confirm('למחוק את התלמיד? תשלומים ושיעורים יימחקו לצמיתות.')) return;
+  save('students', (load('students') || []).filter(x => x.id !== id));
+  closeModal('student-detail');
+  renderStudents();
+  toast('🗑 נמחק');
+}
+
+function _stuPaid(s){
+  return ((s && s.payments) || []).reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+}
+function _stuLessonsCompleted(s){
+  return ((s && s.lessons) || []).filter(l => l.completedDate).length;
+}
+function _stuNextLesson(s){
+  return ((s && s.lessons) || [])
+    .filter(l => !l.completedDate && l.scheduledDate)
+    .sort((a, b) => String(a.scheduledDate).localeCompare(String(b.scheduledDate)))[0];
+}
+
+function renderStudents(){
+  const wrap = document.getElementById('students-list');
+  const summary = document.getElementById('students-summary');
+  if (!wrap) return;
+
+  const list = (load('students') || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  const active   = list.filter(s => s.status !== 'completed').length;
+  const totalDue = list.reduce((sum, s) => sum + (s.totalPrice || 0), 0);
+  const totalPaid = list.reduce((sum, s) => sum + _stuPaid(s), 0);
+  const owed = totalDue - totalPaid;
+
+  if (summary) {
+    summary.innerHTML =
+      '<div class="stu-summary-card"><div class="stu-summary-label">תלמידים פעילים</div><div class="stu-summary-val">' + active + '</div></div>' +
+      '<div class="stu-summary-card"><div class="stu-summary-label">סה"כ קורסים</div><div class="stu-summary-val">' + fmtMoney(totalDue) + '</div></div>' +
+      '<div class="stu-summary-card"><div class="stu-summary-label">שולם עד כה</div><div class="stu-summary-val" style="color:#16a34a">' + fmtMoney(totalPaid) + '</div></div>' +
+      '<div class="stu-summary-card"><div class="stu-summary-label">פתוח לתשלום</div><div class="stu-summary-val" style="color:' + (owed > 0 ? '#dc2626' : 'var(--text-muted)') + '">' + fmtMoney(owed) + '</div></div>';
+  }
+
+  if (!list.length) {
+    wrap.innerHTML = '<div class="wk-empty">' +
+      '<div class="wk-empty-emoji">🎹</div>' +
+      '<div class="wk-empty-title">אין תלמידים עדיין</div>' +
+      '<div>הוסף תלמיד חדש כדי להתחיל לעקוב אחרי קורסים, תשלומים והתקדמות.</div>' +
+      '</div>';
+    return;
+  }
+  wrap.innerHTML = list.map(stuCard).join('');
+}
+
+function stuCard(s){
+  const paid = _stuPaid(s);
+  const total = s.totalPrice || 0;
+  const pct = total ? Math.min(100, (paid / total) * 100) : 0;
+  const lessonsDone  = _stuLessonsCompleted(s);
+  const lessonsTotal = (s.lessons || []).length || 6;
+  const next = _stuNextLesson(s);
+  const nextLabel = next
+    ? ('שיעור ' + next.num + ' · ' + new Date(next.scheduledDate).toLocaleDateString('he-IL', { day: 'numeric', month: 'short' }))
+    : 'אין שיעור מתוזמן';
+  const planLabel = (STU_PLANS[s.plan] && STU_PLANS[s.plan].label) || '';
+
+  return '<div class="wk-card" onclick="openStudentDetail(\'' + s.id + '\')" style="cursor:pointer">' +
+    '<div class="wk-card-head">' +
+      '<div class="wk-card-emoji">🎹</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="wk-card-title">' + escapeHtml(s.name) + '</div>' +
+        '<div class="wk-card-tagline">' + escapeHtml(planLabel) + (s.phone ? ' · ' + escapeHtml(s.phone) : '') + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">' +
+      '<div>' +
+        '<div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em">תשלומים</div>' +
+        '<div style="font-size:14px;font-weight:800;color:var(--text);margin-top:2px">' + fmtMoney(paid) + ' / ' + fmtMoney(total) + '</div>' +
+        '<div style="height:4px;background:var(--surface2);border-radius:2px;margin-top:4px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:#16a34a"></div></div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em">שיעורים</div>' +
+        '<div style="font-size:14px;font-weight:800;color:var(--text);margin-top:2px">' + lessonsDone + ' / ' + lessonsTotal + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px">' + escapeHtml(nextLabel) + '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function openStudentDetail(id){
+  const s = (load('students') || []).find(x => x.id === id);
+  if (!s) return;
+  _stuViewingId = id;
+  document.getElementById('stu-detail-body').innerHTML = _stuRenderDetail(s);
+  document.getElementById('modal-student-detail').classList.add('open');
+}
+
+function _stuRenderDetail(s){
+  const paid = _stuPaid(s);
+  const total = s.totalPrice || 0;
+  const plan = STU_PLANS[s.plan] || {};
+
+  const lessonsHtml = (s.lessons || []).map((l, i) => {
+    const completed = !!l.completedDate;
+    return '<div class="stu-lesson-row" style="background:' + (completed ? 'rgba(22,163,74,0.08)' : 'var(--surface2)') + '">' +
+      '<div class="stu-lesson-head">' +
+        '<div class="stu-lesson-num">' + l.num + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="stu-lesson-topic">' + escapeHtml(l.topic) + '</div>' +
+          '<div class="stu-lesson-area">' + escapeHtml(l.area || '') + '</div>' +
+        '</div>' +
+        '<label class="stu-done-checkbox">' +
+          '<input type="checkbox" ' + (completed ? 'checked' : '') + ' onchange="stuToggleLessonDone(\'' + s.id + '\',' + i + ',this.checked)">' +
+          '<span>בוצע</span>' +
+        '</label>' +
+      '</div>' +
+      '<div class="stu-lesson-fields">' +
+        '<div><label>תאריך מתוזמן</label><input type="datetime-local" value="' + (l.scheduledDate || '') + '" onchange="stuSetLessonField(\'' + s.id + '\',' + i + ',\'scheduledDate\',this.value)"></div>' +
+        '<div><label>הערות מהשיעור</label><textarea rows="2" onblur="stuSetLessonField(\'' + s.id + '\',' + i + ',\'notes\',this.value)" placeholder="מה עבר טוב, על מה להתמקד...">' + escapeHtml(l.notes || '') + '</textarea></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  const paymentsHtml = (s.payments || []).map((p, i) =>
+    '<div class="stu-payment-row">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-weight:800">' + fmtMoney(p.amount) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--text-muted)">' + (p.date ? new Date(p.date).toLocaleDateString('he-IL') : '') + (p.note ? ' · ' + escapeHtml(p.note) : '') + '</div>' +
+      '</div>' +
+      '<button class="btn btn-ghost btn-sm" onclick="stuDeletePayment(\'' + s.id + '\',' + i + ')" style="color:#dc2626">🗑</button>' +
+    '</div>'
+  ).join('');
+
+  return '<h3 style="margin:0 0 4px">🎹 ' + escapeHtml(s.name) + '</h3>' +
+    '<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">' +
+      (s.phone ? '📞 ' + escapeHtml(s.phone) + ' · ' : '') +
+      (s.email ? '✉️ ' + escapeHtml(s.email) + ' · ' : '') +
+      escapeHtml(plan.label || '') +
+    '</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">' +
+      '<button class="btn btn-ghost btn-sm" onclick="closeModal(\'student-detail\');openStudentEditor(\'' + s.id + '\')">✏️ ערוך פרטים</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="deleteStudent(\'' + s.id + '\')" style="color:#dc2626">🗑 מחק תלמיד</button>' +
+    '</div>' +
+
+    '<div class="stu-section-head">💰 תשלומים <span style="font-weight:700;font-size:13px;color:var(--text-muted)">(' + fmtMoney(paid) + ' / ' + fmtMoney(total) + ')</span></div>' +
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px">' +
+      '<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:8px">' + escapeHtml(plan.hint || '') + '</div>' +
+      (paymentsHtml || '<div style="font-size:12px;color:var(--text-muted);font-style:italic">אין תשלומים עדיין</div>') +
+    '</div>' +
+    '<div class="stu-add-payment" style="display:flex;gap:6px;align-items:center;margin-bottom:20px;flex-wrap:wrap">' +
+      '<input type="number" id="stu-add-amount" placeholder="סכום" style="flex:1;min-width:90px">' +
+      '<input type="date" id="stu-add-date" value="' + new Date().toISOString().slice(0,10) + '" style="flex:1;min-width:140px">' +
+      '<input type="text" id="stu-add-note" placeholder="הערה" style="flex:1.5;min-width:120px">' +
+      '<button class="btn btn-primary btn-sm" onclick="stuAddPayment(\'' + s.id + '\')">+ הוסף</button>' +
+    '</div>' +
+
+    '<div class="stu-section-head">📅 שיעורים</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">' + lessonsHtml + '</div>' +
+
+    (s.generalNotes ? '<div class="stu-section-head">📝 הערות כלליות</div><div style="background:var(--surface2);border-radius:10px;padding:10px 12px;white-space:pre-wrap;font-size:13px">' + escapeHtml(s.generalNotes) + '</div>' : '');
+}
+
+function stuToggleLessonDone(id, idx, done){
+  const list = load('students') || [];
+  const s = list.find(x => x.id === id);
+  if (!s || !s.lessons || !s.lessons[idx]) return;
+  s.lessons[idx].completedDate = done ? Date.now() : null;
+  s.updatedAt = Date.now();
+  save('students', list);
+  openStudentDetail(id);
+  renderStudents();
+}
+
+function stuSetLessonField(id, idx, field, value){
+  const list = load('students') || [];
+  const s = list.find(x => x.id === id);
+  if (!s || !s.lessons || !s.lessons[idx]) return;
+  s.lessons[idx][field] = value;
+  s.updatedAt = Date.now();
+  save('students', list);
+  renderStudents();
+}
+
+function stuAddPayment(id){
+  const amount = parseFloat(document.getElementById('stu-add-amount').value);
+  if (!amount || amount <= 0) { toast('צריך סכום'); return; }
+  const date = document.getElementById('stu-add-date').value;
+  const note = (document.getElementById('stu-add-note').value || '').trim();
+  const list = load('students') || [];
+  const s = list.find(x => x.id === id);
+  if (!s) return;
+  if (!s.payments) s.payments = [];
+  s.payments.push({ date: date || new Date().toISOString().slice(0,10), amount: amount, note: note });
+  s.updatedAt = Date.now();
+  save('students', list);
+  openStudentDetail(id);
+  renderStudents();
+  toast('💰 תשלום נרשם');
+}
+
+function stuDeletePayment(id, idx){
+  if (!confirm('למחוק תשלום זה?')) return;
+  const list = load('students') || [];
+  const s = list.find(x => x.id === id);
+  if (!s || !s.payments) return;
+  s.payments.splice(idx, 1);
+  s.updatedAt = Date.now();
+  save('students', list);
+  openStudentDetail(id);
+  renderStudents();
 }
 
 function deleteContract(id){
