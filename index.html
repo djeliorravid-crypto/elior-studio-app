@@ -3036,8 +3036,47 @@
       font-family: inherit;
       font-size: 13px;
     }
+    .stu-lesson-edit-row {
+      display: grid;
+      grid-template-columns: 30px 1fr 140px 30px;
+      gap: 6px;
+      align-items: center;
+    }
+    .stu-lesson-edit-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 900;
+      font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .stu-lesson-edit-row input {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      min-width: 0;
+    }
+    .stu-lesson-edit-row button {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: #dc2626;
+      font-size: 18px; font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0;
+    }
+    .stu-lesson-edit-row button:hover { background: rgba(220,38,38,0.08); }
     @media (max-width: 600px) {
       .stu-lesson-fields { grid-template-columns: 1fr; }
+      .stu-lesson-edit-row { grid-template-columns: 28px 1fr 28px; }
+      .stu-lesson-edit-area { grid-column: 2; }
     }
 
     /* ===== WORKSHOPS ===== */
@@ -4226,12 +4265,26 @@
       </div>
 
       <div class="form-group" style="margin-top:14px">
+        <label>מחיר לשיעור (₪) *</label>
+        <div style="display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;margin-top:4px">
+          <input type="number" id="stu-price-per-lesson" value="300" min="0" oninput="_stuRefreshTotal()">
+          <div style="font-size:13px;color:var(--text-muted)">סה"כ הקורס: <b id="stu-total-display" style="font-size:18px;color:var(--text);font-weight:900">₪0</b></div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label>שיעורים <span style="font-size:11px;font-weight:600;color:var(--text-muted)">(אפשר לשנות, להוסיף, או למחוק)</span></label>
+        <div id="stu-lessons-list" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="stuAddLesson()" style="margin-top:8px">+ הוסף שיעור</button>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
         <label>מסלול תשלום *</label>
         <div id="stu-plan-tabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
-          <button type="button" class="ctr-kind-tab" data-plan="upfront" onclick="stuSetPlan('upfront')">מראש · ₪2,500</button>
-          <button type="button" class="ctr-kind-tab" data-plan="two" onclick="stuSetPlan('two')">2 תשלומים · ₪2,700</button>
-          <button type="button" class="ctr-kind-tab" data-plan="three" onclick="stuSetPlan('three')">3 תשלומים · ₪2,700</button>
-          <button type="button" class="ctr-kind-tab" data-plan="per" onclick="stuSetPlan('per')">לפי שיעור · ₪2,700</button>
+          <button type="button" class="ctr-kind-tab" data-plan="upfront" onclick="stuSetPlan('upfront')">מראש</button>
+          <button type="button" class="ctr-kind-tab" data-plan="two" onclick="stuSetPlan('two')">2 תשלומים</button>
+          <button type="button" class="ctr-kind-tab" data-plan="three" onclick="stuSetPlan('three')">3 תשלומים</button>
+          <button type="button" class="ctr-kind-tab" data-plan="per" onclick="stuSetPlan('per')">לפי שיעור</button>
         </div>
         <div id="stu-plan-hint" style="font-size:11.5px;color:var(--text-muted);margin-top:6px"></div>
       </div>
@@ -9281,23 +9334,81 @@ const STU_LESSONS_DEFAULT = [
 ];
 
 const STU_PLANS = {
-  upfront: { label: 'תשלום מראש',  total: 2500, hint: '₪2,500 לפני שיעור 1 · חיסכון של ₪200' },
-  two:     { label: '2 תשלומים',   total: 2700, hint: '₪1,350 לפני שיעור 1 · ₪1,350 לפני שיעור 4' },
-  three:   { label: '3 תשלומים',   total: 2700, hint: '₪900 לפני שיעורים 1, 3, 5' },
-  per:     { label: 'לפי שיעור',   total: 2700, hint: '₪450 לפני כל שיעור' }
+  upfront: { label: 'תשלום מראש' },
+  two:     { label: '2 תשלומים' },
+  three:   { label: '3 תשלומים' },
+  per:     { label: 'לפי שיעור' }
 };
 
-let _stuEditId   = null;
-let _stuPlan     = 'upfront';
+let _stuEditId    = null;
+let _stuPlan      = 'upfront';
 let _stuViewingId = null;
+let _stuLessons   = []; // working copy while the editor is open
+
+function _stuCurrentPrice(){
+  return parseFloat(document.getElementById('stu-price-per-lesson')?.value) || 0;
+}
+function _stuCurrentTotal(){
+  return _stuCurrentPrice() * _stuLessons.length;
+}
+
+function _stuPlanHint(plan, total, perLesson){
+  if (!total) return '';
+  if (plan === 'upfront') return fmtMoney(total) + ' לפני שיעור 1';
+  if (plan === 'two') {
+    const h = Math.round(total / 2);
+    return fmtMoney(h) + ' לפני שיעור 1 · ' + fmtMoney(total - h) + ' באמצע הקורס';
+  }
+  if (plan === 'three') {
+    const t = Math.round(total / 3);
+    return fmtMoney(t) + ' × 3 (לפני שיעורים 1, 3, 5) · סה"כ ' + fmtMoney(t * 3);
+  }
+  if (plan === 'per') return fmtMoney(perLesson) + ' לפני כל שיעור';
+  return '';
+}
+
+function _stuRefreshTotal(){
+  const total = _stuCurrentTotal();
+  const perLesson = _stuCurrentPrice();
+  const t = document.getElementById('stu-total-display');
+  if (t) t.textContent = fmtMoney(total);
+  const hint = document.getElementById('stu-plan-hint');
+  if (hint) hint.textContent = _stuPlanHint(_stuPlan, total, perLesson);
+}
 
 function stuSetPlan(plan){
   _stuPlan = plan;
   document.querySelectorAll('#stu-plan-tabs .ctr-kind-tab').forEach(t => t.classList.remove('active'));
   const btn = document.querySelector('#stu-plan-tabs [data-plan="' + plan + '"]');
   if (btn) btn.classList.add('active');
-  const hint = document.getElementById('stu-plan-hint');
-  if (hint) hint.textContent = (STU_PLANS[plan] && STU_PLANS[plan].hint) || '';
+  _stuRefreshTotal();
+}
+
+function _stuRenderLessonsEditor(){
+  const el = document.getElementById('stu-lessons-list');
+  if (!el) return;
+  if (!_stuLessons.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:8px 0">אין שיעורים — הוסף לפחות אחד.</div>';
+  } else {
+    el.innerHTML = _stuLessons.map((l, i) =>
+      '<div class="stu-lesson-edit-row">' +
+        '<div class="stu-lesson-edit-num">' + (i + 1) + '</div>' +
+        '<input type="text" placeholder="נושא השיעור" value="' + escapeHtml(l.topic || '') + '" oninput="_stuLessons[' + i + '].topic = this.value">' +
+        '<input type="text" placeholder="תחום" value="' + escapeHtml(l.area || '') + '" oninput="_stuLessons[' + i + '].area = this.value" class="stu-lesson-edit-area">' +
+        '<button type="button" onclick="stuRemoveLesson(' + i + ')" aria-label="מחק">×</button>' +
+      '</div>'
+    ).join('');
+  }
+  _stuRefreshTotal();
+}
+
+function stuAddLesson(){
+  _stuLessons.push({ topic: '', area: '', scheduledDate: '', completedDate: null, notes: '' });
+  _stuRenderLessonsEditor();
+}
+function stuRemoveLesson(i){
+  _stuLessons.splice(i, 1);
+  _stuRenderLessonsEditor();
 }
 
 function openStudentEditor(id){
@@ -9309,6 +9420,24 @@ function openStudentEditor(id){
   document.getElementById('stu-email').value = s ? (s.email || '') : '';
   document.getElementById('stu-start').value = s ? (s.startDate || '') : new Date().toISOString().slice(0,10);
   document.getElementById('stu-notes').value = s ? (s.generalNotes || '') : '';
+
+  // Lessons: load existing or seed with the default 6.
+  if (s && Array.isArray(s.lessons) && s.lessons.length) {
+    _stuLessons = s.lessons.map(l => Object.assign({}, l));
+  } else {
+    _stuLessons = STU_LESSONS_DEFAULT.map(l => Object.assign({}, l, { scheduledDate: '', completedDate: null, notes: '' }));
+  }
+
+  // Price-per-lesson: prefer the saved field, else derive from totalPrice,
+  // else default to ₪300.
+  let perLesson = 300;
+  if (s) {
+    if (typeof s.pricePerLesson === 'number') perLesson = s.pricePerLesson;
+    else if (typeof s.totalPrice === 'number' && _stuLessons.length) perLesson = Math.round(s.totalPrice / _stuLessons.length);
+  }
+  document.getElementById('stu-price-per-lesson').value = perLesson;
+
+  _stuRenderLessonsEditor();
   stuSetPlan(s ? (s.plan || 'upfront') : 'upfront');
   document.getElementById('modal-student').classList.add('open');
 }
@@ -9316,11 +9445,13 @@ function openStudentEditor(id){
 function saveStudent(){
   const name = (document.getElementById('stu-name').value || '').trim();
   if (!name) { toast('צריך שם'); return; }
+  if (!_stuLessons.length) { toast('צריך לפחות שיעור אחד'); return; }
   const phone = (document.getElementById('stu-phone').value || '').trim();
   const email = (document.getElementById('stu-email').value || '').trim();
   const startDate = document.getElementById('stu-start').value;
   const notes = (document.getElementById('stu-notes').value || '').trim();
   const plan = STU_PLANS[_stuPlan] ? _stuPlan : 'upfront';
+  const pricePerLesson = _stuCurrentPrice();
 
   const list = load('students') || [];
   let s;
@@ -9332,8 +9463,7 @@ function saveStudent(){
       id: 'stu_' + genId(),
       createdAt: Date.now(),
       status: 'active',
-      payments: [],
-      lessons: STU_LESSONS_DEFAULT.map(l => Object.assign({}, l, { scheduledDate: '', completedDate: null, notes: '' }))
+      payments: []
     };
     list.push(s);
   }
@@ -9344,7 +9474,10 @@ function saveStudent(){
   s.startDate = startDate;
   s.generalNotes = notes;
   s.plan = plan;
-  s.totalPrice = STU_PLANS[plan].total;
+  s.pricePerLesson = pricePerLesson;
+  // Renumber the lessons and persist the working copy.
+  s.lessons = _stuLessons.map((l, i) => Object.assign({}, l, { num: i + 1 }));
+  s.totalPrice = pricePerLesson * s.lessons.length;
 
   save('students', list);
   closeModal('student');
@@ -9450,6 +9583,7 @@ function _stuRenderDetail(s){
   const paid = _stuPaid(s);
   const total = s.totalPrice || 0;
   const plan = STU_PLANS[s.plan] || {};
+  const planHint = _stuPlanHint(s.plan, total, s.pricePerLesson || (s.lessons && s.lessons.length ? Math.round(total / s.lessons.length) : 0));
 
   const lessonsHtml = (s.lessons || []).map((l, i) => {
     const completed = !!l.completedDate;
@@ -9495,7 +9629,7 @@ function _stuRenderDetail(s){
 
     '<div class="stu-section-head">💰 תשלומים <span style="font-weight:700;font-size:13px;color:var(--text-muted)">(' + fmtMoney(paid) + ' / ' + fmtMoney(total) + ')</span></div>' +
     '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px">' +
-      '<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:8px">' + escapeHtml(plan.hint || '') + '</div>' +
+      '<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:8px">' + escapeHtml(planHint || '') + '</div>' +
       (paymentsHtml || '<div style="font-size:12px;color:var(--text-muted);font-style:italic">אין תשלומים עדיין</div>') +
     '</div>' +
     '<div class="stu-add-payment" style="display:flex;gap:6px;align-items:center;margin-bottom:20px;flex-wrap:wrap">' +
