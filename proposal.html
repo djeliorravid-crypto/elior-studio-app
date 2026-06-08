@@ -51,18 +51,9 @@
   }
   .hero .for {
     font-size: 17px; color: #6b4423;
-    margin-bottom: 22px;
+    margin-bottom: 0;
   }
   .hero .for b { color: #2a1810; }
-  .hero .promise {
-    font-size: 16px; color: #2a1810;
-    line-height: 1.7;
-    max-width: 540px; margin: 0 auto;
-    padding: 18px 20px;
-    background: rgba(212,165,116,0.12);
-    border-radius: 14px;
-    border-right: 3px solid #b07c3e;
-  }
 
   /* ===== SECTION TITLE ===== */
   .section-title {
@@ -301,13 +292,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const KIND_LABEL = { single: 'הפקת סינגל', multi: 'מספר שירים', ep: 'EP', album: 'אלבום', other: 'הפקה' };
-const KIND_HERO_PROMISE = {
-  single: 'הסינגל שלך — מוגמר מקצה לקצה, מוכן לעלות לכל הפלטפורמות, באולפן רביד.',
-  multi:  'הפרויקט שלך — כל שיר מוגמר לעומק, באותו סטנדרט שמושמע ברדיו, באולפן רביד.',
-  ep:     'ה-EP שלך — חמישה שירים, חוויה אחת אחידה, מקצועיות שלא מתפשרים עליה.',
-  album:  'האלבום שלך — פרויקט מלא, כל הפקה מוקפדת, כל סשן מתועד, וכל פרט נכלל.',
-  other:  'הפרויקט שלך — מוגמר מקצה לקצה, באולפן רביד.'
-};
 const PER_SONG_SUFFIX_PLURAL = ' (לכל שיר)';
 
 function getId(){ return new URLSearchParams(location.search).get('id') || ''; }
@@ -344,7 +328,6 @@ function render(p){
   const expired = p.validUntil && new Date(p.validUntil + 'T23:59:59') < new Date();
   const kindLabel = KIND_LABEL[p.projectKind] || KIND_LABEL.other;
   const plural = ['multi','ep','album'].includes(p.projectKind);
-  const promiseText = KIND_HERO_PROMISE[p.projectKind] || KIND_HERO_PROMISE.other;
 
   // Itemized table
   const priceRows = (p.items || []).map(it =>
@@ -385,7 +368,6 @@ function render(p){
         '<div class="badge">אליאור רביד · אולפן</div>' +
         '<h1>הצעה ל' + escHtml(p.clientName || '') + '</h1>' +
         '<div class="for">' + escHtml(kindLabel) + (p.projectDescription ? ' · ' + escHtml(p.projectDescription) : '') + '</div>' +
-        '<div class="promise">' + escHtml(promiseText) + '</div>' +
       '</div>' +
 
       // WHAT'S INCLUDED
