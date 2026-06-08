@@ -154,13 +154,13 @@ function render(p){
   ).join('');
   priceRows += '<tr class="total"><td>סה"כ</td><td>' + fmtMoney(total) + '</td></tr>';
 
-  // Build the contact CTA: WhatsApp if a producer phone is on file,
-  // otherwise an email fallback to djeliorravid@gmail.com.
-  const phone = digits(p.producerPhone || '');
+  // Producer phone for the WhatsApp CTA. Defaults to Elior's number in
+  // international format (972 + drop leading 0); a per-proposal override
+  // is still respected if ever set.
+  const PRODUCER_DEFAULT_PHONE = '972535242124';
+  const phone = digits(p.producerPhone || PRODUCER_DEFAULT_PHONE);
   const msg = 'שלום אליאור, ראיתי את הצעת המחיר ל-' + (p.clientName || '') + ' — אשמח להמשיך.';
-  const ctaHtml = phone
-    ? '<a class="btn-wa" href="https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">💬 דבר איתי בוואטסאפ</a>'
-    : '<a class="btn-wa" href="mailto:djeliorravid@gmail.com?subject=' + encodeURIComponent('הצעת מחיר — ' + (p.clientName || '')) + '&body=' + encodeURIComponent(msg) + '" style="background:linear-gradient(135deg,#ff9558,#ff6b4a);box-shadow:0 12px 30px -8px rgba(255,107,74,0.45)">📧 דבר איתי במייל</a>';
+  const ctaHtml = '<a class="btn-wa" href="https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">💬 דבר איתי בוואטסאפ</a>';
 
   document.getElementById('root').innerHTML =
     '<div class="wrap">' +
