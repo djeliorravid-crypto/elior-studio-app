@@ -3628,6 +3628,7 @@
     <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon">👥</span> לקוחות</a>
     <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon">✅</span> משימות יומיות</a>
     <a onclick="showPage('workshops')" data-page="workshops"><span class="nav-icon">🎓</span> סדנאות</a>
+    <a onclick="showPage('proposals')" data-page="proposals"><span class="nav-icon">💰</span> הצעות מחיר</a>
     <a onclick="showPage('contracts')" data-page="contracts"><span class="nav-icon">📜</span> סיכומי הפקה</a>
     <a onclick="showPage('students')" data-page="students"><span class="nav-icon">🎹</span> תלמידים</a>
     <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
@@ -4237,6 +4238,67 @@
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="saveContract()">שמור</button>
         <button class="btn btn-ghost" onclick="closeModal('contract')">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROPOSALS ===== -->
+  <div class="page" id="page-proposals">
+    <div class="page-header">
+      <div><h2>💰 הצעות מחיר</h2><p>שלח ללקוח דף הצעה מעוצב · קישור שיתוף · תוקף לזמן מוגדר</p></div>
+      <button class="btn btn-primary" onclick="openProposalEditor(null)">+ הצעה חדשה</button>
+    </div>
+    <div id="proposals-list"></div>
+  </div>
+
+  <!-- ===== PROPOSAL EDITOR MODAL ===== -->
+  <div class="modal-overlay" id="modal-proposal">
+    <div class="modal" style="max-width:580px">
+      <h3 id="prp-modal-title">💰 הצעת מחיר חדשה</h3>
+      <div class="form-row">
+        <div class="form-group"><label>שם הלקוח *</label><input type="text" id="prp-client-name" placeholder="ירון כהן"></div>
+        <div class="form-group"><label>טלפון</label><input type="tel" id="prp-client-phone" placeholder="050-0000000"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>סוג הפרויקט</label>
+          <select id="prp-kind">
+            <option value="single">הפקת סינגל</option>
+            <option value="multi">2–3 שירים</option>
+            <option value="ep">EP</option>
+            <option value="album">אלבום</option>
+            <option value="other">אחר</option>
+          </select>
+        </div>
+        <div class="form-group"><label>תוקף ההצעה עד</label><input type="date" id="prp-valid"></div>
+      </div>
+      <div class="form-group">
+        <label>תיאור הפרויקט <span style="font-size:11px;font-weight:600;color:var(--text-muted)">(משפט-שניים, מה הלקוח רוצה)</span></label>
+        <textarea id="prp-description" rows="2" placeholder="סינגל פופ בלאדה, ~3 דקות, מקלוע אקוסטי + נגן בס לייב"></textarea>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label>פירוט מחיר <span style="font-size:11px;font-weight:600;color:var(--text-muted)">(תיאור + סכום)</span></label>
+        <div id="prp-items" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="prpAddItem()" style="margin-top:8px">+ הוסף שורה</button>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label>תנאי תשלום</label>
+        <input type="text" id="prp-payment" placeholder="חצי מראש · חצי בשלב המיקס">
+      </div>
+      <div class="form-group">
+        <label>הערות נוספות <span style="font-size:11px;font-weight:600;color:var(--text-muted)">(אופציונלי — יוצג בתחתית ההצעה)</span></label>
+        <textarea id="prp-notes" rows="2" placeholder="לוח זמנים מוערך, מועדי סשנים, וכו'"></textarea>
+      </div>
+
+      <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-top:14px;display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:13px;font-weight:800;color:var(--text-muted)">סה"כ הצעה</span>
+        <span style="font-size:22px;font-weight:900;color:var(--text)" id="prp-total">₪0</span>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="saveProposal()">שמור</button>
+        <button class="btn btn-ghost" onclick="closeModal('proposal')">ביטול</button>
       </div>
     </div>
   </div>
@@ -5021,7 +5083,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -5221,7 +5283,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, workshops:5, contracts:6, students:7, dashboard:8};
+  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, workshops:5, proposals:6, contracts:7, students:8, dashboard:9};
   if (name === 'daily') _dailyDate = dailyDateStr();
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
@@ -7973,6 +8035,7 @@ function refreshAll() {
   renderPendingBox();
   renderDaily();
   renderWorkshops();
+  renderProposals();
   renderContracts();
   renderStudents();
 }
@@ -9321,6 +9384,168 @@ function saveContract(){
   closeModal('contract');
   renderContracts();
   toast('✅ נשמר');
+}
+
+// ===== PROPOSALS — pre-contract price quotes to share with new leads =====
+const PRP_DEFAULT_ITEMS = [
+  { label: 'הקלטת נגן',              price: 826   },
+  { label: 'הפקה מוזיקלית + מיקס',  price: 10667 },
+  { label: 'מאסטרינג',                price: 507   }
+];
+const PRP_KIND_LABELS = { single: 'הפקת סינגל', multi: '2–3 שירים', ep: 'EP', album: 'אלבום', other: '' };
+
+let _prpEditId = null;
+let _prpItems  = [];
+
+function _prpTotal(){
+  return _prpItems.reduce((s, it) => s + (parseFloat(it.price) || 0), 0);
+}
+function _prpRefreshTotal(){
+  const el = document.getElementById('prp-total');
+  if (el) el.textContent = fmtMoney(_prpTotal());
+}
+function _prpRenderItems(){
+  const el = document.getElementById('prp-items');
+  if (!el) return;
+  if (!_prpItems.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:8px 0">אין פריטים — הוסף לפחות אחד.</div>';
+  } else {
+    el.innerHTML = _prpItems.map((it, i) =>
+      '<div class="stu-lesson-edit-row">' +
+        '<div class="stu-lesson-edit-num">' + (i+1) + '</div>' +
+        '<input type="text" placeholder="תיאור הפריט" value="' + escapeHtml(it.label || '') + '" oninput="_prpItems[' + i + '].label = this.value">' +
+        '<input type="number" placeholder="₪" value="' + (it.price || 0) + '" oninput="_prpItems[' + i + '].price = parseFloat(this.value) || 0; _prpRefreshTotal()" class="stu-lesson-edit-area">' +
+        '<button type="button" onclick="prpRemoveItem(' + i + ')" aria-label="מחק">×</button>' +
+      '</div>'
+    ).join('');
+  }
+  _prpRefreshTotal();
+}
+function prpAddItem(){ _prpItems.push({ label: '', price: 0 }); _prpRenderItems(); }
+function prpRemoveItem(i){ _prpItems.splice(i, 1); _prpRenderItems(); }
+
+function openProposalEditor(id){
+  _prpEditId = id;
+  const p = id ? (load('proposals') || []).find(x => x.id === id) : null;
+  document.getElementById('prp-modal-title').textContent = p ? '✏️ עריכת הצעת מחיר' : '💰 הצעת מחיר חדשה';
+  document.getElementById('prp-client-name').value  = p ? (p.clientName  || '') : '';
+  document.getElementById('prp-client-phone').value = p ? (p.clientPhone || '') : '';
+  document.getElementById('prp-kind').value         = p ? (p.projectKind || 'single') : 'single';
+  document.getElementById('prp-description').value  = p ? (p.projectDescription || '') : '';
+  document.getElementById('prp-payment').value      = p ? (p.paymentTerms || 'חצי מראש · חצי בשלב המיקס') : 'חצי מראש · חצי בשלב המיקס';
+  document.getElementById('prp-notes').value        = p ? (p.notes || '') : '';
+  const def = new Date(); def.setDate(def.getDate() + 14);
+  document.getElementById('prp-valid').value = p ? (p.validUntil || def.toISOString().slice(0,10)) : def.toISOString().slice(0,10);
+  _prpItems = p && Array.isArray(p.items) && p.items.length
+    ? p.items.map(x => Object.assign({}, x))
+    : PRP_DEFAULT_ITEMS.map(x => Object.assign({}, x));
+  _prpRenderItems();
+  document.getElementById('modal-proposal').classList.add('open');
+}
+
+function saveProposal(){
+  const clientName = (document.getElementById('prp-client-name').value || '').trim();
+  if (!clientName) { toast('צריך שם לקוח'); return; }
+  if (!_prpItems.length) { toast('צריך לפחות פריט מחיר אחד'); return; }
+  const settings = loadObj('producer_settings');
+  const list = load('proposals') || [];
+  let p;
+  if (_prpEditId) {
+    p = list.find(x => x.id === _prpEditId);
+    if (!p) { toast('הצעה לא נמצאה'); return; }
+  } else {
+    p = {
+      id: 'prp_' + genId(),
+      createdAt: Date.now(),
+      status: 'draft',
+      producerName: (settings && settings.signatureName) || 'אליאור רביד'
+    };
+    list.push(p);
+  }
+  p.updatedAt          = Date.now();
+  p.clientName         = clientName;
+  p.clientPhone        = (document.getElementById('prp-client-phone').value || '').trim();
+  p.projectKind        = document.getElementById('prp-kind').value;
+  p.projectDescription = (document.getElementById('prp-description').value || '').trim();
+  p.items              = _prpItems.slice();
+  p.paymentTerms       = (document.getElementById('prp-payment').value || '').trim();
+  p.validUntil         = document.getElementById('prp-valid').value;
+  p.notes              = (document.getElementById('prp-notes').value || '').trim();
+  save('proposals', list);
+  closeModal('proposal');
+  renderProposals();
+  toast('✅ נשמר');
+}
+
+function deleteProposal(id){
+  if (!confirm('למחוק הצעת מחיר זו?')) return;
+  save('proposals', (load('proposals') || []).filter(x => x.id !== id));
+  renderProposals();
+  toast('🗑 נמחק');
+}
+
+function prpPublicUrl(id){
+  const base = location.origin + location.pathname.replace(/[^/]+$/, '');
+  return base + 'proposal.html?id=' + encodeURIComponent(id);
+}
+
+async function shareProposal(id){
+  const p = (load('proposals') || []).find(x => x.id === id);
+  if (!p) return;
+  const url = prpPublicUrl(id);
+  const total = (p.items || []).reduce((s, it) => s + (parseFloat(it.price) || 0), 0);
+  const title = 'הצעת מחיר — ' + (p.clientName || '');
+  const text = 'שלום ' + (p.clientName || '') + ',\nמצורפת הצעת מחיר על סך ' + fmtMoney(total) + '.\n' + url;
+  if (navigator.share) {
+    try { await navigator.share({ title: title, text: text, url: url }); }
+    catch (e) { try { await navigator.clipboard.writeText(url); toast('📋 הקישור הועתק'); } catch(_) {} }
+  } else {
+    try { await navigator.clipboard.writeText(url); toast('📋 הקישור הועתק'); }
+    catch(_) { prompt('העתק את הקישור:', url); }
+  }
+}
+
+function renderProposals(){
+  const wrap = document.getElementById('proposals-list');
+  if (!wrap) return;
+  const list = (load('proposals') || []).slice().sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+  if (!list.length) {
+    wrap.innerHTML = '<div class="wk-empty">' +
+      '<div class="wk-empty-emoji">💰</div>' +
+      '<div class="wk-empty-title">אין הצעות מחיר עדיין</div>' +
+      '<div>צור הצעה ראשונה — תקבל קישור פומבי לשלוח ללקוח.</div>' +
+      '</div>';
+    return;
+  }
+  wrap.innerHTML = list.map(prpCard).join('');
+}
+
+function prpCard(p){
+  const total = (p.items || []).reduce((s, it) => s + (parseFloat(it.price) || 0), 0);
+  const validFmt = p.validUntil ? new Date(p.validUntil).toLocaleDateString('he-IL', { day:'numeric', month:'short', year:'numeric' }) : '';
+  const expired = p.validUntil && new Date(p.validUntil + 'T23:59:59') < new Date();
+  const kindLabel = PRP_KIND_LABELS[p.projectKind] || '';
+  const desc = p.projectDescription || '';
+  const tagline = [kindLabel, desc].filter(Boolean).join(' · ');
+  return '<div class="wk-card' + (expired ? ' inactive' : '') + '">' +
+    '<div class="wk-card-head">' +
+      '<div class="wk-card-emoji">💰</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="wk-card-title">' + escapeHtml(p.clientName || '—') + '</div>' +
+        (tagline ? '<div class="wk-card-tagline">' + escapeHtml(tagline) + '</div>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;gap:10px">' +
+      '<div style="font-size:20px;font-weight:900;color:var(--text)">' + fmtMoney(total) + '</div>' +
+      '<div style="font-size:11.5px;color:' + (expired ? '#dc2626' : 'var(--text-muted)') + ';font-weight:700">' +
+        (expired ? 'פג תוקף · ' : 'בתוקף עד ') + escapeHtml(validFmt) + '</div>' +
+    '</div>' +
+    '<div class="wk-card-actions">' +
+      '<button class="btn btn-ghost btn-sm" onclick="shareProposal(\'' + p.id + '\')">🔗 שתף קישור</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openProposalEditor(\'' + p.id + '\')">✏️ ערוך</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="deleteProposal(\'' + p.id + '\')" style="color:#dc2626">🗑 מחק</button>' +
+    '</div>' +
+  '</div>';
 }
 
 // ===== STUDENTS — private lessons (6-week production course) =====

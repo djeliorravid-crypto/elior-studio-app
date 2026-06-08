@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>הצעת מחיר · אליאור רביד</title>
+<meta name="theme-color" content="#f5e8d3">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'Heebo', system-ui, sans-serif;
+    background: #fdf8f0;
+    color: #2a1810;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding: 0 18px 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding-top: 34px; }
+  .brand {
+    text-align: center; font-size: 11px; letter-spacing: .25em;
+    color: #a06c48; font-weight: 800; margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-family: 'Frank Ruhl Libre', 'Heebo', serif;
+    font-size: 32px; font-weight: 900; text-align: center;
+    margin: 0 0 4px; letter-spacing: -.02em; color: #2a1810;
+  }
+  .subline { text-align: center; font-size: 14px; color: #6b4423; margin-bottom: 24px; }
+
+  .card {
+    background: #fff;
+    border: 1px solid rgba(176,124,62,0.2);
+    border-radius: 18px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 10px 30px -10px rgba(160,108,72,0.2);
+  }
+  .card h2 {
+    font-family: 'Frank Ruhl Libre','Heebo',serif;
+    font-size: 19px; font-weight: 900; color: #2a1810;
+    margin: 0 0 12px; letter-spacing: -.015em;
+  }
+  .card p { font-size: 15px; line-height: 1.7; color: #3d2818; margin: 0 0 10px; }
+  .card p:last-child { margin-bottom: 0; }
+
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .meta-cell { background: rgba(212,165,116,0.08); border-radius: 12px; padding: 12px 14px; }
+  .meta-label { font-size: 10.5px; color: #a06c48; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+  .meta-val { font-size: 16px; color: #2a1810; font-weight: 800; margin-top: 4px; word-break: break-word; }
+
+  table.price { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+  table.price td {
+    padding: 10px 4px;
+    border-bottom: 1px dashed rgba(176,124,62,0.25);
+    font-size: 15px; color: #3d2818;
+  }
+  table.price tr:last-child td { border-bottom: none; }
+  table.price td:last-child { text-align: left; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+  table.price tr.total td {
+    font-weight: 900; font-size: 19px; color: #2a1810;
+    border-top: 2px solid #b07c3e; padding-top: 16px;
+  }
+  table.price tr.total td:last-child { color: #a06c48; }
+
+  .validity {
+    text-align: center; padding: 14px 18px;
+    background: rgba(212,165,116,0.10);
+    border-radius: 12px;
+    font-size: 14px; color: #6b4423; font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .validity.expired {
+    background: rgba(220,38,38,0.10);
+    color: #991b1b;
+  }
+  .validity b { color: #2a1810; }
+
+  .cta-block {
+    background: linear-gradient(135deg, #fff 0%, #fef5e3 100%);
+    border: 2px solid rgba(176,124,62,0.25);
+    border-radius: 18px;
+    padding: 26px 24px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .cta-block .cta-title {
+    font-family: 'Frank Ruhl Libre','Heebo',serif;
+    font-size: 22px; font-weight: 900; color: #2a1810;
+    margin-bottom: 8px;
+  }
+  .cta-block .cta-sub {
+    font-size: 14px; color: #6b4423; margin-bottom: 18px; line-height: 1.55;
+  }
+  .btn-wa {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: linear-gradient(135deg, #25d366, #1ebe54); color: #fff;
+    border: none; border-radius: 14px; padding: 14px 26px;
+    font-size: 16px; font-weight: 900; cursor: pointer;
+    font-family: inherit; text-decoration: none;
+    box-shadow: 0 12px 30px -8px rgba(37,211,102,0.45);
+    transition: transform .12s;
+  }
+  .btn-wa:active { transform: scale(.98); }
+
+  .loading, .error {
+    text-align: center; padding: 100px 20px; color: #a06c48;
+    font-size: 16px; font-weight: 700;
+  }
+  .error b { color: #c2410c; display: block; margin-bottom: 6px; font-size: 18px; }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 26px; }
+    .meta { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div id="root"><div class="loading">⏳ טוען...</div></div>
+
+<script>
+const firebaseConfig = {
+  apiKey:            "AIzaSyB1c6rZVcGrX50UbhEMx3Ra6uaO_S5Fb5o",
+  authDomain:        "elior-studio.firebaseapp.com",
+  databaseURL:       "https://elior-studio-default-rtdb.firebaseio.com",
+  projectId:         "elior-studio",
+  storageBucket:     "elior-studio.firebasestorage.app",
+  messagingSenderId: "719956484293",
+  appId:             "1:719956484293:web:4e1be740d9e49a709350ac"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const KIND_LABEL = { single: 'הפקת סינגל', multi: '2–3 שירים', ep: 'EP', album: 'אלבום', other: 'פרויקט' };
+
+function getId(){ return new URLSearchParams(location.search).get('id') || ''; }
+function fmtMoney(n){ return '₪' + Math.abs(n).toLocaleString('he-IL', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+function fmtDate(s){ if(!s) return ''; try { return new Date(s).toLocaleDateString('he-IL', {day:'numeric', month:'long', year:'numeric'}); } catch(e){ return s; } }
+function escHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+function digits(s){ return String(s||'').replace(/\D/g, ''); }
+
+function render(p){
+  const total = (p.items || []).reduce((s, it) => s + (parseFloat(it.price) || 0), 0);
+  const expired = p.validUntil && new Date(p.validUntil + 'T23:59:59') < new Date();
+
+  // Pricing rows
+  let priceRows = (p.items || []).map(it =>
+    '<tr><td>' + escHtml(it.label || '') + '</td><td>' + fmtMoney(it.price || 0) + '</td></tr>'
+  ).join('');
+  priceRows += '<tr class="total"><td>סה"כ</td><td>' + fmtMoney(total) + '</td></tr>';
+
+  // Build the contact CTA: WhatsApp if a producer phone is on file,
+  // otherwise an email fallback to djeliorravid@gmail.com.
+  const phone = digits(p.producerPhone || '');
+  const msg = 'שלום אליאור, ראיתי את הצעת המחיר ל-' + (p.clientName || '') + ' — אשמח להמשיך.';
+  const ctaHtml = phone
+    ? '<a class="btn-wa" href="https://wa.me/' + phone + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">💬 דבר איתי בוואטסאפ</a>'
+    : '<a class="btn-wa" href="mailto:djeliorravid@gmail.com?subject=' + encodeURIComponent('הצעת מחיר — ' + (p.clientName || '')) + '&body=' + encodeURIComponent(msg) + '" style="background:linear-gradient(135deg,#ff9558,#ff6b4a);box-shadow:0 12px 30px -8px rgba(255,107,74,0.45)">📧 דבר איתי במייל</a>';
+
+  document.getElementById('root').innerHTML =
+    '<div class="wrap">' +
+      '<div class="brand">אליאור רביד · אולפן</div>' +
+      '<h1>הצעת מחיר</h1>' +
+      '<div class="subline">ל-<b>' + escHtml(p.clientName || '') + '</b>' +
+        (p.producerName ? ' · מאת <b>' + escHtml(p.producerName) + '</b>' : '') +
+        '</div>' +
+
+      '<div class="card">' +
+        '<div class="meta">' +
+          '<div class="meta-cell"><div class="meta-label">סוג פרויקט</div><div class="meta-val">' + escHtml(KIND_LABEL[p.projectKind] || 'פרויקט') + '</div></div>' +
+          '<div class="meta-cell"><div class="meta-label">הצעה מתאריך</div><div class="meta-val">' + escHtml(fmtDate(p.createdAt ? new Date(p.createdAt).toISOString().slice(0,10) : '') || '—') + '</div></div>' +
+        '</div>' +
+      '</div>' +
+
+      (p.projectDescription
+        ? '<div class="card"><h2>תיאור הפרויקט</h2><p>' + escHtml(p.projectDescription) + '</p></div>'
+        : '') +
+
+      '<div class="card"><h2>פירוט מחיר</h2><table class="price">' + priceRows + '</table></div>' +
+
+      (p.paymentTerms
+        ? '<div class="card"><h2>תנאי תשלום</h2><p>' + escHtml(p.paymentTerms) + '</p></div>'
+        : '') +
+
+      (p.notes
+        ? '<div class="card"><h2>הערות</h2><p style="white-space:pre-line">' + escHtml(p.notes) + '</p></div>'
+        : '') +
+
+      (p.validUntil
+        ? '<div class="validity' + (expired ? ' expired' : '') + '">' +
+            (expired
+              ? '⚠️ ההצעה פגה תוקף ב-<b>' + escHtml(fmtDate(p.validUntil)) + '</b>. אשמח לדבר ולעדכן הצעה חדשה.'
+              : 'ההצעה תקפה עד <b>' + escHtml(fmtDate(p.validUntil)) + '</b>') +
+          '</div>'
+        : '') +
+
+      '<div class="cta-block">' +
+        '<div class="cta-title">רוצה להתחיל?</div>' +
+        '<div class="cta-sub">אשמח לדבר ולתאם את הצעדים הראשונים. אענה תוך מספר שעות.</div>' +
+        ctaHtml +
+      '</div>' +
+
+      '<div style="text-align:center;margin-top:30px;color:#a06c48;font-size:12px;font-weight:600">הצעת מחיר של <b>' + escHtml(p.producerName || 'אליאור רביד') + '</b> · מפיק מוזיקלי</div>' +
+    '</div>';
+
+  document.title = 'הצעת מחיר — ' + (p.clientName || 'אליאור רביד');
+}
+
+function renderError(msg){
+  document.getElementById('root').innerHTML =
+    '<div class="error"><b>אופס</b><div style="white-space:pre-line">' + escHtml(msg) + '</div>' +
+    '<div style="margin-top:18px"><button onclick="location.reload()" style="background:linear-gradient(135deg,#ff9558,#ff6b4a);color:#fff;border:none;border-radius:12px;padding:11px 22px;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit">🔄 נסה שוב</button></div>' +
+    '</div>';
+}
+
+const id = getId();
+if (!id) {
+  renderError('לא צוין מזהה הצעה. בדוק את הקישור.');
+} else {
+  (async function load(){
+    function handle(data){
+      if (!data) { renderError('ההצעה לא נמצאה.'); return false; }
+      const arr = Array.isArray(data) ? data : Object.values(data);
+      const p = arr.find(x => x && x.id === id);
+      if (!p) { renderError('ההצעה לא נמצאה.'); return false; }
+      render(p);
+      return true;
+    }
+    try {
+      const snap = await db.ref('studio_data/proposals').once('value');
+      if (handle(snap.val())) return;
+    } catch(e1) {
+      try {
+        await firebase.auth().signInAnonymously();
+        const snap2 = await db.ref('studio_data/proposals').once('value');
+        if (handle(snap2.val())) return;
+      } catch(e2) {
+        try {
+          const res = await fetch('https://elior-studio-default-rtdb.firebaseio.com/studio_data/proposals.json?ts=' + Date.now(), {cache:'no-store'});
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          if (handle(data)) return;
+        } catch(e3) {
+          renderError('שגיאה בטעינה: ' + (e3 && (e3.code || e3.message) || e3) + '\nאם פתחת מתוך וואטסאפ — נסה לפתוח דרך Safari.');
+        }
+      }
+    }
+  })();
+}
+</script>
+</body>
+</html>
