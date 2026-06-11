@@ -1,5 +1,5 @@
 // Service Worker — אפליקציה אמיתית עם תמיכה offline
-const CACHE_NAME = 'elior-app-v38';
+const CACHE_NAME = 'elior-app-v39';
 const APP_SHELL = [
   '/elior-studio-app/',
   '/elior-studio-app/index.html',
@@ -34,11 +34,12 @@ self.addEventListener('fetch', e => {
   // External assets (Firebase, fonts, etc.) — go to network, ignore cache
   if (url.origin !== self.location.origin) return;
 
-  // HTML/JS/CSS — network first, fallback to cache
+  // HTML/JS/CSS — network first (with no-store so iOS doesn't return a stale
+  // HTTP-cached copy), fallback to cache offline
   if (e.request.mode === 'navigate' || e.request.destination === 'document') {
     e.respondWith((async () => {
       try {
-        const fresh = await fetch(e.request);
+        const fresh = await fetch(e.request, { cache: 'no-store' });
         const cache = await caches.open(CACHE_NAME);
         cache.put(e.request, fresh.clone());
         return fresh;
