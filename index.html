@@ -2054,7 +2054,10 @@
     /* ===== MODE SELECTOR ===== */
     #mode-screen {
       position: fixed; inset: 0; z-index: 9998;
-      background: linear-gradient(135deg, #1c1410 0%, #3e2820 50%, #5c3a28 100%);
+      background:
+        radial-gradient(ellipse 70% 50% at 75% 15%, rgba(255,200,130,0.18), transparent 60%),
+        radial-gradient(ellipse 60% 50% at 20% 85%, rgba(212,165,116,0.16), transparent 60%),
+        linear-gradient(160deg, #2a1810 0%, #3e2820 38%, #4d2e1f 68%, #5c3a28 100%);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 32px;
       padding: calc(env(safe-area-inset-top, 0px) + 4px) 16px env(safe-area-inset-bottom, 0px);
@@ -2064,10 +2067,10 @@
       content: '';
       position: absolute; inset: -50%;
       background:
-        radial-gradient(circle at 20% 30%, rgba(212,165,116,0.28), transparent 45%),
-        radial-gradient(circle at 80% 20%, rgba(160,108,72,0.32), transparent 45%),
-        radial-gradient(circle at 50% 80%, rgba(180,135,70,0.22), transparent 45%);
-      filter: blur(70px);
+        radial-gradient(circle at 20% 30%, rgba(255,180,100,0.22), transparent 45%),
+        radial-gradient(circle at 80% 20%, rgba(212,165,116,0.30), transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(180,135,70,0.20), transparent 45%);
+      filter: blur(80px);
       animation: bgFloat 24s ease-in-out infinite;
     }
     @keyframes bgFloat {
@@ -2097,16 +2100,31 @@
       letter-spacing: 0.02em;
       text-align: center;
       text-shadow: 0 4px 30px rgba(0,0,0,0.4);
-      animation: titleIn 0.8s cubic-bezier(.4,0,.2,1);
+      animation: titleIn 0.8s cubic-bezier(.4,0,.2,1), titlePulse 7s ease-in-out 1.2s infinite;
+    }
+    .mode-screen-title .lobby-emoji {
+      font-size: 52px;
+      line-height: 1;
+      margin-bottom: 6px;
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.35));
+      animation: lobbyEmojiFloat 6s ease-in-out infinite;
     }
     .mode-screen-title small {
       display: block; font-size: 14px; font-weight: 500;
-      opacity: 0.7; margin-top: 10px; letter-spacing: 0.15em;
+      opacity: 0.75; margin-top: 8px; letter-spacing: 0.12em;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
     @keyframes titleIn {
       from { opacity: 0; transform: translateY(-20px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes titlePulse {
+      0%, 100% { text-shadow: 0 4px 30px rgba(0,0,0,0.4), 0 0 0 rgba(212,165,116,0); }
+      50%      { text-shadow: 0 4px 30px rgba(0,0,0,0.4), 0 0 40px rgba(255,200,130,0.18); }
+    }
+    @keyframes lobbyEmojiFloat {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
     }
     .mode-cards-row {
       display: flex; gap: 28px; position: relative; z-index: 1;
@@ -3520,8 +3538,9 @@
 <div id="mode-screen" class="hidden">
   <div class="bsd-mark">בס״ד</div>
   <div class="mode-screen-title">
-    אליאור רביד
-    <small>ניהול עסקי</small>
+    <div class="lobby-emoji" id="lobby-emoji">☀️</div>
+    <div id="lobby-greet">שלום, אליאור</div>
+    <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-card business" onclick="chooseMode('business')">
@@ -8762,6 +8781,28 @@ function importGcalEvent(ev) {
 // ===== LOGIN =====
 const PASS = '110';
 
+function refreshLobbyGreeting() {
+  const greetEl = document.getElementById('lobby-greet');
+  const subEl   = document.getElementById('lobby-sub');
+  const emojiEl = document.getElementById('lobby-emoji');
+  if (!greetEl) return;
+  const now = new Date();
+  const h = now.getHours();
+  let greet, emoji;
+  if (h >= 5 && h < 12)       { greet = 'בוקר טוב, אליאור';     emoji = '☀️'; }
+  else if (h >= 12 && h < 17) { greet = 'צהריים טובים, אליאור'; emoji = '🌤️'; }
+  else if (h >= 17 && h < 21) { greet = 'ערב טוב, אליאור';      emoji = '🌇'; }
+  else                         { greet = 'לילה טוב, אליאור';     emoji = '🌙'; }
+  greetEl.textContent = greet;
+  if (emojiEl) emojiEl.textContent = emoji;
+  if (subEl) {
+    const days  = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+    const day   = days[now.getDay()];
+    const date  = now.toLocaleDateString('he-IL', { day:'numeric', month:'long' });
+    subEl.textContent = 'יום ' + day + ' · ' + date;
+  }
+}
+
 function doLogin() {
   const val = document.getElementById('login-pass').value;
   if (val === PASS) {
@@ -8769,6 +8810,7 @@ function doLogin() {
     document.getElementById('login-pass').value = '';
     document.getElementById('mode-screen').classList.remove('hidden');
     try { renderLobbyTasks(); } catch(e) {}
+    try { refreshLobbyGreeting(); } catch(e) {}
   } else {
     const err = document.getElementById('login-err');
     err.textContent = '❌ סיסמא שגויה';
@@ -8790,6 +8832,7 @@ function switchMode() {
   });
   document.getElementById('mode-screen').classList.remove('hidden');
   try { renderLobbyTasks(); } catch(e) {}
+  try { refreshLobbyGreeting(); } catch(e) {}
 }
 
 function showMode(mode) {
