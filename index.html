@@ -8396,28 +8396,11 @@ if ('serviceWorker' in navigator) {
   //   3. postMessage('sw-activated') — explicit ping from sw.js.
   // The 3-second debounce stops any pair of them from chaining into
   // an infinite reload loop.
-  let _swRefreshing = false;
-  let _foregroundAt = Date.now();
-  // Reset the "foreground since" clock every time the app comes back
-  // from background — otherwise an SW update detected the moment you
-  // return to the app reloads instantly and shows the dreaded
-  // flash-of-old-lobby. The 5s gate below means an update only
-  // refreshes after you've been actively in the app for 5+ seconds.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') _foregroundAt = Date.now();
-  });
-  function _swForceReload() {
-    if (_swRefreshing) return;
-    if (window.__lastSwReload && Date.now() - window.__lastSwReload < 3000) return;
-    if (Date.now() - _foregroundAt < 5000) return;
-    _swRefreshing = true;
-    window.__lastSwReload = Date.now();
-    window.location.reload();
-  }
-  navigator.serviceWorker.addEventListener('controllerchange', _swForceReload);
-  navigator.serviceWorker.addEventListener('message', e => {
-    if (e.data && e.data.type === 'sw-activated') _swForceReload();
-  });
+  // SW auto-reload disabled: any reload during normal use causes a
+  // visible flash of the iOS WebView snapshot before the new HTML
+  // paints. Updates take effect on the next full app launch instead
+  // (still fast — a few seconds — but invisible to the user).
+  function _swForceReload() { /* intentionally a no-op */ }
 
   navigator.serviceWorker.register('/elior-studio-app/sw.js').then(reg => {
     reg.update();
