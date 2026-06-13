@@ -74,25 +74,24 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" App/Info.plist || true
           echo "Build number: $BUILD_NUMBER"
 
-      - name: Patch project.pbxproj for Team ID + Distribution signing
+      - name: Patch project.pbxproj for Team ID + Manual Distribution signing
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           cd ios/App
-          # Capacitor's default project is hard-coded to "Apple Development"
-          # in every configuration, which fights the Distribution identity
-          # we want for archive. Flip both — and inject the Team ID.
+          # Inject Team ID into both Debug & Release configs.
           /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
           /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = ;/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
-          # Capacitor's template uses the LEGACY identity string "iPhone
-          # Developer", which Xcode automatic signing doesn't auto-promote
-          # to a Distribution identity during archive. Modernize it to
-          # "Apple Development" — with CODE_SIGN_STYLE=Automatic + archive
-          # action + API key, Xcode then transparently uses "Apple
-          # Distribution" for the signed archive. Do NOT manually set the
-          # identity to "Apple Distribution" — that conflicts with auto
-          # signing.
-          /usr/bin/sed -i '' 's/"iPhone Developer"/"Apple Development"/g' App.xcodeproj/project.pbxproj || true
+          # Force MANUAL signing with explicit "Apple Distribution".
+          # Why: Xcode's automatic signing keeps defaulting to a
+          # Development identity during archive (probably because the
+          # bundle ID has no existing assets yet), and there's no way
+          # to override that without explicit manual settings. With
+          # -allowProvisioningUpdates + an Admin-role API key, Xcode
+          # will still create the distribution cert + App Store
+          # provisioning profile on demand.
+          /usr/bin/sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' App.xcodeproj/project.pbxproj || true
+          /usr/bin/sed -i '' 's/"iPhone Developer"/"Apple Distribution"/g' App.xcodeproj/project.pbxproj || true
           echo "---- pbxproj signing settings ----"
           /usr/bin/grep -n -E "CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|CODE_SIGN_STYLE|PROVISIONING_PROFILE_SPECIFIER" App.xcodeproj/project.pbxproj | head -40
           echo "----------------------------------"
@@ -115,7 +114,8 @@ jobs:
             -authenticationKeyID "$API_KEY_ID" \
             -authenticationKeyIssuerID "$API_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             archive
 
       - name: Write ExportOptions.plist
