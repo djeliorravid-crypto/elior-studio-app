@@ -630,10 +630,11 @@
       font-family: 'Heebo', sans-serif;
       letter-spacing: -0.005em;
     }
-    [data-theme="light"] .page-header h2 { color: var(--text); text-shadow: none; }
-    [data-theme="light"] .page-header p  { color: var(--text-muted); }
-    body:not([data-theme="dark"]) .page-header h2 { color: var(--text); text-shadow: none; }
-    body:not([data-theme="dark"]) .page-header p  { color: var(--text-muted); }
+    /* Page headers sit on top of the dark-wood body background in
+       BOTH themes (the "light" theme really just affects card / table
+       surfaces). The previous overrides forced h2 to use var(--text)
+       which is dark brown in light mode → invisible on the dark
+       background. Keep them light always. */
 
     /* ===== MONTH SELECTOR ===== */
     .month-selector {
@@ -4251,7 +4252,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v217</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v218</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
