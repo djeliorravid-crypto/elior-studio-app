@@ -3829,7 +3829,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v214</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v215</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -13455,20 +13455,31 @@ async function requestNativeNotificationPermission() {
 
 async function scheduleNativeTaskNotification(task) {
   if (!IS_NATIVE || !task.dueDate || task.done) return;
+  // Respect the user's notif-settings preference (lobby gear). If the
+  // user disabled notifications globally or muted task-type reminders,
+  // skip. Default lead time is 60 min before due.
+  const prefs = (typeof getNotifPrefs === 'function') ? getNotifPrefs() : { enabled: true, plans: true, leadMins: 60 };
+  if (prefs.enabled === false) return;
+  if (prefs.plans === false) return;
+  const leadMs = (Number(prefs.leadMins) || 0) * 60 * 1000;
   const { LocalNotifications } = Capacitor.Plugins;
   const due = new Date(task.dueDate);
-  const remind = new Date(due.getTime() - 60 * 60 * 1000);
+  const remind = new Date(due.getTime() - leadMs);
   if (remind <= new Date()) return;
 
   // Use a stable numeric ID derived from task id
   const numId = Math.abs(task.id.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0));
+  const leadLabel = leadMs === 0 ? '' :
+                    leadMs >= 86400000 ? `${Math.round(leadMs / 86400000)} ימים — ` :
+                    leadMs >= 3600000  ? `${Math.round(leadMs / 3600000)} שעות — ` :
+                                         `${Math.round(leadMs / 60000)} דקות — `;
   try {
     // Cancel existing one if any
     await LocalNotifications.cancel({ notifications: [{ id: numId }] }).catch(() => {});
     await LocalNotifications.schedule({
       notifications: [{
         id: numId,
-        title: '⏰ עוד שעה — ' + task.title,
+        title: '⏰ ' + leadLabel + task.title,
         body: `יעד: ${due.toLocaleString('he-IL', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'})}${task.notes ? '\n' + task.notes : ''}`,
         schedule: { at: remind, allowWhileIdle: true },
         sound: 'default',
