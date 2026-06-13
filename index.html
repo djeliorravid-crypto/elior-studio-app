@@ -1898,9 +1898,13 @@
         flex-wrap: nowrap;
         gap: 8px;
         margin-bottom: 16px;
+        /* Leave room on the right edge so the h2 doesn't slide
+           under the fixed #mobile-lobby-btn pill in the corner. */
+        padding-right: 92px;
       }
       .page-header > div:first-child { flex: 1; min-width: 0; }
       .page-header h2 { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .page-header h2 svg.icon-lg { width: 20px; height: 20px; }
       .page-header p { display: none; }
       .page-header > div:last-child {
         display: flex;
@@ -2390,7 +2394,7 @@
     .mode-card-glow {
       position: absolute; bottom: -40%; left: 50%; transform: translateX(-50%);
       width: 200px; height: 200px; border-radius: 50%;
-      filter: blur(40px); opacity: 0.6; transition: opacity .3s;
+      filter: blur(40px); opacity: 0; transition: opacity .3s;
       pointer-events: none;
     }
     .mode-card.business .mode-card-glow { background: linear-gradient(135deg,#d4a574,#a06c48); }
@@ -3516,6 +3520,12 @@
   <symbol id="ic-eye"          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="ic-eye-off"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10 10 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
   <symbol id="ic-money"        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></symbol>
+  <symbol id="ic-target"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></symbol>
+  <symbol id="ic-trophy"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v6a5 5 0 0 1-10 0V4z"/><path d="M5 6H3a2 2 0 0 0 2 2"/><path d="M19 6h2a2 2 0 0 1-2 2"/><path d="M9 17h6"/><path d="M10 21h4"/><line x1="12" y1="17" x2="12" y2="21"/></symbol>
+  <symbol id="ic-hourglass"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12"/><path d="M6 22h12"/><path d="M6 2c0 4 4 6 6 10 2-4 6-6 6-10"/><path d="M18 22c0-4-4-6-6-10-2 4-6 6-6 10"/></symbol>
+  <symbol id="ic-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/></symbol>
+  <symbol id="ic-bank"         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="6" y1="10" x2="6" y2="18"/><line x1="10" y1="10" x2="10" y2="18"/><line x1="14" y1="10" x2="14" y2="18"/><line x1="18" y1="10" x2="18" y2="18"/><line x1="3" y1="18" x2="21" y2="18"/><line x1="2" y1="21" x2="22" y2="21"/></symbol>
+  <symbol id="ic-coin-bag"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1.5 3-2 1.5L17 9c2.8 2 4 5 4 8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3c0-3 1.2-6 4-8l2.5-1.5L7.5 6 9 3z"/><path d="M12 11v6"/><path d="M9.5 13.5h5"/></symbol>
 </svg>
 
 <!-- PWA install banner (appears once on mobile if not installed) -->
@@ -3827,7 +3837,7 @@
     <!-- שנה עד היום -->
     <div class="stat-ytd-strip">
       <div class="stat-ytd-cell">
-        <div class="stat-ytd-lbl">💰 הכנסות שהתקבלו השנה</div>
+        <div class="stat-ytd-lbl"><svg class="icon"><use href="#ic-coin-bag"/></svg> הכנסות שהתקבלו השנה</div>
         <div class="stat-ytd-val green" id="stat-ytd-inc">₪0</div>
         <div class="stat-ytd-sub" id="stat-ytd-inc-n">0 עסקאות</div>
       </div>
@@ -3856,7 +3866,7 @@
         <div class="si-val red" id="stat-avg-exp">₪0</div>
       </div>
       <div class="stat-insight-item">
-        <div class="si-icon">🏆</div>
+        <div class="si-icon"><svg class="icon-md"><use href="#ic-trophy"/></svg></div>
         <div class="si-lbl">החודש הכי רווחי</div>
         <div class="si-val" id="stat-best-month">—</div>
       </div>
@@ -3934,7 +3944,7 @@
     <div class="goal-bar-wrap" id="goal-bar-section">
       <div class="goal-bar-top">
         <div>
-          <div class="goal-bar-title">🎯 יעד חודשי</div>
+          <div class="goal-bar-title"><svg class="icon"><use href="#ic-target"/></svg> יעד חודשי</div>
           <div class="goal-bar-nums" id="goal-bar-nums">₪0 מתוך ₪0</div>
         </div>
         <div class="goal-bar-pct" id="goal-bar-pct" style="color:var(--green)">0%</div>
@@ -3954,7 +3964,7 @@
     <div id="bank-deposit-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;transition:box-shadow .3s">
       <div style="position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-glow) 0%,transparent 60%);pointer-events:none"></div>
       <div style="position:relative;display:flex;align-items:center;gap:14px;flex:1;min-width:200px">
-        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;box-shadow:0 6px 18px var(--accent-glow)">🏦</div>
+        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 6px 18px var(--accent-glow)"><svg style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-bank"/></svg></div>
         <div>
           <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">פיקדון בבנק</div>
           <div id="bank-deposit-amount" style="font-size:30px;font-weight:900;color:var(--accent);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1">₪0</div>
@@ -3973,17 +3983,17 @@
       <!-- תיבה 1: הכנסות החודש -->
       <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)">
         <div style="background:var(--accent-light);border-bottom:1.5px solid var(--border-glow);padding:12px 20px;display:flex;align-items:center;gap:8px">
-          <span style="font-size:18px">💰</span>
+          <svg class="icon-md" style="color:var(--accent)"><use href="#ic-coin-bag"/></svg>
           <span style="font-size:13px;font-weight:800;color:var(--accent)">הכנסות החודש</span>
         </div>
         <div style="padding:0">
           <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
-            <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px">⏳ צפוי להתקבל</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg class="icon"><use href="#ic-hourglass"/></svg> צפוי להתקבל</div>
             <div class="card-value purple" id="i-expected" style="font-size:32px;font-weight:900;margin:0;line-height:1">₪0</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="i-expected-count"></div>
           </div>
           <div style="padding:16px 20px;background:var(--pill-green-bg)">
-            <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px">✅ התקבל בפועל</div>
+            <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg class="icon"><use href="#ic-check-circle"/></svg> התקבל בפועל</div>
             <div class="card-value green" id="i-total" style="font-size:32px;font-weight:900;margin:0;line-height:1">₪0</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="i-count"></div>
           </div>
@@ -3993,12 +4003,12 @@
       <!-- תיבה 2: נשאר -->
       <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)" id="pending-summary-box">
         <div style="background:var(--surface2);border-bottom:1.5px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
-          <span style="font-size:18px">⏳</span>
+          <svg class="icon-md" style="color:var(--text-muted)"><use href="#ic-hourglass"/></svg>
           <span style="font-size:13px;font-weight:800;color:var(--text)">ממתין לטיפול</span>
         </div>
         <div style="padding:0">
           <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
-            <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px">💚 נשאר להכניס</div>
+            <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg class="icon"><use href="#ic-trend-up"/></svg> נשאר להכניס</div>
             <div id="pending-income-amt" style="font-size:32px;font-weight:900;color:var(--green);line-height:1">₪0</div>
             <div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:10px">
               <div id="pending-income-bar" style="height:100%;border-radius:3px;background:var(--green);transition:width .5s;width:0%"></div>
@@ -4007,7 +4017,7 @@
             <div id="pending-income-sub" style="display:none"></div>
           </div>
           <div style="padding:16px 20px;background:var(--pill-red-bg)">
-            <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px">🔴 נשאר להוציא</div>
+            <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg class="icon"><use href="#ic-trend-down"/></svg> נשאר להוציא</div>
             <div id="pending-expenses-amt" style="font-size:32px;font-weight:900;color:var(--red);line-height:1">₪0</div>
             <div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:10px">
               <div id="pending-expenses-bar" style="height:100%;border-radius:3px;background:var(--red);transition:width .5s;width:0%"></div>
@@ -4021,7 +4031,7 @@
       <!-- תיבה 3: רווח -->
       <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)">
         <div style="background:var(--surface2);border-bottom:1.5px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
-          <span style="font-size:18px">📊</span>
+          <svg class="icon-md" style="color:var(--text-muted)"><use href="#ic-chart-bars"/></svg>
           <span style="font-size:13px;font-weight:800;color:var(--text)">רווח</span>
         </div>
         <div style="padding:0">
@@ -4031,7 +4041,7 @@
             <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="i-future-profit-sub"></div>
           </div>
           <div style="padding:16px 20px">
-            <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:6px">🏦 בנק העסק עכשיו</div>
+            <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:6px"><svg class="icon"><use href="#ic-bank"/></svg> בנק העסק עכשיו</div>
             <div class="card-value" id="i-net-profit" style="font-size:32px;font-weight:900;margin:0;line-height:1">₪0</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="i-net-profit-sub"></div>
           </div>
@@ -4095,7 +4105,7 @@
     <!-- כרטיס נשאר לך -->
     <div id="e-balance-card" style="border-radius:var(--radius);padding:22px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;box-shadow:var(--shadow);border:2px solid var(--border)">
       <div>
-        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.10em;color:var(--text-muted);margin-bottom:6px;font-family:'Rubik','Heebo',sans-serif">🏦 בנק העסק החודש</div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.10em;color:var(--text-muted);margin-bottom:6px;font-family:'Rubik','Heebo',sans-serif"><svg class="icon"><use href="#ic-bank"/></svg> בנק העסק החודש</div>
         <div id="e-balance" style="font-size:52px;font-weight:900;line-height:1;letter-spacing:-0.04em">₪0</div>
         <div id="e-balance-sub" style="font-size:14px;font-weight:700;margin-top:8px;color:var(--text-muted)"></div>
       </div>
