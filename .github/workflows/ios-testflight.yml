@@ -84,8 +84,14 @@ jobs:
           # we want for archive. Flip both — and inject the Team ID.
           /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
           /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = ;/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
-          /usr/bin/sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development"/CODE_SIGN_IDENTITY = "Apple Distribution"/g' App.xcodeproj/project.pbxproj || true
-          /usr/bin/sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]" = "Apple Development"/"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution"/g' App.xcodeproj/project.pbxproj || true
+          # Brute-force every "Apple Development" → "Apple Distribution" so
+          # there's no path left where Xcode picks the dev identity. The
+          # build only runs the Release archive, so over-patching Debug
+          # is harmless.
+          /usr/bin/sed -i '' 's/Apple Development/Apple Distribution/g' App.xcodeproj/project.pbxproj || true
+          echo "---- pbxproj signing settings ----"
+          /usr/bin/grep -n -E "CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|CODE_SIGN_STYLE|PROVISIONING_PROFILE_SPECIFIER" App.xcodeproj/project.pbxproj | head -40
+          echo "----------------------------------"
 
       - name: Build archive (Xcode auto-signs via API key)
         env:
