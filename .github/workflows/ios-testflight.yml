@@ -129,11 +129,16 @@ jobs:
           # every 60s with `ps` of build-related processes so we can
           # see exactly what's hot vs. hung.
           (
+            # Use -sdk iphoneos (not -destination): on macos-15
+            # runners, the iOS 18 "platform" (simulator) often isn't
+            # pre-installed, so -destination 'generic/platform=iOS'
+            # fails with "iOS 18.0 is not installed" even though the
+            # iphoneos SDK is right there for device builds.
             NSUnbufferedIO=YES xcodebuild \
               -project App.xcodeproj \
               -scheme App \
               -configuration Release \
-              -destination 'generic/platform=iOS' \
+              -sdk iphoneos \
               -archivePath "$PWD/build/App.xcarchive" \
               -skipPackagePluginValidation \
               -skipMacroValidation \
