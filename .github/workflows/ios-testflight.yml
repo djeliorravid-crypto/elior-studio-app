@@ -87,25 +87,25 @@ jobs:
         run: bundle exec fastlane ios beta
 
       - name: Unlock keychain for codesigning (codesign was the hang!)
-        # Previous run revealed codesign was the actual hang — it was
-        # waiting on interactive keychain access prompts that never come
-        # in CI. Make fastlane's keychain the *only* keychain in the
-        # search list, fully unlock it, and grant codesign permission.
+        # The previous run conclusively showed codesign hanging at 0% CPU
+        # for tens of minutes waiting on a keychain prompt that never
+        # comes. Make fastlane's keychain the ONLY keychain in the
+        # search list (so codesign can't fall back to the locked login
+        # keychain) and grant codesign full access without prompts.
+        # Export KEYCHAIN_PATH so the archive step can pin codesign to
+        # this keychain via OTHER_CODE_SIGN_FLAGS=--keychain=...
         run: |
-          # Find all fastlane-created keychains (path varies by macOS
-          # version: fastlane_tmp_keychain, fastlane_tmp_keychain-db,
-          # fastlane_tmp_keychain.keychain-db).
           for KC in $HOME/Library/Keychains/fastlane_tmp_keychain*; do
             [ -f "$KC" ] || continue
             echo "Found fastlane keychain: $KC"
             security unlock-keychain -p "" "$KC" || true
             security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "" "$KC" || true
             security set-keychain-settings -lut 21600 "$KC" || true
-            # Make it the only keychain in the search list AND the
-            # default — so codesign doesn't fall back to login.keychain
-            # which is locked.
-            security list-keychains -s "$KC" $HOME/Library/Keychains/login.keychain-db
+            # Only our keychain in the search list — no login.keychain
+            # fallback. And mark it the default.
+            security list-keychains -s "$KC"
             security default-keychain -s "$KC"
+            echo "KEYCHAIN_PATH=$KC" >> $GITHUB_ENV
           done
           echo "---- Active keychain search list ----"
           security list-keychains
@@ -126,6 +126,9 @@ jobs:
           # every 60s with `ps` of build-related processes so we can
           # see exactly what's hot vs. hung.
           (
+            # OTHER_CODE_SIGN_FLAGS pins codesign to our unlocked
+            # keychain. Without this, codesign also probes login.keychain
+            # which is locked → hangs forever on a prompt.
             NSUnbufferedIO=YES xcodebuild \
               -project App.xcodeproj \
               -scheme App \
@@ -139,6 +142,7 @@ jobs:
               CODE_SIGN_STYLE=Manual \
               CODE_SIGN_IDENTITY="Apple Distribution" \
               PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+              OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH" \
               COMPILER_INDEX_STORE_ENABLE=NO \
               archive 2>&1
             echo $? > /tmp/xcb_exit
