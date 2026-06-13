@@ -8934,6 +8934,49 @@ function doLogin() {
   }
 })();
 
+// ===== Native Local Notifications =====
+// Capacitor's @capacitor/local-notifications plugin schedules system
+// reminders that fire as native iOS push-style notifications (lock
+// screen, banner, notification center) even when the app is closed.
+// Exposes `window.scheduleReminder(title, body, atDate)` and
+// `window.cancelReminder(id)` for other code to call.
+(function setupLocalNotifications() {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+
+  // Request permission once on first launch (silent if already granted).
+  LN.checkPermissions()
+    .then(res => res.display === 'granted' ? res : LN.requestPermissions())
+    .catch(() => {});
+
+  // Stable hash → 31-bit positive int (LocalNotifications requires int id).
+  const idFromKey = (key) => {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = ((h << 5) - h + key.charCodeAt(i)) | 0;
+    return Math.abs(h) || 1;
+  };
+
+  window.scheduleReminder = function(title, body, atDate, key) {
+    if (!(atDate instanceof Date) || atDate <= new Date()) return null;
+    const id = idFromKey(key || (title + '|' + atDate.toISOString()));
+    return LN.schedule({
+      notifications: [{
+        id,
+        title:  String(title || ''),
+        body:   String(body  || ''),
+        schedule: { at: atDate, allowWhileIdle: true },
+        sound:  'default',
+      }],
+    }).then(() => id).catch(() => null);
+  };
+
+  window.cancelReminder = function(id) {
+    if (!id) return;
+    return LN.cancel({ notifications: [{ id }] }).catch(() => {});
+  };
+})();
+
 function chooseMode(mode) {
   document.getElementById('mode-screen').classList.add('hidden');
   showMode(mode);
