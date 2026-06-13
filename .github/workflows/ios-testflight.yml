@@ -58,11 +58,6 @@ jobs:
       - name: Sync web assets into iOS
         run: npx cap sync ios
 
-      - name: Install CocoaPods deps (creates App.xcworkspace)
-        run: |
-          cd ios/App
-          pod install --repo-update
-
       - name: Save App Store Connect API key
         env:
           API_KEY_ID:        ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
@@ -96,7 +91,7 @@ jobs:
         run: |
           cd ios/App
           xcodebuild \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
