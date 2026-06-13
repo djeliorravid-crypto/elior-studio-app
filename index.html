@@ -20,6 +20,25 @@
 
     html.cap-native #login-screen { display: none !important; }
     html.cap-native #mode-screen.hidden { display: flex !important; }
+
+    /* When the app is backgrounded on iOS, the OS takes a snapshot
+       of the WebView and uses it as the app-switcher thumbnail AND
+       as the placeholder shown for ~half a second the next time the
+       app reopens. If the snapshot captures live content, the user
+       sees that "ghost" of yesterday's lobby flash before the live
+       WebView paints — that's the flash. The fix: when the page
+       becomes hidden, swap to a clean full-bleed brown overlay so
+       iOS snapshots a blank brown screen instead of stale content.
+       When the page becomes visible again, drop the overlay. */
+    #snapshot-curtain {
+      position: fixed; inset: 0;
+      background: #2a1810;
+      z-index: 999999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.18s ease;
+    }
+    body.app-hidden #snapshot-curtain { opacity: 1; visibility: visible; transition: none; }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Frank+Ruhl+Libre:wght@400;700;900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -3661,6 +3680,22 @@
 </style>
 </head>
 <body>
+<div id="snapshot-curtain" aria-hidden="true"></div>
+<script>
+  // Show the brown curtain instantly when the app goes to background
+  // so iOS snapshots a blank screen instead of stale content. Drop
+  // the curtain when the app comes back to the foreground.
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+      document.body.classList.add('app-hidden');
+    } else {
+      document.body.classList.remove('app-hidden');
+    }
+  });
+  // Capacitor also dispatches its own pause/resume events on native.
+  document.addEventListener('pause',  function() { document.body.classList.add('app-hidden'); });
+  document.addEventListener('resume', function() { document.body.classList.remove('app-hidden'); });
+</script>
 
 <!-- ===== SVG ICON SPRITE =====
      One source of truth for all UI icons. Reference with
