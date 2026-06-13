@@ -3530,6 +3530,421 @@
     .ctr-sig-banner button { background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: var(--text); cursor: pointer; }
     .ctr-sig-banner button:hover { border-color: var(--accent); }
 
+    /* ════════════════════════════════════════════════════════════
+       APPLE HIG POLISH — v217
+       Refined typography, radii, shadows, tap feedback.
+       Loaded LAST so it overrides earlier per-component rules.
+       ════════════════════════════════════════════════════════════ */
+
+    /* ── Spacing & radius scale ── */
+    :root {
+      --r-sm: 10px;
+      --r-md: 14px;
+      --r-lg: 18px;
+      --r-xl: 22px;
+      --r-pill: 999px;
+
+      /* iOS-style multi-layer shadows — subtle, lifted */
+      --shadow-ios-1: 0 1px 2px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.05);
+      --shadow-ios-2: 0 1px 2px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.08);
+      --shadow-ios-3: 0 2px 4px rgba(0,0,0,0.10), 0 16px 40px rgba(0,0,0,0.14);
+    }
+    [data-theme="dark"] {
+      /* In dark mode, shadows need to be deeper to register, but stay neutral */
+      --shadow-ios-1: 0 1px 2px rgba(0,0,0,0.40), 0 4px 12px rgba(0,0,0,0.30);
+      --shadow-ios-2: 0 1px 2px rgba(0,0,0,0.45), 0 10px 28px rgba(0,0,0,0.38);
+      --shadow-ios-3: 0 2px 4px rgba(0,0,0,0.50), 0 18px 48px rgba(0,0,0,0.50);
+    }
+
+    /* ── Typography hierarchy — iOS large-title feel ── */
+    .page-header h2 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.028em;
+      line-height: 1.08;
+      font-family: 'Rubik', 'Heebo', sans-serif;
+    }
+    .page-header p {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
+      margin-top: 4px;
+    }
+    /* Numbers — heavier weight + tight tracking for premium feel */
+    .card-value,
+    .goal-bar-pct,
+    .tl-amt {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.035em;
+      font-feature-settings: "tnum" 1, "lnum" 1;
+    }
+    .card-value { font-weight: 800; }
+
+    /* ── Card radius — consistent iOS 18-22px ── */
+    .card,
+    .table-card,
+    .income-triple-grid > div,
+    .chart-card,
+    .today-tile,
+    .qa-tile,
+    .home-alert,
+    .goal-bar-wrap,
+    .song-card,
+    .audio-track-row {
+      border-radius: var(--r-lg) !important;
+    }
+
+    /* Lighter, less heavy card shadows */
+    .card,
+    .table-card,
+    .income-triple-grid > div,
+    .chart-card,
+    .today-tile,
+    .home-alert,
+    .goal-bar-wrap {
+      box-shadow: var(--shadow-ios-2);
+      border-color: rgba(212,165,116,0.10);
+    }
+    [data-theme="dark"] .card,
+    [data-theme="dark"] .table-card,
+    [data-theme="dark"] .income-triple-grid > div,
+    [data-theme="dark"] .chart-card,
+    [data-theme="dark"] .today-tile,
+    [data-theme="dark"] .home-alert,
+    [data-theme="dark"] .goal-bar-wrap {
+      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: var(--shadow-ios-2);
+    }
+    .card:hover,
+    .table-card:hover,
+    .income-triple-grid > div:hover {
+      box-shadow: var(--shadow-ios-3) !important;
+      border-color: rgba(212,165,116,0.22) !important;
+    }
+
+    /* ── Buttons — iOS tap feedback + clean radii ── */
+    .btn {
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-weight: 700;
+      letter-spacing: -0.005em;
+      transition: transform 0.15s cubic-bezier(.34,1.2,.64,1),
+                  box-shadow 0.15s ease,
+                  filter 0.15s ease,
+                  background 0.15s ease,
+                  opacity 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active {
+      transform: scale(0.96);
+      transition-duration: 0.08s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: 0.005em;
+      /* Replace stray purple shadow leak with warm cognac glow */
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.10),
+        0 6px 18px rgba(160,108,72,0.35),
+        inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+    [data-theme="dark"] .btn-primary {
+      color: #1f1408;
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.35),
+        0 8px 22px rgba(212,165,116,0.32),
+        inset 0 1px 0 rgba(255,255,255,0.22);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.06) saturate(1.05);
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.12),
+        0 12px 28px rgba(160,108,72,0.42),
+        inset 0 1px 0 rgba(255,255,255,0.22);
+    }
+    [data-theme="dark"] .btn-primary:hover {
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.4),
+        0 14px 32px rgba(212,165,116,0.42),
+        inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+    .btn-primary:active {
+      transform: scale(0.96);
+      filter: brightness(0.96);
+    }
+    .btn-sm { padding: 6px 12px; border-radius: 10px; }
+
+    /* Pills stay pill */
+    .badge, .song-status-pill, .notif-when-chip { border-radius: var(--r-pill); }
+
+    /* ── Universal tap feedback for interactive tiles ── */
+    .qa-tile,
+    .home-alert,
+    .today-tile,
+    .recent-item,
+    .song-card,
+    .lobby-task,
+    nav a {
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.18s cubic-bezier(.34,1.2,.64,1),
+                  box-shadow 0.2s ease,
+                  background 0.2s ease,
+                  border-color 0.2s ease,
+                  color 0.18s ease;
+    }
+    .qa-tile:active,
+    .song-card:active,
+    .today-tile:active {
+      transform: scale(0.97);
+      transition-duration: 0.08s;
+    }
+
+    /* ── Modal — refined glass + iOS sheet feel ── */
+    .modal-overlay {
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+    }
+    .modal {
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 12px 32px rgba(0,0,0,0.20),
+        0 40px 96px rgba(0,0,0,0.45);
+    }
+    .modal h3 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.022em;
+      font-family: 'Rubik', 'Heebo', sans-serif;
+    }
+
+    /* ── Bottom tab bar (mobile) — native iOS feel ── */
+    @media (max-width: 768px) {
+      .sidebar {
+        background: rgba(34, 23, 16, 0.82);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border-top: 0.5px solid rgba(255,255,255,0.08);
+        box-shadow: 0 -1px 0 rgba(0,0,0,0.25);
+      }
+      nav a {
+        font-weight: 600;
+        letter-spacing: 0;
+        color: rgba(184, 164, 138, 0.75);
+        padding: 8px 8px 6px;
+      }
+      nav a.active {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      nav a:active {
+        transform: scale(0.92);
+        opacity: 0.7;
+        transition-duration: 0.08s;
+      }
+      /* Page header titles slightly smaller on mobile but still bold */
+      .page-header h2 {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+      }
+      .card {
+        border-radius: var(--r-md) !important;
+        padding: 16px 14px;
+      }
+      .card-value { font-size: 22px; font-weight: 800; }
+      .btn {
+        border-radius: 12px;
+        min-height: 42px;
+        font-weight: 700;
+      }
+      /* Bottom sheet modal — refined drag handle */
+      .modal-box, .modal {
+        border-radius: 22px 22px 0 0 !important;
+        border-top: 1px solid rgba(255,255,255,0.08);
+      }
+      .modal-box::before, .modal::before {
+        width: 36px !important;
+        height: 5px !important;
+        background: rgba(255,255,255,0.22) !important;
+        border-radius: 999px !important;
+      }
+    }
+
+    /* ── Lobby mode cards — refined premium glass ── */
+    .mode-card {
+      border-radius: 50%;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.18) inset,
+        0 -1px 0 rgba(0,0,0,0.18) inset,
+        0 18px 48px rgba(0,0,0,0.32),
+        0 4px 12px rgba(0,0,0,0.18);
+      transition: transform 0.3s cubic-bezier(.34,1.2,.64,1),
+                  box-shadow 0.3s ease,
+                  border-color 0.3s ease;
+    }
+    .mode-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      border-color: rgba(255,255,255,0.32);
+    }
+    .mode-card:active {
+      transform: scale(0.96);
+      transition-duration: 0.1s;
+    }
+    .mode-card-title {
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    /* Lobby tasks card — refined glass */
+    .lobby-tasks {
+      background: rgba(255,255,255,0.055);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: var(--r-xl);
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.12) inset,
+        0 18px 48px rgba(0,0,0,0.28);
+    }
+
+    /* Lobby settings button — refined */
+    #lobby-settings-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* Mobile-lobby pill — warmer, less heavy shadow */
+    @media (max-width: 768px) {
+      #mobile-lobby-btn {
+        box-shadow:
+          0 1px 2px rgba(0,0,0,0.25),
+          0 6px 16px rgba(160,108,72,0.32);
+      }
+    }
+
+    /* Search bar — softer */
+    .search-bar input { border-radius: 12px; }
+
+    /* Form inputs — slightly softer radius for consistency */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      border-radius: 12px;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      box-shadow:
+        0 0 0 4px rgba(212,165,116,0.18),
+        0 0 0 1px rgba(212,165,116,0.55);
+    }
+
+    /* ── Numbers really pop — Apple finance-app contrast ── */
+    .card-value,
+    .today-tile-value {
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1, "lnum" 1, "ss01" 1;
+    }
+    [data-theme="dark"] .card-value {
+      text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+    }
+
+    /* ── Badges/pills — Apple SF Pro Rounded weight feel ── */
+    .badge, .song-status-pill, .notif-when-chip {
+      font-weight: 700;
+      letter-spacing: 0;
+      padding: 4px 10px;
+      font-size: 11.5px;
+    }
+
+    /* ── Page transition — smoother fade ── */
+    .page.active {
+      animation: pgInIOS .28s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes pgInIOS {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Lobby tasks — refined tap ── */
+    .lobby-task {
+      border-radius: 12px;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s ease, transform 0.12s cubic-bezier(.34,1.2,.64,1);
+    }
+    .lobby-task:active {
+      transform: scale(0.985);
+      background: rgba(255,255,255,0.10) !important;
+    }
+
+    /* ── Lobby settings button — refined tap ── */
+    #lobby-settings-btn {
+      transition: transform 0.18s cubic-bezier(.34,1.2,.64,1), background 0.18s ease;
+    }
+    #lobby-settings-btn:active {
+      transform: scale(0.90);
+    }
+
+    /* ── Mode card icons — premium soft glow ── */
+    .mode-card-icon svg {
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.25));
+    }
+
+    /* ── Sub-text spacing rhythm ── */
+    .card-sub,
+    .today-tile-sub,
+    .activity-meta {
+      letter-spacing: -0.005em;
+    }
+
+    /* ── Table header — quieter, more Apple ── */
+    th {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Cells — premium font rhythm ── */
+    td {
+      font-weight: 600;
+      letter-spacing: -0.005em;
+    }
+
+    /* ── FAB — subtler, less candy ── */
+    .fab-main {
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.20),
+        0 10px 28px rgba(160,108,72,0.40),
+        inset 0 1px 0 rgba(255,255,255,0.22);
+    }
+    .fab-main:active {
+      transform: scale(0.94);
+      transition-duration: 0.08s;
+    }
+
+    /* ── Modal action buttons spacing ── */
+    .modal-actions { gap: 12px; margin-top: 24px; }
+
+    /* ── Active nav item — bolder iOS tab feel ── */
+    @media (max-width: 768px) {
+      nav a.active .nav-icon {
+        transform: translateY(-1px);
+        transition: transform 0.2s cubic-bezier(.34,1.4,.64,1);
+      }
+      nav a.active {
+        font-weight: 800;
+      }
+    }
+
   </style>
 <style>
   /* ===== LOGIN SCREEN ===== */
@@ -3836,7 +4251,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v216</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v217</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
