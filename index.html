@@ -8167,12 +8167,32 @@ function importBackup(event) {
 
 // ===== PWA — Service Worker + Install =====
 if ('serviceWorker' in navigator) {
+  // Reload the page automatically when a new SW takes over. Three
+  // overlapping signals so it works on every iOS quirk we've hit:
+  //   1. controllerchange — fires when SW.claim() takes control.
+  //   2. updatefound + statechange === 'activated' — older path.
+  //   3. postMessage('sw-activated') — explicit ping from sw.js.
+  // The 3-second debounce stops any pair of them from chaining into
+  // an infinite reload loop.
+  let _swRefreshing = false;
+  function _swForceReload() {
+    if (_swRefreshing) return;
+    if (window.__lastSwReload && Date.now() - window.__lastSwReload < 3000) return;
+    _swRefreshing = true;
+    window.__lastSwReload = Date.now();
+    window.location.reload();
+  }
+  navigator.serviceWorker.addEventListener('controllerchange', _swForceReload);
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.type === 'sw-activated') _swForceReload();
+  });
+
   navigator.serviceWorker.register('/elior-studio-app/sw.js').then(reg => {
     reg.update();
     reg.addEventListener('updatefound', () => {
       const newWorker = reg.installing;
       newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'activated') window.location.reload();
+        if (newWorker.state === 'activated') _swForceReload();
       });
     });
   }).catch(() => {});

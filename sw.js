@@ -1,5 +1,5 @@
 // Service Worker — אפליקציה אמיתית עם תמיכה offline
-const CACHE_NAME = 'elior-app-v44';
+const CACHE_NAME = 'elior-app-v45';
 const APP_SHELL = [
   '/elior-studio-app/',
   '/elior-studio-app/index.html',
@@ -23,6 +23,20 @@ self.addEventListener('activate', e => {
     const keys = await caches.keys();
     await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
     await self.clients.claim();
+    // Force every open client (browser tab / installed PWA window) to
+    // reload immediately so the user sees the fresh content without
+    // having to close-and-reopen the app. Two channels are used so we
+    // survive iOS / older client mixes:
+    //   • client.navigate(url) — hard server-side reload
+    //   • postMessage('reload') — picked up by the message listener
+    //                             in index.html as a backup
+    try {
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const win of wins) {
+        try { win.postMessage({ type: 'sw-activated', cache: CACHE_NAME }); } catch (_) {}
+        try { if (typeof win.navigate === 'function') await win.navigate(win.url); } catch (_) {}
+      }
+    } catch (_) {}
   })());
 });
 
