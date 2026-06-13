@@ -2115,6 +2115,147 @@
       user-select: none;
       pointer-events: none;
     }
+    #lobby-settings-btn {
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 0px) + 18px);
+      left: 22px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.85);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      z-index: 3;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.18s, transform 0.18s;
+    }
+    #lobby-settings-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.14); }
+
+    /* ===== Notification Settings Modal ===== */
+    #notif-settings-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    }
+    #notif-settings-overlay.open { display: flex; }
+    #notif-settings-card {
+      background: #2a1f17;
+      color: #f4ede0;
+      border: 1px solid rgba(212,165,116,0.25);
+      border-radius: 20px;
+      padding: 22px 20px;
+      max-width: 420px;
+      width: 100%;
+      max-height: calc(100dvh - 100px);
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+    }
+    #notif-settings-card h3 {
+      font-size: 19px;
+      font-weight: 800;
+      margin-bottom: 4px;
+      color: #f4ede0;
+    }
+    #notif-settings-card .notif-sub {
+      font-size: 13px;
+      color: #b8a48a;
+      margin-bottom: 16px;
+    }
+    .notif-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 4px;
+      border-bottom: 1px solid rgba(212,165,116,0.10);
+    }
+    .notif-row:last-child { border-bottom: none; }
+    .notif-row label { flex: 1; font-size: 15px; font-weight: 600; }
+    .notif-row .notif-sub-label { font-size: 12px; color: #b8a48a; font-weight: 500; margin-top: 2px; }
+    .notif-toggle {
+      position: relative;
+      width: 48px; height: 28px;
+      border-radius: 999px;
+      background: #46382e;
+      cursor: pointer;
+      transition: background 0.18s;
+      flex-shrink: 0;
+    }
+    .notif-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; right: 3px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.18s;
+    }
+    .notif-toggle.on { background: #d4a574; }
+    .notif-toggle.on::after { transform: translateX(-20px); }
+    .notif-section-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #d4a574;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: 18px;
+      margin-bottom: 6px;
+    }
+    .notif-section-title:first-of-type { margin-top: 8px; }
+    .notif-when {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      padding: 8px 0;
+    }
+    .notif-when-chip {
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #46382e;
+      color: #f4ede0;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .notif-when-chip.on {
+      background: #d4a574;
+      color: #1f1812;
+      border-color: #e8c39f;
+    }
+    .notif-actions {
+      display: flex; gap: 8px;
+      margin-top: 20px;
+    }
+    .notif-actions button {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .notif-actions .notif-test {
+      background: #46382e;
+      color: #f4ede0;
+    }
+    .notif-actions .notif-close {
+      background: #d4a574;
+      color: #1f1812;
+    }
     .mode-screen-title {
       position: relative; z-index: 1;
       font-family: 'Frank Ruhl Libre', serif;
@@ -3589,6 +3730,46 @@
   <button class="fab-main" id="fab-main" onclick="toggleFab()" aria-label="פעולה מהירה">+</button>
 </div>
 
+<!-- ===== NOTIFICATION SETTINGS MODAL ===== -->
+<div id="notif-settings-overlay">
+  <div id="notif-settings-card">
+    <h3>🔔 הגדרות התראות</h3>
+    <div class="notif-sub">בחר על מה לקבל התראה ומתי</div>
+
+    <div class="notif-section-title">סוגי התראות</div>
+    <div class="notif-row">
+      <div><label>הוצאות לפני תשלום</label><div class="notif-sub-label">חשבונות, מנויים, ספקים</div></div>
+      <div class="notif-toggle" data-toggle="expenses" onclick="handleNotifToggle(this)"></div>
+    </div>
+    <div class="notif-row">
+      <div><label>הכנסות צפויות</label><div class="notif-sub-label">תשלומים מלקוחות</div></div>
+      <div class="notif-toggle" data-toggle="income" onclick="handleNotifToggle(this)"></div>
+    </div>
+    <div class="notif-row">
+      <div><label>סדנאות</label><div class="notif-sub-label">מפגשים בקרוב</div></div>
+      <div class="notif-toggle" data-toggle="workshops" onclick="handleNotifToggle(this)"></div>
+    </div>
+    <div class="notif-row">
+      <div><label>תכנונים</label><div class="notif-sub-label">תזכורות מיומן התכנון</div></div>
+      <div class="notif-toggle" data-toggle="plans" onclick="handleNotifToggle(this)"></div>
+    </div>
+
+    <div class="notif-section-title">מתי לקבל</div>
+    <div class="notif-when">
+      <button type="button" class="notif-when-chip" data-lead="0"    onclick="handleNotifLead(this)">בזמן עצמו</button>
+      <button type="button" class="notif-when-chip" data-lead="60"   onclick="handleNotifLead(this)">שעה לפני</button>
+      <button type="button" class="notif-when-chip" data-lead="180"  onclick="handleNotifLead(this)">3 שעות לפני</button>
+      <button type="button" class="notif-when-chip" data-lead="1440" onclick="handleNotifLead(this)">יום לפני</button>
+      <button type="button" class="notif-when-chip" data-lead="2880" onclick="handleNotifLead(this)">יומיים לפני</button>
+    </div>
+
+    <div class="notif-actions">
+      <button type="button" class="notif-test" onclick="testNotification()">בדוק התראה</button>
+      <button type="button" class="notif-close" onclick="closeNotifSettings()">סיום</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== LOGIN ===== -->
 <div id="login-screen">
   <div class="login-box">
@@ -3604,6 +3785,12 @@
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
   <div class="bsd-mark">בס״ד</div>
+  <button id="lobby-settings-btn" type="button" aria-label="הגדרות התראות" onclick="openNotifSettings()" title="הגדרות התראות">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
   <div class="mode-screen-title">
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
@@ -8933,6 +9120,77 @@ function doLogin() {
     skip();
   }
 })();
+
+// ===== Notification Settings (lobby gear) =====
+window.NOTIF_PREFS_KEY = 'notif-prefs-v1';
+window.NOTIF_DEFAULTS = {
+  enabled:   true,
+  expenses:  true,   // upcoming expense due
+  income:    true,   // expected income / payment
+  workshops: true,   // workshops starting soon
+  plans:     true,   // planned items
+  leadMins:  60,     // 0=on time, 60=hour before, 1440=day before
+};
+window.getNotifPrefs = function() {
+  try {
+    const raw = localStorage.getItem(window.NOTIF_PREFS_KEY);
+    return Object.assign({}, window.NOTIF_DEFAULTS, raw ? JSON.parse(raw) : {});
+  } catch (e) { return Object.assign({}, window.NOTIF_DEFAULTS); }
+};
+window.setNotifPrefs = function(prefs) {
+  try { localStorage.setItem(window.NOTIF_PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
+};
+
+window.openNotifSettings = function() {
+  const overlay = document.getElementById('notif-settings-overlay');
+  if (!overlay) return;
+  const prefs = window.getNotifPrefs();
+  // Populate toggles
+  document.querySelectorAll('#notif-settings-card [data-toggle]').forEach(el => {
+    const key = el.getAttribute('data-toggle');
+    el.classList.toggle('on', !!prefs[key]);
+  });
+  // Populate lead-time chips
+  document.querySelectorAll('#notif-settings-card [data-lead]').forEach(el => {
+    el.classList.toggle('on', String(prefs.leadMins) === el.getAttribute('data-lead'));
+  });
+  overlay.classList.add('open');
+};
+window.closeNotifSettings = function() {
+  const overlay = document.getElementById('notif-settings-overlay');
+  if (overlay) overlay.classList.remove('open');
+};
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'notif-settings-overlay') window.closeNotifSettings();
+});
+
+window.handleNotifToggle = function(btn) {
+  const key = btn.getAttribute('data-toggle');
+  const prefs = window.getNotifPrefs();
+  prefs[key] = !prefs[key];
+  window.setNotifPrefs(prefs);
+  btn.classList.toggle('on', prefs[key]);
+};
+window.handleNotifLead = function(btn) {
+  const val = parseInt(btn.getAttribute('data-lead'), 10);
+  const prefs = window.getNotifPrefs();
+  prefs.leadMins = val;
+  window.setNotifPrefs(prefs);
+  document.querySelectorAll('#notif-settings-card [data-lead]').forEach(el => {
+    el.classList.toggle('on', el === btn);
+  });
+};
+window.testNotification = function() {
+  const at = new Date(Date.now() + 5000); // 5 seconds from now
+  if (typeof window.scheduleReminder === 'function') {
+    const p = window.scheduleReminder('בדיקה — Ravid Studio', 'ההתראות עובדות 👍', at, 'test-' + Date.now());
+    if (p && p.then) p.then(id => {
+      if (typeof toast === 'function') toast('התראה תופיע בעוד 5 שניות'); else alert('התראה תופיע בעוד 5 שניות');
+    });
+  } else {
+    alert('התראות זמינות רק באפליקציה (לא בדפדפן).');
+  }
+};
 
 // ===== Native Local Notifications =====
 // Capacitor's @capacitor/local-notifications plugin schedules system
