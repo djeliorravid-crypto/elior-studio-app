@@ -18,8 +18,8 @@ env:
 
 jobs:
   build:
-    runs-on: macos-14
-    timeout-minutes: 50
+    runs-on: macos-latest
+    timeout-minutes: 90
 
     steps:
       - name: Checkout source
@@ -36,6 +36,14 @@ jobs:
 
       - name: Install JS dependencies
         run: npm ci
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          key: ${{ runner.os }}-spm-capacitor-8.4.0
+          restore-keys: |
+            ${{ runner.os }}-spm-capacitor-
 
       - name: Stage web assets into www/
         run: |
