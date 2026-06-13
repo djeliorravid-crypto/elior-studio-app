@@ -82,18 +82,37 @@ jobs:
       - name: Install fastlane
         run: bundle install
 
-      - name: Build and upload to TestFlight (fastlane)
+      - name: Build IPA (fastlane — cert, profile, archive, export)
         env:
           APP_STORE_CONNECT_API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
           APPLE_TEAM_ID:                   ${{ secrets.APPLE_TEAM_ID }}
-          # setup_ci in CI mode creates an ephemeral keychain so cert
-          # imports don't prompt for a password.
           MATCH_KEYCHAIN_NAME:             fastlane_tmp_keychain
           MATCH_KEYCHAIN_PASSWORD:         ''
-          # Tell fastlane to bypass the analytics opt-in prompt.
           FASTLANE_SKIP_UPDATE_CHECK:      '1'
           FASTLANE_HIDE_CHANGELOG:         '1'
-          # No-color cleaner CI logs.
           FASTLANE_DISABLE_COLORS:         '1'
         run: bundle exec fastlane ios beta
+
+      - name: Upload IPA to TestFlight (xcrun altool — verbose, has progress)
+        env:
+          API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+        run: |
+          IPA_PATH=$(ls build/App.ipa 2>/dev/null || find . -name 'App.ipa' -print -quit)
+          echo "Uploading: $IPA_PATH"
+          xcrun altool \
+            --upload-app \
+            --verbose \
+            --type ios \
+            --file "$IPA_PATH" \
+            --apiKey "$API_KEY_ID" \
+            --apiIssuer "$API_ISSUER_ID"
+
+      - name: Save IPA as artifact (fallback so you can side-load if needed)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: App-IPA
+          path: build/App.ipa
+          if-no-files-found: warn

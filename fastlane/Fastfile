@@ -88,11 +88,9 @@ platform :ios do
       },
     )
 
-    upload_to_testflight(
-      api_key:                            api_key,
-      ipa:                                "./build/App.ipa",
-      skip_waiting_for_build_processing:  true,
-      skip_submission:                    true,
-    )
+    # Skip upload_to_testflight — fastlane's pilot/iTMSTransporter
+    # silently hangs on Apple's CDN for 30+ minutes with no progress
+    # output. We upload via `xcrun altool --verbose` in a separate
+    # workflow step so progress is visible in the CI log.
   end
 end
