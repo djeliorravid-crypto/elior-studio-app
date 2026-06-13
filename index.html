@@ -505,7 +505,8 @@
       font-weight: 800;
       box-shadow: inset 0 0 0 1px rgba(108,71,245,0.06);
     }
-    nav a .nav-icon { font-size: 15px; width: 20px; text-align: center; transition: transform .2s; }
+    nav a .nav-icon { font-size: 15px; width: 20px; text-align: center; transition: transform .2s; display: inline-flex; align-items: center; justify-content: center; }
+    nav a .nav-icon svg { width: 18px; height: 18px; display: block; }
     nav a:hover .nav-icon { transform: translateX(-2px); }
     .sidebar-footer {
       padding: 14px 18px; border-top: 1px solid var(--border);
@@ -1861,6 +1862,7 @@
         scroll-snap-align: start;
       }
       nav a .nav-icon { font-size: 22px; width: auto; line-height: 1; }
+      nav a .nav-icon svg { width: 22px; height: 22px; }
       nav a.active {
         color: var(--accent);
         border-right-color: transparent;
@@ -3665,18 +3667,18 @@
     </div>
   </div>
   <nav id="sidebar-nav">
-    <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#16a34a;font-weight:900">+</span></span></span> הכנסות</a>
-    <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px;color:#dc2626;font-weight:900">−</span></span></span> הוצאות</a>
-    <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><span style="position:relative;display:inline-block">💵<span style="position:absolute;top:-4px;right:-6px;font-size:9px">⏰</span></span></span> תשלומים</a>
+    <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span> הכנסות</a>
+    <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg></span> הוצאות</a>
+    <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span> תשלומים</a>
     <!-- כרטיסיית לקוחות מוסתרת לפי בקשה — להחזרה: מחק את style="display:none" -->
-    <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon">👥</span> לקוחות</a>
-    <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon">✅</span> משימות יומיות</a>
-    <a onclick="showPage('workshops')" data-page="workshops"><span class="nav-icon">🎓</span> סדנאות</a>
-    <a onclick="showPage('proposals')" data-page="proposals"><span class="nav-icon">💰</span> הצעות מחיר</a>
-    <a onclick="showPage('contracts')" data-page="contracts"><span class="nav-icon">📜</span> סיכומי הפקה</a>
-    <a onclick="showPage('students')" data-page="students"><span class="nav-icon">🎹</span> תלמידים</a>
-    <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon">📊</span> סטטיסטיקה</a>
-    <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon">🌙</span> <span id="mobile-theme-label">לילה</span></a>
+    <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="8" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> לקוחות</a>
+    <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> משימות יומיות</a>
+    <a onclick="showPage('workshops')" data-page="workshops"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span> סדנאות</a>
+    <a onclick="showPage('proposals')" data-page="proposals"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span> הצעות מחיר</a>
+    <a onclick="showPage('contracts')" data-page="contracts"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 18s1.5-1.5 4-1.5 2.5 1 4.5-.5"/></svg></span> סיכומי הפקה</a>
+    <a onclick="showPage('students')" data-page="students"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-1.5A4.5 4.5 0 0 1 9.5 15h5A4.5 4.5 0 0 1 19 19.5V21"/></svg></span> תלמידים</a>
+    <a onclick="showPage('dashboard')" data-page="dashboard" style="margin-top:auto"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="20" x2="5" y2="14"/><line x1="10" y1="20" x2="10" y2="10"/><line x1="15" y1="20" x2="15" y2="6"/><line x1="20" y1="20" x2="20" y2="13"/></svg></span> סטטיסטיקה</a>
+    <a onclick="toggleTheme()" id="mobile-theme-nav-btn" class="mobile-theme-nav"><span class="nav-icon" id="mobile-theme-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span> <span id="mobile-theme-label">לילה</span></a>
   </nav>
   <div class="sidebar-footer">
     <div style="display:flex;flex-direction:column;gap:6px">
