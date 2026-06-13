@@ -7,13 +7,11 @@ workflows:
       app_store_connect: GitHub CI Admin
     environment:
       vars:
-        APP_STORE_APPLE_ID: 1781367408
         XCODE_PROJECT: "App.xcodeproj"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.ravidstudio.app"
       node: 22
       xcode: latest
-      cocoapods: default
 
     triggering:
       events:
@@ -25,8 +23,7 @@ workflows:
 
     scripts:
       - name: Install npm dependencies
-        script: |
-          npm ci
+        script: npm ci
 
       - name: Stage web assets into www/
         script: |
@@ -43,38 +40,36 @@ workflows:
           fi
 
       - name: Patch AppDelegate.swift for Capacitor 8 API
+        # Capacitor 8 dropped the `continue userActivity:` overload of
+        # ApplicationDelegateProxy.shared.application — stub the
+        # universal-links method since we don't use it.
         script: |
           /usr/bin/sed -i '' \
             's|return ApplicationDelegateProxy\.shared\.application(application, continue: userActivity, restorationHandler: restorationHandler)|return false|' \
             ios/App/App/AppDelegate.swift
 
       - name: Sync Capacitor
-        script: |
-          npx cap sync ios
+        script: npx cap sync ios
 
       - name: Initialize keychain
         script: keychain initialize
 
-      - name: Revoke orphaned Distribution certs (no local private key)
+      - name: Revoke orphaned Distribution certificates
+        # Earlier GitHub Actions runs created Distribution certs whose
+        # private keys lived in ephemeral runner keychains that no
+        # longer exist. Revoke them so Codemagic can create + save a
+        # fresh one with the private key it actually controls.
         script: |
-          # Previous CI runs created distribution certificates whose
-          # private keys were destroyed with their ephemeral keychains.
-          # They take up cap quota and prevent Codemagic from creating
-          # a new one. Revoke them all so the next step can create a
-          # fresh cert with the private key Codemagic actually has.
-          app-store-connect certificates list \
-            --type IOS_DISTRIBUTION --json \
-            | python3 -c "import sys,json; [print(c['id']) for c in json.load(sys.stdin)]" \
+          app-store-connect certificates list --type IOS_DISTRIBUTION --json 2>/dev/null \
+            | python3 -c "import sys,json; data=json.load(sys.stdin); [print(c['id']) for c in data]" 2>/dev/null \
             | while read CERT_ID; do
+                [ -z "$CERT_ID" ] && continue
                 echo "Revoking $CERT_ID"
-                app-store-connect certificates delete "$CERT_ID" --ignore-not-found || true
+                app-store-connect certificates delete "$CERT_ID" || true
               done
 
-      - name: Create a fresh Distribution certificate
-        script: |
-          app-store-connect certificates create \
-            --type IOS_DISTRIBUTION \
-            --save
+      - name: Create fresh Distribution certificate
+        script: app-store-connect certificates create --type IOS_DISTRIBUTION --save
 
       - name: Fetch / create App Store provisioning profile
         script: |
@@ -85,15 +80,16 @@ workflows:
       - name: Install certificates into keychain
         script: keychain add-certificates
 
-      - name: Use the freshly-fetched profile
+      - name: Apply the provisioning profile to the Xcode project
         script: xcode-project use-profiles
 
-      - name: Increment build number
+      - name: Set build number (timestamp)
+        # Timestamp guarantees a strictly-increasing build number
+        # without needing the app to exist in App Store Connect yet.
         script: |
           cd ios/App
-          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo "0")
-          NEW_BUILD_NUMBER=$(($LATEST_BUILD_NUMBER + 1))
-          agvtool new-version -all "$NEW_BUILD_NUMBER"
+          BUILD_NUMBER=$(date +%s)
+          agvtool new-version -all "$BUILD_NUMBER"
 
       - name: Build IPA
         script: |
