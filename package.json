@@ -1,0 +1,18 @@
+{
+  "name": "ravid-studio-app",
+  "version": "1.0.0",
+  "description": "Ravid Studio — production management app, iOS via Capacitor",
+  "main": "index.html",
+  "scripts": {
+    "cap:sync": "npx cap sync ios",
+    "cap:open": "npx cap open ios",
+    "cap:build": "npx cap sync ios && cd ios/App && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive"
+  },
+  "author": "Elior Ravid",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "appId": "com.ravidstudio.app",
+  "appName": "Ravid Studio",
+  "webDir": ".",
+  "server": {
+    "iosScheme": "ravidstudio",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "scheme": "Ravid Studio",
+    "backgroundColor": "#2a1810"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#2a1810",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    }
+  }
+}
