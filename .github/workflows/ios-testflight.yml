@@ -17,16 +17,26 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Pick the latest Xcode the runner has installed
-        # Capacitor 8 needs Xcode 16+ (older toolchains throw SwiftPM
-        # into a pathological retry loop that looks like a hang). Use
-        # the newest Xcode on the image — don't pin an old version.
+      - name: Pick an Xcode whose iOS SDK is actually installed
+        # Just picking "latest Xcode" can land on one whose iOS
+        # simulator/SDK isn't pre-installed on the runner image
+        # (the error: "iOS 18.0 is not installed"). Iterate from
+        # newest to oldest and pick the first Xcode whose
+        # `xcodebuild -showsdks` lists an iphoneos SDK.
         run: |
-          LATEST=$(ls /Applications/ | grep -E '^Xcode_?[0-9]+(_[0-9]+)*\.app$' | sort -V | tail -1)
-          if [ -n "$LATEST" ]; then
-            sudo xcode-select -s "/Applications/$LATEST/Contents/Developer"
-          fi
+          for X in $(ls /Applications/ | grep -E '^Xcode_?[0-9]+(_[0-9]+)*\.app$' | sort -Vr); do
+            if /Applications/$X/Contents/Developer/usr/bin/xcodebuild -showsdks 2>/dev/null | grep -qi 'iphoneos'; then
+              echo "Selecting $X"
+              sudo xcode-select -s "/Applications/$X/Contents/Developer"
+              break
+            else
+              echo "$X has no iphoneos SDK — skipping"
+            fi
+          done
+          echo "---- selected Xcode ----"
           xcodebuild -version
+          echo "---- available iOS SDKs ----"
+          xcodebuild -showsdks | grep -i iphoneos || true
 
       - name: Set up Node 22
         uses: actions/setup-node@v4
