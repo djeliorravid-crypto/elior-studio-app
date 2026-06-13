@@ -8397,15 +8397,19 @@ if ('serviceWorker' in navigator) {
   // The 3-second debounce stops any pair of them from chaining into
   // an infinite reload loop.
   let _swRefreshing = false;
-  const _appOpenedAt = Date.now();
+  let _foregroundAt = Date.now();
+  // Reset the "foreground since" clock every time the app comes back
+  // from background — otherwise an SW update detected the moment you
+  // return to the app reloads instantly and shows the dreaded
+  // flash-of-old-lobby. The 5s gate below means an update only
+  // refreshes after you've been actively in the app for 5+ seconds.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') _foregroundAt = Date.now();
+  });
   function _swForceReload() {
     if (_swRefreshing) return;
     if (window.__lastSwReload && Date.now() - window.__lastSwReload < 3000) return;
-    // Don't reload during the first 5s — that's still the initial
-    // load, and force-reloading causes a visible "flash of old lobby"
-    // before the new version takes over. After 5s the user has clearly
-    // started using the app, so an update can refresh cleanly.
-    if (Date.now() - _appOpenedAt < 5000) return;
+    if (Date.now() - _foregroundAt < 5000) return;
     _swRefreshing = true;
     window.__lastSwReload = Date.now();
     window.location.reload();
