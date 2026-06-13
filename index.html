@@ -35,10 +35,10 @@
       background: #2a1810;
       z-index: 999999;
       opacity: 0;
-      visibility: hidden;
+      pointer-events: none;  /* never block clicks when not active */
       transition: opacity 0.18s ease;
     }
-    body.app-hidden #snapshot-curtain { opacity: 1; visibility: visible; transition: none; }
+    body.app-hidden #snapshot-curtain { opacity: 1; pointer-events: none; transition: none; }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Frank+Ruhl+Libre:wght@400;700;900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
