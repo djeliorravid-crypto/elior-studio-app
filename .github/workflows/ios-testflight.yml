@@ -74,14 +74,18 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" App/Info.plist || true
           echo "Build number: $BUILD_NUMBER"
 
-      - name: Configure DEVELOPMENT_TEAM
+      - name: Patch project.pbxproj for Team ID + Distribution signing
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           cd ios/App
-          # Patch project.pbxproj so the team id is set before signing.
+          # Capacitor's default project is hard-coded to "Apple Development"
+          # in every configuration, which fights the Distribution identity
+          # we want for archive. Flip both — and inject the Team ID.
           /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
           /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = ;/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
+          /usr/bin/sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development"/CODE_SIGN_IDENTITY = "Apple Distribution"/g' App.xcodeproj/project.pbxproj || true
+          /usr/bin/sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]" = "Apple Development"/"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution"/g' App.xcodeproj/project.pbxproj || true
 
       - name: Build archive (Xcode auto-signs via API key)
         env:
@@ -102,7 +106,6 @@ jobs:
             -authenticationKeyIssuerID "$API_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
             CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
             archive
 
       - name: Write ExportOptions.plist
