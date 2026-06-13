@@ -3687,42 +3687,26 @@
 <body>
 <div id="snapshot-curtain" aria-hidden="true"></div>
 <script>
-  // The curtain is visible by default (CSS). Fade it out once the
-  // page is paint-ready — gives the lobby's gradient / circles a
-  // moment to render so the user never sees a half-painted state.
-  function _dropCurtain() {
-    // Two RAFs = next painted frame after layout is settled.
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        document.body.classList.add('app-ready');
-      });
-    });
-  }
+  // Curtain is visible by default (CSS). Fade it out on next paint
+  // after the lobby has had a moment to render.
+  function _dropCurtain() { document.body.classList.add('app-ready'); document.body.classList.remove('app-hidden'); }
   if (document.readyState === 'complete') {
-    _dropCurtain();
+    requestAnimationFrame(_dropCurtain);
   } else {
-    window.addEventListener('load', _dropCurtain);
+    window.addEventListener('load', function() { requestAnimationFrame(_dropCurtain); });
   }
-
-  // Re-raise the curtain BEFORE iOS snapshots the WebView. We watch
-  // every event that fires when the app loses focus and pick whichever
-  // wins — pagehide is the most reliable on iOS Safari/WKWebView.
-  function _raiseCurtain() {
-    document.body.classList.add('app-hidden');
-    document.body.classList.remove('app-ready');
-  }
-  function _dropCurtainSoon() {
-    document.body.classList.remove('app-hidden');
-    setTimeout(_dropCurtain, 150);
-  }
-  window.addEventListener('pagehide', _raiseCurtain);
-  window.addEventListener('blur',     _raiseCurtain);
+  // Only respond to actual visibility changes — DON'T use focus/blur,
+  // those fire on every tap of a button and cause the curtain to
+  // flicker mid-use.
   document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'hidden') _raiseCurtain();
-    else _dropCurtainSoon();
+    if (document.visibilityState === 'hidden') {
+      document.body.classList.add('app-hidden');
+      document.body.classList.remove('app-ready');
+    } else {
+      // Slight delay so any reload race settles before we paint.
+      setTimeout(_dropCurtain, 100);
+    }
   });
-  window.addEventListener('pageshow', _dropCurtainSoon);
-  window.addEventListener('focus',    _dropCurtainSoon);
 </script>
 
 <!-- ===== SVG ICON SPRITE =====
@@ -3877,7 +3861,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v211</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v212</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
