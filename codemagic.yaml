@@ -50,12 +50,14 @@ workflows:
 
       - name: Install Ravid Studio app icon
         # `cap add ios` ships a Capacitor placeholder AppIcon set. Copy
-        # our pre-rendered sizes from ios-icons/ into the AppIcon
-        # appiconset so the app shows the proper gold-soundwave icon
-        # on the home screen.
+        # our pre-rendered iPhone sizes AND generate iPad sizes from
+        # icon-1024.png so the bundle satisfies Apple's full set
+        # (rejected at upload time otherwise: "Missing required icon
+        # file ... 152x152 pixels").
         script: |
           ICONSET=ios/App/App/Assets.xcassets/AppIcon.appiconset
           mkdir -p "$ICONSET"
+          # iPhone (from pre-rendered ios-icons/)
           cp ios-icons/icon-40.png   "$ICONSET/AppIcon-20@2x.png"
           cp ios-icons/icon-60.png   "$ICONSET/AppIcon-20@3x.png"
           cp ios-icons/icon-58.png   "$ICONSET/AppIcon-29@2x.png"
@@ -65,6 +67,12 @@ workflows:
           cp ios-icons/icon-120.png  "$ICONSET/AppIcon-60@2x.png"
           cp ios-icons/icon-180.png  "$ICONSET/AppIcon-60@3x.png"
           cp ios-icons/icon-1024.png "$ICONSET/AppIcon-1024.png"
+          # iPad (sips-resize from the 1024 master)
+          sips -z 40   40   ios-icons/icon-1024.png --out "$ICONSET/AppIcon-iPad-20@2x.png"   >/dev/null
+          sips -z 58   58   ios-icons/icon-1024.png --out "$ICONSET/AppIcon-iPad-29@2x.png"   >/dev/null
+          sips -z 80   80   ios-icons/icon-1024.png --out "$ICONSET/AppIcon-iPad-40@2x.png"   >/dev/null
+          sips -z 152  152  ios-icons/icon-1024.png --out "$ICONSET/AppIcon-iPad-76@2x.png"   >/dev/null
+          sips -z 167  167  ios-icons/icon-1024.png --out "$ICONSET/AppIcon-iPad-83.5@2x.png" >/dev/null
           cat > "$ICONSET/Contents.json" <<'EOF'
           {
             "images" : [
@@ -76,6 +84,11 @@ workflows:
               { "size" : "40x40",   "idiom" : "iphone", "filename" : "AppIcon-40@3x.png",  "scale" : "3x" },
               { "size" : "60x60",   "idiom" : "iphone", "filename" : "AppIcon-60@2x.png",  "scale" : "2x" },
               { "size" : "60x60",   "idiom" : "iphone", "filename" : "AppIcon-60@3x.png",  "scale" : "3x" },
+              { "size" : "20x20",   "idiom" : "ipad",   "filename" : "AppIcon-iPad-20@2x.png",   "scale" : "2x" },
+              { "size" : "29x29",   "idiom" : "ipad",   "filename" : "AppIcon-iPad-29@2x.png",   "scale" : "2x" },
+              { "size" : "40x40",   "idiom" : "ipad",   "filename" : "AppIcon-iPad-40@2x.png",   "scale" : "2x" },
+              { "size" : "76x76",   "idiom" : "ipad",   "filename" : "AppIcon-iPad-76@2x.png",   "scale" : "2x" },
+              { "size" : "83.5x83.5","idiom" : "ipad",  "filename" : "AppIcon-iPad-83.5@2x.png", "scale" : "2x" },
               { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "AppIcon-1024.png", "scale" : "1x" }
             ],
             "info" : { "version" : 1, "author" : "xcode" }
