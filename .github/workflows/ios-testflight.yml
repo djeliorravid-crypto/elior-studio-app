@@ -86,18 +86,29 @@ jobs:
           FASTLANE_DISABLE_COLORS:         '1'
         run: bundle exec fastlane ios beta
 
-      - name: Unlock keychain for codesigning
-        # codesign can prompt for the keychain password silently mid-build,
-        # which manifests as a 40+ min hang. set-key-partition-list grants
-        # codesign access without prompting, and set-keychain-settings -lut
-        # prevents the keychain auto-locking mid-build.
+      - name: Unlock keychain for codesigning (codesign was the hang!)
+        # Previous run revealed codesign was the actual hang — it was
+        # waiting on interactive keychain access prompts that never come
+        # in CI. Make fastlane's keychain the *only* keychain in the
+        # search list, fully unlock it, and grant codesign permission.
         run: |
-          KEYCHAIN="$HOME/Library/Keychains/fastlane_tmp_keychain-db"
-          if [ -f "$KEYCHAIN" ]; then
-            security unlock-keychain -p "" "$KEYCHAIN" || true
-            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" "$KEYCHAIN" || true
-            security set-keychain-settings -lut 21600 "$KEYCHAIN" || true
-          fi
+          # Find all fastlane-created keychains (path varies by macOS
+          # version: fastlane_tmp_keychain, fastlane_tmp_keychain-db,
+          # fastlane_tmp_keychain.keychain-db).
+          for KC in $HOME/Library/Keychains/fastlane_tmp_keychain*; do
+            [ -f "$KC" ] || continue
+            echo "Found fastlane keychain: $KC"
+            security unlock-keychain -p "" "$KC" || true
+            security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "" "$KC" || true
+            security set-keychain-settings -lut 21600 "$KC" || true
+            # Make it the only keychain in the search list AND the
+            # default — so codesign doesn't fall back to login.keychain
+            # which is locked.
+            security list-keychains -s "$KC" $HOME/Library/Keychains/login.keychain-db
+            security default-keychain -s "$KC"
+          done
+          echo "---- Active keychain search list ----"
+          security list-keychains
           echo "---- Codesigning identities ----"
           security find-identity -v -p codesigning
           echo "---- Profile name ----"
@@ -136,7 +147,10 @@ jobs:
           while kill -0 $BUILD_PID 2>/dev/null; do
             sleep 60
             echo "===== heartbeat at $(date +%H:%M:%S) ====="
-            ps -axo pid,pcpu,etime,comm | grep -E 'swift|xcodebuild|codesign|ibtool|actool|clang|ld' | head -10 || true
+            # Show actual BUILD processes (not system daemons that
+            # happen to contain "ld"). Exact name match for codesign,
+            # xcodebuild, swiftc, etc.
+            ps -axo pid,pcpu,etime,comm | awk '$NF ~ /(^|\/)(xcodebuild|swiftc|swift-frontend|clang|ld|codesign|ibtool|actool|XCBBuildService|SourceKitService)$/' || true
           done
           wait $BUILD_PID
           EXIT=$(cat /tmp/xcb_exit 2>/dev/null || echo 1)
