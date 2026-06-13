@@ -30,20 +30,7 @@
        becomes hidden, swap to a clean full-bleed brown overlay so
        iOS snapshots a blank brown screen instead of stale content.
        When the page becomes visible again, drop the overlay. */
-    /* The brown curtain is VISIBLE by default and only fades out
-       after the lobby is fully rendered. This guarantees the iOS
-       WebView snapshot is always a clean brown screen — no race
-       condition between visibilitychange and iOS's snapshot. */
-    #snapshot-curtain {
-      position: fixed; inset: 0;
-      background: #2a1810;
-      z-index: 999999;
-      opacity: 1;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
-    }
-    body.app-ready #snapshot-curtain { opacity: 0; }
-    body.app-hidden #snapshot-curtain { opacity: 1; transition: none; }
+    #snapshot-curtain { display: none; }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Frank+Ruhl+Libre:wght@400;700;900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -3685,29 +3672,6 @@
 </style>
 </head>
 <body>
-<div id="snapshot-curtain" aria-hidden="true"></div>
-<script>
-  // Curtain is visible by default (CSS). Fade it out on next paint
-  // after the lobby has had a moment to render.
-  function _dropCurtain() { document.body.classList.add('app-ready'); document.body.classList.remove('app-hidden'); }
-  if (document.readyState === 'complete') {
-    requestAnimationFrame(_dropCurtain);
-  } else {
-    window.addEventListener('load', function() { requestAnimationFrame(_dropCurtain); });
-  }
-  // Only respond to actual visibility changes — DON'T use focus/blur,
-  // those fire on every tap of a button and cause the curtain to
-  // flicker mid-use.
-  document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'hidden') {
-      document.body.classList.add('app-hidden');
-      document.body.classList.remove('app-ready');
-    } else {
-      // Slight delay so any reload race settles before we paint.
-      setTimeout(_dropCurtain, 100);
-    }
-  });
-</script>
 
 <!-- ===== SVG ICON SPRITE =====
      One source of truth for all UI icons. Reference with
@@ -3861,7 +3825,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v212</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v213</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
