@@ -10,30 +10,16 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 90
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Pick an Xcode whose iOS SDK is actually installed
-        # Just picking "latest Xcode" can land on one whose iOS
-        # simulator/SDK isn't pre-installed on the runner image
-        # (the error: "iOS 18.0 is not installed"). Iterate from
-        # newest to oldest and pick the first Xcode whose
-        # `xcodebuild -showsdks` lists an iphoneos SDK.
+      - name: Select Xcode 15.4 (macos-14 has iOS 17.5 SDK installed)
         run: |
-          for X in $(ls /Applications/ | grep -E '^Xcode_?[0-9]+(_[0-9]+)*\.app$' | sort -Vr); do
-            if /Applications/$X/Contents/Developer/usr/bin/xcodebuild -showsdks 2>/dev/null | grep -qi 'iphoneos'; then
-              echo "Selecting $X"
-              sudo xcode-select -s "/Applications/$X/Contents/Developer"
-              break
-            else
-              echo "$X has no iphoneos SDK — skipping"
-            fi
-          done
-          echo "---- selected Xcode ----"
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
           xcodebuild -version
           echo "---- available iOS SDKs ----"
           xcodebuild -showsdks | grep -i iphoneos || true
@@ -129,16 +115,11 @@ jobs:
           # every 60s with `ps` of build-related processes so we can
           # see exactly what's hot vs. hung.
           (
-            # Use -sdk iphoneos (not -destination): on macos-15
-            # runners, the iOS 18 "platform" (simulator) often isn't
-            # pre-installed, so -destination 'generic/platform=iOS'
-            # fails with "iOS 18.0 is not installed" even though the
-            # iphoneos SDK is right there for device builds.
             NSUnbufferedIO=YES xcodebuild \
               -project App.xcodeproj \
               -scheme App \
               -configuration Release \
-              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
               -archivePath "$PWD/build/App.xcarchive" \
               -skipPackagePluginValidation \
               -skipMacroValidation \
