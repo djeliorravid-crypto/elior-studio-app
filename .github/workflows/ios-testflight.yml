@@ -90,7 +90,7 @@ jobs:
       - name: Install fastlane
         run: bundle install
 
-      - name: Build IPA (fastlane — cert, profile, archive, export)
+      - name: Prepare signing (fastlane — cert, profile, update pbxproj)
         env:
           APP_STORE_CONNECT_API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
@@ -102,12 +102,69 @@ jobs:
           FASTLANE_DISABLE_COLORS:         '1'
         run: bundle exec fastlane ios beta
 
-      - name: Upload IPA to TestFlight (xcrun altool — verbose, has progress)
+      - name: Archive (raw xcodebuild — streams progress to log)
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          PROFILE_NAME=$(cat .sigh_name)
+          echo "Using provisioning profile: $PROFILE_NAME"
+          cd ios/App
+          set -o pipefail
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/App.xcarchive" \
+            -allowProvisioningUpdates \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            -quiet=NO \
+            archive
+
+      - name: Export IPA (raw xcodebuild — streams progress to log)
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          PROFILE_NAME=$(cat .sigh_name)
+          cd ios/App
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.ravidstudio.app</key>
+              <string>${PROFILE_NAME}</string>
+            </dict>
+            <key>uploadSymbols</key><true/>
+            <key>uploadBitcode</key><false/>
+            <key>compileBitcode</key><false/>
+          </dict>
+          </plist>
+          EOF
+          mkdir -p build
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$PWD/build/App.xcarchive" \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath "$PWD/build" \
+            -allowProvisioningUpdates
+          ls -la build/
+
+      - name: Upload IPA to TestFlight (xcrun altool — verbose)
         env:
           API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
         run: |
-          IPA_PATH=$(ls build/App.ipa 2>/dev/null || find . -name 'App.ipa' -print -quit)
+          IPA_PATH=$(ls ios/App/build/*.ipa | head -n 1)
           echo "Uploading: $IPA_PATH"
           xcrun altool \
             --upload-app \
@@ -122,5 +179,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: App-IPA
-          path: build/App.ipa
+          path: ios/App/build/*.ipa
           if-no-files-found: warn

@@ -71,26 +71,16 @@ platform :ios do
       build_configurations:  ["Release"],
     )
 
-    build_app(
-      project:           XCODE_PROJECT,
-      scheme:            SCHEME,
-      configuration:     "Release",
-      export_method:     "app-store",
-      output_directory:  "./build",
-      output_name:       "App.ipa",
-      clean:             false,
-      export_options: {
-        provisioningProfiles: {
-          APP_IDENTIFIER => profile_name,
-        },
-        signingStyle: "manual",
-        teamID:       ENV["APPLE_TEAM_ID"],
-      },
-    )
+    # Expose the profile name so the workflow's raw `xcodebuild`
+    # step can reference it via $SIGH_NAME.
+    File.write(File.expand_path("../../.sigh_name", __FILE__), profile_name) if profile_name
 
-    # Skip upload_to_testflight — fastlane's pilot/iTMSTransporter
-    # silently hangs on Apple's CDN for 30+ minutes with no progress
-    # output. We upload via `xcrun altool --verbose` in a separate
-    # workflow step so progress is visible in the CI log.
+    # Build + export are run as raw `xcodebuild` in a separate
+    # workflow step. fastlane's `build_app` (gym) wraps everything
+    # in `xcbeautify`, which buffers output and hides whether the
+    # archive is actually progressing — making slow builds
+    # indistinguishable from hangs. Raw xcodebuild streams its
+    # output directly so each compile / link step is visible live
+    # in the CI log.
   end
 end
