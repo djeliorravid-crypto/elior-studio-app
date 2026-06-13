@@ -6,9 +6,6 @@ workflows:
     integrations:
       app_store_connect: GitHub CI Admin
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.ravidstudio.app
       vars:
         APP_STORE_APPLE_ID: 1781367408
         XCODE_PROJECT: "App.xcodeproj"
@@ -55,19 +52,20 @@ workflows:
         script: |
           npx cap sync ios
 
-      - name: Auto-create signing cert + App Store profile
+      - name: Initialize keychain
+        script: keychain initialize
+
+      - name: Auto-create signing cert + App Store profile via API key
         script: |
-          # `app-store-connect fetch-signing-files` creates the
-          # distribution cert and App Store provisioning profile via the
-          # API key if they don't exist, then installs them locally.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
-          # Install the freshly-fetched profile + cert into the build
-          # keychain that xcode-project knows to look at.
-          keychain initialize
-          keychain add-certificates
-          xcode-project use-profiles
+
+      - name: Install certificates into keychain
+        script: keychain add-certificates
+
+      - name: Use the freshly-fetched profile
+        script: xcode-project use-profiles
 
       - name: Increment build number
         script: |
