@@ -72,15 +72,19 @@ workflows:
                 done
           done
 
-      - name: Create distribution cert + App Store profile (auto-generates private key)
-        # `fetch-signing-files --create` does the full dance: generates
-        # a private key, creates a Distribution certificate via the API,
-        # creates/fetches the App Store provisioning profile, and saves
-        # everything locally for the keychain step that follows.
+      - name: Generate a private key for the new Distribution cert
+        # fetch-signing-files --create needs a private key to upload
+        # alongside the CSR — without it the API returns a cert that
+        # has no matching key locally. Generate one fresh per run.
+        script: |
+          openssl genrsa -out /tmp/cert_private_key.pem 2048
+
+      - name: Create distribution cert + App Store profile
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --certificate-key=@file:/tmp/cert_private_key.pem
 
       - name: Install certificates into keychain
         script: keychain add-certificates
