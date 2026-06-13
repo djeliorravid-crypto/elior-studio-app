@@ -1,0 +1,83 @@
+workflows:
+  ios-testflight:
+    name: iOS TestFlight (Codemagic)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: app_store_connect
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.ravidstudio.app
+      vars:
+        APP_STORE_APPLE_ID: 1781367408
+        XCODE_PROJECT: "App.xcodeproj"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.ravidstudio.app"
+      node: 22
+      xcode: latest
+      cocoapods: default
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: mobile
+          include: true
+          source: true
+
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm ci
+
+      - name: Stage web assets into www/
+        script: |
+          mkdir -p www
+          for f in index.html contract.html proposal.html workshop.html sw.js _headers manifest.json version.txt icon-source.svg icon-192.png icon-512.png; do
+            [ -e "$f" ] && cp "$f" "www/$f"
+          done
+          [ -d ios-icons ] && cp -R ios-icons www/ios-icons || true
+
+      - name: Add Capacitor iOS platform
+        script: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
+
+      - name: Patch AppDelegate.swift for Capacitor 8 API
+        script: |
+          /usr/bin/sed -i '' \
+            's|return ApplicationDelegateProxy\.shared\.application(application, continue: userActivity, restorationHandler: restorationHandler)|return false|' \
+            ios/App/App/AppDelegate.swift
+
+      - name: Sync Capacitor
+        script: |
+          npx cap sync ios
+
+      - name: Set up provisioning profiles
+        script: |
+          xcode-project use-profiles
+
+      - name: Increment build number
+        script: |
+          cd ios/App
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo "0")
+          NEW_BUILD_NUMBER=$(($LATEST_BUILD_NUMBER + 1))
+          agvtool new-version -all "$NEW_BUILD_NUMBER"
+
+      - name: Build IPA
+        script: |
+          cd ios/App
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - ios/App/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
