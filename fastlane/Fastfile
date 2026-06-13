@@ -1,5 +1,7 @@
 default_platform(:ios)
 
+require "spaceship"
+
 APP_IDENTIFIER = "com.ravidstudio.app"
 APP_NAME       = "Ravid Studio"
 XCODE_PROJECT  = "ios/App/App.xcodeproj"
@@ -17,6 +19,23 @@ platform :ios do
       duration:      1200,
       in_house:      false,
     )
+
+    # Each fresh CI run creates a new Distribution certificate; the
+    # private key from prior runs lives in their (now-destroyed)
+    # keychains, so old certs are useless and just eat into Apple's
+    # 2-3 per-team Distribution cert cap. Revoke every existing one
+    # before creating a new one for this run.
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.create(
+      key_id:    ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      filepath:  ENV["API_KEY_PATH"],
+    )
+    existing_certs = Spaceship::ConnectAPI::Certificate.all
+    existing_certs.each do |c|
+      next unless %w[DISTRIBUTION IOS_DISTRIBUTION].include?(c.certificate_type)
+      UI.message("Revoking orphaned Distribution certificate #{c.id} (#{c.name})")
+      c.delete!
+    end
 
     build_number = (ENV["GITHUB_RUN_NUMBER"] || "0").to_i + 1000
     increment_build_number(
