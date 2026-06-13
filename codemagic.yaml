@@ -102,23 +102,13 @@ workflows:
       - name: Initialize keychain
         script: keychain initialize
 
-      - name: Revoke orphaned Distribution certificates
-        # Earlier GitHub Actions runs created Distribution certs whose
-        # private keys lived in ephemeral runner keychains that no
-        # longer exist. Revoke EVERY distribution cert (both old
-        # "DISTRIBUTION" and new "IOS_DISTRIBUTION" type names) so
-        # fetch-signing-files can create a fresh one with the private
-        # key Codemagic generates and persists.
-        script: |
-          for TYPE in DISTRIBUTION IOS_DISTRIBUTION; do
-            app-store-connect certificates list --type "$TYPE" --json 2>/dev/null \
-              | python3 -c "import sys,json; data=json.load(sys.stdin); [print(c['id']) for c in data]" 2>/dev/null \
-              | while read CERT_ID; do
-                  [ -z "$CERT_ID" ] && continue
-                  echo "Revoking $TYPE cert $CERT_ID"
-                  app-store-connect certificates delete "$CERT_ID" || true
-                done
-          done
+      # NOTE: We used to revoke all distribution certs at the start of
+      # every build. That worked, but Apple emails the account holder
+      # ("Your Certificate Has Been Revoked") on every single revoke,
+      # which is annoying when builds run frequently. Skip the routine
+      # revoke — Codemagic will reuse the cert when it can, and only if
+      # the per-team cap is hit do we revoke (manually below). This
+      # trades silent CI for a once-in-a-while manual cleanup.
 
       - name: Generate a private key for the new Distribution cert
         # fetch-signing-files --create needs a private key to upload
