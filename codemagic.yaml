@@ -149,4 +149,10 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
+        # Internal testers (us) don't need beta review. Tell Codemagic
+        # to only assign the build to our internal "Beta" group, not
+        # submit it for Apple's external beta review (which fails
+        # without First/Last/Phone/Email fields filled in).
         submit_to_testflight: true
+        beta_groups:
+          - Beta
