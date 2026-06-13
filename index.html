@@ -507,7 +507,9 @@
     }
     nav a .nav-icon { font-size: 15px; width: 20px; text-align: center; transition: transform .2s; display: inline-flex; align-items: center; justify-content: center; }
     nav a .nav-icon svg { width: 18px; height: 18px; display: block; }
-    nav a:hover .nav-icon { transform: translateX(-2px); }
+    @media (hover: hover) {
+      nav a:hover .nav-icon { transform: translateX(-2px); }
+    }
     .sidebar-footer {
       padding: 14px 18px; border-top: 1px solid var(--border);
       font-size: 11px; color: var(--text-muted);
@@ -534,10 +536,10 @@
     }
 
     .page { display: none; }
-    .page.active { display: block; animation: pgIn .3s cubic-bezier(.4,0,.2,1); }
+    .page.active { display: block; animation: pgIn .18s ease-out; }
     @keyframes pgIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
     /* refined scrollbar — premium feel */
@@ -574,7 +576,15 @@
       color: #f4ede0;
       text-shadow: 0 2px 12px rgba(0,0,0,0.4);
       font-family: 'Rubik', 'Heebo', sans-serif;
+      display: inline-flex; align-items: center; gap: 14px;
     }
+    .page-header h2 svg.icon-lg { width: 32px; height: 32px; opacity: 0.85; flex-shrink: 0; }
+
+    /* Universal inline icon helper — inherits color from text */
+    svg.icon { width: 1em; height: 1em; vertical-align: -0.125em; flex-shrink: 0; }
+    svg.icon-sm { width: 14px; height: 14px; flex-shrink: 0; }
+    svg.icon-md { width: 18px; height: 18px; flex-shrink: 0; }
+    .btn svg.icon, .btn-sm svg.icon { width: 14px; height: 14px; }
     .page-header p {
       font-size: 15px; font-weight: 500;
       color: rgba(255,255,255,0.55);
@@ -3482,6 +3492,32 @@
 </head>
 <body>
 
+<!-- ===== SVG ICON SPRITE =====
+     One source of truth for all UI icons. Reference with
+     <svg class="icon"><use href="#ic-NAME"/></svg>.  All icons share
+     the same line-art language as the sidebar (1.8px stroke, round
+     caps, inherits currentColor). -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="ic-trend-up"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></symbol>
+  <symbol id="ic-trend-down"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></symbol>
+  <symbol id="ic-clock"        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></symbol>
+  <symbol id="ic-calendar"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></symbol>
+  <symbol id="ic-users"        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="8" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="ic-check-box"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
+  <symbol id="ic-grad-cap"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></symbol>
+  <symbol id="ic-doc-text"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></symbol>
+  <symbol id="ic-doc-signed"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 18s1.5-1.5 4-1.5 2.5 1 4.5-.5"/></symbol>
+  <symbol id="ic-student"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-1.5A4.5 4.5 0 0 1 9.5 15h5A4.5 4.5 0 0 1 19 19.5V21"/></symbol>
+  <symbol id="ic-music-note"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="ic-chart-bars"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="20" x2="5" y2="14"/><line x1="10" y1="20" x2="10" y2="10"/><line x1="15" y1="20" x2="15" y2="6"/><line x1="20" y1="20" x2="20" y2="13"/></symbol>
+  <symbol id="ic-edit"         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></symbol>
+  <symbol id="ic-trash"        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol>
+  <symbol id="ic-link"         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="ic-eye"          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="ic-eye-off"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.6 18.6 0 0 1 5.06-5.94M9.9 4.24A10 10 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+  <symbol id="ic-money"        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></symbol>
+</svg>
+
 <!-- PWA install banner (appears once on mobile if not installed) -->
 <div id="install-banner" style="display:none;position:fixed;bottom:calc(env(safe-area-inset-bottom) + 80px);right:12px;left:12px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow-md);z-index:300;align-items:center;gap:12px">
   <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📲</div>
@@ -3496,7 +3532,7 @@
 <!-- iOS install instructions modal -->
 <div class="modal-overlay" id="modal-ios-install">
   <div class="modal" style="max-width:420px">
-    <h3>📲 התקן כאפליקציה</h3>
+    <h3>התקן כאפליקציה</h3>
     <div style="display:flex;flex-direction:column;gap:12px">
       <div style="background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px">
         <span style="font-size:22px">1️⃣</span>
@@ -3701,7 +3737,7 @@
   <!-- ===== UNIFIED CALENDAR (יומן + גוגל) — hidden, kept for gcal sync logic ===== -->
   <div class="page" id="page-gcal" style="display:none!important">
     <div class="page-header">
-      <div><h2>📅 יומן סשנים</h2><p id="ses-page-sub">כל הסשנים שלך במקום אחד</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-calendar"/></svg>יומן סשנים</h2><p id="ses-page-sub">כל הסשנים שלך במקום אחד</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="month-selector">
           <button onclick="changeMonth(-1)">›</button>
@@ -3785,7 +3821,7 @@
   <!-- ===== DASHBOARD ===== -->
   <div class="page" id="page-dashboard">
     <div class="page-header">
-      <div><h2>📊 סטטיסטיקה</h2><p>נתונים מפורטים על העסק שלך</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-chart-bars"/></svg>סטטיסטיקה</h2><p>נתונים מפורטים על העסק שלך</p></div>
     </div>
 
     <!-- שנה עד היום -->
@@ -3833,7 +3869,7 @@
 
     <!-- גרף 6 חודשים -->
     <div class="chart-card">
-      <h3>📊 6 חודשים אחרונים</h3>
+      <h3>6 חודשים אחרונים</h3>
       <div class="bar-chart" id="bar-chart"></div>
       <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted)">
         <span style="display:flex;align-items:center;gap:5px"><span style="width:11px;height:11px;border-radius:3px;background:var(--green);display:inline-block"></span>הכנסות</span>
@@ -3844,24 +3880,24 @@
     <!-- לקוחות מובילים + הכנסות לפי קטגוריה -->
     <div class="stat-two-col">
       <div class="table-card">
-        <div class="table-header"><h3>🏆 לקוחות מובילים</h3></div>
+        <div class="table-header"><h3>לקוחות מובילים</h3></div>
         <div id="stat-top-clients"><div class="empty-state"><p>אין נתונים</p></div></div>
       </div>
       <div class="table-card">
-        <div class="table-header"><h3>💰 הכנסות לפי קטגוריה</h3></div>
+        <div class="table-header"><h3>הכנסות לפי קטגוריה</h3></div>
         <div id="stat-inc-cats"><div class="empty-state"><p>אין נתונים</p></div></div>
       </div>
     </div>
 
     <!-- הוצאות לפי קטגוריה -->
     <div class="table-card">
-      <div class="table-header"><h3>📤 הוצאות לפי קטגוריה</h3></div>
+      <div class="table-header"><h3>הוצאות לפי קטגוריה</h3></div>
       <div id="stat-exp-cats"><div class="empty-state"><p>אין נתונים</p></div></div>
     </div>
 
     <!-- פעולות אחרונות -->
     <div class="table-card">
-      <div class="table-header"><h3>⏱️ פעולות אחרונות</h3></div>
+      <div class="table-header"><h3>פעולות אחרונות</h3></div>
       <div id="recent-list">
         <div class="empty-state"><div class="ei">📭</div><p>אין פעולות עדיין</p></div>
       </div>
@@ -3870,7 +3906,7 @@
     <!-- טבלת פירוט חודשי -->
     <div class="table-card">
       <div class="table-header">
-        <h3>📅 פירוט חודשי</h3>
+        <h3>פירוט חודשי</h3>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="stat-year-sel" onchange="renderDashboard()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--text);outline:none"></select>
         </div>
@@ -3883,7 +3919,7 @@
   <!-- ===== INCOME ===== -->
   <div class="page active" id="page-income">
     <div class="page-header">
-      <div><h2>💰 הכנסה חודשית</h2><p>ניהול כל ההכנסות שלך</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-trend-up"/></svg>הכנסה חודשית</h2><p>ניהול כל ההכנסות שלך</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="month-selector">
           <button onclick="changeMonth(-1)">›</button>
@@ -4026,7 +4062,7 @@
       <!-- Top Clients -->
       <div class="table-card" id="top-clients-card" style="padding:0">
         <div class="table-header">
-          <h3>🏆 לקוחות מובילים החודש</h3>
+          <h3>לקוחות מובילים החודש</h3>
           <span style="font-size:12px;color:var(--text-muted);font-weight:700" id="top-clients-month"></span>
         </div>
         <div id="top-clients-list" style="padding:18px 20px"></div>
@@ -4034,7 +4070,7 @@
 
       <!-- Trend & Insights -->
       <div class="table-card" style="padding:0">
-        <div class="table-header"><h3>📈 מגמת הכנסות (6 חודשים)</h3></div>
+        <div class="table-header"><h3>מגמת הכנסות (6 חודשים)</h3></div>
         <div id="income-trend-chart" style="padding:20px;display:flex;align-items:flex-end;gap:8px;height:160px"></div>
       </div>
 
@@ -4044,14 +4080,14 @@
   <!-- ===== EXPENSES ===== -->
   <div class="page" id="page-expenses">
     <div class="page-header">
-      <div><h2>📤 הוצאה חודשית</h2><p>ניהול כל ההוצאות שלך</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-trend-down"/></svg>הוצאה חודשית</h2><p>ניהול כל ההוצאות שלך</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="month-selector">
           <button onclick="changeMonth(-1)">›</button>
           <span class="month-label" id="lbl-expenses"></span>
           <button onclick="changeMonth(1)">‹</button>
         </div>
-        <button class="btn btn-ghost" onclick="openGmailReceipts()">📥 קבלות מהמייל</button>
+        <button class="btn btn-ghost" onclick="openGmailReceipts()">קבלות מהמייל</button>
         <button class="btn btn-primary" onclick="openModal('expense')">+ הוצאה חדשה</button>
       </div>
     </div>
@@ -4090,7 +4126,7 @@
   <!-- ===== PROFILES LIST ===== -->
   <div class="page" id="page-profiles">
     <div class="page-header">
-      <div><h2>👥 פרופילים</h2><p>כל הלקוחות שלך במקום אחד</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-users"/></svg>פרופילים</h2><p>כל הלקוחות שלך במקום אחד</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="search-bar"><span class="si">🔍</span><input type="text" placeholder="חיפוש לקוח..." id="pr-search" oninput="renderProfiles()"/></div>
         <button class="btn btn-primary" onclick="openModal('client')">+ לקוח חדש</button>
@@ -4115,7 +4151,7 @@
   <!-- ===== INSTALLMENTS ===== -->
   <div class="page" id="page-installments">
     <div class="page-header">
-      <div><h2>📅 תשלומים</h2><p>מעקב אחרי עסקאות בתשלומים</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-clock"/></svg>תשלומים</h2><p>מעקב אחרי עסקאות בתשלומים</p></div>
       <button class="btn btn-primary" onclick="openPlanModal()">+ תוכנית תשלום חדשה</button>
     </div>
 
@@ -4148,7 +4184,7 @@
   <!-- ===== DAILY BOARD (לוח יומי) ===== -->
   <div class="page" id="page-daily">
     <div class="page-header">
-      <div><h2>✅ משימות יומיות</h2><p>כל בוקר — מה על הסדר היום</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-check-box"/></svg>משימות יומיות</h2><p>כל בוקר — מה על הסדר היום</p></div>
     </div>
 
     <!-- בורר תאריך -->
@@ -4177,7 +4213,7 @@
   <!-- ===== WORKSHOPS ===== -->
   <div class="page" id="page-workshops">
     <div class="page-header">
-      <div><h2>🎓 סדנאות</h2><p>צור דף נחיתה לסדנא · קישור לשיתוף · ספירת מקומות חיה</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-grad-cap"/></svg>סדנאות</h2><p>צור דף נחיתה לסדנא · קישור לשיתוף · ספירת מקומות חיה</p></div>
       <button class="btn btn-primary" onclick="openWorkshopEditor(null)">+ סדנא חדשה</button>
     </div>
     <div id="workshops-list"></div>
@@ -4186,7 +4222,7 @@
   <!-- ===== WORKSHOP EDITOR MODAL ===== -->
   <div class="modal-overlay" id="modal-workshop">
     <div class="modal" style="max-width:560px">
-      <h3 id="wk-modal-title">🎓 סדנא חדשה</h3>
+      <h3 id="wk-modal-title">סדנא חדשה</h3>
       <div class="form-group"><label>כותרת הסדנא *</label><input type="text" id="wk-title" placeholder="סדנת כתיבת שירים — אליאור רביד"></div>
       <div class="form-row">
         <div class="form-group"><label>אימוג'י</label><input type="text" id="wk-emoji" placeholder="🎤" maxlength="4" style="text-align:center;font-size:22px"></div>
@@ -4217,7 +4253,7 @@
   <!-- ===== CONTRACTS (סיכומי הפקה) ===== -->
   <div class="page" id="page-contracts">
     <div class="page-header">
-      <div><h2>📜 סיכומי הפקה</h2><p>מסמכי עבודה דינמיים לכל פרויקט · לקוח חותם בקישור באצבע</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-doc-signed"/></svg>סיכומי הפקה</h2><p>מסמכי עבודה דינמיים לכל פרויקט · לקוח חותם בקישור באצבע</p></div>
       <button class="btn btn-primary" onclick="openContractEditor(null)">+ סיכום חדש</button>
     </div>
     <div id="contracts-list"></div>
@@ -4225,7 +4261,7 @@
 
   <div class="modal-overlay" id="modal-contract">
     <div class="modal" style="max-width:580px">
-      <h3 id="ctr-modal-title">📜 סיכום הפקה חדש</h3>
+      <h3 id="ctr-modal-title">סיכום הפקה חדש</h3>
 
       <div class="form-row">
         <div class="form-group"><label>שם הזמר/לקוח *</label><input type="text" id="ctr-client" placeholder="שם מלא"></div>
@@ -4291,7 +4327,7 @@
   <!-- ===== PROPOSALS ===== -->
   <div class="page" id="page-proposals">
     <div class="page-header">
-      <div><h2>💰 הצעות מחיר</h2><p>שלח ללקוח דף הצעה מעוצב · קישור שיתוף · תוקף לזמן מוגדר</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-doc-text"/></svg>הצעות מחיר</h2><p>שלח ללקוח דף הצעה מעוצב · קישור שיתוף · תוקף לזמן מוגדר</p></div>
       <button class="btn btn-primary" onclick="openProposalEditor(null)">+ הצעה חדשה</button>
     </div>
     <div id="proposals-list"></div>
@@ -4300,7 +4336,7 @@
   <!-- ===== PROPOSAL EDITOR MODAL ===== -->
   <div class="modal-overlay" id="modal-proposal">
     <div class="modal" style="max-width:580px">
-      <h3 id="prp-modal-title">💰 הצעת מחיר חדשה</h3>
+      <h3 id="prp-modal-title">הצעת מחיר חדשה</h3>
       <div class="form-row">
         <div class="form-group"><label>שם הלקוח *</label><input type="text" id="prp-client-name" placeholder="ירון כהן"></div>
         <div class="form-group"><label>טלפון</label><input type="tel" id="prp-client-phone" placeholder="050-0000000"></div>
@@ -4352,7 +4388,7 @@
   <!-- ===== STUDENTS ===== -->
   <div class="page" id="page-students">
     <div class="page-header">
-      <div><h2>🎹 תלמידים</h2><p>קורסי הפקה פרטניים · 6 שיעורים · מסלולי תשלום · התקדמות</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-student"/></svg>תלמידים</h2><p>קורסי הפקה פרטניים · 6 שיעורים · מסלולי תשלום · התקדמות</p></div>
       <button class="btn btn-primary" onclick="openStudentEditor(null)">+ תלמיד חדש</button>
     </div>
     <div id="students-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px"></div>
@@ -4362,7 +4398,7 @@
   <!-- ===== STUDENT EDITOR MODAL (add / edit basic info) ===== -->
   <div class="modal-overlay" id="modal-student">
     <div class="modal" style="max-width:560px">
-      <h3 id="stu-modal-title">🎹 תלמיד חדש</h3>
+      <h3 id="stu-modal-title">תלמיד חדש</h3>
       <div class="form-row">
         <div class="form-group"><label>שם מלא *</label><input type="text" id="stu-name" placeholder="ישראל ישראלי"></div>
         <div class="form-group"><label>טלפון</label><input type="tel" id="stu-phone" placeholder="050-0000000"></div>
@@ -4458,7 +4494,7 @@
   <!-- שירים שיצאו -->
   <div class="page active" id="page-released">
     <div class="page-header">
-      <div><h2>🎵 שירים שיצאו</h2><p>כל השירים שיצאו לעולם</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-music-note"/></svg>שירים שיצאו</h2><p>כל השירים שיצאו לעולם</p></div>
       <button class="btn btn-primary" onclick="openMusicModal('released')">+ שיר חדש</button>
     </div>
     <div id="released-stats" style="margin-bottom:20px"></div>
@@ -4493,7 +4529,7 @@
 <!-- ===== PRODUCER SIGNATURE PAD ===== -->
 <div class="modal-overlay" id="modal-prod-sig">
   <div class="modal" style="max-width:520px">
-    <h3>✍️ החתימה שלי</h3>
+    <h3>החתימה שלי</h3>
     <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;line-height:1.6">
       צייר את החתימה שלך פעם אחת. היא תוטבע אוטומטית על כל סיכום הפקה שתשלח. כשמישהו מאשר —
       תופיע גם החתימה של הלקוח לידה.
@@ -4678,7 +4714,7 @@
 <!-- ===== MUSIC ADD MODAL ===== -->
 <div class="modal-overlay" id="modal-music-add">
   <div class="modal">
-    <h3 id="music-modal-title">🎵 שיר חדש</h3>
+    <h3 id="music-modal-title">שיר חדש</h3>
     <input type="hidden" id="music-modal-type" value="released"/>
     <div class="form-group"><label>שם *</label><input type="text" id="mf-title" placeholder="שם השיר..."/></div>
     <div id="mf-released-fields">
@@ -4707,7 +4743,7 @@
 <!-- ===== INCOME MODAL ===== -->
 <div class="modal-overlay" id="modal-income">
   <div class="modal">
-    <h3>💰 הכנסה חדשה</h3>
+    <h3>הכנסה חדשה</h3>
     <div class="form-row">
       <div class="form-group"><label>תאריך *</label><input type="date" id="inc-date"/></div>
       <div class="form-group"><label>סכום (₪) *</label><input type="number" id="inc-amount" placeholder="0" min="0"/></div>
@@ -4732,7 +4768,7 @@
 <!-- ===== EXPENSE MODAL ===== -->
 <div class="modal-overlay" id="modal-expense">
   <div class="modal">
-    <h3 id="exp-modal-title">📤 הוצאה חדשה</h3>
+    <h3 id="exp-modal-title">הוצאה חדשה</h3>
     <div class="form-group">
       <label>פרויקט (הכנסה)</label>
       <select id="exp-project">
@@ -4774,7 +4810,7 @@
 <!-- ===== GMAIL RECEIPTS MODAL ===== -->
 <div class="modal-overlay" id="modal-gmail">
   <div class="modal" style="max-width:720px">
-    <h3>📥 קבלות מהמייל</h3>
+    <h3>קבלות מהמייל</h3>
 
     <!-- מצב חיבור -->
     <div id="gmail-conn" style="margin-bottom:14px"></div>
@@ -4810,7 +4846,7 @@
 <!-- ===== CLIENT MODAL ===== -->
 <div class="modal-overlay" id="modal-client">
   <div class="modal">
-    <h3>👤 לקוח חדש</h3>
+    <h3>לקוח חדש</h3>
     <div class="form-group"><label>שם מלא *</label><input type="text" id="cli-name" placeholder="שם הלקוח"/></div>
     <div class="form-row">
       <div class="form-group"><label>טלפון</label><input type="tel" id="cli-phone" placeholder="05X-XXXXXXX"/></div>
@@ -4840,7 +4876,7 @@
 <!-- ===== PLAN MODAL ===== -->
 <div class="modal-overlay" id="modal-plan">
   <div class="modal">
-    <h3>📅 תוכנית תשלום חדשה</h3>
+    <h3>תוכנית תשלום חדשה</h3>
     <div class="form-group"><label>שם הפרויקט *</label><input type="text" id="pl-project" placeholder="לדוגמה: אלבום, EP, סינגל..."/></div>
     <div class="form-group"><label>לקוח *</label><select id="pl-client"><option value="">בחר לקוח</option></select></div>
     <div class="form-row">
@@ -4872,7 +4908,7 @@
 <!-- ===== MODAL — SESSION ===== -->
 <div class="modal-overlay" id="modal-session">
   <div class="modal">
-    <h3 id="ses-modal-title">🎤 סשן חדש</h3>
+    <h3 id="ses-modal-title">סשן חדש</h3>
     <input type="hidden" id="ses-edit-id" />
     <div class="form-row">
       <div class="form-group"><label>תאריך *</label><input type="date" id="ses-date"/></div>
@@ -4925,7 +4961,7 @@
 <!-- ===== MODAL — QUICK ADD CLIENT ===== -->
 <div class="modal-overlay" id="modal-quick-client" style="z-index:1100">
   <div class="modal" style="max-width:360px">
-    <h3>👤 לקוח חדש</h3>
+    <h3>לקוח חדש</h3>
     <input type="hidden" id="qc-return-sel" />
     <div class="form-group"><label>שם *</label><input type="text" id="qc-name" placeholder="שם הלקוח..." autofocus/></div>
     <div class="form-group"><label>טלפון</label><input type="tel" id="qc-phone" placeholder="050-0000000"/></div>
@@ -5365,7 +5401,7 @@ function openModal(type) {
     document.getElementById('inc-client').value = '';
     document.getElementById('inc-cat').value = 'הקלטה';
     populateClientSel('inc-client');
-    document.querySelector('#modal-income h3').textContent = '💰 הכנסה חדשה';
+    document.querySelector('#modal-income h3').textContent = 'הכנסה חדשה';
     const sBtn = document.querySelector('#modal-income .btn-primary');
     if (sBtn) sBtn.textContent = 'שמירה';
   }
@@ -5376,7 +5412,7 @@ function openModal(type) {
     document.getElementById('exp-recurring').checked = false;
     document.getElementById('exp-recurring-opts').style.display = 'none';
     populateProjectDropdown('exp-project', '');
-    document.getElementById('exp-modal-title').textContent = '📤 הוצאה חדשה';
+    document.getElementById('exp-modal-title').textContent = 'הוצאה חדשה';
   }
   if (type === 'client') {
     ['cli-name','cli-phone','cli-email','cli-location','cli-notes'].forEach(id => document.getElementById(id).value = '');
@@ -5648,7 +5684,7 @@ function editRow(label, value, clientId, field) {
             <div class="contact-lbl">${fieldLabel(field)}</div>
             <div class="contact-val">${value || '<span style="color:var(--text-muted);font-style:italic">ריק</span>'}</div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="editField('${clientId}','${field}')" style="flex-shrink:0">✏️ ערוך</button>
+          <button class="btn btn-ghost btn-sm" onclick="editField('${clientId}','${field}')" style="flex-shrink:0"><svg class="icon"><use href="#ic-edit"/></svg> ערוך</button>
         </div>
       </div>
     </div>`;
@@ -5877,7 +5913,7 @@ function openIncomeEdit(id) {
   document.getElementById('inc-client').value = i.clientId || '';
   document.getElementById('inc-cat').value = i.category || 'הקלטה';
   document.getElementById('inc-notes').value = i.notes || '';
-  document.querySelector('#modal-income h3').textContent = '✏️ עריכת הכנסה';
+  document.querySelector('#modal-income h3').textContent = 'עריכת הכנסה';
   const sBtn = document.querySelector('#modal-income .btn-primary');
   if (sBtn) sBtn.textContent = 'עדכן';
   document.getElementById('modal-income').classList.add('open');
@@ -6227,7 +6263,7 @@ function openExpenseForProject(incomeId) {
   populateProjectDropdown('exp-project', incomeId);
   document.getElementById('exp-modal-title').textContent = inc
     ? `📤 הוצאה עבור: ${inc.description}`
-    : '📤 הוצאה חדשה';
+    : 'הוצאה חדשה';
   document.getElementById('modal-expense').classList.add('open');
 }
 
@@ -7351,7 +7387,7 @@ function openSessionModal(date, editId) {
     const sessions = load('sessions');
     const s = sessions.find(x => x.id === editId);
     if (!s) return;
-    document.getElementById('ses-modal-title').textContent = '✏️ עריכת סשן';
+    document.getElementById('ses-modal-title').textContent = 'עריכת סשן';
     document.getElementById('ses-date').value   = s.date;
     document.getElementById('ses-start').value  = s.startTime;
     document.getElementById('ses-end').value    = s.endTime;
@@ -7364,7 +7400,7 @@ function openSessionModal(date, editId) {
     const [eh,em] = s.endTime.split(':').map(Number);
     _sesDurMins = Math.max(30, (eh*60+em) - (sh*60+sm));
   } else {
-    document.getElementById('ses-modal-title').textContent = '🎤 סשן חדש';
+    document.getElementById('ses-modal-title').textContent = 'סשן חדש';
     const today = date || new Date().toISOString().slice(0,10);
     document.getElementById('ses-date').value   = today;
     document.getElementById('ses-start').value  = '10:00';
@@ -8787,7 +8823,7 @@ function importGcalEvent(ev) {
   document.getElementById('ses-date').value = dateStr;
   document.getElementById('ses-notes').value = ev.summary || '';
   document.getElementById('ses-edit-id').value = '';
-  document.getElementById('ses-modal-title').textContent = '📥 ייבוא מגוגל קלנדר';
+  document.getElementById('ses-modal-title').textContent = 'ייבוא מגוגל קלנדר';
 
   buildStartGrid(startTime);
   buildDurGrid(_sesDurMins);
@@ -9016,7 +9052,7 @@ function openProject(id){
     '<input class="proj-input" id="proj-next-in" value="' + String(next).replace(/"/g,'&quot;') + '" placeholder="מה השלב הבא? (למשל: לשלוח מיקס לאישור)" oninput="saveProjNext(\'' + id + '\', this.value)">' +
     '<h3 class="study-h3">📝 הערות</h3>' +
     '<textarea class="proj-textarea" placeholder="הערות על הפרויקט..." oninput="saveProjectNote(\'' + id + '\', this.value)">' + note + '</textarea>' +
-    (p.src === 'manual' ? '<button class="proj-del" onclick="deleteManualProject(\'' + id + '\')">🗑 מחק פרויקט</button>' : '');
+    (p.src === 'manual' ? '<button class="proj-del" onclick="deleteManualProject(\'' + id + '\')"><svg class="icon"><use href="#ic-trash"/></svg> מחק פרויקט</button>' : '');
   window.scrollTo(0,0);
 }
 
@@ -9088,10 +9124,10 @@ function wkCard(w){
       '<div class="wk-seats-label">' + free + ' פנויים</div>' +
     '</div>' +
     '<div class="wk-card-actions">' +
-      '<button class="btn btn-ghost btn-sm" onclick="shareWorkshop(\'' + w.id + '\')">🔗 שתף קישור</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="openWorkshopEditor(\'' + w.id + '\')">✏️ ערוך</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="toggleWorkshopActive(\'' + w.id + '\')">' + (w.active === false ? '👁 הצג שוב' : '🙈 השבת') + '</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="deleteWorkshop(\'' + w.id + '\')" style="color:#dc2626">🗑 מחק</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="shareWorkshop(\'' + w.id + '\')"><svg class="icon"><use href="#ic-link"/></svg> שתף קישור</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openWorkshopEditor(\'' + w.id + '\')"><svg class="icon"><use href="#ic-edit"/></svg> ערוך</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="toggleWorkshopActive(\'' + w.id + '\')">' + (w.active === false ? '<svg class="icon"><use href="#ic-eye"/></svg> הצג שוב' : '<svg class="icon"><use href="#ic-eye-off"/></svg> השבת') + '</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="deleteWorkshop(\'' + w.id + '\')" style="color:#dc2626"><svg class="icon"><use href="#ic-trash"/></svg> מחק</button>' +
     '</div>' +
   '</div>';
 }
@@ -9105,7 +9141,7 @@ function escapeHtml(s){
 function openWorkshopEditor(id){
   _wkEditId = id;
   const w = id ? (load('workshops') || []).find(function(x){ return x.id === id; }) : null;
-  document.getElementById('wk-modal-title').textContent = w ? '✏️ עריכת סדנא' : '🎓 סדנא חדשה';
+  document.getElementById('wk-modal-title').textContent = w ? 'עריכת סדנא' : 'סדנא חדשה';
   document.getElementById('wk-title').value = w ? (w.title||'') : '';
   document.getElementById('wk-emoji').value = w ? (w.emoji||'🎤') : '🎤';
   document.getElementById('wk-tagline').value = w ? (w.tagline||'') : '';
@@ -9361,7 +9397,7 @@ function openContractEditor(id){
   const c = id ? (load('contracts') || []).find(x => x.id === id) : null;
   if (c && c.status === 'signed') { toast('סיכום שכבר נחתם — נפתח לצפייה בלבד'); }
 
-  document.getElementById('ctr-modal-title').textContent = c ? (c.status === 'signed' ? '📜 סיכום חתום' : '✏️ עריכת סיכום') : '📜 סיכום הפקה חדש';
+  document.getElementById('ctr-modal-title').textContent = c ? (c.status === 'signed' ? 'סיכום חתום' : 'עריכת סיכום') : 'סיכום הפקה חדש';
   document.getElementById('ctr-client').value = c ? (c.clientName || '') : '';
   document.getElementById('ctr-date').value   = c ? (c.projectDate || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10);
 
@@ -9509,7 +9545,7 @@ function prpRemoveItem(i){ _prpItems.splice(i, 1); _prpRenderItems(); }
 function openProposalEditor(id){
   _prpEditId = id;
   const p = id ? (load('proposals') || []).find(x => x.id === id) : null;
-  document.getElementById('prp-modal-title').textContent = p ? '✏️ עריכת הצעת מחיר' : '💰 הצעת מחיר חדשה';
+  document.getElementById('prp-modal-title').textContent = p ? 'עריכת הצעת מחיר' : 'הצעת מחיר חדשה';
   document.getElementById('prp-client-name').value  = p ? (p.clientName  || '') : '';
   document.getElementById('prp-client-phone').value = p ? (p.clientPhone || '') : '';
   document.getElementById('prp-kind').value         = p ? (p.projectKind || 'single') : 'single';
@@ -9623,9 +9659,9 @@ function prpCard(p){
         (expired ? 'פג תוקף · ' : 'בתוקף עד ') + escapeHtml(validFmt) + '</div>' +
     '</div>' +
     '<div class="wk-card-actions">' +
-      '<button class="btn btn-ghost btn-sm" onclick="shareProposal(\'' + p.id + '\')">🔗 שתף קישור</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="openProposalEditor(\'' + p.id + '\')">✏️ ערוך</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="deleteProposal(\'' + p.id + '\')" style="color:#dc2626">🗑 מחק</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="shareProposal(\'' + p.id + '\')"><svg class="icon"><use href="#ic-link"/></svg> שתף קישור</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openProposalEditor(\'' + p.id + '\')"><svg class="icon"><use href="#ic-edit"/></svg> ערוך</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="deleteProposal(\'' + p.id + '\')" style="color:#dc2626"><svg class="icon"><use href="#ic-trash"/></svg> מחק</button>' +
     '</div>' +
   '</div>';
 }
@@ -9721,7 +9757,7 @@ function stuRemoveLesson(i){
 function openStudentEditor(id){
   _stuEditId = id;
   const s = id ? (load('students') || []).find(x => x.id === id) : null;
-  document.getElementById('stu-modal-title').textContent = s ? '✏️ עריכת תלמיד' : '🎹 תלמיד חדש';
+  document.getElementById('stu-modal-title').textContent = s ? 'עריכת תלמיד' : 'תלמיד חדש';
   document.getElementById('stu-name').value  = s ? (s.name  || '') : '';
   document.getElementById('stu-phone').value = s ? (s.phone || '') : '';
   document.getElementById('stu-email').value = s ? (s.email || '') : '';
@@ -9930,8 +9966,8 @@ function _stuRenderDetail(s){
       escapeHtml(plan.label || '') +
     '</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">' +
-      '<button class="btn btn-ghost btn-sm" onclick="closeModal(\'student-detail\');openStudentEditor(\'' + s.id + '\')">✏️ ערוך פרטים</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="deleteStudent(\'' + s.id + '\')" style="color:#dc2626">🗑 מחק תלמיד</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="closeModal(\'student-detail\');openStudentEditor(\'' + s.id + '\')"><svg class="icon"><use href="#ic-edit"/></svg> ערוך פרטים</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="deleteStudent(\'' + s.id + '\')" style="color:#dc2626"><svg class="icon"><use href="#ic-trash"/></svg> מחק תלמיד</button>' +
     '</div>' +
 
     '<div class="stu-section-head">💰 תשלומים <span style="font-weight:700;font-size:13px;color:var(--text-muted)">(' + fmtMoney(paid) + ' / ' + fmtMoney(total) + ')</span></div>' +
@@ -10043,8 +10079,8 @@ function _ctrCardHtml(c){
     '<div class="ctr-card-sub">' + escapeHtml(c.clientName || 'ללא לקוח') + (dateLabel ? ' · ' + dateLabel : '') + (signedAtLabel ? ' · נחתם ' + signedAtLabel : '') + '</div>' +
     '<div class="ctr-actions">' +
       primaryAction +
-      (signed ? '' : '<button class="btn btn-ghost btn-sm" onclick="openContractEditor(\'' + c.id + '\')">✏️ ערוך</button>') +
-      '<button class="btn btn-ghost btn-sm" onclick="deleteContract(\'' + c.id + '\')" style="color:#dc2626">🗑 מחק</button>' +
+      (signed ? '' : '<button class="btn btn-ghost btn-sm" onclick="openContractEditor(\'' + c.id + '\')"><svg class="icon"><use href="#ic-edit"/></svg> ערוך</button>') +
+      '<button class="btn btn-ghost btn-sm" onclick="deleteContract(\'' + c.id + '\')" style="color:#dc2626"><svg class="icon"><use href="#ic-trash"/></svg> מחק</button>' +
     '</div>' +
   '</div>';
 }
@@ -10559,7 +10595,7 @@ function initMusicWave(audioSrc) {
 function openMusicModal(type) {
   _curMusicType = type;
   document.getElementById('music-modal-type').value = type;
-  document.getElementById('music-modal-title').textContent = type === 'released' ? '🎵 שיר חדש' : '🎙 סקיצה חדשה';
+  document.getElementById('music-modal-title').textContent = type === 'released' ? 'שיר חדש' : 'סקיצה חדשה';
   ['mf-title','mf-cowriters','mf-producer','mf-singer','mf-notes','mf-sk-singer','mf-sk-gender'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const relFields = document.getElementById('mf-released-fields');
   if (relFields) relFields.style.display = type === 'released' ? '' : 'none';
@@ -11251,7 +11287,7 @@ function dxItemMenu(path, name){
       '</button>' +
       '<button class="dx-share-opt" data-mode="share" data-path="' + safeP + '" data-name="' + safeN + '">📤 שתף ב-WhatsApp / יישומים</button>' +
       (inGroup ? '<button class="dx-share-opt" data-mode="split" data-path="' + safeP + '" data-name="' + safeN + '" style="color:#e08a8a">🚪 הפרד מהקבוצה</button>' : '') +
-      '<button class="dx-share-opt" data-mode="hide" data-path="' + safeP + '" data-name="' + safeN + '" style="color:#e08a8a">🗑 מחק מהאפליקציה' +
+      '<button class="dx-share-opt" data-mode="hide" data-path="' + safeP + '" data-name="' + safeN + '" style="color:#e08a8a"><svg class="icon"><use href="#ic-trash"/></svg> מחק מהאפליקציה' +
         '<span>הקובץ נשאר ב-Dropbox. אפשר לשחזר מההגדרות (⚙).</span>' +
       '</button>' +
       '<button class="dx-share-cancel">ביטול</button>' +
