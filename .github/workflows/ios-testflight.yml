@@ -1,20 +1,31 @@
 name: Build iOS + Upload to TestFlight
 
-# Triggered on every push to `mobile` and `main` so Elior gets the
-# new build on his phone within ~30 minutes of any change merging.
+# Triggered on every push to `mobile` (and later `main`). End-to-end
+# from commit to "ready to install" notification on Elior's phone is
+# typically 20-30 minutes.
+#
+# Uses ONLY the App Store Connect API key — no manual cert/profile
+# management is needed. Xcode auto-creates and signs everything via
+# `-allowProvisioningUpdates` + the API key.
 on:
   push:
     branches: [mobile, main]
   workflow_dispatch:
 
+env:
+  XCODE_VERSION: '15.4'
+
 jobs:
   build:
     runs-on: macos-14
-    timeout-minutes: 45
+    timeout-minutes: 50
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
       - name: Set up Node 20
         uses: actions/setup-node@v4
@@ -25,62 +36,63 @@ jobs:
       - name: Install JS dependencies
         run: npm ci
 
-      - name: Add Capacitor iOS platform if missing
+      - name: Add Capacitor iOS platform (first run only)
         run: |
           if [ ! -d "ios" ]; then
             npx cap add ios
           fi
 
-      - name: Sync web assets into the iOS project
+      - name: Sync web assets into iOS
         run: npx cap sync ios
 
-      - name: Import App Store Connect API key
+      - name: Save App Store Connect API key
         env:
-          APP_STORE_CONNECT_API_KEY_ID:      ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_API_ISSUER_ID:   ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-          APP_STORE_CONNECT_API_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
+          API_KEY_ID:        ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_PRIVATE_KEY:   ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
         run: |
           mkdir -p ~/private_keys
-          echo "$APP_STORE_CONNECT_API_PRIVATE_KEY" > "~/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
+          echo "$API_PRIVATE_KEY" > ~/private_keys/AuthKey_${API_KEY_ID}.p8
+          chmod 600 ~/private_keys/AuthKey_${API_KEY_ID}.p8
 
-      - name: Import signing certificate + provisioning profile
-        env:
-          IOS_DISTRIBUTION_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
-          IOS_DISTRIBUTION_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
-          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
-        run: |
-          KEYCHAIN_PASSWORD=$(openssl rand -base64 16)
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -lut 21600 build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security list-keychains -d user -s build.keychain login.keychain
-
-          echo "$IOS_DISTRIBUTION_CERTIFICATE_BASE64" | base64 --decode > /tmp/cert.p12
-          security import /tmp/cert.p12 -k build.keychain -P "$IOS_DISTRIBUTION_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ravid_studio.mobileprovision
-
-      - name: Auto-increment build number
+      - name: Bump CFBundleVersion (build number)
         run: |
           cd ios/App
           BUILD_NUMBER=$(($GITHUB_RUN_NUMBER + 1000))
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" App/Info.plist || true
           echo "Build number: $BUILD_NUMBER"
 
-      - name: Build archive
+      - name: Configure DEVELOPMENT_TEAM
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cd ios/App
+          # Patch project.pbxproj so the team id is set before signing.
+          /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
+          /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = ;/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
+
+      - name: Build archive (Xcode auto-signs via API key)
+        env:
+          API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          TEAM_ID:       ${{ secrets.APPLE_TEAM_ID }}
         run: |
           cd ios/App
           xcodebuild \
             -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
-            -archivePath $PWD/build/App.xcarchive \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/App.xcarchive" \
             -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${API_KEY_ID}.p8 \
+            -authenticationKeyID "$API_KEY_ID" \
+            -authenticationKeyIssuerID "$API_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
             archive
 
-      - name: Export IPA
+      - name: Write ExportOptions.plist
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           cd ios/App
           cat > ExportOptions.plist <<EOF
@@ -89,23 +101,35 @@ jobs:
           <plist version="1.0">
           <dict>
             <key>method</key><string>app-store</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
             <key>uploadSymbols</key><true/>
             <key>uploadBitcode</key><false/>
             <key>compileBitcode</key><false/>
           </dict>
           </plist>
           EOF
+
+      - name: Export signed IPA
+        env:
+          API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+        run: |
+          cd ios/App
           xcodebuild \
             -exportArchive \
-            -archivePath $PWD/build/App.xcarchive \
+            -archivePath "$PWD/build/App.xcarchive" \
             -exportOptionsPlist ExportOptions.plist \
-            -exportPath $PWD/build \
-            -allowProvisioningUpdates
+            -exportPath "$PWD/build" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${API_KEY_ID}.p8 \
+            -authenticationKeyID "$API_KEY_ID" \
+            -authenticationKeyIssuerID "$API_ISSUER_ID"
 
       - name: Upload to TestFlight
         env:
-          APP_STORE_CONNECT_API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
         run: |
           cd ios/App/build
           IPA_PATH=$(ls *.ipa | head -n 1)
@@ -113,5 +137,5 @@ jobs:
             --upload-app \
             -f "$IPA_PATH" \
             -t ios \
-            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_API_ISSUER_ID"
+            --apiKey "$API_KEY_ID" \
+            --apiIssuer "$API_ISSUER_ID"
