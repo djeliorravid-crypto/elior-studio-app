@@ -1894,31 +1894,33 @@
       nav::-webkit-scrollbar { display: none; }
       nav a {
         flex: 0 0 auto;
-        min-width: 68px;
+        min-width: 62px;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 8px 6px 6px;
-        gap: 3px;
+        padding: 7px 8px 5px;
+        gap: 2px;
         font-size: 10px;
-        font-weight: 800;
+        font-weight: 700;
         border-right: none;
-        border-top: 3px solid transparent;
+        border-top: none;
         text-align: center;
         white-space: nowrap;
-        color: #9ca3af;
+        color: #8a7a68;
         -webkit-tap-highlight-color: transparent;
-        transition: color 0.15s;
+        transition: color 0.18s, transform 0.18s;
         scroll-snap-align: start;
       }
+      nav a:active { transform: scale(0.92); }
       nav a .nav-icon { font-size: 22px; width: auto; line-height: 1; }
-      nav a .nav-icon svg { width: 22px; height: 22px; }
+      nav a .nav-icon svg { width: 24px; height: 24px; stroke-width: 1.6; }
       nav a.active {
         color: var(--accent);
         border-right-color: transparent;
-        border-top-color: var(--accent);
-        background: linear-gradient(180deg, rgba(212,165,116,0.10) 0%, transparent 100%);
+        border-top-color: transparent;
+        background: transparent;
       }
+      nav a.active .nav-icon svg { stroke-width: 2.2; }
 
       /* ===== תוכן ראשי ===== */
       .main {
@@ -1933,25 +1935,30 @@
       /* ===== כותרת עמוד ===== */
       .page-header {
         flex-direction: row;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         gap: 8px;
         margin-bottom: 16px;
-        /* Leave room on the right edge so the h2 doesn't slide
-           under the fixed #mobile-lobby-btn pill in the corner. */
         padding-right: 92px;
       }
-      .page-header > div:first-child { flex: 1; min-width: 0; }
+      .page-header > div:first-child { flex: 1 1 100%; min-width: 0; }
       .page-header h2 { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .page-header h2 svg.icon-lg { width: 20px; height: 20px; }
       .page-header p { display: none; }
       .page-header > div:last-child {
         display: flex;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;        /* let buttons wrap to a 2nd line instead of clipping */
         gap: 6px;
         align-items: center;
         flex-shrink: 0;
+        max-width: 100%;
+        justify-content: flex-end;
+      }
+      .page-header .btn {
+        font-size: 12px;
+        padding: 7px 11px;
+        white-space: nowrap;
       }
       /* בורר חודש קומפקטי */
       .month-selector { padding: 5px 8px; gap: 4px; }
@@ -3829,7 +3836,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v215</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v216</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
