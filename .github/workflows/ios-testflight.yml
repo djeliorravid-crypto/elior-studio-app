@@ -51,6 +51,16 @@ jobs:
             npx cap add ios
           fi
 
+      - name: Patch AppDelegate.swift for Capacitor 8 API
+        # Capacitor 8 dropped the `continue userActivity:restorationHandler:`
+        # overload of `ApplicationDelegateProxy.shared.application`, but the
+        # `cap add ios` template still emits a call to it. We don't use
+        # Universal Links, so just stub the method to `return false`.
+        run: |
+          /usr/bin/sed -i '' \
+            's|return ApplicationDelegateProxy\.shared\.application(application, continue: userActivity, restorationHandler: restorationHandler)|return false|' \
+            ios/App/App/AppDelegate.swift
+
       - name: Sync web assets into iOS
         run: npx cap sync ios
 
