@@ -3,8 +3,10 @@
   "appName": "Ravid Studio",
   "webDir": "www",
   "server": {
-    "iosScheme": "ravidstudio",
-    "cleartext": false
+    "url": "https://djeliorravid-crypto.github.io/elior-studio-app/",
+    "iosScheme": "https",
+    "cleartext": false,
+    "errorPath": "index.html"
   },
   "ios": {
     "contentInset": "automatic",
