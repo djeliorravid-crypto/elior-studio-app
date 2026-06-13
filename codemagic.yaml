@@ -57,21 +57,26 @@ workflows:
       - name: Revoke orphaned Distribution certificates
         # Earlier GitHub Actions runs created Distribution certs whose
         # private keys lived in ephemeral runner keychains that no
-        # longer exist. Revoke them so Codemagic can create + save a
-        # fresh one with the private key it actually controls.
+        # longer exist. Revoke EVERY distribution cert (both old
+        # "DISTRIBUTION" and new "IOS_DISTRIBUTION" type names) so
+        # fetch-signing-files can create a fresh one with the private
+        # key Codemagic generates and persists.
         script: |
-          app-store-connect certificates list --type IOS_DISTRIBUTION --json 2>/dev/null \
-            | python3 -c "import sys,json; data=json.load(sys.stdin); [print(c['id']) for c in data]" 2>/dev/null \
-            | while read CERT_ID; do
-                [ -z "$CERT_ID" ] && continue
-                echo "Revoking $CERT_ID"
-                app-store-connect certificates delete "$CERT_ID" || true
-              done
+          for TYPE in DISTRIBUTION IOS_DISTRIBUTION; do
+            app-store-connect certificates list --type "$TYPE" --json 2>/dev/null \
+              | python3 -c "import sys,json; data=json.load(sys.stdin); [print(c['id']) for c in data]" 2>/dev/null \
+              | while read CERT_ID; do
+                  [ -z "$CERT_ID" ] && continue
+                  echo "Revoking $TYPE cert $CERT_ID"
+                  app-store-connect certificates delete "$CERT_ID" || true
+                done
+          done
 
-      - name: Create fresh Distribution certificate
-        script: app-store-connect certificates create --type IOS_DISTRIBUTION --save
-
-      - name: Fetch / create App Store provisioning profile
+      - name: Create distribution cert + App Store profile (auto-generates private key)
+        # `fetch-signing-files --create` does the full dance: generates
+        # a private key, creates a Distribution certificate via the API,
+        # creates/fetches the App Store provisioning profile, and saves
+        # everything locally for the keychain step that follows.
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
