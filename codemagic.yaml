@@ -55,7 +55,28 @@ workflows:
       - name: Initialize keychain
         script: keychain initialize
 
-      - name: Auto-create signing cert + App Store profile via API key
+      - name: Revoke orphaned Distribution certs (no local private key)
+        script: |
+          # Previous CI runs created distribution certificates whose
+          # private keys were destroyed with their ephemeral keychains.
+          # They take up cap quota and prevent Codemagic from creating
+          # a new one. Revoke them all so the next step can create a
+          # fresh cert with the private key Codemagic actually has.
+          app-store-connect certificates list \
+            --type IOS_DISTRIBUTION --json \
+            | python3 -c "import sys,json; [print(c['id']) for c in json.load(sys.stdin)]" \
+            | while read CERT_ID; do
+                echo "Revoking $CERT_ID"
+                app-store-connect certificates delete "$CERT_ID" --ignore-not-found || true
+              done
+
+      - name: Create a fresh Distribution certificate
+        script: |
+          app-store-connect certificates create \
+            --type IOS_DISTRIBUTION \
+            --save
+
+      - name: Fetch / create App Store provisioning profile
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
