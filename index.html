@@ -19,7 +19,11 @@
     html:not(.cap-native):not(.cap-web) #mode-screen { visibility: hidden !important; }
 
     html.cap-native #login-screen { display: none !important; }
-    html.cap-native #mode-screen.hidden { display: flex !important; }
+    /* Don't override #mode-screen here — JS handles the initial
+       show on native via autoLoginOnNative(). A CSS override of
+       `.hidden` would prevent the page from EVER hiding the lobby
+       (e.g. when chooseMode adds .hidden to switch to a content
+       page), trapping the user on the lobby forever. */
 
     /* When the app is backgrounded on iOS, the OS takes a snapshot
        of the WebView and uses it as the app-switcher thumbnail AND
@@ -3825,7 +3829,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v213</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v214</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
