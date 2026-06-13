@@ -4,9 +4,10 @@ name: Build iOS + Upload to TestFlight
 # from commit to "ready to install" notification on Elior's phone is
 # typically 20-30 minutes.
 #
-# Uses ONLY the App Store Connect API key — no manual cert/profile
-# management is needed. Xcode auto-creates and signs everything via
-# `-allowProvisioningUpdates` + the API key.
+# Uses fastlane to handle the full signing dance via the App Store
+# Connect API key (Admin role): creates/uses the distribution
+# certificate, creates/uses the App Store provisioning profile,
+# archives, exports a signed IPA, and uploads to TestFlight.
 on:
   push:
     branches: [mobile, main]
@@ -37,11 +38,6 @@ jobs:
         run: npm ci
 
       - name: Stage web assets into www/
-        # Capacitor wants its webDir to be a dedicated directory, so
-        # copy the served HTML / JS / CSS / icons there. Everything in
-        # the repo root that's actually part of the web app gets
-        # included; native scaffolding (ios/, package.json, .github/)
-        # is excluded.
         run: |
           mkdir -p www
           for f in index.html contract.html proposal.html workshop.html sw.js _headers manifest.json version.txt icon-source.svg icon-192.png icon-512.png; do
@@ -66,104 +62,28 @@ jobs:
           mkdir -p ~/private_keys
           echo "$API_PRIVATE_KEY" > ~/private_keys/AuthKey_${API_KEY_ID}.p8
           chmod 600 ~/private_keys/AuthKey_${API_KEY_ID}.p8
+          echo "API_KEY_PATH=$HOME/private_keys/AuthKey_${API_KEY_ID}.p8" >> $GITHUB_ENV
 
-      - name: Bump CFBundleVersion (build number)
-        run: |
-          cd ios/App
-          BUILD_NUMBER=$(($GITHUB_RUN_NUMBER + 1000))
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" App/Info.plist || true
-          echo "Build number: $BUILD_NUMBER"
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
 
-      - name: Patch project.pbxproj for Team ID + Manual Distribution signing
+      - name: Install fastlane
+        run: bundle install
+
+      - name: Build and upload to TestFlight (fastlane)
         env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          cd ios/App
-          # Inject Team ID into both Debug & Release configs.
-          /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
-          /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = ;/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
-          # Force MANUAL signing with explicit "Apple Distribution".
-          # Why: Xcode's automatic signing keeps defaulting to a
-          # Development identity during archive (probably because the
-          # bundle ID has no existing assets yet), and there's no way
-          # to override that without explicit manual settings. With
-          # -allowProvisioningUpdates + an Admin-role API key, Xcode
-          # will still create the distribution cert + App Store
-          # provisioning profile on demand.
-          /usr/bin/sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' App.xcodeproj/project.pbxproj || true
-          /usr/bin/sed -i '' 's/"iPhone Developer"/"Apple Distribution"/g' App.xcodeproj/project.pbxproj || true
-          echo "---- pbxproj signing settings ----"
-          /usr/bin/grep -n -E "CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|CODE_SIGN_STYLE|PROVISIONING_PROFILE_SPECIFIER" App.xcodeproj/project.pbxproj | head -40
-          echo "----------------------------------"
-
-      - name: Build archive (Xcode auto-signs via API key)
-        env:
-          API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-          TEAM_ID:       ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          cd ios/App
-          xcodebuild \
-            -project App.xcodeproj \
-            -scheme App \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath "$PWD/build/App.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${API_KEY_ID}.p8 \
-            -authenticationKeyID "$API_KEY_ID" \
-            -authenticationKeyIssuerID "$API_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            archive
-
-      - name: Write ExportOptions.plist
-        env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: |
-          cd ios/App
-          cat > ExportOptions.plist <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key><string>app-store</string>
-            <key>teamID</key><string>${TEAM_ID}</string>
-            <key>signingStyle</key><string>automatic</string>
-            <key>uploadSymbols</key><true/>
-            <key>uploadBitcode</key><false/>
-            <key>compileBitcode</key><false/>
-          </dict>
-          </plist>
-          EOF
-
-      - name: Export signed IPA
-        env:
-          API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-        run: |
-          cd ios/App
-          xcodebuild \
-            -exportArchive \
-            -archivePath "$PWD/build/App.xcarchive" \
-            -exportOptionsPlist ExportOptions.plist \
-            -exportPath "$PWD/build" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${API_KEY_ID}.p8 \
-            -authenticationKeyID "$API_KEY_ID" \
-            -authenticationKeyIssuerID "$API_ISSUER_ID"
-
-      - name: Upload to TestFlight
-        env:
-          API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
-        run: |
-          cd ios/App/build
-          IPA_PATH=$(ls *.ipa | head -n 1)
-          xcrun altool \
-            --upload-app \
-            -f "$IPA_PATH" \
-            -t ios \
-            --apiKey "$API_KEY_ID" \
-            --apiIssuer "$API_ISSUER_ID"
+          APP_STORE_CONNECT_API_KEY_ID:    ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          APPLE_TEAM_ID:                   ${{ secrets.APPLE_TEAM_ID }}
+          # setup_ci in CI mode creates an ephemeral keychain so cert
+          # imports don't prompt for a password.
+          MATCH_KEYCHAIN_NAME:             fastlane_tmp_keychain
+          MATCH_KEYCHAIN_PASSWORD:         ''
+          # Tell fastlane to bypass the analytics opt-in prompt.
+          FASTLANE_SKIP_UPDATE_CHECK:      '1'
+          FASTLANE_HIDE_CHANGELOG:         '1'
+          # No-color cleaner CI logs.
+          FASTLANE_DISABLE_COLORS:         '1'
+        run: bundle exec fastlane ios beta

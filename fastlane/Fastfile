@@ -1,0 +1,81 @@
+default_platform(:ios)
+
+APP_IDENTIFIER = "com.ravidstudio.app"
+APP_NAME       = "Ravid Studio"
+XCODE_PROJECT  = "ios/App/App.xcodeproj"
+SCHEME         = "App"
+
+platform :ios do
+  desc "Build the iOS app and upload to TestFlight"
+  lane :beta do
+    setup_ci
+
+    api_key = app_store_connect_api_key(
+      key_id:        ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id:     ENV["APP_STORE_CONNECT_API_ISSUER_ID"],
+      key_filepath:  ENV["API_KEY_PATH"],
+      duration:      1200,
+      in_house:      false,
+    )
+
+    build_number = (ENV["GITHUB_RUN_NUMBER"] || "0").to_i + 1000
+    increment_build_number(
+      build_number: build_number,
+      xcodeproj:    XCODE_PROJECT,
+    )
+
+    cert(
+      development:    false,
+      api_key:        api_key,
+      output_path:    "./fastlane/certificates",
+      generate_apple_certs: true,
+    )
+
+    sigh(
+      app_identifier: APP_IDENTIFIER,
+      api_key:        api_key,
+      adhoc:          false,
+      development:    false,
+      force:          true,
+      output_path:    "./fastlane/profiles",
+    )
+
+    profile_name = ENV["sigh_#{APP_IDENTIFIER}_appstore_profile-name"] ||
+                   lane_context[SharedValues::SIGH_NAME]
+
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path:                  XCODE_PROJECT,
+      team_id:               ENV["APPLE_TEAM_ID"],
+      bundle_identifier:     APP_IDENTIFIER,
+      code_sign_identity:    "Apple Distribution",
+      profile_name:          profile_name,
+      targets:               [SCHEME],
+      build_configurations:  ["Release"],
+    )
+
+    build_app(
+      project:           XCODE_PROJECT,
+      scheme:            SCHEME,
+      configuration:     "Release",
+      export_method:     "app-store",
+      output_directory:  "./build",
+      output_name:       "App.ipa",
+      clean:             false,
+      export_options: {
+        provisioningProfiles: {
+          APP_IDENTIFIER => profile_name,
+        },
+        signingStyle: "manual",
+        teamID:       ENV["APPLE_TEAM_ID"],
+      },
+    )
+
+    upload_to_testflight(
+      api_key:                            api_key,
+      ipa:                                "./build/App.ipa",
+      skip_waiting_for_build_processing:  true,
+      skip_submission:                    true,
+    )
+  end
+end
