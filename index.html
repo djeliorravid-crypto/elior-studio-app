@@ -2,6 +2,20 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
+  <!-- Capacitor-native detection INLINE in <head> so the login screen
+       is hidden before first paint — kills the half-second flash of
+       the login UI when opening the native iOS app. -->
+  <script>
+    (function() {
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+        document.documentElement.classList.add('cap-native');
+      }
+    })();
+  </script>
+  <style>
+    html.cap-native #login-screen { display: none !important; }
+    html.cap-native #mode-screen.hidden { display: flex !important; }
+  </style>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Frank+Ruhl+Libre:wght@400;700;900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
