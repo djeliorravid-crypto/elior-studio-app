@@ -1,7 +1,7 @@
 {
   "appId": "com.ravidstudio.app",
   "appName": "Ravid Studio",
-  "webDir": ".",
+  "webDir": "www",
   "server": {
     "iosScheme": "ravidstudio",
     "cleartext": false

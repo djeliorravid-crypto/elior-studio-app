@@ -36,6 +36,19 @@ jobs:
       - name: Install JS dependencies
         run: npm ci
 
+      - name: Stage web assets into www/
+        # Capacitor wants its webDir to be a dedicated directory, so
+        # copy the served HTML / JS / CSS / icons there. Everything in
+        # the repo root that's actually part of the web app gets
+        # included; native scaffolding (ios/, package.json, .github/)
+        # is excluded.
+        run: |
+          mkdir -p www
+          for f in index.html contract.html proposal.html workshop.html sw.js _headers manifest.json version.txt icon-source.svg icon-192.png icon-512.png; do
+            [ -e "$f" ] && cp "$f" "www/$f"
+          done
+          [ -d ios-icons ] && cp -R ios-icons www/ios-icons || true
+
       - name: Add Capacitor iOS platform (first run only)
         run: |
           if [ ! -d "ios" ]; then
