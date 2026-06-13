@@ -84,13 +84,15 @@ jobs:
           # we want for archive. Flip both — and inject the Team ID.
           /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
           /usr/bin/sed -i '' "s/DEVELOPMENT_TEAM = ;/DEVELOPMENT_TEAM = ${TEAM_ID};/g" App.xcodeproj/project.pbxproj || true
-          # Brute-force every dev identity → "Apple Distribution" so
-          # there's no path left where Xcode picks the dev identity. The
-          # build only runs the Release archive, so over-patching Debug
-          # is harmless. Capacitor's template uses the OLD "iPhone Developer"
-          # string, not "Apple Development" — patch BOTH spellings.
-          /usr/bin/sed -i '' 's/Apple Development/Apple Distribution/g' App.xcodeproj/project.pbxproj || true
-          /usr/bin/sed -i '' 's/"iPhone Developer"/"Apple Distribution"/g' App.xcodeproj/project.pbxproj || true
+          # Capacitor's template uses the LEGACY identity string "iPhone
+          # Developer", which Xcode automatic signing doesn't auto-promote
+          # to a Distribution identity during archive. Modernize it to
+          # "Apple Development" — with CODE_SIGN_STYLE=Automatic + archive
+          # action + API key, Xcode then transparently uses "Apple
+          # Distribution" for the signed archive. Do NOT manually set the
+          # identity to "Apple Distribution" — that conflicts with auto
+          # signing.
+          /usr/bin/sed -i '' 's/"iPhone Developer"/"Apple Development"/g' App.xcodeproj/project.pbxproj || true
           echo "---- pbxproj signing settings ----"
           /usr/bin/grep -n -E "CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM|CODE_SIGN_STYLE|PROVISIONING_PROFILE_SPECIFIER" App.xcodeproj/project.pbxproj | head -40
           echo "----------------------------------"
