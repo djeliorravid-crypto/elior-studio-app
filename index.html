@@ -7,12 +7,17 @@
        the login UI when opening the native iOS app. -->
   <script>
     (function() {
-      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-        document.documentElement.classList.add('cap-native');
-      }
+      var native = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+      document.documentElement.classList.add(native ? 'cap-native' : 'cap-web');
     })();
   </script>
   <style>
+    /* Until JS marks the html element, hide both potential opening
+       screens. The class is set by the inline script above, so this
+       is gated by < a few ms, way under one frame. */
+    html:not(.cap-native):not(.cap-web) #login-screen,
+    html:not(.cap-native):not(.cap-web) #mode-screen { visibility: hidden !important; }
+
     html.cap-native #login-screen { display: none !important; }
     html.cap-native #mode-screen.hidden { display: flex !important; }
   </style>
@@ -8392,9 +8397,15 @@ if ('serviceWorker' in navigator) {
   // The 3-second debounce stops any pair of them from chaining into
   // an infinite reload loop.
   let _swRefreshing = false;
+  const _appOpenedAt = Date.now();
   function _swForceReload() {
     if (_swRefreshing) return;
     if (window.__lastSwReload && Date.now() - window.__lastSwReload < 3000) return;
+    // Don't reload during the first 5s — that's still the initial
+    // load, and force-reloading causes a visible "flash of old lobby"
+    // before the new version takes over. After 5s the user has clearly
+    // started using the app, so an update can refresh cleanly.
+    if (Date.now() - _appOpenedAt < 5000) return;
     _swRefreshing = true;
     window.__lastSwReload = Date.now();
     window.location.reload();
