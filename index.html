@@ -30,15 +30,20 @@
        becomes hidden, swap to a clean full-bleed brown overlay so
        iOS snapshots a blank brown screen instead of stale content.
        When the page becomes visible again, drop the overlay. */
+    /* The brown curtain is VISIBLE by default and only fades out
+       after the lobby is fully rendered. This guarantees the iOS
+       WebView snapshot is always a clean brown screen — no race
+       condition between visibilitychange and iOS's snapshot. */
     #snapshot-curtain {
       position: fixed; inset: 0;
       background: #2a1810;
       z-index: 999999;
-      opacity: 0;
-      pointer-events: none;  /* never block clicks when not active */
-      transition: opacity 0.18s ease;
+      opacity: 1;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
     }
-    body.app-hidden #snapshot-curtain { opacity: 1; pointer-events: none; transition: none; }
+    body.app-ready #snapshot-curtain { opacity: 0; }
+    body.app-hidden #snapshot-curtain { opacity: 1; transition: none; }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Frank+Ruhl+Libre:wght@400;700;900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -3682,19 +3687,42 @@
 <body>
 <div id="snapshot-curtain" aria-hidden="true"></div>
 <script>
-  // Show the brown curtain instantly when the app goes to background
-  // so iOS snapshots a blank screen instead of stale content. Drop
-  // the curtain when the app comes back to the foreground.
+  // The curtain is visible by default (CSS). Fade it out once the
+  // page is paint-ready — gives the lobby's gradient / circles a
+  // moment to render so the user never sees a half-painted state.
+  function _dropCurtain() {
+    // Two RAFs = next painted frame after layout is settled.
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        document.body.classList.add('app-ready');
+      });
+    });
+  }
+  if (document.readyState === 'complete') {
+    _dropCurtain();
+  } else {
+    window.addEventListener('load', _dropCurtain);
+  }
+
+  // Re-raise the curtain BEFORE iOS snapshots the WebView. We watch
+  // every event that fires when the app loses focus and pick whichever
+  // wins — pagehide is the most reliable on iOS Safari/WKWebView.
+  function _raiseCurtain() {
+    document.body.classList.add('app-hidden');
+    document.body.classList.remove('app-ready');
+  }
+  function _dropCurtainSoon() {
+    document.body.classList.remove('app-hidden');
+    setTimeout(_dropCurtain, 150);
+  }
+  window.addEventListener('pagehide', _raiseCurtain);
+  window.addEventListener('blur',     _raiseCurtain);
   document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'hidden') {
-      document.body.classList.add('app-hidden');
-    } else {
-      document.body.classList.remove('app-hidden');
-    }
+    if (document.visibilityState === 'hidden') _raiseCurtain();
+    else _dropCurtainSoon();
   });
-  // Capacitor also dispatches its own pause/resume events on native.
-  document.addEventListener('pause',  function() { document.body.classList.add('app-hidden'); });
-  document.addEventListener('resume', function() { document.body.classList.remove('app-hidden'); });
+  window.addEventListener('pageshow', _dropCurtainSoon);
+  window.addEventListener('focus',    _dropCurtainSoon);
 </script>
 
 <!-- ===== SVG ICON SPRITE =====
@@ -3849,7 +3877,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v210</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v211</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
