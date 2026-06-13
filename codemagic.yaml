@@ -48,6 +48,41 @@ workflows:
             's|return ApplicationDelegateProxy\.shared\.application(application, continue: userActivity, restorationHandler: restorationHandler)|return false|' \
             ios/App/App/AppDelegate.swift
 
+      - name: Install Ravid Studio app icon
+        # `cap add ios` ships a Capacitor placeholder AppIcon set. Copy
+        # our pre-rendered sizes from ios-icons/ into the AppIcon
+        # appiconset so the app shows the proper gold-soundwave icon
+        # on the home screen.
+        script: |
+          ICONSET=ios/App/App/Assets.xcassets/AppIcon.appiconset
+          mkdir -p "$ICONSET"
+          cp ios-icons/icon-40.png   "$ICONSET/AppIcon-20@2x.png"
+          cp ios-icons/icon-60.png   "$ICONSET/AppIcon-20@3x.png"
+          cp ios-icons/icon-58.png   "$ICONSET/AppIcon-29@2x.png"
+          cp ios-icons/icon-87.png   "$ICONSET/AppIcon-29@3x.png"
+          cp ios-icons/icon-80.png   "$ICONSET/AppIcon-40@2x.png"
+          cp ios-icons/icon-120.png  "$ICONSET/AppIcon-40@3x.png"
+          cp ios-icons/icon-120.png  "$ICONSET/AppIcon-60@2x.png"
+          cp ios-icons/icon-180.png  "$ICONSET/AppIcon-60@3x.png"
+          cp ios-icons/icon-1024.png "$ICONSET/AppIcon-1024.png"
+          cat > "$ICONSET/Contents.json" <<'EOF'
+          {
+            "images" : [
+              { "size" : "20x20",   "idiom" : "iphone", "filename" : "AppIcon-20@2x.png",  "scale" : "2x" },
+              { "size" : "20x20",   "idiom" : "iphone", "filename" : "AppIcon-20@3x.png",  "scale" : "3x" },
+              { "size" : "29x29",   "idiom" : "iphone", "filename" : "AppIcon-29@2x.png",  "scale" : "2x" },
+              { "size" : "29x29",   "idiom" : "iphone", "filename" : "AppIcon-29@3x.png",  "scale" : "3x" },
+              { "size" : "40x40",   "idiom" : "iphone", "filename" : "AppIcon-40@2x.png",  "scale" : "2x" },
+              { "size" : "40x40",   "idiom" : "iphone", "filename" : "AppIcon-40@3x.png",  "scale" : "3x" },
+              { "size" : "60x60",   "idiom" : "iphone", "filename" : "AppIcon-60@2x.png",  "scale" : "2x" },
+              { "size" : "60x60",   "idiom" : "iphone", "filename" : "AppIcon-60@3x.png",  "scale" : "3x" },
+              { "size" : "1024x1024", "idiom" : "ios-marketing", "filename" : "AppIcon-1024.png", "scale" : "1x" }
+            ],
+            "info" : { "version" : 1, "author" : "xcode" }
+          }
+          EOF
+          ls "$ICONSET"
+
       - name: Sync Capacitor
         script: npx cap sync ios
 
