@@ -414,6 +414,10 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Hide all scrollbars — looks like a website, not an app */
+    *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+    * { scrollbar-width: none; -ms-overflow-style: none; }
+
     html {
       scroll-behavior: smooth;
       height: 100%;
@@ -425,7 +429,7 @@
       font-family: 'Heebo', 'Segoe UI', Arial, sans-serif;
       font-weight: 600;
       font-size: 16px;
-      min-height: 100%;
+      min-height: 100dvh;
       height: 100%;
       direction: rtl;
       -webkit-font-smoothing: antialiased;
@@ -1829,10 +1833,12 @@
         flex-direction: row;
         border-left: none;
         border-top: 1.5px solid var(--border);
-        box-shadow: 0 -4px 20px rgba(108,71,245,0.10);
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.18);
         z-index: 200;
         padding-bottom: env(safe-area-inset-bottom);
-        background: rgba(255,255,255,0.97);
+        /* Match the app's dark wood theme so the home-indicator
+           safe area doesn't show as a white half-strip. */
+        background: var(--sidebar-bg);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
       }
@@ -1877,7 +1883,7 @@
         color: var(--accent);
         border-right-color: transparent;
         border-top-color: var(--accent);
-        background: linear-gradient(180deg, #f3f0ff 0%, transparent 100%);
+        background: linear-gradient(180deg, rgba(212,165,116,0.10) 0%, transparent 100%);
       }
 
       /* ===== תוכן ראשי ===== */
@@ -8904,6 +8910,29 @@ function doLogin() {
     setTimeout(() => err.textContent = '', 2000);
   }
 }
+
+// Capacitor wraps the app in a Capacitor:// (iOS) or http://localhost
+// (Android) WebView — both expose `window.Capacitor`. Inside the native
+// app, the device itself is already personal, so the password gate adds
+// nothing but friction (and pops the keyboard the moment you open it).
+// Auto-skip straight to the lobby.
+(function autoLoginOnNative() {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  const skip = () => {
+    const login = document.getElementById('login-screen');
+    const mode  = document.getElementById('mode-screen');
+    if (!login || !mode) return;
+    login.classList.add('hidden');
+    mode.classList.remove('hidden');
+    try { renderLobbyTasks(); } catch(e) {}
+    try { refreshLobbyGreeting(); } catch(e) {}
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', skip);
+  } else {
+    skip();
+  }
+})();
 
 function chooseMode(mode) {
   document.getElementById('mode-screen').classList.add('hidden');
