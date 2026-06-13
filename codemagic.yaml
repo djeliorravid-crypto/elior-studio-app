@@ -149,10 +149,10 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        # Internal testers (us) don't need beta review. Tell Codemagic
-        # to only assign the build to our internal "Beta" group, not
-        # submit it for Apple's external beta review (which fails
-        # without First/Last/Phone/Email fields filled in).
-        submit_to_testflight: true
-        beta_groups:
-          - Beta
+        # Skip beta-group assignment from CI — Codemagic gives up
+        # polling for the uploaded build before Apple's processing
+        # finishes, throwing a red "Did not find build matching
+        # uploaded version" error even though the upload succeeded.
+        # Internal testers see new builds automatically once Apple is
+        # done processing, no submission needed.
+        submit_to_testflight: false
