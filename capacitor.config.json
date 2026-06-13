@@ -9,7 +9,7 @@
     "errorPath": "index.html"
   },
   "ios": {
-    "contentInset": "automatic",
+    "contentInset": "never",
     "scheme": "Ravid Studio",
     "backgroundColor": "#2a1810"
   },
