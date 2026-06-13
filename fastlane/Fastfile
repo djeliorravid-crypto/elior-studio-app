@@ -34,8 +34,6 @@ platform :ios do
     sigh(
       app_identifier: APP_IDENTIFIER,
       api_key:        api_key,
-      adhoc:          false,
-      development:    false,
       force:          true,
       output_path:    "./fastlane/profiles",
     )
