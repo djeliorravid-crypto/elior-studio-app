@@ -21,9 +21,13 @@
       // (iOS is built on it). Only flag as real Mac if the UA says
       // Macintosh AND there's no touch device indicator.
       var isPhone = /iPhone|iPad|iPod/.test(ua);
-      var isRealMac = !isPhone && /Macintosh/.test(ua);
       var isWide = window.innerWidth > 900;
-      if (native && (isRealMac || isWide)) {
+      // Belt-and-suspenders: must be native AND wide viewport AND
+      // not an iPhone/iPad/iPod UA. The screenshot loop showed Mac-UA
+      // matching alone was firing on real iPhones, so the viewport
+      // width check is the canonical signal — UA is only an extra
+      // veto. CSS rules are also gated behind @media min-width:900px.
+      if (native && isWide && !isPhone) {
         document.documentElement.classList.add('cap-wide-native');
       }
     })();
@@ -44,34 +48,41 @@
 
     /* ── Mac / iPad running the iOS app: keep the full desktop layout
        but bump every text + element size up so it's actually readable
-       on a big screen (was rendering at iPhone point density). ── */
-    html.cap-wide-native body {
-      font-size: 19px;
+       on a big screen (was rendering at iPhone point density).
+       BELT-AND-SUSPENDERS: in addition to the JS guard that only adds
+       cap-wide-native on a wide viewport, gate every rule behind
+       min-width:900px so it can NEVER fire on a phone-sized viewport
+       — even if the class is mistakenly applied. iPhone has been
+       sneaking past the JS check and rendering at desktop sizes. ── */
+    @media (min-width: 900px) {
+      html.cap-wide-native body {
+        font-size: 19px;
+      }
+      html.cap-wide-native h1 { font-size: 32px; }
+      html.cap-wide-native h2 { font-size: 28px; }
+      html.cap-wide-native h3 { font-size: 22px; }
+      html.cap-wide-native .page-header h2 { font-size: 44px; }
+      html.cap-wide-native .page-header p  { font-size: 17px; }
+      html.cap-wide-native .card-value,
+      html.cap-wide-native .today-tile-value { font-size: 1.25em; }
+      html.cap-wide-native nav a { font-size: 16px; padding: 14px 18px; }
+      html.cap-wide-native nav a .nav-icon svg { width: 22px; height: 22px; }
+      html.cap-wide-native .btn,
+      html.cap-wide-native button:not(.btn-sm):not(.btn-icon):not(.row-icon-btn) {
+        font-size: 15px;
+        padding: 10px 18px;
+      }
+      html.cap-wide-native table { font-size: 15px; }
+      html.cap-wide-native table th { font-size: 13px; padding: 12px 14px; }
+      html.cap-wide-native table td { padding: 14px 14px; }
+      html.cap-wide-native .badge,
+      html.cap-wide-native .status-pill { font-size: 13px; padding: 6px 13px; }
+      html.cap-wide-native .status-action { font-size: 13px; padding: 7px 14px; }
+      html.cap-wide-native .sidebar-logo h1 { font-size: 24px; }
+      html.cap-wide-native input,
+      html.cap-wide-native select,
+      html.cap-wide-native textarea { font-size: 16px; padding: 12px 14px; }
     }
-    html.cap-wide-native h1 { font-size: 32px; }
-    html.cap-wide-native h2 { font-size: 28px; }
-    html.cap-wide-native h3 { font-size: 22px; }
-    html.cap-wide-native .page-header h2 { font-size: 44px; }
-    html.cap-wide-native .page-header p  { font-size: 17px; }
-    html.cap-wide-native .card-value,
-    html.cap-wide-native .today-tile-value { font-size: 1.25em; }
-    html.cap-wide-native nav a { font-size: 16px; padding: 14px 18px; }
-    html.cap-wide-native nav a .nav-icon svg { width: 22px; height: 22px; }
-    html.cap-wide-native .btn,
-    html.cap-wide-native button:not(.btn-sm):not(.btn-icon):not(.row-icon-btn) {
-      font-size: 15px;
-      padding: 10px 18px;
-    }
-    html.cap-wide-native table { font-size: 15px; }
-    html.cap-wide-native table th { font-size: 13px; padding: 12px 14px; }
-    html.cap-wide-native table td { padding: 14px 14px; }
-    html.cap-wide-native .badge,
-    html.cap-wide-native .status-pill { font-size: 13px; padding: 6px 13px; }
-    html.cap-wide-native .status-action { font-size: 13px; padding: 7px 14px; }
-    html.cap-wide-native .sidebar-logo h1 { font-size: 24px; }
-    html.cap-wide-native input,
-    html.cap-wide-native select,
-    html.cap-wide-native textarea { font-size: 16px; padding: 12px 14px; }
 
     /* When the app is backgrounded on iOS, the OS takes a snapshot
        of the WebView and uses it as the app-switcher thumbnail AND
@@ -4435,7 +4446,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v232</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v233</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
