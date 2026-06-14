@@ -38,88 +38,36 @@
        (e.g. when chooseMode adds .hidden to switch to a content
        page), trapping the user on the lobby forever. */
 
-    /* ── Mac / iPad: clamp the entire iOS app to a phone-width column
-       and run the mobile layout. CSS media queries are based on
-       viewport width which we can't change here, so we re-apply the
-       most-impactful mobile rules under html.cap-wide-native. ── */
-    html.cap-wide-native {
-      background: #1c1410;
-    }
+    /* ── Mac / iPad running the iOS app: keep the full desktop layout
+       but bump every text + element size up so it's actually readable
+       on a big screen (was rendering at iPhone point density). ── */
     html.cap-wide-native body {
-      max-width: 430px;
-      margin: 0 auto;
-      min-height: 100dvh;
-      box-shadow: 0 0 80px rgba(0,0,0,0.55);
-      position: relative;
-      overflow-x: hidden;
+      font-size: 19px;
     }
-    /* Hide the desktop sidebar — the bottom-tab nav takes over. */
-    html.cap-wide-native .sidebar {
-      width: 100%;
-      height: auto;
-      min-height: 60px;
-      top: auto; right: 0; bottom: 0; left: 0;
-      max-width: 430px;
-      margin: 0 auto;
-      flex-direction: row;
-      border-left: none;
-      border-top: 1.5px solid var(--border);
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.18);
-      z-index: 200;
-      padding-bottom: env(safe-area-inset-bottom);
-      background: var(--sidebar-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      position: fixed;
+    html.cap-wide-native h1 { font-size: 32px; }
+    html.cap-wide-native h2 { font-size: 28px; }
+    html.cap-wide-native h3 { font-size: 22px; }
+    html.cap-wide-native .page-header h2 { font-size: 44px; }
+    html.cap-wide-native .page-header p  { font-size: 17px; }
+    html.cap-wide-native .card-value,
+    html.cap-wide-native .today-tile-value { font-size: 1.25em; }
+    html.cap-wide-native nav a { font-size: 16px; padding: 14px 18px; }
+    html.cap-wide-native nav a .nav-icon svg { width: 22px; height: 22px; }
+    html.cap-wide-native .btn,
+    html.cap-wide-native button:not(.btn-sm):not(.btn-icon):not(.row-icon-btn) {
+      font-size: 15px;
+      padding: 10px 18px;
     }
-    html.cap-wide-native .sidebar-logo,
-    html.cap-wide-native .sidebar-footer { display: none; }
-    html.cap-wide-native nav {
-      flex: 1;
-      padding: 0;
-      display: flex;
-      flex-direction: row;
-      align-items: stretch;
-      overflow-x: auto;
-      overflow-y: hidden;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-    html.cap-wide-native nav::-webkit-scrollbar { display: none; }
-    html.cap-wide-native nav a {
-      flex: 0 0 auto;
-      min-width: 62px;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 7px 8px 5px;
-      gap: 2px;
-      font-size: 10px;
-      font-weight: 700;
-      border-right: none;
-      border-top: none;
-      text-align: center;
-      white-space: nowrap;
-    }
-    html.cap-wide-native nav a .nav-icon svg { width: 24px; height: 24px; }
-    html.cap-wide-native .main {
-      margin-right: 0 !important;
-      padding: calc(env(safe-area-inset-top) + 18px) 14px calc(72px + env(safe-area-inset-bottom));
-    }
-    html.cap-wide-native .page-header {
-      flex-direction: row;
-      align-items: flex-start;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
-      padding-right: 92px;
-    }
-    html.cap-wide-native .page-header > div:first-child { flex: 1 1 100%; min-width: 0; }
-    html.cap-wide-native .page-header h2 { font-size: 24px; }
-    html.cap-wide-native .page-header p { display: none; }
-    html.cap-wide-native .cards-grid { grid-template-columns: 1fr !important; }
-    html.cap-wide-native table { font-size: 13px; }
+    html.cap-wide-native table { font-size: 15px; }
+    html.cap-wide-native table th { font-size: 13px; padding: 12px 14px; }
+    html.cap-wide-native table td { padding: 14px 14px; }
+    html.cap-wide-native .badge,
+    html.cap-wide-native .status-pill { font-size: 13px; padding: 6px 13px; }
+    html.cap-wide-native .status-action { font-size: 13px; padding: 7px 14px; }
+    html.cap-wide-native .sidebar-logo h1 { font-size: 24px; }
+    html.cap-wide-native input,
+    html.cap-wide-native select,
+    html.cap-wide-native textarea { font-size: 16px; padding: 12px 14px; }
 
     /* When the app is backgrounded on iOS, the OS takes a snapshot
        of the WebView and uses it as the app-switcher thumbnail AND
@@ -4489,7 +4437,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v227</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v228</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
