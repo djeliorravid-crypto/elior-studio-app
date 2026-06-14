@@ -109,6 +109,25 @@ workflows:
       - name: Sync Capacitor
         script: npx cap sync ios
 
+      - name: Inject TaskWidget extension target + bridge plugin
+        # Adds the home-screen widget target and the small Capacitor
+        # bridge plugin (TaskWidgetBridge) into the generated Xcode
+        # project. The script is idempotent — it bails out if the
+        # target already exists from a previous build.
+        #
+        # Requires the App Group `group.com.ravidstudio.app` to exist
+        # in App Store Connect AND to be enabled on both bundle IDs
+        # (com.ravidstudio.app + com.ravidstudio.app.TaskWidget).
+        # If you haven't set that up yet, the build will fail with
+        # "Provisioning profile doesn't include com.apple.security
+        # .application-groups entitlement".
+        script: |
+          gem list -i xcodeproj || gem install xcodeproj --no-document
+          ruby ios-widget/inject-widget-target.rb \
+            ios/App/App.xcodeproj \
+            ios-widget/TaskWidget \
+            ios-plugin/TaskWidgetBridge
+
       - name: Initialize keychain
         script: keychain initialize
 
@@ -127,9 +146,19 @@ workflows:
         script: |
           openssl genrsa -out /tmp/cert_private_key.pem 2048
 
-      - name: Create distribution cert + App Store profile
+      - name: Create distribution cert + App Store profile (main app)
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create \
+            --certificate-key=@file:/tmp/cert_private_key.pem
+
+      - name: Create App Store profile for the widget extension
+        # The widget is a separate bundle and needs its own profile.
+        # We reuse the same private key already uploaded for the
+        # main cert (--create won't make a new cert if one exists).
+        script: |
+          app-store-connect fetch-signing-files "${BUNDLE_ID}.TaskWidget" \
             --type IOS_APP_STORE \
             --create \
             --certificate-key=@file:/tmp/cert_private_key.pem

@@ -4544,7 +4544,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v235</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v236</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6193,6 +6193,10 @@ function save(key, val) {
   _savePending();
   // 3. נסה לדחוף לענן עכשיו
   _pushKey(key);
+  // 4. כשמשימות יומיות משתנות — סנכרן ל-Home-screen widget
+  if (key === 'daily_tasks' && typeof window.syncTasksToWidget === 'function') {
+    window.syncTasksToWidget(val);
+  }
 }
 
 // ===== גיבוי אוטומטי =====
@@ -15058,6 +15062,45 @@ window.tryFaceId = async function() {
     document.documentElement.classList.add('face-id-locked');
   }
 };
+// ===== Home-screen Widget bridge =====
+// Pushes the daily-task list into the App Group container the
+// TaskWidget extension reads from. Plugin is registered as
+// "TaskWidgetBridge" by the custom Swift bridge that codemagic
+// drops into the App target.
+window.syncTasksToWidget = function(tasks) {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isNative) return;
+  const Bridge = window.Capacitor.Plugins && window.Capacitor.Plugins.TaskWidgetBridge;
+  if (!Bridge) return;
+  try {
+    const list = (Array.isArray(tasks) ? tasks : []).map(function(t) {
+      return {
+        id:    String(t.id || ''),
+        title: String(t.text || t.title || ''),
+        done:  !!t.done
+      };
+    }).filter(function(t) { return t.id && t.title; });
+    Bridge.syncTasks({ tasks: list }).catch(function() {});
+  } catch (e) {}
+};
+// Push the current snapshot once at startup so a freshly-installed
+// widget has data before the user creates/toggles a task.
+(function pushInitialWidgetSync() {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isNative) return;
+  function attempt() {
+    try {
+      const all = (typeof load === 'function') ? (load('daily_tasks') || []) : [];
+      window.syncTasksToWidget(all);
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attempt);
+  } else {
+    attempt();
+  }
+})();
+
 (function setupFaceIdLock() {
   const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   if (!isNative) return;
