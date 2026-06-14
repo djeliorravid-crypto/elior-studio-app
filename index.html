@@ -4393,7 +4393,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v222</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v223</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -14730,19 +14730,81 @@ async function _scheduleDailyTaskNotif(task) {
   const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
   if (!LN) return;
   const numId = Math.abs(task.id.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0));
+
+  // Format the body like "מתוזמן ל-14:30 · יום ראשון". iOS already
+  // shows "Ravid Studio" as the source above the title, so the title
+  // is just the task text, no brand prefix needed.
+  const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const sameDay = at.toDateString() === new Date().toDateString();
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  const isTomorrow = at.toDateString() === tomorrow.toDateString();
+  const time = String(at.getHours()).padStart(2,'0') + ':' + String(at.getMinutes()).padStart(2,'0');
+  const dayLabel = sameDay ? 'היום' : isTomorrow ? 'מחר' : 'יום ' + days[at.getDay()];
+  const bodyText = `מתוזמן ל-${time} · ${dayLabel}`;
+
   try {
     await LN.cancel({ notifications: [{ id: numId }] }).catch(() => {});
     await LN.schedule({
       notifications: [{
         id: numId,
-        title: '⏰ ' + task.text,
-        body: 'תזכורת',
+        title: task.text,
+        body: bodyText,
         schedule: { at: at, allowWhileIdle: true },
         sound: 'default',
+        actionTypeId: 'TASK_REMINDER',
         extra: { dailyTaskId: task.id }
       }]
     });
   } catch (e) { console.warn('daily task notif failed', e); }
+}
+
+// One-time setup: register the "סיימתי / דחה 10 דק'" action buttons
+// and wire up the listener that handles taps on them.
+async function _setupNativeNotifActions() {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+  try {
+    await LN.registerActionTypes({
+      types: [{
+        id: 'TASK_REMINDER',
+        actions: [
+          { id: 'done',   title: 'סיימתי' },
+          { id: 'snooze', title: 'דחה 10 דק׳' }
+        ]
+      }]
+    });
+  } catch (e) {}
+  try {
+    LN.addListener('localNotificationActionPerformed', async function(event) {
+      const action = event && event.actionId;
+      const extra  = (event && event.notification && event.notification.extra) || {};
+      const taskId = extra.dailyTaskId;
+      if (!taskId) return;
+      if (action === 'done') {
+        const all = load('daily_tasks');
+        const t = all.find(function(x) { return x.id === taskId; });
+        if (t) { t.done = true; save('daily_tasks', all); }
+        try { renderDaily(); } catch(_) {}
+        try { renderLobbyTasks(); } catch(_) {}
+      } else if (action === 'snooze') {
+        const all = load('daily_tasks');
+        const t = all.find(function(x) { return x.id === taskId; });
+        if (t) {
+          t.remindAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+          save('daily_tasks', all);
+          _scheduleDailyTaskNotif(t);
+        }
+      }
+    });
+  } catch (e) {}
+}
+if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _setupNativeNotifActions);
+  } else {
+    _setupNativeNotifActions();
+  }
 }
 
 function toggleLobbyTask(ev, id) {
