@@ -82,7 +82,13 @@ widget_target.build_configurations.each do |c|
   s['TARGETED_DEVICE_FAMILY']         = '1,2'
   s['ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME'] = 'WidgetBackground'
   s['SKIP_INSTALL']                   = 'NO'
-  s['ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES'] = 'YES'
+  # CRITICAL: must be NO for app extensions. If YES, Xcode duplicates
+  # libswift_Concurrency.dylib into TaskWidget.appex/Frameworks and
+  # App Store rejects with code 90206 "Invalid Bundle … contains
+  # disallowed file 'Frameworks'". The extension already finds Swift
+  # libs via the @executable_path/../../Frameworks rpath below.
+  s['ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES'] = 'NO'
+  s['EMBEDDED_CONTENT_CONTAINS_SWIFT']       = 'NO'
   s['LD_RUNPATH_SEARCH_PATHS']        = ['$(inherited)', '@executable_path/Frameworks', '@executable_path/../../Frameworks']
 end
 
