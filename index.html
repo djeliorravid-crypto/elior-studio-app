@@ -2257,6 +2257,75 @@
     }
     #lobby-settings-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.14); }
 
+    /* ===== Face ID Lock Screen ===== */
+    /* Full-bleed overlay that sits over EVERYTHING. Shown only on
+       native iOS when the user enabled "Face ID לפתיחת האפליקציה".
+       Drops opacity → display:none after biometry succeeds. */
+    #face-id-lock {
+      position: fixed; inset: 0;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      background:
+        radial-gradient(ellipse at top, #3a2818 0%, #1f1408 70%, #110a04 100%);
+      z-index: 100000;
+      padding: calc(env(safe-area-inset-top, 0px) + 40px) 24px calc(env(safe-area-inset-bottom, 0px) + 40px);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html.face-id-locked #face-id-lock { display: flex; }
+    .face-id-mark {
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 0px) + 14px);
+      left: 0; right: 0;
+      text-align: center;
+      font-family: 'Frank Ruhl Libre', serif;
+      font-size: 13px;
+      color: rgba(255,255,255,0.32);
+      letter-spacing: 0.05em;
+    }
+    .face-id-logo {
+      font-family: 'Great Vibes', cursive;
+      font-size: 44px;
+      color: #f4ede0;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      margin-bottom: 4px;
+    }
+    .face-id-sub {
+      font-size: 14px;
+      color: rgba(244,237,224,0.6);
+      letter-spacing: 0.02em;
+    }
+    .face-id-icon {
+      margin: 18px 0;
+      filter: drop-shadow(0 4px 20px rgba(212,165,116,0.3));
+      animation: face-id-pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes face-id-pulse {
+      0%, 100% { transform: scale(1);   opacity: 0.92; }
+      50%      { transform: scale(1.04); opacity: 1; }
+    }
+    .face-id-retry-btn {
+      margin-top: 14px;
+      padding: 13px 28px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #a06c48 0%, #c89465 100%);
+      color: #f4ede0;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Heebo', sans-serif;
+      border: none;
+      cursor: pointer;
+      box-shadow:
+        0 4px 16px rgba(160,108,72,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.15s, filter 0.15s;
+    }
+    .face-id-retry-btn:active { transform: scale(0.96); filter: brightness(0.92); }
+
     /* ===== Notification Settings Modal ===== */
     #notif-settings-overlay {
       position: fixed; inset: 0;
@@ -4384,10 +4453,16 @@
 <!-- ===== NOTIFICATION SETTINGS MODAL ===== -->
 <div id="notif-settings-overlay">
   <div id="notif-settings-card">
-    <h3>🔔 הגדרות התראות</h3>
-    <div class="notif-sub">בחר על מה לקבל התראה ומתי</div>
+    <h3>⚙️ הגדרות</h3>
+    <div class="notif-sub">התראות, אבטחה, ועוד</div>
 
-    <div class="notif-section-title">סוגי התראות</div>
+    <div class="notif-section-title">🔒 אבטחה</div>
+    <div class="notif-row" id="face-id-row" style="display:none">
+      <div><label>Face ID לפתיחת האפליקציה</label><div class="notif-sub-label">נדרש אימות בכל פתיחה</div></div>
+      <div class="notif-toggle" id="face-id-toggle" onclick="handleFaceIdToggle(this)"></div>
+    </div>
+
+    <div class="notif-section-title">🔔 סוגי התראות</div>
     <div class="notif-row">
       <div><label>הוצאות לפני תשלום</label><div class="notif-sub-label">חשבונות, מנויים, ספקים</div></div>
       <div class="notif-toggle" data-toggle="expenses" onclick="handleNotifToggle(this)"></div>
@@ -4421,6 +4496,29 @@
   </div>
 </div>
 
+<!-- ===== FACE ID LOCK ===== -->
+<!-- Shown only on native iOS when the user enabled the Face ID toggle.
+     Covers everything until biometry succeeds. Re-armed when the app
+     comes back from background. -->
+<div id="face-id-lock">
+  <div class="face-id-mark">בס״ד</div>
+  <div class="face-id-logo">אליאור רביד</div>
+  <div class="face-id-sub">נעול — נדרש Face ID</div>
+  <div class="face-id-icon" aria-hidden="true">
+    <svg viewBox="0 0 64 64" width="80" height="80" fill="none" stroke="#d4a574" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 22 V14 a6 6 0 0 1 6 -6 H22"/>
+      <path d="M56 22 V14 a6 6 0 0 0 -6 -6 H42"/>
+      <path d="M8 42 V50 a6 6 0 0 0 6 6 H22"/>
+      <path d="M56 42 V50 a6 6 0 0 1 -6 6 H42"/>
+      <circle cx="24" cy="28" r="1.6" fill="#d4a574"/>
+      <circle cx="40" cy="28" r="1.6" fill="#d4a574"/>
+      <path d="M32 28 V38 q0 2 -2 2 H28"/>
+      <path d="M22 44 q4 4 10 4 t10 -4"/>
+    </svg>
+  </div>
+  <button class="face-id-retry-btn" id="face-id-retry-btn" type="button" onclick="tryFaceId()">פתח עם Face ID</button>
+</div>
+
 <!-- ===== LOGIN ===== -->
 <div id="login-screen">
   <div class="login-box">
@@ -4446,7 +4544,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v234</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v235</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9806,6 +9904,14 @@ window.openNotifSettings = function() {
   document.querySelectorAll('#notif-settings-card [data-lead]').forEach(el => {
     el.classList.toggle('on', String(prefs.leadMins) === el.getAttribute('data-lead'));
   });
+  // Face ID row — only show on native iOS where biometry actually works.
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const faceIdRow = document.getElementById('face-id-row');
+  if (faceIdRow) {
+    faceIdRow.style.display = isNative ? '' : 'none';
+    const tog = document.getElementById('face-id-toggle');
+    if (tog) tog.classList.toggle('on', !!window.getFaceIdEnabled());
+  }
   overlay.classList.add('open');
 };
 window.closeNotifSettings = function() {
@@ -10237,14 +10343,53 @@ function deleteWorkshop(id){
   toast('🗑 נמחק');
 }
 
+// ===== Native share helper =====
+// Prefers @capacitor/share (registered as "Share" in Capacitor.Plugins)
+// for guaranteed native iOS share sheet — handles file URLs more
+// reliably than WKWebView's Web Share API. Falls back to navigator.share
+// for the web build.
+window.nativeShare = async function(opts) {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const SharePlugin = isNative && window.Capacitor.Plugins && window.Capacitor.Plugins.Share;
+  if (SharePlugin) {
+    try {
+      await SharePlugin.share({
+        title: opts.title || '',
+        text:  opts.text  || '',
+        url:   opts.url   || '',
+        dialogTitle: opts.title || ''
+      });
+      return true;
+    } catch (e) {
+      // User-cancel and "not implemented" both throw — silent fallthrough.
+    }
+  }
+  if (navigator.share) {
+    try {
+      const payload = {};
+      if (opts.title) payload.title = opts.title;
+      if (opts.text)  payload.text  = opts.text;
+      if (opts.url)   payload.url   = opts.url;
+      if (opts.files && opts.files.length && navigator.canShare && navigator.canShare({files: opts.files})) {
+        payload.files = opts.files;
+      }
+      await navigator.share(payload);
+      return true;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return false;
+    }
+  }
+  if (opts.url) {
+    try { await navigator.clipboard.writeText(opts.url); if (typeof toast === 'function') toast('📋 הקישור הועתק'); return true; } catch (_) {}
+  }
+  return false;
+};
+
 async function shareWorkshop(id){
   const url = wkPublicUrl(id);
   const w = (load('workshops') || []).find(function(x){ return x.id === id; });
   const title = w ? w.title : 'סדנא';
-  if(navigator.share){
-    try { await navigator.share({ title: title, url: url }); return; }
-    catch(e){ if(e && e.name === 'AbortError') return; }
-  }
+  if (await window.nativeShare({ title: title, url: url })) return;
   try {
     await navigator.clipboard.writeText(url);
     toast('🔗 הקישור הועתק');
@@ -10626,12 +10771,8 @@ async function shareProposal(id){
   const total = (p.items || []).reduce((s, it) => s + (parseFloat(it.price) || 0), 0);
   const title = 'הצעת מחיר — ' + (p.clientName || '');
   const text = 'שלום ' + (p.clientName || '') + ',\nמצורפת הצעת מחיר על סך ' + fmtMoney(total) + '.\n' + url;
-  if (navigator.share) {
-    try { await navigator.share({ title: title, text: text, url: url }); }
-    catch (e) { try { await navigator.clipboard.writeText(url); toast('📋 הקישור הועתק'); } catch(_) {} }
-  } else {
-    try { await navigator.clipboard.writeText(url); toast('📋 הקישור הועתק'); }
-    catch(_) { prompt('העתק את הקישור:', url); }
+  if (!(await window.nativeShare({ title: title, text: text, url: url }))) {
+    try { prompt('העתק את הקישור:', url); } catch (_) {}
   }
 }
 
@@ -11062,12 +11203,8 @@ async function shareContract(id){
   const c = (load('contracts') || []).find(x => x.id === id);
   const title = c ? ('סיכום הפקה — ' + (c.songTitle || '')) : 'סיכום הפקה';
   const msg = 'היי ' + (c ? c.clientName : '') + ', שולח לך דף קצר שמסכם את כל מה שדיברנו עליו. תעבור, ואם הכל בסדר תחתום בקישור.\n' + url;
-  if (navigator.share) {
-    try { await navigator.share({ title: title, text: msg, url: url }); return; }
-    catch(e){ if (e && e.name === 'AbortError') return; }
-  }
-  try { await navigator.clipboard.writeText(url); toast('🔗 הקישור הועתק'); }
-  catch(e){ prompt('הקישור לחתימה:', url); }
+  if (await window.nativeShare({ title: title, text: msg, url: url })) return;
+  try { prompt('הקישור לחתימה:', url); } catch (_) {}
 }
 
 function _ctrCardHtml(c){
@@ -14863,6 +15000,84 @@ if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.is
     _setupNativeNotifActions();
   }
 }
+
+// ===== Face ID lock =====
+// Calls @aparajita/capacitor-biometric-auth — the plugin is auto-
+// registered with Capacitor's bridge as "BiometricAuthNative" after
+// `npx cap sync ios`. We invoke `internalAuthenticate` directly so we
+// don't need to load the plugin's ESM wrapper.
+window.FACE_ID_PREF_KEY = 'face_id_enabled_v1';
+window.getFaceIdEnabled = function() {
+  try { return localStorage.getItem(window.FACE_ID_PREF_KEY) === '1'; }
+  catch (e) { return false; }
+};
+window.setFaceIdEnabled = function(on) {
+  try { localStorage.setItem(window.FACE_ID_PREF_KEY, on ? '1' : '0'); }
+  catch (e) {}
+};
+window.handleFaceIdToggle = async function(btn) {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isNative) {
+    if (typeof toast === 'function') toast('Face ID זמין רק באפליקציה'); else alert('Face ID זמין רק באפליקציה');
+    return;
+  }
+  const turningOn = !window.getFaceIdEnabled();
+  if (turningOn) {
+    // Verify Face ID actually works before persisting the preference —
+    // otherwise the user could lock themselves out if biometry isn't
+    // enrolled.
+    const ok = await window._tryBiometricAuth('אישור הפעלת Face ID');
+    if (!ok) {
+      if (typeof toast === 'function') toast('הפעלת Face ID נכשלה'); else alert('הפעלת Face ID נכשלה');
+      return;
+    }
+  }
+  window.setFaceIdEnabled(turningOn);
+  btn.classList.toggle('on', turningOn);
+};
+window._tryBiometricAuth = async function(reason) {
+  const BA = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BiometricAuthNative;
+  if (!BA) return false;
+  try {
+    await BA.internalAuthenticate({
+      reason: reason || 'פתח את אליאור רביד',
+      cancelTitle: 'בטל',
+      allowDeviceCredential: true,
+      iosFallbackTitle: 'השתמש בקוד מכשיר'
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+window.tryFaceId = async function() {
+  const ok = await window._tryBiometricAuth('פתח את אליאור רביד');
+  if (ok) {
+    document.documentElement.classList.remove('face-id-locked');
+  } else {
+    document.documentElement.classList.add('face-id-locked');
+  }
+};
+(function setupFaceIdLock() {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isNative) return;
+  // Arm the lock immediately on first script execution (before the
+  // user can see the lobby), then run Face ID. The CSS gates the
+  // overlay behind html.face-id-locked, so adding the class blocks
+  // every interaction until biometry succeeds.
+  function armAndAuth() {
+    if (!window.getFaceIdEnabled()) return;
+    document.documentElement.classList.add('face-id-locked');
+    window.tryFaceId();
+  }
+  armAndAuth();
+  // Re-lock whenever the app comes back from background. iOS keeps
+  // the WebView alive across home-button taps, so without this the
+  // user only authenticates once per cold launch.
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') armAndAuth();
+  });
+})();
 
 function toggleLobbyTask(ev, id) {
   // Ignore clicks that originate from interactive children (drag handle,
