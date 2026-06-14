@@ -3626,19 +3626,24 @@
       --shadow-ios-3: 0 2px 4px rgba(0,0,0,0.50), 0 18px 48px rgba(0,0,0,0.50);
     }
 
-    /* ── Typography hierarchy — iOS large-title feel ── */
-    .page-header h2 {
-      font-size: 32px;
-      font-weight: 800;
-      letter-spacing: -0.028em;
-      line-height: 1.08;
-      font-family: 'Rubik', 'Heebo', sans-serif;
-    }
-    .page-header p {
-      font-size: 14px;
-      font-weight: 500;
-      letter-spacing: -0.005em;
-      margin-top: 4px;
+    /* ── Typography hierarchy — iOS large-title feel ──
+       Scoped to desktop-only widths so the mobile media query at
+       max-width:768px (which sets the much smaller 17px h2) is the
+       one that wins on phones. ── */
+    @media (min-width: 769px) {
+      .page-header h2 {
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: -0.028em;
+        line-height: 1.08;
+        font-family: 'Rubik', 'Heebo', sans-serif;
+      }
+      .page-header p {
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: -0.005em;
+        margin-top: 4px;
+      }
     }
     /* Numbers — heavier weight + tight tracking for premium feel */
     .card-value,
@@ -3817,12 +3822,10 @@
         opacity: 0.7;
         transition-duration: 0.08s;
       }
-      /* Page header titles slightly smaller on mobile but still bold */
-      .page-header h2 {
-        font-size: 22px;
-        font-weight: 800;
-        letter-spacing: -0.025em;
-      }
+      /* Mobile page-header h2 stays at the original 17px from the
+         max-width:768px rule above (with overflow-ellipsis) — the
+         polish desktop look (32px) is now gated behind min-width:769px.
+         No mobile-h2 override here on purpose. */
       .card {
         border-radius: var(--r-md) !important;
         padding: 16px 14px;
@@ -4441,7 +4444,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v230</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v231</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
