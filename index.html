@@ -468,7 +468,21 @@
       direction: rtl;
       -webkit-font-smoothing: antialiased;
       -webkit-text-size-adjust: 100%;
-      overscroll-behavior: none;        /* מונע bounce מיותר */
+      overscroll-behavior: none;
+      /* Native-app feel — no long-press text selection, no callout
+         menu, no tap highlight. */
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* …but DO allow selecting inside actual inputs / textareas /
+       contentEditable so the user can still copy-paste task text,
+       amounts, notes, etc. */
+    input, textarea, [contenteditable="true"], .selectable {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
     }
 
     /* ===== SIDEBAR ===== */
@@ -4300,7 +4314,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v219</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v220</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
