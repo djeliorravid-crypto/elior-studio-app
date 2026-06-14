@@ -3888,6 +3888,78 @@
       font-size: 11.5px;
     }
 
+    /* ── Refined status indicators (replace the emoji-y traffic-light
+       buttons on the income / expense rows). iOS-style: small colored
+       dot + label, ONE action button beside it. ── */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+    .status-pill:active { transform: scale(0.96); }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-pill.paid    { background: rgba(122,184,90,0.14);  color: #7ab85a; }
+    .status-pill.paid    .status-dot { background: #7ab85a; }
+    .status-pill.overdue { background: rgba(240,118,84,0.14);  color: #f07654; }
+    .status-pill.overdue .status-dot { background: #f07654; }
+    .status-pill.pending { background: rgba(180,148,116,0.14); color: #d4b890; }
+    .status-pill.pending .status-dot { background: #b89878; }
+
+    .status-action {
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      background: transparent;
+      color: #d4a574;
+      border: 1px solid rgba(212,165,116,0.35);
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+    .status-action:active { transform: scale(0.96); background: rgba(212,165,116,0.10); }
+
+    /* Small icon-only button used in table rows for destructive
+       actions (delete) — subtle by default, red on press. */
+    .row-icon-btn {
+      width: 30px; height: 30px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: rgba(184,164,138,0.65);
+      cursor: pointer;
+      transition: color .15s ease, background .15s ease, transform .15s ease;
+      -webkit-tap-highlight-color: transparent;
+      vertical-align: middle;
+    }
+    .row-icon-btn:active {
+      transform: scale(0.92);
+      color: #f07654;
+      background: rgba(240,118,84,0.10);
+    }
+
     /* ── Page transition — smoother fade ── */
     .page.active {
       animation: pgInIOS .28s cubic-bezier(.4,0,.2,1);
@@ -4321,7 +4393,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v221</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v222</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6889,22 +6961,23 @@ function renderIncome() {
     const st = i.status || 'pending';
     if (st === 'paid') return `
       <td>
-        <span class="badge badge-green" style="cursor:pointer" onclick="setIncomeStatus('${i.id}','pending')" title="לחץ לשינוי">✅ שולם</span>
+        <span class="status-pill paid" onclick="setIncomeStatus('${i.id}','pending')" title="לחץ לשינוי">
+          <span class="status-dot"></span>שולם
+        </span>
       </td>`;
     if (st === 'overdue') return `
       <td>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-          <span class="badge badge-red">🔴 באיחור</span>
-          <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700;padding:4px 10px" onclick="setIncomeStatus('${i.id}','paid')">✓ שולם</button>
+        <div class="status-row">
+          <span class="status-pill overdue"><span class="status-dot"></span>באיחור</span>
+          <button class="status-action" onclick="setIncomeStatus('${i.id}','paid')">סמן כשולם</button>
         </div>
       </td>`;
-    // pending — show gray badge + action buttons
+    // pending
     return `
       <td>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
-          <span class="badge badge-gray">טרם שולם</span>
-          <button class="btn btn-sm" style="background:var(--green-light);color:var(--green);font-weight:700;padding:4px 10px" onclick="setIncomeStatus('${i.id}','paid')">✅ שולם</button>
-          <button class="btn btn-sm" style="background:var(--pill-red-bg);color:var(--pill-red-text);font-weight:700;padding:4px 10px" onclick="setIncomeStatus('${i.id}','overdue')">🔴 באיחור</button>
+        <div class="status-row">
+          <span class="status-pill pending"><span class="status-dot"></span>ממתין</span>
+          <button class="status-action" onclick="setIncomeStatus('${i.id}','paid')">סמן כשולם</button>
         </div>
       </td>`;
   }
@@ -7203,8 +7276,10 @@ function renderExpenses() {
           <span class="badge ${catBadge[e.category]||'badge-orange'}" style="font-size:11px">${e.category}</span>
         </div>
         <span style="font-size:15px;font-weight:800;white-space:nowrap;${e.paid?'text-decoration:line-through;color:var(--text-muted)':'color:var(--red)'}">-${fmtMoney(e.amount)}</span>
-        <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;${e.paid?'background:var(--pill-green-bg);color:var(--pill-green-text)':'background:var(--red-light);color:var(--red)'}">${e.paid?'✓':'שולם'}</button>
-        <button onclick="deleteExpense('${e.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 4px">×</button>
+        ${e.paid
+          ? `<span class="status-pill paid" onclick="toggleExpensePaid('${e.id}')"><span class="status-dot"></span>שולם</span>`
+          : `<button class="status-action" onclick="toggleExpensePaid('${e.id}')">סמן כשולם</button>`}
+        <button onclick="deleteExpense('${e.id}')" style="border:none;background:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:2px 4px">×</button>
       </div>`).join('');
   }
 
@@ -7242,8 +7317,12 @@ function renderExpenses() {
                 <td><span class="badge ${catBadge[e.category]||'badge-orange'}">${e.category}</span></td>
                 <td style="font-weight:800;color:var(--red)">-${fmtMoney(e.amount)}</td>
                 <td style="white-space:nowrap">
-                  <button onclick="toggleExpensePaid('${e.id}')" style="border:none;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px;${e.paid?'background:var(--pill-green-bg);color:var(--pill-green-text)':'background:var(--red-light);color:var(--red)'}">${e.paid ? '✓ שולם' : 'שולם'}</button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">🗑</button>
+                  ${e.paid
+                    ? `<span class="status-pill paid" onclick="toggleExpensePaid('${e.id}')"><span class="status-dot"></span>שולם</span>`
+                    : `<button class="status-action" onclick="toggleExpensePaid('${e.id}')">סמן כשולם</button>`}
+                  <button class="row-icon-btn" onclick="deleteExpense('${e.id}')" aria-label="מחק">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+                  </button>
                 </td>
               </tr>
             `).join('')}
