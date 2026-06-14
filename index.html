@@ -4393,7 +4393,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v224</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v225</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -14748,6 +14748,7 @@ async function _scheduleDailyTaskNotif(task) {
       notifications: [{
         id: numId,
         title: task.text,
+        subtitle: 'Ravid Studio',
         body: bodyText,
         schedule: { at: at, allowWhileIdle: true },
         sound: 'default',
