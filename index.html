@@ -4187,6 +4187,54 @@
   <button class="fab-main" id="fab-main" onclick="toggleFab()" aria-label="פעולה מהירה">+</button>
 </div>
 
+<!-- ===== REMINDER TIME PICKER (for tasks) ===== -->
+<div id="remind-picker-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:10001;display:none;align-items:flex-end;justify-content:center;padding:0;">
+  <div id="remind-picker-card" style="background:#2a1f17;color:#f4ede0;border:1px solid rgba(212,165,116,0.25);border-radius:22px 22px 0 0;padding:22px 20px calc(env(safe-area-inset-bottom,0px) + 22px);width:100%;max-width:480px;box-shadow:0 -10px 40px rgba(0,0,0,0.55);">
+    <div style="text-align:center;font-size:13px;color:#b8a48a;font-weight:600;margin-bottom:4px;" id="remind-picker-task-text"></div>
+    <h3 style="font-size:18px;font-weight:800;text-align:center;margin-bottom:18px;color:#f4ede0;">מתי להזכיר לך?</h3>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <input type="date" id="remind-custom-date" style="flex:1;padding:13px 12px;border-radius:12px;border:1px solid #5c4838;background:#3a2c22;color:#f4ede0;font-size:15px;font-family:'Heebo',sans-serif;direction:ltr;text-align:center;">
+      <input type="time" id="remind-custom-time" style="flex:0 0 120px;padding:13px 12px;border-radius:12px;border:1px solid #5c4838;background:#3a2c22;color:#f4ede0;font-size:15px;font-family:'Heebo',sans-serif;direction:ltr;text-align:center;" value="09:00">
+    </div>
+    <button type="button" id="remind-custom-confirm" style="width:100%;padding:14px;border-radius:14px;border:none;background:#d4a574;color:#1f1812;font-weight:800;font-size:15px;">שמור עם תזכורת</button>
+    <button type="button" id="remind-none" style="width:100%;margin-top:8px;padding:12px;border-radius:14px;border:1px solid #5c4838;background:transparent;color:#b8a48a;font-weight:700;font-size:14px;">בלי תזכורת</button>
+  </div>
+</div>
+<script>
+  window.askReminderTime = function(taskText, callback) {
+    const overlay = document.getElementById('remind-picker-overlay');
+    if (!overlay) { callback(null); return; }
+    document.getElementById('remind-picker-task-text').textContent = taskText || '';
+    // Default to today (so user can quickly pick a time later today),
+    // and default the time to the next round hour.
+    const today = new Date();
+    document.getElementById('remind-custom-date').value = today.toISOString().slice(0, 10);
+    const nextHr = new Date(); nextHr.setHours(nextHr.getHours() + 1, 0, 0, 0);
+    document.getElementById('remind-custom-time').value =
+      String(nextHr.getHours()).padStart(2, '0') + ':' + String(nextHr.getMinutes()).padStart(2, '0');
+    overlay.style.display = 'flex';
+
+    function close(remindAt) {
+      overlay.style.display = 'none';
+      document.getElementById('remind-none').onclick = null;
+      document.getElementById('remind-custom-confirm').onclick = null;
+      overlay.onclick = null;
+      callback(remindAt);
+    }
+    document.getElementById('remind-custom-confirm').onclick = function() {
+      const d = document.getElementById('remind-custom-date').value;
+      const t = document.getElementById('remind-custom-time').value || '09:00';
+      if (!d) return;
+      const at = new Date(d + 'T' + t + ':00');
+      if (isNaN(at)) return;
+      if (at <= new Date()) { alert('הזמן שבחרת כבר עבר. בחר זמן עתידי.'); return; }
+      close(at);
+    };
+    document.getElementById('remind-none').onclick = function() { close(null); };
+    overlay.onclick = function(e) { if (e.target === overlay) close(null); };
+  };
+</script>
+
 <!-- ===== NOTIFICATION SETTINGS MODAL ===== -->
 <div id="notif-settings-overlay">
   <div id="notif-settings-card">
@@ -4252,7 +4300,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v218</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v219</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -14387,11 +14435,16 @@ function addDailyTask() {
   const inp = document.getElementById('daily-input');
   const text = (inp?.value || '').trim();
   if (!text) { inp?.focus(); return; }
-  const all = load('daily_tasks');
-  all.push({ id: genId(), date: _dailyDate, text, done: false, createdAt: new Date().toISOString() });
-  save('daily_tasks', all);
-  if (inp) { inp.value = ''; inp.focus(); }
-  renderDaily();
+  askReminderTime(text, function(remindAt) {
+    const all = load('daily_tasks');
+    const task = { id: genId(), date: _dailyDate, text, done: false, createdAt: new Date().toISOString() };
+    if (remindAt) task.remindAt = remindAt.toISOString();
+    all.push(task);
+    save('daily_tasks', all);
+    if (remindAt) _scheduleDailyTaskNotif(task);
+    if (inp) { inp.value = ''; inp.focus(); }
+    renderDaily();
+  });
 }
 
 function toggleDailyDone(id) {
@@ -14548,17 +14601,48 @@ function addLobbyTask() {
   const inp = document.getElementById('lobby-task-input');
   const text = (inp && inp.value || '').trim();
   if (!text) { if (inp) inp.focus(); return; }
+  // Ask for reminder time, then save.
+  askReminderTime(text, function(remindAt) {
+    _saveLobbyTask(text, remindAt);
+    if (inp) { inp.value = ''; inp.focus(); }
+  });
+}
+
+function _saveLobbyTask(text, remindAt) {
   const today = dailyDateStr();
   const all = load('daily_tasks');
-  // New tasks land at the BOTTOM of the priority list (max order + 1) so
-  // they don't shove existing urgent items the user already arranged.
   const orders = all.filter(t => !t.done && typeof t.order === 'number').map(t => t.order);
   const nextOrder = orders.length ? Math.max.apply(null, orders) + 1 : 0;
-  all.push({ id: genId(), date: today, text, done: false, order: nextOrder, createdAt: new Date().toISOString() });
+  const task = { id: genId(), date: today, text, done: false, order: nextOrder, createdAt: new Date().toISOString() };
+  if (remindAt) task.remindAt = remindAt.toISOString();
+  all.push(task);
   save('daily_tasks', all);
-  if (inp) { inp.value = ''; inp.focus(); }
+  if (remindAt) _scheduleDailyTaskNotif(task);
   renderLobbyTasks();
   if (document.getElementById('daily-list')) { try { renderDaily(); } catch(e){} }
+}
+
+async function _scheduleDailyTaskNotif(task) {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  if (!task.remindAt) return;
+  const at = new Date(task.remindAt);
+  if (at <= new Date()) return;
+  const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+  const numId = Math.abs(task.id.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0));
+  try {
+    await LN.cancel({ notifications: [{ id: numId }] }).catch(() => {});
+    await LN.schedule({
+      notifications: [{
+        id: numId,
+        title: '⏰ ' + task.text,
+        body: 'תזכורת',
+        schedule: { at: at, allowWhileIdle: true },
+        sound: 'default',
+        extra: { dailyTaskId: task.id }
+      }]
+    });
+  } catch (e) { console.warn('daily task notif failed', e); }
 }
 
 function toggleLobbyTask(ev, id) {
