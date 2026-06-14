@@ -9,6 +9,16 @@
     (function() {
       var native = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
       document.documentElement.classList.add(native ? 'cap-native' : 'cap-web');
+      // When the iOS Capacitor app runs in a window much wider than a
+      // phone (M-series Mac via "Designed for iPad", iPad in landscape,
+      // etc.) the desktop layout kicks in and looks tiny + dense.
+      // Override the viewport meta so the WebView renders at a phone-
+      // logical width — every max-width:768px media query then fires
+      // and the app feels like an app, not a cramped website.
+      if (native && window.innerWidth > 700) {
+        var vp = document.querySelector('meta[name="viewport"]');
+        if (vp) vp.setAttribute('content', 'width=430, initial-scale=1, viewport-fit=cover, user-scalable=no');
+      }
     })();
   </script>
   <style>
@@ -4393,7 +4403,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v225</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v226</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
