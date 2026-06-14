@@ -17,9 +17,13 @@
       // overrides. Detect wide native via: cap-native + wide window,
       // OR Mac user-agent.
       var ua = navigator.userAgent || '';
-      var isMac = /Macintosh|Mac OS X/.test(ua);
-      var isWide = window.innerWidth > 700;
-      if ((native && isWide) || (native && isMac)) {
+      // BUG-FIX: iPhone / iPad UA strings contain "Mac OS X" too
+      // (iOS is built on it). Only flag as real Mac if the UA says
+      // Macintosh AND there's no touch device indicator.
+      var isPhone = /iPhone|iPad|iPod/.test(ua);
+      var isRealMac = !isPhone && /Macintosh/.test(ua);
+      var isWide = window.innerWidth > 900;
+      if (native && (isRealMac || isWide)) {
         document.documentElement.classList.add('cap-wide-native');
       }
     })();
@@ -4437,7 +4441,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v228</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v229</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
