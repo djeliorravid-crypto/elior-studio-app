@@ -485,6 +485,13 @@
       -webkit-touch-callout: default;
     }
 
+    /* Hide the per-mode containers by default — JS (showMode) will
+       reveal the right one once the user picks a mode. Without this,
+       business-main / music-main sit behind the lobby and bleed
+       through when the iOS keyboard shrinks the visual viewport. */
+    #business-sidebar, #business-main,
+    #music-sidebar,    #music-main { display: none; }
+
     /* ===== SIDEBAR ===== */
     .sidebar {
       width: var(--sidebar-w);
@@ -4314,7 +4321,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v220</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v221</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
