@@ -147,9 +147,13 @@ workflows:
           openssl genrsa -out /tmp/cert_private_key.pem 2048
 
       - name: Create distribution cert + App Store profile (main app)
+        # --strict-match-identifier prevents the CLI from also matching
+        # com.ravidstudio.app.TaskWidget (substring match would pick up
+        # both bundles and fail with "ambiguous match").
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --strict-match-identifier \
             --create \
             --certificate-key=@file:/tmp/cert_private_key.pem
 
@@ -160,6 +164,7 @@ workflows:
         script: |
           app-store-connect fetch-signing-files "${BUNDLE_ID}.TaskWidget" \
             --type IOS_APP_STORE \
+            --strict-match-identifier \
             --create \
             --certificate-key=@file:/tmp/cert_private_key.pem
 
