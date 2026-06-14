@@ -177,10 +177,17 @@ workflows:
       - name: Set build number (timestamp)
         # Timestamp guarantees a strictly-increasing build number
         # without needing the app to exist in App Store Connect yet.
+        # agvtool updates the main App target's Info.plist, but the
+        # widget extension lives at ios/TaskWidget/Info.plist and
+        # agvtool doesn't touch it — so we also PlistBuddy-set the
+        # widget's CFBundleVersion to the same value. Apple rejects
+        # uploads where parent/extension bundle versions differ.
         script: |
-          cd ios/App
           BUILD_NUMBER=$(date +%s)
-          agvtool new-version -all "$BUILD_NUMBER"
+          (cd ios/App && agvtool new-version -all "$BUILD_NUMBER")
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ios/TaskWidget/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0" ios/TaskWidget/Info.plist 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0" ios/TaskWidget/Info.plist
 
       - name: Build IPA
         script: |
