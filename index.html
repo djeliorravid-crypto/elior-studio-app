@@ -2465,11 +2465,13 @@
       text-shadow: 0 4px 30px rgba(0,0,0,0.4);
       animation: titleIn 0.8s cubic-bezier(.4,0,.2,1), titlePulse 7s ease-in-out 1.2s infinite;
     }
-    .mode-screen-title .lobby-emoji {
-      font-size: 52px;
-      line-height: 1;
-      margin-bottom: 6px;
-      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.35));
+    .mode-screen-title .lobby-icon {
+      width: 44px;
+      height: 44px;
+      display: block;
+      margin: 0 auto 10px;
+      color: rgba(245, 230, 211, 0.92);
+      filter: drop-shadow(0 4px 14px rgba(0,0,0,0.4));
       animation: lobbyEmojiFloat 6s ease-in-out infinite;
     }
     .mode-screen-title small {
@@ -4350,6 +4352,12 @@
   <symbol id="ic-money"        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></symbol>
   <symbol id="ic-target"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></symbol>
   <symbol id="ic-trophy"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v6a5 5 0 0 1-10 0V4z"/><path d="M5 6H3a2 2 0 0 0 2 2"/><path d="M19 6h2a2 2 0 0 1-2 2"/><path d="M9 17h6"/><path d="M10 21h4"/><line x1="12" y1="17" x2="12" y2="21"/></symbol>
+  <!-- Time-of-day icons — Apple SF-Symbol style. Replace the cartoony
+       emoji (☀️ 🌤️ 🌇 🌙) that read childish in the lobby header. -->
+  <symbol id="ic-sun-max"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5.3" y1="5.3" x2="7" y2="7"/><line x1="17" y1="17" x2="18.7" y2="18.7"/><line x1="5.3" y1="18.7" x2="7" y2="17"/><line x1="17" y1="7" x2="18.7" y2="5.3"/></symbol>
+  <symbol id="ic-sun-haze"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 11.5a4.5 4.5 0 0 1 9 0"/><line x1="12" y1="3.5" x2="12" y2="5.5"/><line x1="3.5" y1="11.5" x2="5.5" y2="11.5"/><line x1="18.5" y1="11.5" x2="20.5" y2="11.5"/><line x1="6" y1="5.5" x2="7.4" y2="6.9"/><line x1="16.6" y1="6.9" x2="18" y2="5.5"/><line x1="3.5" y1="16" x2="20.5" y2="16"/><line x1="6.5" y1="20" x2="17.5" y2="20"/></symbol>
+  <symbol id="ic-sunset"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 17a5.5 5.5 0 0 1 11 0"/><line x1="3" y1="17" x2="21" y2="17"/><line x1="12" y1="3" x2="12" y2="5"/><line x1="3.5" y1="10.5" x2="5" y2="10.5"/><line x1="19" y1="10.5" x2="20.5" y2="10.5"/><line x1="5.5" y1="6" x2="6.6" y2="7.1"/><line x1="17.4" y1="7.1" x2="18.5" y2="6"/><line x1="9" y1="20.5" x2="15" y2="20.5"/></symbol>
+  <symbol id="ic-moon"         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 13.5A8.5 8.5 0 1 1 10.5 3.5a6.6 6.6 0 0 0 10 10z"/><circle cx="17.5" cy="5.5" r="0.8" fill="currentColor" stroke="none"/></symbol>
   <symbol id="ic-hourglass"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12"/><path d="M6 22h12"/><path d="M6 2c0 4 4 6 6 10 2-4 6-6 6-10"/><path d="M18 22c0-4-4-6-6-10-2 4-6 6-6 10"/></symbol>
   <symbol id="ic-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/></symbol>
   <symbol id="ic-bank"         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="6" y1="10" x2="6" y2="18"/><line x1="10" y1="10" x2="10" y2="18"/><line x1="14" y1="10" x2="14" y2="18"/><line x1="18" y1="10" x2="18" y2="18"/><line x1="3" y1="18" x2="21" y2="18"/><line x1="2" y1="21" x2="22" y2="21"/></symbol>
@@ -4550,10 +4558,10 @@
     </svg>
   </button>
   <div class="mode-screen-title">
-    <div class="lobby-emoji" id="lobby-emoji">☀️</div>
+    <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v239</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v240</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9825,17 +9833,20 @@ const PASS = '110';
 function refreshLobbyGreeting() {
   const greetEl = document.getElementById('lobby-greet');
   const subEl   = document.getElementById('lobby-sub');
-  const emojiEl = document.getElementById('lobby-emoji');
+  const iconEl  = document.getElementById('lobby-icon');
   if (!greetEl) return;
   const now = new Date();
   const h = now.getHours();
-  let greet, emoji;
-  if (h >= 5 && h < 12)       { greet = 'בוקר טוב, אליאור';     emoji = '☀️'; }
-  else if (h >= 12 && h < 17) { greet = 'צהריים טובים, אליאור'; emoji = '🌤️'; }
-  else if (h >= 17 && h < 21) { greet = 'ערב טוב, אליאור';      emoji = '🌇'; }
-  else                         { greet = 'לילה טוב, אליאור';     emoji = '🌙'; }
+  let greet, iconHref;
+  if (h >= 5 && h < 12)       { greet = 'בוקר טוב, אליאור';     iconHref = '#ic-sun-max';  }
+  else if (h >= 12 && h < 17) { greet = 'צהריים טובים, אליאור'; iconHref = '#ic-sun-haze'; }
+  else if (h >= 17 && h < 21) { greet = 'ערב טוב, אליאור';      iconHref = '#ic-sunset';   }
+  else                         { greet = 'לילה טוב, אליאור';     iconHref = '#ic-moon';     }
   greetEl.textContent = greet;
-  if (emojiEl) emojiEl.textContent = emoji;
+  if (iconEl) {
+    const useEl = iconEl.querySelector('use');
+    if (useEl) useEl.setAttribute('href', iconHref);
+  }
   if (subEl) {
     const days  = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
     const day   = days[now.getDay()];
