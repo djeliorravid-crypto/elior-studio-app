@@ -1,50 +1,105 @@
-// TaskWidget — iOS Home Screen + Lock Screen widget showing open tasks.
+// TaskWidget — data-driven WidgetKit extension.
 //
-// Data flow:
-//   index.html JS → TaskWidgetBridge plugin → UserDefaults(suiteName:
-//   "group.com.ravidstudio.app").set("widget_tasks": "<json>") →
-//   WidgetCenter.shared.reloadAllTimelines() → this file reads and
-//   renders the latest list.
+// The Swift code is intentionally "dumb": every visible string, every
+// colour, the empty-state copy, and the item list all come from a
+// single JSON blob written by the app into the App Group container
+// under the key "widget_payload". That means future content / colour
+// tweaks (rename the header, swap the proximity palette, add more
+// items, etc.) happen entirely on the JS side without rebuilding
+// the IPA.
 //
-// Tapping a row deep-links into the app (Capacitor's AppDelegate
-// handles the custom URL scheme ravidstudio://).
+// Backward-compat: if "widget_payload" is missing (older app version
+// that only writes the legacy "widget_tasks" array), we fall back to
+// rendering a simple "המשימות שלי" list of open tasks.
 
 import WidgetKit
 import SwiftUI
 
-// Keep in sync with capacitor.config.json appId and the App Group
-// declared in the entitlements files.
 private let APP_GROUP_ID = "group.com.ravidstudio.app"
+private let PAYLOAD_KEY  = "widget_payload"
 private let TASKS_KEY    = "widget_tasks"
 
-// ── Palette ── matches the app's dark-wood theme but with strong
-//    contrast so a glance at the home screen actually reads.
-private let BG_TOP     = Color(red: 0.18, green: 0.12, blue: 0.07)
-private let BG_BOT     = Color(red: 0.09, green: 0.06, blue: 0.03)
-private let ACCENT     = Color(red: 0.85, green: 0.62, blue: 0.40)
-private let ACCENT_LO  = Color(red: 0.85, green: 0.62, blue: 0.40).opacity(0.18)
-private let TEXT_HI    = Color(red: 0.97, green: 0.93, blue: 0.86)
-private let TEXT_LO    = Color(red: 0.97, green: 0.93, blue: 0.86).opacity(0.55)
-private let CARD       = Color.white.opacity(0.06)
-private let CARD_LINE  = Color.white.opacity(0.10)
-private let CHECK_LINE = Color(red: 0.85, green: 0.62, blue: 0.40).opacity(0.55)
+// ═════════════════════════════════════════════════════════
+// MARK: - Wire types
+// ═════════════════════════════════════════════════════════
 
-struct TaskItem: Codable, Identifiable, Hashable {
+struct WidgetItem: Codable, Identifiable, Hashable {
+    let id:       String
+    let title:    String
+    let subtitle: String?      // optional — e.g. "10:30"
+    let dotColor: String?      // optional — hex string "#ef4444"
+    let urgency:  Int?         // 0..3 — render hint, unused by default
+}
+
+struct WidgetPayload: Codable {
+    let headerTitle:    String
+    let headerSubtitle: String?
+    let accent:         String?  // hex, default cognac
+    let emptyTitle:     String?
+    let emptyText:      String?
+    let emptyEmoji:     String?  // e.g. "✓"
+    let items:          [WidgetItem]
+}
+
+// Legacy task array (the v239 build still calls syncTasks).
+struct LegacyTask: Codable, Identifiable, Hashable {
     let id:    String
     let title: String
     let done:  Bool
 }
 
 struct TaskEntry: TimelineEntry {
-    let date:  Date
-    let tasks: [TaskItem]
+    let date:    Date
+    let payload: WidgetPayload
 }
+
+// ═════════════════════════════════════════════════════════
+// MARK: - Defaults / palette
+// ═════════════════════════════════════════════════════════
+
+private let DEFAULT_ACCENT      = Color(red: 0.85, green: 0.62, blue: 0.40)
+private let TEXT_HI             = Color(red: 0.97, green: 0.93, blue: 0.86)
+private let TEXT_LO             = Color(red: 0.97, green: 0.93, blue: 0.86).opacity(0.55)
+private let CARD                = Color.white.opacity(0.06)
+private let CARD_LINE           = Color.white.opacity(0.10)
+private let BG_TOP              = Color(red: 0.18, green: 0.12, blue: 0.07)
+private let BG_BOT              = Color(red: 0.09, green: 0.06, blue: 0.03)
+
+private func hexColor(_ hex: String?, fallback: Color) -> Color {
+    guard let raw = hex?.trimmingCharacters(in: CharacterSet(charactersIn: "# ")),
+          raw.count == 6 || raw.count == 8 else { return fallback }
+    var value: UInt64 = 0
+    Scanner(string: raw).scanHexInt64(&value)
+    let r, g, b, a: Double
+    if raw.count == 8 {
+        r = Double((value >> 24) & 0xFF) / 255
+        g = Double((value >> 16) & 0xFF) / 255
+        b = Double((value >>  8) & 0xFF) / 255
+        a = Double( value        & 0xFF) / 255
+    } else {
+        r = Double((value >> 16) & 0xFF) / 255
+        g = Double((value >>  8) & 0xFF) / 255
+        b = Double( value        & 0xFF) / 255
+        a = 1
+    }
+    return Color(.sRGB, red: r, green: g, blue: b, opacity: a)
+}
+
+// ═════════════════════════════════════════════════════════
+// MARK: - Timeline provider
+// ═════════════════════════════════════════════════════════
 
 struct TaskProvider: TimelineProvider {
     func placeholder(in context: Context) -> TaskEntry {
-        TaskEntry(date: Date(), tasks: [
-            TaskItem(id: "1", title: "טוען משימות…", done: false)
-        ])
+        TaskEntry(date: Date(), payload: WidgetPayload(
+            headerTitle: "המשימות שלי",
+            headerSubtitle: nil,
+            accent: nil,
+            emptyTitle: "טוען…",
+            emptyText: nil,
+            emptyEmoji: "•",
+            items: []
+        ))
     }
 
     func getSnapshot(in context: Context, completion: @escaping (TaskEntry) -> Void) {
@@ -52,39 +107,64 @@ struct TaskProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<TaskEntry>) -> Void) {
-        // Refresh every 15 minutes — the app also calls
-        // WidgetCenter.shared.reloadAllTimelines() on every task
-        // mutation so we usually don't wait this long.
-        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date()
+        // Refresh every 5 minutes — the schedule's "due in 30/120 min"
+        // colour bands need a tighter cadence than the old tasks list.
+        // The app still calls WidgetCenter.reloadAllTimelines() on any
+        // mutation so we don't usually wait this long.
+        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 5, to: Date()) ?? Date()
         completion(Timeline(entries: [readEntry()], policy: .after(nextRefresh)))
     }
 
     private func readEntry() -> TaskEntry {
         let defaults = UserDefaults(suiteName: APP_GROUP_ID)
-        guard let raw  = defaults?.string(forKey: TASKS_KEY),
-              let data = raw.data(using: .utf8),
-              let arr  = try? JSONDecoder().decode([TaskItem].self, from: data) else {
-            return TaskEntry(date: Date(), tasks: [])
+        // 1. Prefer the new generic payload.
+        if let raw  = defaults?.string(forKey: PAYLOAD_KEY),
+           let data = raw.data(using: .utf8),
+           let pl   = try? JSONDecoder().decode(WidgetPayload.self, from: data) {
+            return TaskEntry(date: Date(), payload: pl)
         }
-        return TaskEntry(date: Date(), tasks: arr)
+        // 2. Fall back to the legacy tasks array for users on an older
+        //    app build that only writes widget_tasks.
+        if let raw  = defaults?.string(forKey: TASKS_KEY),
+           let data = raw.data(using: .utf8),
+           let arr  = try? JSONDecoder().decode([LegacyTask].self, from: data) {
+            let items = arr.filter { !$0.done }.map { t in
+                WidgetItem(id: t.id, title: t.title, subtitle: nil,
+                           dotColor: nil, urgency: nil)
+            }
+            return TaskEntry(date: Date(), payload: WidgetPayload(
+                headerTitle: "המשימות שלי",
+                headerSubtitle: nil,
+                accent: nil,
+                emptyTitle: "הכל בוצע",
+                emptyText: nil,
+                emptyEmoji: "✓",
+                items: items
+            ))
+        }
+        // 3. Nothing yet (fresh install).
+        return TaskEntry(date: Date(), payload: WidgetPayload(
+            headerTitle: "המשימות שלי",
+            headerSubtitle: nil,
+            accent: nil,
+            emptyTitle: "אין נתונים",
+            emptyText: "פתח את האפליקציה כדי לסנכרן",
+            emptyEmoji: "•",
+            items: []
+        ))
     }
 }
 
 // ═════════════════════════════════════════════════════════
-// MARK: - Ravid Studio waveform logo (drawn with SwiftUI)
+// MARK: - Ravid Studio waveform logo
 // ═════════════════════════════════════════════════════════
 
-// 11 vertical bars decreasing-increasing-decreasing in height,
-// matching icon-source.svg. Heights as % of the canvas height so
-// the same view scales from 14pt (lock-screen) to 40pt (home).
 struct WaveformLogo: View {
     var color: Color = TEXT_HI
     private let bars: [CGFloat] = [
-        0.18, 0.36, 0.56, 0.76, 0.92,
-        1.00,
+        0.18, 0.36, 0.56, 0.76, 0.92, 1.00,
         0.92, 0.76, 0.56, 0.36, 0.18
     ]
-
     var body: some View {
         GeometryReader { geo in
             let h    = geo.size.height
@@ -105,17 +185,26 @@ struct WaveformLogo: View {
 }
 
 // ═════════════════════════════════════════════════════════
-// MARK: - Home-screen widget views
+// MARK: - Home-screen rows
 // ═════════════════════════════════════════════════════════
 
-struct TaskRow: View {
-    let task: TaskItem
+struct WidgetRow: View {
+    let item:   WidgetItem
+    let accent: Color
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             Circle()
-                .strokeBorder(CHECK_LINE, lineWidth: 1.6)
-                .frame(width: 16, height: 16)
-            Text(task.title)
+                .fill(hexColor(item.dotColor, fallback: accent))
+                .frame(width: 10, height: 10)
+                .shadow(color: hexColor(item.dotColor, fallback: accent).opacity(0.55),
+                        radius: 3, x: 0, y: 0)
+            if let sub = item.subtitle, !sub.isEmpty {
+                Text(sub)
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .foregroundColor(accent)
+                    .frame(minWidth: 40, alignment: .trailing)
+            }
+            Text(item.title)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(TEXT_HI)
                 .lineLimit(2)
@@ -136,20 +225,21 @@ struct TaskRow: View {
 struct HomeScreenView: View {
     let entry: TaskEntry
     @Environment(\.widgetFamily) var family
-    var openTasks: [TaskItem] { entry.tasks.filter { !$0.done } }
+    private var accent: Color { hexColor(entry.payload.accent, fallback: DEFAULT_ACCENT) }
+    private var items: [WidgetItem] { entry.payload.items }
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 8) {
             HStack(spacing: 8) {
-                Text("\(openTasks.count)")
+                Text("\(items.count)")
                     .font(.system(size: 13, weight: .heavy, design: .rounded))
-                    .foregroundColor(ACCENT)
+                    .foregroundColor(accent)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 3)
-                    .background(Capsule().fill(ACCENT_LO))
-                    .overlay(Capsule().strokeBorder(ACCENT.opacity(0.35), lineWidth: 0.6))
+                    .background(Capsule().fill(accent.opacity(0.18)))
+                    .overlay(Capsule().strokeBorder(accent.opacity(0.35), lineWidth: 0.6))
                 Spacer()
-                Text("המשימות שלי")
+                Text(entry.payload.headerTitle)
                     .font(.system(size: 14, weight: .heavy))
                     .foregroundColor(TEXT_HI)
                     .tracking(-0.2)
@@ -157,32 +247,37 @@ struct HomeScreenView: View {
 
             Rectangle()
                 .fill(LinearGradient(
-                    colors: [ACCENT.opacity(0.45), ACCENT.opacity(0)],
+                    colors: [accent.opacity(0.45), accent.opacity(0)],
                     startPoint: .trailing, endPoint: .leading
                 ))
                 .frame(height: 1)
                 .padding(.bottom, 2)
 
-            if openTasks.isEmpty {
+            if items.isEmpty {
                 Spacer()
                 VStack(spacing: 6) {
-                    Text("✓")
+                    Text(entry.payload.emptyEmoji ?? "•")
                         .font(.system(size: 28, weight: .heavy, design: .rounded))
-                        .foregroundColor(ACCENT)
-                    Text("הכל בוצע")
+                        .foregroundColor(accent)
+                    Text(entry.payload.emptyTitle ?? "")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(TEXT_LO)
+                    if let txt = entry.payload.emptyText, !txt.isEmpty {
+                        Text(txt)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(TEXT_LO)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 Spacer()
             } else {
-                ForEach(openTasks.prefix(rowLimit)) { task in
-                    Link(destination: URL(string: "ravidstudio://task/\(task.id)")!) {
-                        TaskRow(task: task)
+                ForEach(items.prefix(rowLimit)) { item in
+                    Link(destination: URL(string: "ravidstudio://item/\(item.id)")!) {
+                        WidgetRow(item: item, accent: accent)
                     }
                 }
-                if openTasks.count > rowLimit {
-                    Text("עוד \(openTasks.count - rowLimit) משימות •••")
+                if items.count > rowLimit {
+                    Text("עוד \(items.count - rowLimit) פריטים •••")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(TEXT_LO)
                         .padding(.top, 2)
@@ -221,18 +316,21 @@ struct HomeScreenView: View {
 }
 
 // ═════════════════════════════════════════════════════════
-// MARK: - Lock-screen widget views (iOS 16+)
+// MARK: - Lock-screen rectangular widget (iOS 16+)
 // ═════════════════════════════════════════════════════════
 
-// Rectangular lock-screen widget — waveform logo on the right,
-// "אליאור רביד" + "N משימות פתוחות" on the left. iOS renders the
-// whole thing monochrome with the wallpaper-tinted accent, so we
-// just need clean contrast (no colours of our own).
 @available(iOS 16.0, *)
 struct LockScreenRectangularView: View {
     let entry: TaskEntry
-    var openCount: Int { entry.tasks.filter { !$0.done }.count }
-
+    var openCount: Int { entry.payload.items.count }
+    var label: String {
+        let header = entry.payload.headerTitle.contains("לוז") ? "פעילויות" : "משימות"
+        switch openCount {
+        case 0: return "פנוי"
+        case 1: return "\(header) אחת"
+        default: return "\(openCount) \(header) פתוחות"
+        }
+    }
     var body: some View {
         HStack(spacing: 10) {
             WaveformLogo(color: .primary)
@@ -242,7 +340,7 @@ struct LockScreenRectangularView: View {
                 Text("אליאור רביד")
                     .font(.system(size: 11, weight: .heavy))
                     .foregroundStyle(.secondary)
-                Text(taskText)
+                Text(label)
                     .font(.system(size: 14, weight: .heavy))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
@@ -254,14 +352,6 @@ struct LockScreenRectangularView: View {
         .widgetURL(URL(string: "ravidstudio://"))
         .widgetBackground(Color.clear)
     }
-
-    private var taskText: String {
-        switch openCount {
-        case 0: return "אין משימות פתוחות"
-        case 1: return "משימה 1 פתוחה"
-        default: return "\(openCount) משימות פתוחות"
-        }
-    }
 }
 
 // ═════════════════════════════════════════════════════════
@@ -271,7 +361,6 @@ struct LockScreenRectangularView: View {
 struct TaskWidgetEntryView: View {
     let entry: TaskEntry
     @Environment(\.widgetFamily) var family
-
     var body: some View {
         if #available(iOS 16.0, *), family == .accessoryRectangular {
             LockScreenRectangularView(entry: entry)
@@ -281,9 +370,6 @@ struct TaskWidgetEntryView: View {
     }
 }
 
-// iOS 17+ requires .containerBackground(...) on widget views, but
-// older versions don't have it. Shim it so the same view code
-// compiles for both targets.
 private extension View {
     @ViewBuilder
     func widgetBackground<Bg: View>(_ bg: Bg) -> some View {
@@ -307,8 +393,8 @@ struct TaskWidget: Widget {
         StaticConfiguration(kind: kind, provider: TaskProvider()) { entry in
             TaskWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("המשימות שלי")
-        .description("המשימות הפתוחות שלך מאליאור רביד.")
+        .configurationDisplayName("אליאור רביד")
+        .description("הלוז של היום (או המשימות הפתוחות) — מתעדכן אוטומטית.")
         .supportedFamilies(supportedFamilies)
     }
 

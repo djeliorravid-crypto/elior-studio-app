@@ -4561,7 +4561,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v240</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v241</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -4679,6 +4679,7 @@
     <!-- כרטיסיית לקוחות מוסתרת לפי בקשה — להחזרה: מחק את style="display:none" -->
     <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="8" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> לקוחות</a>
     <a onclick="showPage('daily')" data-page="daily"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> משימות יומיות</a>
+    <a onclick="showPage('schedule')" data-page="schedule"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><circle cx="8" cy="14" r="0.8" fill="currentColor"/><circle cx="12" cy="14" r="0.8" fill="currentColor"/><circle cx="16" cy="14" r="0.8" fill="currentColor"/></svg></span> לוז יומי</a>
     <a onclick="showPage('workshops')" data-page="workshops"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></span> סדנאות</a>
     <a onclick="showPage('proposals')" data-page="proposals"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></span> הצעות מחיר</a>
     <a onclick="showPage('contracts')" data-page="contracts"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 18s1.5-1.5 4-1.5 2.5 1 4.5-.5"/></svg></span> סיכומי הפקה</a>
@@ -5178,6 +5179,45 @@
 
     <!-- רשימת היום -->
     <div id="daily-list"></div>
+  </div>
+
+  <!-- ===== SCHEDULE (לוז יומי) ===== -->
+  <div class="page" id="page-schedule">
+    <div class="page-header">
+      <div><h2><svg class="icon-lg"><use href="#ic-calendar"/></svg>לוז יומי</h2><p>הפגישות והפעילויות של היום, ממוינות לפי שעה</p></div>
+    </div>
+
+    <!-- בורר תאריך -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+      <div class="month-selector">
+        <button onclick="changeScheduleDate(-1)" title="יום קודם">›</button>
+        <span class="month-label" id="schedule-date-label" style="min-width:220px;text-align:center"></span>
+        <button onclick="changeScheduleDate(1)" title="יום הבא">‹</button>
+      </div>
+      <button id="schedule-today-btn" class="btn btn-ghost btn-sm" onclick="goScheduleToday()" style="display:none">↺ חזרה להיום</button>
+    </div>
+
+    <!-- הוספה מהירה: כותרת + שעה -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+      <input type="time" id="schedule-time-input" value="10:00"
+        style="border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-size:15px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface);outline:none;width:140px"/>
+      <input type="text" id="schedule-title-input" placeholder="כותרת הפעילות (לדוגמה: פגישה עם דני)" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();addScheduleItem();}"
+        style="flex:1;min-width:200px;border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-size:15px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface);outline:none"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <button class="btn btn-primary" onclick="addScheduleItem()">+ הוסף</button>
+    </div>
+
+    <!-- מקרא צבעים -->
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;font-size:11.5px;font-weight:600;color:var(--text-muted)">
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,0.4)"></span>בחצי שעה</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#f59e0b"></span>תוך שעתיים</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#facc15"></span>היום</span>
+      <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#94a3b8"></span>חלף</span>
+    </div>
+
+    <!-- רשימת הלוז -->
+    <div id="schedule-list"></div>
   </div>
 
   <!-- ===== WORKSHOPS ===== -->
@@ -6135,7 +6175,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -6210,9 +6250,10 @@ function save(key, val) {
   _savePending();
   // 3. נסה לדחוף לענן עכשיו
   _pushKey(key);
-  // 4. כשמשימות יומיות משתנות — סנכרן ל-Home-screen widget
-  if (key === 'daily_tasks' && typeof window.syncTasksToWidget === 'function') {
-    window.syncTasksToWidget(val);
+  // 4. כשמשימות יומיות או פריט בלוז משתנים — סנכרן ל-Home-screen widget
+  if ((key === 'daily_tasks' || key === 'schedule') &&
+      typeof window.syncTasksToWidget === 'function') {
+    window.syncTasksToWidget();
   }
 }
 
@@ -6339,8 +6380,9 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, workshops:5, proposals:6, contracts:7, students:8, dashboard:9};
+  const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, schedule:5, workshops:6, proposals:7, contracts:8, students:9, dashboard:10};
   if (name === 'daily') _dailyDate = dailyDateStr();
+  if (name === 'schedule') { _scheduleDate = dailyDateStr(); renderSchedule(); }
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
@@ -9097,6 +9139,7 @@ function refreshAll() {
   populateClientFilter();
   renderPendingBox();
   renderDaily();
+  renderSchedule();
   renderWorkshops();
   renderProposals();
   renderContracts();
@@ -14732,6 +14775,126 @@ function dailyDateStr(d) {
 }
 let _dailyDate = dailyDateStr();
 
+// ===== SCHEDULE (לוז יומי) =====
+// Each item: { id, date:'YYYY-MM-DD', time:'HH:MM', title, notes }
+let _scheduleDate = dailyDateStr();
+
+function _scheduleDateLabel(dateStr) {
+  const today = dailyDateStr();
+  const d = new Date(dateStr + 'T00:00:00');
+  const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const dayName = days[d.getDay()];
+  const dateTxt = d.toLocaleDateString('he-IL', { day: 'numeric', month: 'long' });
+  if (dateStr === today) return 'היום · ' + dayName + ', ' + dateTxt;
+  const tomorrow = dailyDateStr(new Date(Date.now() + 86400000));
+  if (dateStr === tomorrow) return 'מחר · ' + dayName + ', ' + dateTxt;
+  return 'יום ' + dayName + ' · ' + dateTxt;
+}
+
+// Color for an item based on minutes until its start time.
+// Returns { color, urgency:0..3 } so the renderer + widget agree.
+function _scheduleProximity(dateStr, timeStr) {
+  const now = Date.now();
+  const start = new Date(dateStr + 'T' + timeStr + ':00').getTime();
+  const diffMin = (start - now) / 60000;
+  if (diffMin < 0)      return { color: '#94a3b8', urgency: 0 };  // past
+  if (diffMin <= 30)    return { color: '#ef4444', urgency: 3 };  // 30 min
+  if (diffMin <= 120)   return { color: '#f59e0b', urgency: 2 };  // 2 hours
+  if (diffMin <= 24*60) return { color: '#facc15', urgency: 1 };  // today
+  return                       { color: '#a78bfa', urgency: 1 };  // future day
+}
+
+function changeScheduleDate(dir) {
+  const d = new Date(_scheduleDate + 'T00:00:00');
+  d.setDate(d.getDate() + dir);
+  _scheduleDate = dailyDateStr(d);
+  renderSchedule();
+}
+function goScheduleToday() { _scheduleDate = dailyDateStr(); renderSchedule(); }
+
+function addScheduleItem() {
+  const tInp = document.getElementById('schedule-title-input');
+  const hInp = document.getElementById('schedule-time-input');
+  const title = (tInp?.value || '').trim();
+  const time  = (hInp?.value || '').trim();
+  if (!title) { tInp?.focus(); return; }
+  if (!/^\d{2}:\d{2}$/.test(time)) { hInp?.focus(); return; }
+  const item = {
+    id:    genId(),
+    date:  _scheduleDate,
+    time:  time,
+    title: title,
+    notes: '',
+    createdAt: new Date().toISOString()
+  };
+  const all = load('schedule');
+  all.push(item);
+  save('schedule', all);
+  if (tInp) tInp.value = '';
+  renderSchedule();
+}
+
+function deleteScheduleItem(id) {
+  if (!confirm('למחוק את הפריט מהלוז?')) return;
+  save('schedule', load('schedule').filter(x => x.id !== id));
+  renderSchedule();
+}
+
+function editScheduleItem(id) {
+  const all = load('schedule');
+  const it = all.find(x => x.id === id);
+  if (!it) return;
+  const newTitle = prompt('כותרת:', it.title);
+  if (newTitle === null) return;
+  const newTime = prompt('שעה (HH:MM):', it.time);
+  if (newTime === null) return;
+  if (!/^\d{2}:\d{2}$/.test(newTime)) { alert('שעה לא תקינה'); return; }
+  it.title = newTitle.trim() || it.title;
+  it.time  = newTime;
+  save('schedule', all);
+  renderSchedule();
+}
+
+function renderSchedule() {
+  const listEl  = document.getElementById('schedule-list');
+  const labelEl = document.getElementById('schedule-date-label');
+  const todayBtn = document.getElementById('schedule-today-btn');
+  if (!listEl) return;
+  if (labelEl) labelEl.textContent = _scheduleDateLabel(_scheduleDate);
+  if (todayBtn) todayBtn.style.display = (_scheduleDate === dailyDateStr()) ? 'none' : '';
+
+  const items = (load('schedule') || [])
+    .filter(it => it.date === _scheduleDate)
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  if (!items.length) {
+    listEl.innerHTML =
+      '<div class="empty-state" style="padding:32px 18px;text-align:center;color:var(--text-muted)">' +
+        '<svg style="width:42px;height:42px;opacity:0.4;margin-bottom:10px"><use href="#ic-calendar"/></svg>' +
+        '<div style="font-size:15px;font-weight:600">פנוי ' + (_scheduleDate === dailyDateStr() ? 'היום' : 'ביום הזה') + '</div>' +
+        '<div style="font-size:12.5px;margin-top:4px">הוסף פעילות חדשה למעלה</div>' +
+      '</div>';
+    return;
+  }
+
+  listEl.innerHTML = items.map(it => {
+    const { color } = _scheduleProximity(it.date, it.time);
+    return (
+      '<div class="schedule-row" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;background:var(--surface);margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">' +
+        '<span style="width:11px;height:11px;border-radius:50%;background:' + color + ';box-shadow:0 0 8px ' + color + '55;flex-shrink:0"></span>' +
+        '<div style="font-family:Rubik,sans-serif;font-weight:800;font-size:18px;color:var(--accent);min-width:54px;letter-spacing:-0.02em">' + it.time + '</div>' +
+        '<div style="flex:1;font-size:15px;font-weight:700;color:var(--text);min-width:0">' + _escHtml(it.title) + '</div>' +
+        '<button class="row-icon-btn" onclick="editScheduleItem(\'' + it.id + '\')" title="ערוך" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer">' +
+          '<svg style="width:14px;height:14px;color:var(--text-muted)"><use href="#ic-edit"/></svg>' +
+        '</button>' +
+        '<button class="row-icon-btn" onclick="deleteScheduleItem(\'' + it.id + '\')" title="מחק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer">' +
+          '<svg style="width:14px;height:14px;color:#b8442e"><use href="#ic-trash"/></svg>' +
+        '</button>' +
+      '</div>'
+    );
+  }).join('');
+}
+
 function _escHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 }
@@ -15086,36 +15249,96 @@ window.tryFaceId = async function() {
   }
 };
 // ===== Home-screen Widget bridge =====
-// Pushes the daily-task list into the App Group container the
-// TaskWidget extension reads from. Plugin is registered as
-// "TaskWidgetBridge" by the custom Swift bridge that codemagic
-// drops into the App target.
-window.syncTasksToWidget = function(tasks) {
+// Pushes a single GENERIC payload into the App Group container that
+// the WidgetKit extension reads from. Every visible piece of text
+// and colour comes from this JSON — the Swift widget is a "dumb"
+// renderer. That means future widget content/colour tweaks (new
+// header text, new color logic, more/less items) can be done by
+// editing the JS below without rebuilding the IPA.
+//
+// Wire format the widget understands:
+//   { headerTitle, headerSubtitle, accent,
+//     emptyTitle, emptyText, emptyEmoji,
+//     items: [
+//       { id, title, subtitle, dotColor, urgency }
+//     ] }
+window._buildWidgetPayload = function() {
+  // 1. Today's schedule items, sorted by time, with proximity colour.
+  const todayStr = (typeof dailyDateStr === 'function') ? dailyDateStr() : new Date().toISOString().slice(0,10);
+  const sched = (load('schedule') || [])
+    .filter(it => it && it.date === todayStr && it.title)
+    .sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+  const schedItems = sched.map(it => {
+    const prox = (typeof _scheduleProximity === 'function')
+      ? _scheduleProximity(it.date, it.time)
+      : { color: '#a78bfa', urgency: 1 };
+    return {
+      id:       String(it.id || ''),
+      title:    String(it.title || ''),
+      subtitle: String(it.time || ''),
+      dotColor: prox.color,
+      urgency:  prox.urgency
+    };
+  });
+  // 2. Fall back to open daily-tasks if the schedule is empty for today.
+  let items, headerTitle, emptyTitle, emptyText;
+  if (schedItems.length) {
+    items       = schedItems;
+    headerTitle = 'הלוז של היום';
+    emptyTitle  = 'פנוי היום';
+    emptyText   = 'אין פעילויות מתוכננות';
+  } else {
+    const openTasks = (load('daily_tasks') || []).filter(t => t && !t.done && t.text);
+    items = openTasks.map(t => ({
+      id:       String(t.id || ''),
+      title:    String(t.text || ''),
+      subtitle: '',
+      dotColor: '#d99e66',
+      urgency:  1
+    }));
+    headerTitle = 'המשימות שלי';
+    emptyTitle  = 'הכל בוצע';
+    emptyText   = 'אין משימות פתוחות';
+  }
+  return {
+    headerTitle:    headerTitle,
+    headerSubtitle: '',
+    accent:         '#d99e66',
+    emptyTitle:     emptyTitle,
+    emptyText:      emptyText,
+    emptyEmoji:     '✓',
+    items:          items
+  };
+};
+
+window.syncTasksToWidget = function(_unused) {
   const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   if (!isNative) return;
   const Bridge = window.Capacitor.Plugins && window.Capacitor.Plugins.TaskWidgetBridge;
   if (!Bridge) return;
   try {
-    const list = (Array.isArray(tasks) ? tasks : []).map(function(t) {
-      return {
-        id:    String(t.id || ''),
-        title: String(t.text || t.title || ''),
-        done:  !!t.done
-      };
-    }).filter(function(t) { return t.id && t.title; });
-    Bridge.syncTasks({ tasks: list }).catch(function() {});
+    const payload = window._buildWidgetPayload();
+    // Two paths for forward-compat: new flexible payload + the
+    // legacy `tasks` array (the old Swift code in shipped builds
+    // still reads this). Once everyone is on the new build, the
+    // tasks-array path becomes a no-op.
+    if (typeof Bridge.syncPayload === 'function') {
+      Bridge.syncPayload({ payload: payload }).catch(function() {});
+    }
+    if (typeof Bridge.syncTasks === 'function') {
+      Bridge.syncTasks({ tasks: payload.items.map(it => ({
+        id: it.id, title: it.title, done: false
+      })) }).catch(function() {});
+    }
   } catch (e) {}
 };
 // Push the current snapshot once at startup so a freshly-installed
-// widget has data before the user creates/toggles a task.
+// widget has data before the user creates/toggles anything.
 (function pushInitialWidgetSync() {
   const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   if (!isNative) return;
   function attempt() {
-    try {
-      const all = (typeof load === 'function') ? (load('daily_tasks') || []) : [];
-      window.syncTasksToWidget(all);
-    } catch (e) {}
+    try { window.syncTasksToWidget(); } catch (e) {}
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attempt);

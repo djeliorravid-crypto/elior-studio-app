@@ -1,19 +1,24 @@
-// TaskWidgetBridge — minimal Capacitor plugin that lets the web layer
-// push task data into the App Group container the Widget reads from.
+// TaskWidgetBridge — Capacitor bridge that pushes data the widget
+// reads from the App Group UserDefaults container.
 //
-// Exposed methods:
-//   syncTasks({ tasks: [{ id, title, done }] }) — write JSON +
-//     trigger a widget timeline reload so the new list shows up
-//     within seconds, not the 15-minute default refresh window.
+// Two methods, both for forward-compat:
 //
-// Wired in JS from index.html as:
-//   Capacitor.Plugins.TaskWidgetBridge.syncTasks({ tasks: [...] })
+//   syncTasks({ tasks: [{id,title,done}] })
+//     LEGACY — writes the old "widget_tasks" key. Older widget
+//     binaries in user devices still read this on iOS until they
+//     get a fresh build. Keep around so the moment a user installs
+//     a new IPA, the previous old widget keeps working until iOS
+//     refreshes its timeline.
 //
-// The plugin is registered manually via the Pods/Capacitor bridge
-// because we ship it as a local source target rather than a npm
-// package (no podspec to auto-discover). The codemagic.yaml step
-// that injects this file into the Xcode project also writes a tiny
-// .m bridge so Capacitor sees the @objc methods.
+//   syncPayload({ payload: { headerTitle, items, accent, ... } })
+//     NEW — writes the "widget_payload" key as a generic JSON blob.
+//     The Swift widget renderer treats EVERY visible string + colour
+//     as data, so future content/styling tweaks happen entirely in
+//     JS without rebuilding the IPA.
+//
+// In both cases we kick WidgetCenter so the home/lock screen
+// widgets refresh within seconds rather than waiting for the
+// 15-min default timeline tick.
 
 import Foundation
 import Capacitor
@@ -21,13 +26,15 @@ import WidgetKit
 
 private let APP_GROUP_ID = "group.com.ravidstudio.app"
 private let TASKS_KEY    = "widget_tasks"
+private let PAYLOAD_KEY  = "widget_payload"
 
 @objc(TaskWidgetBridgePlugin)
 public class TaskWidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier  = "TaskWidgetBridgePlugin"
     public let jsName      = "TaskWidgetBridge"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "syncTasks", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "syncTasks",   returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "syncPayload", returnType: CAPPluginReturnPromise)
     ]
 
     @objc func syncTasks(_ call: CAPPluginCall) {
@@ -35,43 +42,51 @@ public class TaskWidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
             call.reject("Missing 'tasks' array")
             return
         }
-
-        // Normalise — only keep id/title/done strings so we control
-        // the schema the widget decodes against.
         var clean: [[String: Any]] = []
         for item in arr {
             guard let dict = item as? [String: Any],
                   let id    = dict["id"]    as? String,
                   let title = dict["title"] as? String else { continue }
             let done = (dict["done"] as? Bool) ?? false
-            clean.append([
-                "id":    id,
-                "title": title,
-                "done":  done
-            ])
+            clean.append(["id": id, "title": title, "done": done])
         }
-
         guard let json = try? JSONSerialization.data(withJSONObject: clean, options: []),
               let str  = String(data: json, encoding: .utf8) else {
             call.reject("JSON encode failed")
             return
         }
-
         guard let defaults = UserDefaults(suiteName: APP_GROUP_ID) else {
             call.reject("App Group '\(APP_GROUP_ID)' not accessible — entitlement missing?")
             return
         }
         defaults.set(str, forKey: TASKS_KEY)
+        _reloadWidgets()
+        call.resolve(["count": clean.count, "synced": true])
+    }
 
-        // Nudge WidgetKit so the home-screen widget refreshes within
-        // a second instead of waiting for the 15-minute timeline tick.
+    @objc func syncPayload(_ call: CAPPluginCall) {
+        guard let payload = call.getObject("payload") else {
+            call.reject("Missing 'payload' object")
+            return
+        }
+        guard JSONSerialization.isValidJSONObject(payload),
+              let json = try? JSONSerialization.data(withJSONObject: payload, options: []),
+              let str  = String(data: json, encoding: .utf8) else {
+            call.reject("Payload is not valid JSON")
+            return
+        }
+        guard let defaults = UserDefaults(suiteName: APP_GROUP_ID) else {
+            call.reject("App Group '\(APP_GROUP_ID)' not accessible — entitlement missing?")
+            return
+        }
+        defaults.set(str, forKey: PAYLOAD_KEY)
+        _reloadWidgets()
+        call.resolve(["synced": true])
+    }
+
+    private func _reloadWidgets() {
         if #available(iOS 14.0, *) {
             WidgetCenter.shared.reloadAllTimelines()
         }
-
-        call.resolve([
-            "count":   clean.count,
-            "synced":  true
-        ])
     }
 }
