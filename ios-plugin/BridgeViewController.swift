@@ -29,14 +29,28 @@ class BridgeViewController: CAPBridgeViewController {
             name: NSNotification.Name("RavidShortcut"),
             object: nil
         )
+        // OAuth callback: the GitHub Pages /oauth-callback.html page
+        // redirects to ravidstudio://oauth?code=… → AppDelegate posts
+        // here → we hand the URL off to JS to exchange for tokens.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleUrlOpenNotification(_:)),
+            name: NSNotification.Name("RavidUrlOpen"),
+            object: nil
+        )
     }
 
     @objc func handleShortcutNotification(_ note: Notification) {
         guard let type = note.userInfo?["type"] as? String, !type.isEmpty else { return }
-        // Escape any embedded single quotes; types should be ASCII
-        // reverse-DNS strings so this is just defensive.
         let safe = type.replacingOccurrences(of: "'", with: "\\'")
         let js = "window.dispatchEvent(new CustomEvent('app-shortcut', { detail: { type: '\(safe)' } }))"
+        bridge?.webView?.evaluateJavaScript(js, completionHandler: nil)
+    }
+
+    @objc func handleUrlOpenNotification(_ note: Notification) {
+        guard let url = note.userInfo?["url"] as? String, !url.isEmpty else { return }
+        let safe = url.replacingOccurrences(of: "'", with: "\\'")
+        let js = "window.dispatchEvent(new CustomEvent('app-url-open', { detail: { url: '\(safe)' } }))"
         bridge?.webView?.evaluateJavaScript(js, completionHandler: nil)
     }
 }

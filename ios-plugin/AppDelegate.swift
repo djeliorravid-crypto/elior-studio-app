@@ -49,6 +49,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        // Forward the URL to the JS layer so the OAuth-callback handler
+        // can pluck the ?code= off it. We still chain into Capacitor's
+        // default proxy so other plugins (e.g. Share) can react too.
+        NotificationCenter.default.post(
+            name: NSNotification.Name("RavidUrlOpen"),
+            object: nil,
+            userInfo: ["url": url.absoluteString]
+        )
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
     }
 

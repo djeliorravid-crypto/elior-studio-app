@@ -80,6 +80,16 @@ workflows:
           /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:2:UIApplicationShortcutItemType string 'com.ravidstudio.app.add-schedule'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:2:UIApplicationShortcutItemTitle string 'הוסף לוז'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:2:UIApplicationShortcutItemIconSymbolName string 'calendar.badge.plus'" "$PLIST"
+          # Custom URL scheme — the OAuth callback page at
+          # djeliorravid-crypto.github.io/elior-studio-app/oauth-callback.html
+          # redirects to ravidstudio://oauth?code=… so the app reopens
+          # automatically with the auth code in hand.
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string 'com.ravidstudio.app'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'ravidstudio'" "$PLIST"
 
       - name: Install Ravid Studio app icon
         # `cap add ios` ships a Capacitor placeholder AppIcon set. Copy

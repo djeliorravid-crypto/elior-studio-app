@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>אישור Google Calendar — אליאור רביד</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Heebo', system-ui, sans-serif;
+    background: linear-gradient(160deg, #2a1810 0%, #1c1108 100%);
+    color: #f4ede0;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 30px 22px;
+    direction: rtl;
+    text-align: center;
+  }
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(212,165,116,0.25);
+    border-radius: 22px;
+    padding: 30px 24px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.5);
+  }
+  .check {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, #4caf50, #66bb6a);
+    color: #fff; font-size: 36px; font-weight: 900; line-height: 64px;
+    margin: 0 auto 18px;
+    box-shadow: 0 6px 24px rgba(76,175,80,0.4);
+  }
+  h1 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  p  { font-size: 14px; color: rgba(244,237,224,0.72); margin-bottom: 18px; line-height: 1.55; }
+  .btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #a06c48, #c89465);
+    color: #fff; font-weight: 800; font-size: 15px;
+    padding: 14px 26px; border-radius: 14px; border: none;
+    text-decoration: none; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(160,108,72,0.4);
+  }
+  .err  { color: #ff8b6b; font-size: 14px; margin-top: 10px; }
+  .code {
+    font-family: 'Courier New', monospace; font-size: 14px;
+    background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px 12px;
+    margin-top: 10px; word-break: break-all; user-select: all;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="check">✓</div>
+    <h1 id="hdr">אישור הצליח</h1>
+    <p id="msg">חוזר לאליאור רביד…</p>
+    <a id="back" class="btn" href="#">פתח את האפליקציה</a>
+    <div id="manual" style="display:none">
+      <p style="margin-top:18px;font-size:12px">אם החזרה לאפליקציה לא קרתה אוטומטית, העתק את הקוד הזה ידנית:</p>
+      <div class="code" id="rawcode"></div>
+    </div>
+  </div>
+
+<script>
+  (function() {
+    var params = new URLSearchParams(location.search);
+    var code   = params.get('code');
+    var err    = params.get('error');
+    var state  = params.get('state') || '';
+    if (err) {
+      document.getElementById('hdr').textContent = 'אישור נכשל';
+      document.getElementById('msg').innerHTML   = 'גוגל החזיר שגיאה:<br><span class="err">' + err + '</span>';
+      document.getElementById('back').textContent = 'חזור לאפליקציה';
+      document.getElementById('back').href = 'ravidstudio://oauth?error=' + encodeURIComponent(err);
+      return;
+    }
+    if (!code) {
+      document.getElementById('hdr').textContent = 'משהו השתבש';
+      document.getElementById('msg').textContent = 'הקריאה החזירה ללא קוד אישור.';
+      document.getElementById('back').style.display = 'none';
+      return;
+    }
+    // Best path — iOS jumps straight into the app via the custom URL
+    // scheme. Sets a manual fallback link in case the scheme isn't
+    // registered (web fallback) so the user can still recover.
+    var appUrl = 'ravidstudio://oauth?code=' + encodeURIComponent(code) + (state ? '&state=' + encodeURIComponent(state) : '');
+    document.getElementById('back').href = appUrl;
+    document.getElementById('rawcode').textContent = code;
+    // Auto-redirect after a tiny delay so the success card flashes
+    // first (otherwise the user just sees Safari snap closed without
+    // any feedback that things worked).
+    setTimeout(function() { window.location.href = appUrl; }, 500);
+    // After 3 seconds with no redirect honoured, surface the manual
+    // copy / button path.
+    setTimeout(function() {
+      document.getElementById('manual').style.display = 'block';
+      document.getElementById('msg').textContent = 'אם לא חזרת אוטומטית, לחץ על הכפתור או העתק את הקוד למטה.';
+    }, 3000);
+  })();
+</script>
+</body>
+</html>

@@ -4651,7 +4651,11 @@
         autocapitalize="off" autocomplete="off" spellcheck="false"/>
     </div>
     <div style="font-size:11px;color:rgba(244,237,224,0.55);line-height:1.55;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-top:6px">
-      איך משיגים את אלה: Google Cloud Console → APIs &amp; Services → Credentials → <strong>+ Create Credentials</strong> → OAuth Client ID → Application type: <strong>TVs and Limited Input devices</strong>. תקבל Client ID ו-Secret — תדביק שניהם כאן.
+      <strong style="color:#f4ede0">איך משיגים:</strong><br>
+      1. Google Cloud Console → Credentials → ה-OAuth Client הקיים שלך מסוג Web application<br>
+      2. בשדה <strong>Authorized redirect URIs</strong> תוסיף:<br>
+      <code style="display:block;background:rgba(0,0,0,0.3);padding:6px 8px;border-radius:6px;margin:4px 0;font-size:10px;word-break:break-all">https://djeliorravid-crypto.github.io/elior-studio-app/oauth-callback.html</code>
+      3. שמור. תקבל Client ID ו-Client Secret באותו דף — תדביק שניהם כאן.
     </div>
     <div class="notif-actions">
       <button type="button" class="notif-close" onclick="_closeWriteSetupModal()">בטל</button>
@@ -4807,7 +4811,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v253</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v254</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15356,15 +15360,27 @@ function disconnectIcs() {
 }
 
 // ───────────────────────────────────────────────────────
-// Google Calendar — 2-way WRITE via OAuth Device Flow.
+// Google Calendar — 2-way WRITE via OAuth Authorization Code flow
 // ───────────────────────────────────────────────────────
-// The OAuth library that the desktop browser uses refuses to load
-// in WebViews, and Web OAuth flow needs an HTTP redirect URI we
-// can't host. Device Flow has neither requirement: it uses a TV /
-// limited-input OAuth Client (no redirect URI at all), the user
-// just types a short code into google.com/device on any browser,
-// and we poll the token endpoint until they authorise.
-const GCAL_W_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+// Device Flow doesn't support Calendar scopes (Google limits it to
+// YouTube/Drive). Standard Web OAuth doesn't work in WebViews
+// either. The path that actually works in Capacitor:
+//
+//   1. Open Google's auth URL in SFSafariViewController (via
+//      @capacitor/browser). Safari sessions work natively, so
+//      the user just confirms their account.
+//   2. After consent, Google redirects to our callback page
+//      hosted on GitHub Pages — oauth-callback.html — which then
+//      hops to a `ravidstudio://oauth?code=…` URL.
+//   3. iOS catches the custom URL scheme (registered in Info.plist
+//      via codemagic.yaml), AppDelegate forwards to JS, we
+//      exchange the code for access + refresh tokens with the
+//      user's Web-client client_secret.
+//
+// Once the tokens are saved, all subsequent writes use them
+// directly with silent refresh when expired.
+const GCAL_W_SCOPE        = 'https://www.googleapis.com/auth/calendar.events';
+const GCAL_W_REDIRECT_URI = 'https://djeliorravid-crypto.github.io/elior-studio-app/oauth-callback.html';
 
 function gcalWriteTokens() {
   try { return JSON.parse(localStorage.getItem('gcal_w_tokens') || 'null'); }
@@ -15387,67 +15403,98 @@ async function gcalWriteEnable() {
     _openWriteSetupModal();
     return;
   }
-  // 1. Request a device code from Google.
+  const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  sessionStorage.setItem('gcal_w_state', state);
+  const params = new URLSearchParams({
+    client_id:     clientId,
+    redirect_uri:  GCAL_W_REDIRECT_URI,
+    response_type: 'code',
+    scope:         GCAL_W_SCOPE,
+    access_type:   'offline',   // we want a refresh_token
+    prompt:        'consent',   // force the consent screen so Google
+                                // always returns the refresh_token
+                                // (without this, only the first
+                                // consent ever ships one)
+    state:         state
+  });
+  const url = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+  // Native iOS — open in a Safari sheet so the user keeps their
+  // existing Google session cookies. Web fallback — same tab.
+  const Browser = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+  if (Browser) {
+    Browser.open({ url: url, presentationStyle: 'popover' }).catch(function() {});
+  } else {
+    window.open(url, '_blank');
+  }
+  toast('🌐 פותח את גוגל…');
+}
+
+// Triggered by AppDelegate when the user is redirected back to
+// ravidstudio://oauth?code=… The OAuth Web client requires
+// client_secret + the same redirect_uri we used for the initial
+// /auth request, so both come straight from localStorage / the
+// constant above.
+async function _gcalHandleAuthCallback(rawUrl) {
+  if (!/^ravidstudio:\/\/oauth/.test(rawUrl)) return;
+  // Close the Safari sheet — it's still on screen until we ask it
+  // to dismiss.
+  const Browser = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+  if (Browser) Browser.close().catch(function() {});
+
+  const qIdx = rawUrl.indexOf('?');
+  const qs   = qIdx >= 0 ? rawUrl.slice(qIdx + 1) : '';
+  const p    = new URLSearchParams(qs);
+  const err  = p.get('error');
+  const code = p.get('code');
+  const state= p.get('state');
+  const expected = sessionStorage.getItem('gcal_w_state') || '';
+  sessionStorage.removeItem('gcal_w_state');
+
+  if (err)  { toast('❌ אישור נכשל: ' + err); return; }
+  if (!code) { toast('❌ לא התקבל קוד אישור'); return; }
+  if (expected && state && state !== expected) {
+    toast('❌ אישור נדחה (state לא תואם)');
+    return;
+  }
+
+  const clientId     = localStorage.getItem('gcal_w_client_id');
+  const clientSecret = localStorage.getItem('gcal_w_client_secret');
   try {
-    const r = await fetch('https://oauth2.googleapis.com/device/code', {
+    const r = await fetch('https://oauth2.googleapis.com/token', {
       method:  'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body:    'client_id=' + encodeURIComponent(clientId) + '&scope=' + encodeURIComponent(GCAL_W_SCOPE)
+      body:    new URLSearchParams({
+        client_id:     clientId,
+        client_secret: clientSecret,
+        code:          code,
+        redirect_uri:  GCAL_W_REDIRECT_URI,
+        grant_type:    'authorization_code'
+      }).toString()
     });
-    const dc = await r.json();
-    if (!dc.device_code) {
-      toast('❌ ' + (dc.error_description || dc.error || 'אישור נכשל'));
+    const t = await r.json();
+    if (!t.access_token) {
+      toast('❌ ' + (t.error_description || t.error || 'החלפת הקוד נכשלה'));
       return;
     }
-    _openDeviceCodeModal(dc);
-    _pollDeviceToken(dc, clientId, clientSecret);
+    localStorage.setItem('gcal_w_tokens', JSON.stringify({
+      access_token:  t.access_token,
+      refresh_token: t.refresh_token,
+      expires_at:    Date.now() + (t.expires_in || 3600) * 1000 - 60000
+    }));
+    toast('✓ סנכרון Google Calendar הופעל!');
+    if (window.haptic) window.haptic.success();
+    renderScheduleGcalBar();
   } catch (e) {
-    toast('❌ שגיאה בחיבור: ' + e.message);
+    toast('❌ שגיאת רשת: ' + e.message);
   }
 }
 
-async function _pollDeviceToken(dc, clientId, clientSecret) {
-  const expiresAt = Date.now() + (dc.expires_in || 1800) * 1000;
-  let interval    = (dc.interval || 5) * 1000;
-  while (Date.now() < expiresAt) {
-    await new Promise(r => setTimeout(r, interval));
-    if (!document.getElementById('device-code-overlay')?.classList.contains('open')) return; // cancelled
-    try {
-      const r = await fetch('https://oauth2.googleapis.com/token', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body:    new URLSearchParams({
-          client_id:     clientId,
-          client_secret: clientSecret,
-          device_code:   dc.device_code,
-          grant_type:    'urn:ietf:params:oauth:grant-type:device_code'
-        }).toString()
-      });
-      const t = await r.json();
-      if (t.access_token) {
-        localStorage.setItem('gcal_w_tokens', JSON.stringify({
-          access_token:  t.access_token,
-          refresh_token: t.refresh_token,
-          expires_at:    Date.now() + (t.expires_in || 3600) * 1000 - 60000
-        }));
-        _closeDeviceCodeModal();
-        toast('✓ סנכרון Google Calendar הופעל!');
-        renderScheduleGcalBar();
-        return;
-      } else if (t.error === 'authorization_pending') {
-        // keep polling
-      } else if (t.error === 'slow_down') {
-        interval += 5000;
-      } else {
-        toast('❌ אישור נכשל: ' + (t.error_description || t.error || ''));
-        _closeDeviceCodeModal();
-        return;
-      }
-    } catch (e) { /* transient network — try again */ }
-  }
-  toast('⌛ זמן האישור פג');
-  _closeDeviceCodeModal();
-}
+// AppDelegate → BridgeViewController fires app-url-open whenever
+// the system hands us a `ravidstudio://…` URL.
+window.addEventListener('app-url-open', function(ev) {
+  const url = ev && ev.detail && ev.detail.url;
+  if (url) _gcalHandleAuthCallback(url);
+});
 
 async function _gcalWriteAccessToken() {
   const t = gcalWriteTokens();
