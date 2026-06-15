@@ -544,6 +544,14 @@
       -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
     }
+    /* Kill the iOS gray-flash tap highlight on EVERY interactive
+       element. The body-level rule above doesn't inherit reliably
+       on <a>/<button>, so we explicitly null it out across the
+       board. Without this, scrolling over an income/expense card
+       briefly paints a black overlay on the touched region. */
+    *, *::before, *::after {
+      -webkit-tap-highlight-color: transparent !important;
+    }
     /* …but DO allow selecting inside actual inputs / textareas /
        contentEditable so the user can still copy-paste task text,
        amounts, notes, etc. */
@@ -4676,7 +4684,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v246</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v247</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
