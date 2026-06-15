@@ -9,6 +9,15 @@
     (function() {
       var native = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
       document.documentElement.classList.add(native ? 'cap-native' : 'cap-web');
+      // Register the JS proxies for our local Swift plugins. The
+      // native side is wired up from BridgeViewController.swift's
+      // capacitorDidLoad(); these calls create the matching
+      // Capacitor.Plugins.<name> proxies so JS can invoke them.
+      // No-op for non-native (just creates a stub).
+      if (native && window.Capacitor && typeof window.Capacitor.registerPlugin === 'function') {
+        try { window.Capacitor.registerPlugin('TaskWidgetBridge'); } catch (e) {}
+        try { window.Capacitor.registerPlugin('BiometricBridge');  } catch (e) {}
+      }
 
       // When the iOS Capacitor app runs in a window much wider than a
       // phone (M-series Mac via "Designed for iPad", iPad, etc.), the
@@ -4544,7 +4553,7 @@
     <div class="lobby-emoji" id="lobby-emoji">☀️</div>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v236</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v237</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15040,14 +15049,17 @@ window.handleFaceIdToggle = async function(btn) {
   btn.classList.toggle('on', turningOn);
 };
 window._tryBiometricAuth = async function(reason) {
-  const BA = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BiometricAuthNative;
-  if (!BA) return false;
+  // BiometricBridge is our own native Swift plugin (LAContext-based),
+  // registered with the Capacitor bridge from BridgeViewController.
+  const BA = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BiometricBridge;
+  if (!BA) {
+    if (typeof toast === 'function') toast('Face ID לא זמין במכשיר הזה');
+    return false;
+  }
   try {
-    await BA.internalAuthenticate({
-      reason: reason || 'פתח את אליאור רביד',
-      cancelTitle: 'בטל',
-      allowDeviceCredential: true,
-      iosFallbackTitle: 'השתמש בקוד מכשיר'
+    await BA.authenticate({
+      reason:      reason || 'פתח את אליאור רביד',
+      cancelTitle: 'בטל'
     });
     return true;
   } catch (e) {

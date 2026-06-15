@@ -27,22 +27,54 @@ project = Xcodeproj::Project.open(PROJECT_PATH)
 app_target = project.targets.find { |t| t.name == APP_TARGET_NAME }
 abort "Main app target '#{APP_TARGET_NAME}' not found" unless app_target
 
-# ── 1. Copy the bridge plugin source into the App target's folder
-#       and add it as a build source.
+# ── 1. Copy ALL local Swift sources into the App target's folders:
+#       Plugins/TaskWidgetBridgePlugin.swift   — widget data bridge
+#       Plugins/BiometricBridgePlugin.swift    — Face ID via LAContext
+#       BridgeViewController.swift             — registers ↑ with the
+#                                                Capacitor bridge.
 plugin_dest = "ios/App/App/Plugins"
 FileUtils.mkdir_p(plugin_dest)
-plugin_swift = "#{plugin_dest}/TaskWidgetBridgePlugin.swift"
-FileUtils.cp("#{PLUGIN_SRC_DIR}/TaskWidgetBridgePlugin.swift", plugin_swift)
+FileUtils.cp("#{PLUGIN_SRC_DIR}/TaskWidgetBridgePlugin.swift",
+             "#{plugin_dest}/TaskWidgetBridgePlugin.swift")
+FileUtils.cp("ios-plugin/BiometricBridge/BiometricBridgePlugin.swift",
+             "#{plugin_dest}/BiometricBridgePlugin.swift")
+FileUtils.cp("ios-plugin/BridgeViewController.swift",
+             "ios/App/App/BridgeViewController.swift")
 
 app_group = project.main_group['App']
 plugins_group = app_group['Plugins'] || app_group.new_group('Plugins', 'Plugins')
 
-unless plugins_group.files.any? { |f| f.path == 'TaskWidgetBridgePlugin.swift' }
-  ref = plugins_group.new_file('TaskWidgetBridgePlugin.swift')
+['TaskWidgetBridgePlugin.swift', 'BiometricBridgePlugin.swift'].each do |fname|
+  unless plugins_group.files.any? { |f| f.path == fname }
+    ref = plugins_group.new_file(fname)
+    app_target.add_file_references([ref])
+    puts "✓ Added Plugins/#{fname} to App target"
+  end
+end
+
+unless app_group.files.any? { |f| f.path == 'BridgeViewController.swift' }
+  ref = app_group.new_file('BridgeViewController.swift')
   app_target.add_file_references([ref])
-  puts "✓ Added TaskWidgetBridgePlugin.swift to App target"
-else
-  puts "• TaskWidgetBridgePlugin.swift already in project"
+  puts "✓ Added BridgeViewController.swift to App target"
+end
+
+# ── 1b. Repoint Main.storyboard's initial-view-controller customClass
+#        from "CAPBridgeViewController" to our subclass so the app
+#        instantiates BridgeViewController (which calls our plugin
+#        registrations from capacitorDidLoad).
+storyboard = 'ios/App/App/Base.lproj/Main.storyboard'
+if File.exist?(storyboard)
+  text = File.read(storyboard)
+  patched = text.sub(
+    /customClass="CAPBridgeViewController"\s+customModule="Capacitor"/,
+    'customClass="BridgeViewController" customModuleProvider="target"'
+  )
+  if patched != text
+    File.write(storyboard, patched)
+    puts "✓ Repointed Main.storyboard to BridgeViewController"
+  else
+    puts "• Main.storyboard already pointed at BridgeViewController (or pattern not found)"
+  end
 end
 
 # ── 2. Stage the widget files into ios/TaskWidget/ so the Xcode
