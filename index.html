@@ -2354,6 +2354,58 @@
     }
     .face-id-retry-btn:active { transform: scale(0.96); filter: brightness(0.92); }
 
+    /* ===== Google Write Setup + Device Code modals ===== */
+    /* Same bottom-sheet pattern as #schedule-edit-overlay below. */
+    #gcal-write-setup-overlay, #device-code-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 10001;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    #gcal-write-setup-overlay.open,
+    #device-code-overlay.open { display: flex; }
+    #gcal-write-setup-card, #device-code-card {
+      background: #2a1f17;
+      color: #f4ede0;
+      border: 1px solid rgba(212,165,116,0.25);
+      border-radius: 22px 22px 0 0;
+      padding: 22px 20px 26px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 -8px 36px rgba(0,0,0,0.6);
+      animation: seSlideUp 0.28s cubic-bezier(.34,1.2,.64,1);
+    }
+    @media (min-width: 600px) {
+      #gcal-write-setup-overlay, #device-code-overlay { align-items: center; padding: 24px; }
+      #gcal-write-setup-card, #device-code-card { border-radius: 22px; }
+    }
+    #gcal-write-setup-card h3, #device-code-card h3 {
+      font-size: 18px; font-weight: 800; color: #f4ede0;
+      margin-bottom: 4px; letter-spacing: -0.01em;
+    }
+    #gcal-write-setup-card .notif-sub,
+    #device-code-card .notif-sub {
+      font-size: 12.5px; color: rgba(244,237,224,0.55); margin-bottom: 18px;
+    }
+    #gcal-write-setup-card .notif-actions,
+    #device-code-card .notif-actions {
+      display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end;
+    }
+    #gcal-write-setup-card .notif-actions button,
+    #device-code-card .notif-actions button {
+      flex: 0 0 auto; min-height: 40px; padding: 8px 16px;
+      border-radius: 10px; font-weight: 700; cursor: pointer; font-family: 'Heebo', sans-serif;
+    }
+    #gcal-write-setup-card .notif-close,
+    #device-code-card .notif-close {
+      background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(244,237,224,0.85);
+    }
+
     /* ===== Schedule Edit Modal ===== */
     /* Reuses the notif-settings sheet styles + adds two labeled
        fields. Bottom-sheet on mobile, centered modal on desktop —
@@ -4579,6 +4631,66 @@
   };
 </script>
 
+<!-- ===== GOOGLE CALENDAR WRITE SETUP MODAL ===== -->
+<!-- One-time entry of Client ID + Secret from the TV/limited-input
+     OAuth client the user has to create in Google Cloud Console.
+     Once these are saved we never ask again — the device-flow
+     pairing modal opens straight into the user-code step. -->
+<div id="gcal-write-setup-overlay">
+  <div id="gcal-write-setup-card">
+    <h3>הפעלת כתיבה ל-Google Calendar</h3>
+    <div class="notif-sub">פעם אחת — אחר כך עובד אוטומטית</div>
+    <div class="se-field">
+      <label>OAuth Client ID</label>
+      <input id="gws-client-id" type="text" placeholder="XXXXX.apps.googleusercontent.com"
+        autocapitalize="off" autocomplete="off" spellcheck="false"/>
+    </div>
+    <div class="se-field">
+      <label>Client Secret</label>
+      <input id="gws-client-secret" type="text" placeholder="GOCSPX-XXXXXXXXXX"
+        autocapitalize="off" autocomplete="off" spellcheck="false"/>
+    </div>
+    <div style="font-size:11px;color:rgba(244,237,224,0.55);line-height:1.55;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-top:6px">
+      איך משיגים את אלה: Google Cloud Console → APIs &amp; Services → Credentials → <strong>+ Create Credentials</strong> → OAuth Client ID → Application type: <strong>TVs and Limited Input devices</strong>. תקבל Client ID ו-Secret — תדביק שניהם כאן.
+    </div>
+    <div class="notif-actions">
+      <button type="button" class="notif-close" onclick="_closeWriteSetupModal()">בטל</button>
+      <button type="button" class="btn btn-primary" onclick="_saveWriteSetup()" style="font-size:14px">המשך לאישור</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GOOGLE DEVICE-CODE PAIRING MODAL ===== -->
+<!-- Shown while we poll Google for the user-authorisation. The user
+     opens google.com/device on any browser, types the displayed
+     code, approves the app. As soon as Google switches the device
+     flow to "approved", _pollDeviceToken() exchanges for a token
+     and closes this modal. -->
+<div id="device-code-overlay">
+  <div id="device-code-card">
+    <h3>אישור Google Calendar</h3>
+    <div class="notif-sub">פתח את הקישור, הכנס את הקוד, אשר את החשבון</div>
+    <ol style="margin:14px 0 6px;padding:0 18px 0 0;color:#f4ede0;font-size:13.5px;line-height:1.7">
+      <li>פתח בדפדפן את:
+        <a id="dc-url" target="_blank" rel="noopener" style="color:#d4a574;font-weight:700;word-break:break-all">https://www.google.com/device</a>
+      </li>
+      <li>הכנס את הקוד הזה:
+        <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:8px">
+          <div id="dc-user-code" style="font-family:'Rubik','Heebo',sans-serif;font-size:30px;font-weight:900;letter-spacing:0.1em;color:#d4a574;background:rgba(212,165,116,0.12);border:1px solid rgba(212,165,116,0.35);border-radius:12px;padding:10px 18px">—</div>
+          <button onclick="_copyDcCode()" style="background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:9px 13px;color:#f4ede0;font-weight:700;font-family:'Heebo',sans-serif;cursor:pointer;font-size:12px">📋 העתק</button>
+        </div>
+      </li>
+      <li>אשר את חשבון Google שלך — האפליקציה תתחבר אוטומטית.</li>
+    </ol>
+    <div style="font-size:12px;color:rgba(244,237,224,0.55);margin-top:14px;text-align:center">
+      ⏳ ממתין לאישור…
+    </div>
+    <div class="notif-actions">
+      <button type="button" class="notif-close" onclick="_closeDeviceCodeModal()">בטל</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== SCHEDULE ITEM EDIT MODAL ===== -->
 <div id="schedule-edit-overlay">
   <div id="schedule-edit-card">
@@ -4695,7 +4807,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v252</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v253</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -10170,6 +10282,8 @@ window.closeNotifSettings = function() {
 document.addEventListener('click', function(e) {
   if (e.target && e.target.id === 'notif-settings-overlay') window.closeNotifSettings();
   if (e.target && e.target.id === 'schedule-edit-overlay')  window.closeScheduleEdit();
+  if (e.target && e.target.id === 'gcal-write-setup-overlay') _closeWriteSetupModal();
+  // Note: device-code modal we DON'T close on backdrop tap — would lose poll state.
 });
 
 window.handleNotifToggle = function(btn) {
@@ -15010,7 +15124,7 @@ function goScheduleToday() {
   renderSchedule();
 }
 
-function addScheduleItem() {
+async function addScheduleItem() {
   const tInp = document.getElementById('schedule-title-input');
   const hInp = document.getElementById('schedule-time-input');
   const title = (tInp?.value || '').trim();
@@ -15031,11 +15145,27 @@ function addScheduleItem() {
   if (tInp) tInp.value = '';
   renderSchedule();
   if (window.haptic) window.haptic.success();
+  // 2-way: if the user has Google write access enabled, mirror the
+  // new event to their primary calendar and remember Google's id
+  // so we can patch/delete it later.
+  if (gcalWriteConnected()) {
+    const gid = await gcalWriteCreateEvent(item);
+    if (gid) {
+      const cur = load('schedule');
+      const sv  = cur.find(x => x.id === item.id);
+      if (sv) { sv.gcalEventId = gid; save('schedule', cur); }
+    }
+  }
 }
 
 function deleteScheduleItem(id) {
   if (!confirm('למחוק את הפריט מהלוז?')) return;
-  save('schedule', load('schedule').filter(x => x.id !== id));
+  const all = load('schedule');
+  const it  = all.find(x => x.id === id);
+  if (gcalWriteConnected() && it && it.gcalEventId) {
+    gcalWriteDeleteEvent(it.gcalEventId);
+  }
+  save('schedule', all.filter(x => x.id !== id));
   renderSchedule();
 }
 
@@ -15057,7 +15187,7 @@ window.closeScheduleEdit = function() {
   document.getElementById('schedule-edit-overlay').classList.remove('open');
   window._editScheduleId = null;
 };
-window.saveScheduleEdit = function() {
+window.saveScheduleEdit = async function() {
   const id = window._editScheduleId;
   if (!id) return;
   const newTitle = (document.getElementById('se-title').value || '').trim();
@@ -15072,6 +15202,17 @@ window.saveScheduleEdit = function() {
     save('schedule', all);
     renderSchedule();
     if (window.haptic) window.haptic.success();
+    if (gcalWriteConnected() && it.gcalEventId) {
+      gcalWriteUpdateEvent(it.gcalEventId, it);
+    } else if (gcalWriteConnected() && !it.gcalEventId) {
+      // Item created before write was enabled — push it now.
+      const gid = await gcalWriteCreateEvent(it);
+      if (gid) {
+        const cur = load('schedule');
+        const sv  = cur.find(x => x.id === id);
+        if (sv) { sv.gcalEventId = gid; save('schedule', cur); }
+      }
+    }
   }
   window.closeScheduleEdit();
 };
@@ -15079,7 +15220,12 @@ window.deleteFromScheduleEdit = function() {
   const id = window._editScheduleId;
   if (!id) return;
   if (!confirm('למחוק את הפריט מהלוז?')) return;
-  save('schedule', load('schedule').filter(x => x.id !== id));
+  const all = load('schedule');
+  const it  = all.find(x => x.id === id);
+  if (gcalWriteConnected() && it && it.gcalEventId) {
+    gcalWriteDeleteEvent(it.gcalEventId);
+  }
+  save('schedule', all.filter(x => x.id !== id));
   renderSchedule();
   window.closeScheduleEdit();
 };
@@ -15208,6 +15354,217 @@ function disconnectIcs() {
   renderScheduleGcalBar();
   renderSchedule();
 }
+
+// ───────────────────────────────────────────────────────
+// Google Calendar — 2-way WRITE via OAuth Device Flow.
+// ───────────────────────────────────────────────────────
+// The OAuth library that the desktop browser uses refuses to load
+// in WebViews, and Web OAuth flow needs an HTTP redirect URI we
+// can't host. Device Flow has neither requirement: it uses a TV /
+// limited-input OAuth Client (no redirect URI at all), the user
+// just types a short code into google.com/device on any browser,
+// and we poll the token endpoint until they authorise.
+const GCAL_W_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+
+function gcalWriteTokens() {
+  try { return JSON.parse(localStorage.getItem('gcal_w_tokens') || 'null'); }
+  catch (e) { return null; }
+}
+function gcalWriteConnected() {
+  const t = gcalWriteTokens();
+  return !!(t && t.refresh_token);
+}
+function disconnectGcalWrite() {
+  localStorage.removeItem('gcal_w_tokens');
+  renderScheduleGcalBar();
+  toast('כתיבה לגוגל נותקה');
+}
+
+async function gcalWriteEnable() {
+  const clientId     = (localStorage.getItem('gcal_w_client_id')     || '').trim();
+  const clientSecret = (localStorage.getItem('gcal_w_client_secret') || '').trim();
+  if (!clientId || !clientSecret) {
+    _openWriteSetupModal();
+    return;
+  }
+  // 1. Request a device code from Google.
+  try {
+    const r = await fetch('https://oauth2.googleapis.com/device/code', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    'client_id=' + encodeURIComponent(clientId) + '&scope=' + encodeURIComponent(GCAL_W_SCOPE)
+    });
+    const dc = await r.json();
+    if (!dc.device_code) {
+      toast('❌ ' + (dc.error_description || dc.error || 'אישור נכשל'));
+      return;
+    }
+    _openDeviceCodeModal(dc);
+    _pollDeviceToken(dc, clientId, clientSecret);
+  } catch (e) {
+    toast('❌ שגיאה בחיבור: ' + e.message);
+  }
+}
+
+async function _pollDeviceToken(dc, clientId, clientSecret) {
+  const expiresAt = Date.now() + (dc.expires_in || 1800) * 1000;
+  let interval    = (dc.interval || 5) * 1000;
+  while (Date.now() < expiresAt) {
+    await new Promise(r => setTimeout(r, interval));
+    if (!document.getElementById('device-code-overlay')?.classList.contains('open')) return; // cancelled
+    try {
+      const r = await fetch('https://oauth2.googleapis.com/token', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    new URLSearchParams({
+          client_id:     clientId,
+          client_secret: clientSecret,
+          device_code:   dc.device_code,
+          grant_type:    'urn:ietf:params:oauth:grant-type:device_code'
+        }).toString()
+      });
+      const t = await r.json();
+      if (t.access_token) {
+        localStorage.setItem('gcal_w_tokens', JSON.stringify({
+          access_token:  t.access_token,
+          refresh_token: t.refresh_token,
+          expires_at:    Date.now() + (t.expires_in || 3600) * 1000 - 60000
+        }));
+        _closeDeviceCodeModal();
+        toast('✓ סנכרון Google Calendar הופעל!');
+        renderScheduleGcalBar();
+        return;
+      } else if (t.error === 'authorization_pending') {
+        // keep polling
+      } else if (t.error === 'slow_down') {
+        interval += 5000;
+      } else {
+        toast('❌ אישור נכשל: ' + (t.error_description || t.error || ''));
+        _closeDeviceCodeModal();
+        return;
+      }
+    } catch (e) { /* transient network — try again */ }
+  }
+  toast('⌛ זמן האישור פג');
+  _closeDeviceCodeModal();
+}
+
+async function _gcalWriteAccessToken() {
+  const t = gcalWriteTokens();
+  if (!t) return null;
+  if (Date.now() < t.expires_at) return t.access_token;
+  const clientId     = localStorage.getItem('gcal_w_client_id');
+  const clientSecret = localStorage.getItem('gcal_w_client_secret');
+  try {
+    const r = await fetch('https://oauth2.googleapis.com/token', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    new URLSearchParams({
+        client_id:     clientId,
+        client_secret: clientSecret,
+        refresh_token: t.refresh_token,
+        grant_type:    'refresh_token'
+      }).toString()
+    });
+    const tnew = await r.json();
+    if (!tnew.access_token) return null;
+    localStorage.setItem('gcal_w_tokens', JSON.stringify({
+      access_token:  tnew.access_token,
+      refresh_token: t.refresh_token, // refresh tokens don't rotate by default for device flow
+      expires_at:    Date.now() + (tnew.expires_in || 3600) * 1000 - 60000
+    }));
+    return tnew.access_token;
+  } catch (e) { return null; }
+}
+
+function _addOneHour(timeStr) {
+  const parts = String(timeStr || '00:00').split(':').map(Number);
+  const newH  = (parts[0] + 1) % 24;
+  return String(newH).padStart(2, '0') + ':' + String(parts[1] || 0).padStart(2, '0');
+}
+
+async function gcalWriteCreateEvent(item) {
+  const access = await _gcalWriteAccessToken();
+  if (!access) return null;
+  const body = {
+    summary: item.title,
+    start:   { dateTime: item.date + 'T' + item.time + ':00', timeZone: 'Asia/Jerusalem' },
+    end:     { dateTime: item.date + 'T' + _addOneHour(item.time) + ':00', timeZone: 'Asia/Jerusalem' },
+    extendedProperties: { private: { appScheduleId: item.id } }
+  };
+  try {
+    const r = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method:  'POST',
+      headers: { Authorization: 'Bearer ' + access, 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body)
+    });
+    const d = await r.json();
+    return d.id || null;
+  } catch (e) { return null; }
+}
+async function gcalWriteUpdateEvent(eventId, item) {
+  const access = await _gcalWriteAccessToken();
+  if (!access || !eventId) return;
+  const body = {
+    summary: item.title,
+    start:   { dateTime: item.date + 'T' + item.time + ':00', timeZone: 'Asia/Jerusalem' },
+    end:     { dateTime: item.date + 'T' + _addOneHour(item.time) + ':00', timeZone: 'Asia/Jerusalem' }
+  };
+  try {
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/' + encodeURIComponent(eventId), {
+      method:  'PATCH',
+      headers: { Authorization: 'Bearer ' + access, 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body)
+    });
+  } catch (e) {}
+}
+async function gcalWriteDeleteEvent(eventId) {
+  const access = await _gcalWriteAccessToken();
+  if (!access || !eventId) return;
+  try {
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/' + encodeURIComponent(eventId), {
+      method:  'DELETE',
+      headers: { Authorization: 'Bearer ' + access }
+    });
+  } catch (e) {}
+}
+
+// ── Setup + Device-code modals ──
+function _openWriteSetupModal() {
+  document.getElementById('gcal-write-setup-overlay').classList.add('open');
+  const ci = document.getElementById('gws-client-id');
+  const cs = document.getElementById('gws-client-secret');
+  if (ci) ci.value = localStorage.getItem('gcal_w_client_id')     || '';
+  if (cs) cs.value = localStorage.getItem('gcal_w_client_secret') || '';
+}
+function _closeWriteSetupModal() {
+  document.getElementById('gcal-write-setup-overlay').classList.remove('open');
+}
+function _saveWriteSetup() {
+  const ci = (document.getElementById('gws-client-id').value     || '').trim();
+  const cs = (document.getElementById('gws-client-secret').value || '').trim();
+  if (!ci || !cs) { toast('⚠️ חסרים Client ID / Secret'); return; }
+  localStorage.setItem('gcal_w_client_id',     ci);
+  localStorage.setItem('gcal_w_client_secret', cs);
+  _closeWriteSetupModal();
+  gcalWriteEnable();
+}
+function _openDeviceCodeModal(dc) {
+  const overlay = document.getElementById('device-code-overlay');
+  if (!overlay) return;
+  overlay.querySelector('#dc-user-code').textContent = dc.user_code || '—';
+  overlay.querySelector('#dc-url').textContent       = dc.verification_url || 'google.com/device';
+  overlay.querySelector('#dc-url').href              = dc.verification_url || 'https://www.google.com/device';
+  overlay.classList.add('open');
+}
+function _closeDeviceCodeModal() {
+  const overlay = document.getElementById('device-code-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
+function _copyDcCode() {
+  const code = document.getElementById('dc-user-code').textContent;
+  navigator.clipboard?.writeText(code).then(() => toast('📋 הקוד הועתק')).catch(() => {});
+}
 function connectIcs() {
   const inp = document.getElementById('schedule-gcal-client-id');
   const url = (inp && inp.value || '').trim();
@@ -15233,22 +15590,33 @@ function renderScheduleGcalBar() {
   if (connected) {
     const lastTs = window._icsLastFetch ? new Date(window._icsLastFetch) : null;
     const lastTxt = lastTs ? 'עודכן לאחרונה: ' + String(lastTs.getHours()).padStart(2,'0') + ':' + String(lastTs.getMinutes()).padStart(2,'0') : 'מסונכרן';
+    const writeOn = gcalWriteConnected();
+    const writeBtn = writeOn
+      ? '<button onclick="disconnectGcalWrite()" title="כיבוי כתיבה" ' +
+          'style="display:inline-flex;align-items:center;gap:6px;background:rgba(66,133,244,0.16);border:1px solid rgba(66,133,244,0.45);border-radius:999px;padding:6px 12px;color:#9ec0ff;font-size:11.5px;font-weight:800;cursor:pointer;font-family:Heebo,sans-serif">' +
+          '<span>✓</span><span>כתיבה פעילה</span></button>'
+      : '<button onclick="gcalWriteEnable()" title="הפעל כתיבה" ' +
+          'style="display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed rgba(66,133,244,0.55);border-radius:999px;padding:6px 12px;color:#4285f4;font-size:11.5px;font-weight:800;cursor:pointer;font-family:Heebo,sans-serif">' +
+          '<span>🖊</span><span>הפעל כתיבה ליומן</span></button>';
     bar.innerHTML =
-      '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(50,90,55,0.18);border:1px solid rgba(122,168,127,0.35);border-radius:14px">' +
-        '<svg viewBox="0 0 24 24" width="22" height="22" style="flex-shrink:0">' +
-          '<rect x="3" y="5" width="18" height="16" rx="2" fill="#fff" stroke="#4285f4" stroke-width="1.6"/>' +
-          '<line x1="3" y1="10" x2="21" y2="10" stroke="#4285f4" stroke-width="1.6"/>' +
-          '<line x1="8" y1="3" x2="8" y2="7" stroke="#4285f4" stroke-width="2" stroke-linecap="round"/>' +
-          '<line x1="16" y1="3" x2="16" y2="7" stroke="#4285f4" stroke-width="2" stroke-linecap="round"/>' +
-        '</svg>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:13px;font-weight:800;color:var(--text)">Google Calendar מחובר</div>' +
-          '<div style="font-size:11px;color:var(--text-muted)">' + lastTxt + '</div>' +
+      '<div style="background:rgba(50,90,55,0.18);border:1px solid rgba(122,168,127,0.35);border-radius:14px;padding:10px 14px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<svg viewBox="0 0 24 24" width="22" height="22" style="flex-shrink:0">' +
+            '<rect x="3" y="5" width="18" height="16" rx="2" fill="#fff" stroke="#4285f4" stroke-width="1.6"/>' +
+            '<line x1="3" y1="10" x2="21" y2="10" stroke="#4285f4" stroke-width="1.6"/>' +
+            '<line x1="8" y1="3" x2="8" y2="7" stroke="#4285f4" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="16" y1="3" x2="16" y2="7" stroke="#4285f4" stroke-width="2" stroke-linecap="round"/>' +
+          '</svg>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:800;color:var(--text)">Google Calendar מחובר</div>' +
+            '<div style="font-size:11px;color:var(--text-muted)">' + lastTxt + '</div>' +
+          '</div>' +
+          '<button onclick="fetchGcalIcs(false)" title="רענן" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text)">' +
+            '<svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.4-7"/><polyline points="21 3 21 9 15 9"/></svg>' +
+          '</button>' +
+          '<button onclick="disconnectIcs()" title="נתק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)">✕</button>' +
         '</div>' +
-        '<button onclick="fetchGcalIcs(false)" title="רענן" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text)">' +
-          '<svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.4-7"/><polyline points="21 3 21 9 15 9"/></svg>' +
-        '</button>' +
-        '<button onclick="disconnectIcs()" title="נתק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)">✕</button>' +
+        '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07);display:flex;justify-content:flex-end">' + writeBtn + '</div>' +
       '</div>';
   } else {
     const savedUrl = _icsUrl();
