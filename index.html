@@ -4695,7 +4695,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v248</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v249</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5349,6 +5349,13 @@
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#facc15"></span>היום</span>
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#94a3b8"></span>חלף</span>
     </div>
+
+    <!-- ─── Google Calendar bar ─── -->
+    <!-- Read-only sync: pulls events from the user's primary Google
+         calendar and merges them with the manual items below. Uses
+         the same OAuth/token state as the (hidden) page-gcal session-
+         sync flow, so connecting once unlocks both features. -->
+    <div id="schedule-gcal-bar" style="margin-bottom:14px"></div>
 
     <!-- רשימת הלוז -->
     <div id="schedule-list"></div>
@@ -6531,7 +6538,24 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   const map = {income:0, expenses:1, installments:2, profiles:3, daily:4, schedule:5, workshops:6, proposals:7, contracts:8, students:9, dashboard:10};
   if (name === 'daily') _dailyDate = dailyDateStr();
-  if (name === 'schedule') { _scheduleDate = dailyDateStr(); renderSchedule(); }
+  if (name === 'schedule') {
+    _scheduleDate = dailyDateStr();
+    // Lazy-init Google Calendar so events from the user's gmail
+    // calendar render alongside the manual schedule items. If
+    // they've connected before, gcalLoadToken() rehydrates the
+    // token from localStorage; a silent reconnect kicks off in
+    // the background if the token has expired.
+    try {
+      if (typeof gcalLoadToken === 'function' && !_gcalToken) gcalLoadToken();
+      if (_gcalToken && (!_gcalEventsCache || !_gcalEventsCache.length) && typeof fetchGoogleEvents === 'function') {
+        fetchGoogleEvents(true);
+      } else if (!_gcalToken && typeof gcalSilentReconnect === 'function') {
+        gcalSilentReconnect();
+      }
+    } catch (e) {}
+    if (typeof renderScheduleGcalBar === 'function') renderScheduleGcalBar();
+    renderSchedule();
+  }
   const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
   const idx = map[key];
@@ -9808,6 +9832,15 @@ function fetchGoogleEvents(silent) {
       syncGcalToSessions(items);
       renderSessionCal();
       renderGcalEvents(items);
+      // Refresh the schedule view too — events may belong to the
+      // currently-shown day. Only renders if the schedule list is
+      // mounted, so it's a no-op when on a different page.
+      try {
+        if (typeof renderSchedule === 'function' && document.getElementById('schedule-list')) {
+          renderScheduleGcalBar();
+          renderSchedule();
+        }
+      } catch (e) {}
       if (!silent) toast('✓ יומן גוגל עודכן');
     })
     .catch(err => {
@@ -14955,12 +14988,27 @@ function _scheduleProximity(dateStr, timeStr) {
 }
 
 function changeScheduleDate(dir) {
+  const prev = new Date(_scheduleDate + 'T00:00:00');
   const d = new Date(_scheduleDate + 'T00:00:00');
   d.setDate(d.getDate() + dir);
   _scheduleDate = dailyDateStr(d);
+  // If we crossed a month boundary and Google is connected, the
+  // cache holds the OLD month's events — refetch in the background.
+  if (_gcalToken && (d.getMonth() !== prev.getMonth() || d.getFullYear() !== prev.getFullYear())) {
+    curMonth = d.getMonth(); curYear = d.getFullYear();
+    if (typeof fetchGoogleEvents === 'function') fetchGoogleEvents(true);
+  }
   renderSchedule();
 }
-function goScheduleToday() { _scheduleDate = dailyDateStr(); renderSchedule(); }
+function goScheduleToday() {
+  const target = new Date();
+  if (_gcalToken && (target.getMonth() !== curMonth || target.getFullYear() !== curYear)) {
+    curMonth = target.getMonth(); curYear = target.getFullYear();
+    if (typeof fetchGoogleEvents === 'function') fetchGoogleEvents(true);
+  }
+  _scheduleDate = dailyDateStr();
+  renderSchedule();
+}
 
 function addScheduleItem() {
   const tInp = document.getElementById('schedule-title-input');
@@ -15036,6 +15084,73 @@ window.deleteFromScheduleEdit = function() {
   window.closeScheduleEdit();
 };
 
+// ── Google Calendar bar in the schedule page ──
+function _scheduleGcalConnected() {
+  return !!(_gcalToken && localStorage.getItem('gcal_token') &&
+            Date.now() < parseInt(localStorage.getItem('gcal_token_exp') || '0'));
+}
+function renderScheduleGcalBar() {
+  const bar = document.getElementById('schedule-gcal-bar');
+  if (!bar) return;
+  const connected = _scheduleGcalConnected();
+  const email = localStorage.getItem('gcal_user_email') || '';
+  if (connected) {
+    bar.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(50,90,55,0.18);border:1px solid rgba(122,168,127,0.35);border-radius:14px">' +
+        '<svg viewBox="0 0 24 24" width="20" height="20" style="flex-shrink:0">' +
+          '<path fill="#4285f4" d="M16.5 3.5h2.5A2 2 0 0 1 21 5.5v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2h2.5"/>' +
+          '<path fill="#fff" d="M7 3v3M17 3v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>' +
+          '<rect x="3.5" y="8" width="17" height="12" fill="#fff" opacity="0.95"/>' +
+          '<text x="12" y="17" font-family="Arial" font-size="7" font-weight="900" fill="#4285f4" text-anchor="middle">31</text>' +
+        '</svg>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;font-weight:800;color:var(--text)">Google Calendar מחובר</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (email || 'מסונכרן') + '</div>' +
+        '</div>' +
+        '<button onclick="fetchGoogleEvents()" title="רענן" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text)">' +
+          '<svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.4-7"/><polyline points="21 3 21 9 15 9"/></svg>' +
+        '</button>' +
+        '<button onclick="disconnectGoogle(); renderScheduleGcalBar();" title="נתק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)">✕</button>' +
+      '</div>';
+  } else {
+    const savedClient = localStorage.getItem('gcal_client_id') || '';
+    bar.innerHTML =
+      '<div style="background:var(--surface);border:1.5px dashed var(--border);border-radius:14px;padding:14px 16px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
+          '<svg viewBox="0 0 24 24" width="22" height="22" style="flex-shrink:0">' +
+            '<rect x="3" y="5" width="18" height="16" rx="2" fill="#fff" stroke="#4285f4" stroke-width="1.6"/>' +
+            '<line x1="3" y1="10" x2="21" y2="10" stroke="#4285f4" stroke-width="1.6"/>' +
+            '<line x1="8" y1="3" x2="8" y2="7" stroke="#4285f4" stroke-width="2" stroke-linecap="round"/>' +
+            '<line x1="16" y1="3" x2="16" y2="7" stroke="#4285f4" stroke-width="2" stroke-linecap="round"/>' +
+          '</svg>' +
+          '<div style="flex:1">' +
+            '<div style="font-size:13.5px;font-weight:800;color:var(--text)">חבר את Google Calendar</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);margin-top:1px">אירועים מהיומן יופיעו כאן יחד עם הפעילויות הידניות</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<input id="schedule-gcal-client-id" type="text" placeholder="Client ID מ-Google Cloud..." value="' + _escHtml(savedClient) + '" ' +
+            'oninput="localStorage.setItem(\'gcal_client_id\', this.value); document.getElementById(\'gcal-client-id\') && (document.getElementById(\'gcal-client-id\').value = this.value);" ' +
+            'style="flex:1;border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12.5px;background:var(--surface2);color:var(--text);outline:none;font-family:\'Heebo\',sans-serif"/>' +
+          '<button onclick="document.getElementById(\'gcal-client-id\') && (document.getElementById(\'gcal-client-id\').value = document.getElementById(\'schedule-gcal-client-id\').value); connectGoogle();" ' +
+            'style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:\'Heebo\',sans-serif;white-space:nowrap">התחבר</button>' +
+        '</div>' +
+        '<div style="font-size:10.5px;color:var(--text-muted);margin-top:8px;line-height:1.5">לקבלת Client ID — Google Cloud Console → OAuth Consent → Credentials → Create Credentials → OAuth Client ID → Web application</div>' +
+      '</div>';
+  }
+}
+
+// ── Pull Google events for one specific date out of the cache ──
+function gcalEventsForDate(dateStr) {
+  if (!_gcalEventsCache || !_gcalEventsCache.length) return [];
+  return _gcalEventsCache.filter(e => {
+    if (e.status === 'cancelled') return false;
+    const startStr = e.start && (e.start.dateTime || e.start.date);
+    if (!startStr) return false;
+    return startStr.startsWith(dateStr);
+  });
+}
+
 function renderSchedule() {
   const listEl  = document.getElementById('schedule-list');
   const labelEl = document.getElementById('schedule-date-label');
@@ -15044,9 +15159,26 @@ function renderSchedule() {
   if (labelEl) labelEl.textContent = _scheduleDateLabel(_scheduleDate);
   if (todayBtn) todayBtn.style.display = (_scheduleDate === dailyDateStr()) ? 'none' : '';
 
-  const items = (load('schedule') || [])
+  // Manual items + Google events for the displayed date, merged
+  // into one chronological list. Google events keep a flag so we
+  // can disable edit/delete on them (only Google itself can edit).
+  const manualItems = (load('schedule') || [])
     .filter(it => it.date === _scheduleDate)
-    .sort((a, b) => a.time.localeCompare(b.time));
+    .map(it => Object.assign({}, it, { _source: 'manual' }));
+  const gcalRaw = gcalEventsForDate(_scheduleDate);
+  const gcalItems = gcalRaw.map(e => {
+    const startDt = (e.start && e.start.dateTime) || '';
+    const time = startDt ? startDt.split('T')[1].slice(0, 5) : '00:00';
+    return {
+      id:      'gcal_' + e.id,
+      date:    _scheduleDate,
+      time:    time,
+      title:   e.summary || '(אירוע ללא שם)',
+      _source: 'gcal',
+      _gcalId: e.id
+    };
+  });
+  const items = manualItems.concat(gcalItems).sort((a, b) => a.time.localeCompare(b.time));
 
   if (!items.length) {
     listEl.innerHTML =
@@ -15060,15 +15192,33 @@ function renderSchedule() {
 
   listEl.innerHTML = items.map(it => {
     const { color } = _scheduleProximity(it.date, it.time);
-    return (
-      '<div class="schedule-row" onclick="editScheduleItem(\'' + it.id + '\')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;background:var(--surface);margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.04);cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s" ' +
-           'onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
-        '<span style="width:11px;height:11px;border-radius:50%;background:' + color + ';box-shadow:0 0 8px ' + color + '55;flex-shrink:0"></span>' +
-        '<div style="font-family:Rubik,sans-serif;font-weight:800;font-size:18px;color:var(--accent);min-width:54px;letter-spacing:-0.02em">' + it.time + '</div>' +
-        '<div style="flex:1;font-size:15px;font-weight:700;color:var(--text);min-width:0">' + _escHtml(it.title) + '</div>' +
-        '<button class="row-icon-btn" onclick="event.stopPropagation(); deleteScheduleItem(\'' + it.id + '\')" title="מחק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">' +
+    const isGcal = (it._source === 'gcal');
+    // Google events get a left accent stripe + a small G logo so the
+    // origin reads at a glance, and they're read-only (no trash btn).
+    const tap = isGcal
+      ? '' // No action — tapping does nothing; user edits in Google Calendar
+      : 'onclick="editScheduleItem(\'' + it.id + '\')"';
+    const cursor = isGcal ? 'default' : 'pointer';
+    const leftStripe = isGcal
+      ? 'border-right:3px solid #4285f4;'
+      : '';
+    const trashBtn = isGcal
+      ? '<span style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="אירוע מ-Google — ערוך ב-Google Calendar">' +
+          '<svg viewBox="0 0 24 24" width="14" height="14" style="opacity:0.7">' +
+            '<rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="#4285f4" stroke-width="2"/>' +
+            '<line x1="3" y1="10" x2="21" y2="10" stroke="#4285f4" stroke-width="2"/>' +
+          '</svg>' +
+        '</span>'
+      : '<button class="row-icon-btn" onclick="event.stopPropagation(); deleteScheduleItem(\'' + it.id + '\')" title="מחק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">' +
           '<svg style="width:14px;height:14px;color:#b8442e"><use href="#ic-trash"/></svg>' +
-        '</button>' +
+        '</button>';
+    return (
+      '<div class="schedule-row" ' + tap + ' style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);' + leftStripe + 'border-radius:14px;background:var(--surface);margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.04);cursor:' + cursor + ';transition:transform .15s,border-color .15s,box-shadow .15s" ' +
+           (isGcal ? '' : 'onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'"') + '>' +
+        '<span style="width:11px;height:11px;border-radius:50%;background:' + color + ';box-shadow:0 0 8px ' + color + '55;flex-shrink:0"></span>' +
+        '<div style="font-family:Rubik,sans-serif;font-weight:800;font-size:18px;color:' + (isGcal ? '#4285f4' : 'var(--accent)') + ';min-width:54px;letter-spacing:-0.02em">' + it.time + '</div>' +
+        '<div style="flex:1;font-size:15px;font-weight:700;color:var(--text);min-width:0">' + _escHtml(it.title) + '</div>' +
+        trashBtn +
       '</div>'
     );
   }).join('');
