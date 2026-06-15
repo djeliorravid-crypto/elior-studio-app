@@ -17,6 +17,18 @@ import SwiftUI
 private let APP_GROUP_ID = "group.com.ravidstudio.app"
 private let TASKS_KEY    = "widget_tasks"
 
+// ── Palette ── matches the app's dark-wood theme but with strong
+//    contrast so a glance at the home screen actually reads.
+private let BG_TOP     = Color(red: 0.18, green: 0.12, blue: 0.07)  // deep wood
+private let BG_BOT     = Color(red: 0.09, green: 0.06, blue: 0.03)  // near-black
+private let ACCENT     = Color(red: 0.85, green: 0.62, blue: 0.40)  // cognac
+private let ACCENT_LO  = Color(red: 0.85, green: 0.62, blue: 0.40).opacity(0.18)
+private let TEXT_HI    = Color(red: 0.97, green: 0.93, blue: 0.86)  // cream
+private let TEXT_LO    = Color(red: 0.97, green: 0.93, blue: 0.86).opacity(0.55)
+private let CARD       = Color.white.opacity(0.06)
+private let CARD_LINE  = Color.white.opacity(0.10)
+private let CHECK_LINE = Color(red: 0.85, green: 0.62, blue: 0.40).opacity(0.55)
+
 struct TaskItem: Codable, Identifiable, Hashable {
     let id:    String
     let title: String
@@ -60,6 +72,31 @@ struct TaskProvider: TimelineProvider {
 
 // ───── Views ─────
 
+struct TaskRow: View {
+    let task: TaskItem
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Circle()
+                .strokeBorder(CHECK_LINE, lineWidth: 1.6)
+                .frame(width: 16, height: 16)
+            Text(task.title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(TEXT_HI)
+                .lineLimit(2)
+                .multilineTextAlignment(.trailing)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .background(CARD)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(CARD_LINE, lineWidth: 0.5)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+}
+
 struct TaskWidgetEntryView: View {
     let entry: TaskEntry
     @Environment(\.widgetFamily) var family
@@ -67,49 +104,64 @@ struct TaskWidgetEntryView: View {
     var openTasks: [TaskItem] { entry.tasks.filter { !$0.done } }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("המשימות שלי")
-                    .font(.system(size: 13, weight: .heavy))
-                    .foregroundColor(Color(red: 0.83, green: 0.65, blue: 0.45))
-                Spacer()
+        VStack(alignment: .trailing, spacing: 8) {
+            // ── Header ──
+            HStack(spacing: 8) {
+                // Cognac pill with the open-task count
                 Text("\(openTasks.count)")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .foregroundColor(ACCENT)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 3)
+                    .background(Capsule().fill(ACCENT_LO))
+                    .overlay(Capsule().strokeBorder(ACCENT.opacity(0.35), lineWidth: 0.6))
+                Spacer()
+                Text("המשימות שלי")
+                    .font(.system(size: 14, weight: .heavy))
+                    .foregroundColor(TEXT_HI)
+                    .tracking(-0.2)
             }
-            .padding(.bottom, 2)
 
+            // Thin accent rule under the header for a printed-card feel
+            Rectangle()
+                .fill(LinearGradient(
+                    colors: [ACCENT.opacity(0.45), ACCENT.opacity(0)],
+                    startPoint: .trailing, endPoint: .leading
+                ))
+                .frame(height: 1)
+                .padding(.bottom, 2)
+
+            // ── Body ──
             if openTasks.isEmpty {
                 Spacer()
-                HStack { Spacer(); Text("אין משימות פתוחות 🎉").font(.system(size: 13, weight: .medium)).foregroundColor(.secondary); Spacer() }
+                VStack(spacing: 6) {
+                    Text("✓")
+                        .font(.system(size: 28, weight: .heavy, design: .rounded))
+                        .foregroundColor(ACCENT)
+                    Text("הכל בוצע")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(TEXT_LO)
+                }
+                .frame(maxWidth: .infinity)
                 Spacer()
             } else {
                 ForEach(openTasks.prefix(rowLimit)) { task in
                     Link(destination: URL(string: "ravidstudio://task/\(task.id)")!) {
-                        HStack(alignment: .top, spacing: 8) {
-                            Circle()
-                                .stroke(Color(red: 0.83, green: 0.65, blue: 0.45), lineWidth: 1.5)
-                                .frame(width: 14, height: 14)
-                                .padding(.top, 2)
-                            Text(task.title)
-                                .font(.system(size: 13, weight: .semibold))
-                                .lineLimit(2)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(.primary)
-                            Spacer(minLength: 0)
-                        }
+                        TaskRow(task: task)
                     }
                 }
                 if openTasks.count > rowLimit {
-                    Text("+ עוד \(openTasks.count - rowLimit) משימות")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.secondary)
+                    Text("עוד \(openTasks.count - rowLimit) משימות •••")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(TEXT_LO)
                         .padding(.top, 2)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
+                Spacer(minLength: 0)
             }
-            Spacer(minLength: 0)
         }
-        .padding(14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .environment(\.layoutDirection, .rightToLeft)
         .widgetBackground(backgroundView)
     }
@@ -124,13 +176,18 @@ struct TaskWidgetEntryView: View {
     }
 
     private var backgroundView: some View {
-        LinearGradient(
-            gradient: Gradient(colors: [
-                Color(red: 0.22, green: 0.14, blue: 0.08),
-                Color(red: 0.14, green: 0.09, blue: 0.04)
-            ]),
-            startPoint: .top, endPoint: .bottom
-        )
+        ZStack {
+            LinearGradient(
+                gradient: Gradient(colors: [BG_TOP, BG_BOT]),
+                startPoint: .topTrailing, endPoint: .bottomLeading
+            )
+            // Faint inner highlight at the top so the surface reads
+            // like leather/wood rather than a flat panel.
+            LinearGradient(
+                colors: [Color.white.opacity(0.05), Color.clear],
+                startPoint: .top, endPoint: .center
+            )
+        }
     }
 }
 
