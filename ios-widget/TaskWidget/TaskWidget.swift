@@ -38,6 +38,10 @@ struct WidgetPayload: Codable {
     let emptyTitle:     String?
     let emptyText:      String?
     let emptyEmoji:     String?  // e.g. "✓"
+    // Lock-screen accessory text — fully driven by JS. If nil, the
+    // widget falls back to a sensible default derived from items.
+    let lockTitle:      String?
+    let lockSubtitle:   String?
     let items:          [WidgetItem]
 }
 
@@ -98,6 +102,8 @@ struct TaskProvider: TimelineProvider {
             emptyTitle: "טוען…",
             emptyText: nil,
             emptyEmoji: "•",
+            lockTitle: nil,
+            lockSubtitle: nil,
             items: []
         ))
     }
@@ -139,6 +145,8 @@ struct TaskProvider: TimelineProvider {
                 emptyTitle: "הכל בוצע",
                 emptyText: nil,
                 emptyEmoji: "✓",
+                lockTitle: nil,
+                lockSubtitle: nil,
                 items: items
             ))
         }
@@ -150,6 +158,8 @@ struct TaskProvider: TimelineProvider {
             emptyTitle: "אין נתונים",
             emptyText: "פתח את האפליקציה כדי לסנכרן",
             emptyEmoji: "•",
+            lockTitle: nil,
+            lockSubtitle: nil,
             items: []
         ))
     }
@@ -322,13 +332,28 @@ struct HomeScreenView: View {
 @available(iOS 16.0, *)
 struct LockScreenRectangularView: View {
     let entry: TaskEntry
-    var openCount: Int { entry.payload.items.count }
-    var label: String {
-        let header = entry.payload.headerTitle.contains("לוז") ? "פעילויות" : "משימות"
-        switch openCount {
-        case 0: return "פנוי"
-        case 1: return "\(header) אחת"
-        default: return "\(openCount) \(header) פתוחות"
+
+    // Top + bottom lines. JS pushes lockTitle / lockSubtitle directly,
+    // so changing what shows here in the future is a pure JS edit.
+    // Fallbacks below cover the case where the app hasn't sent the
+    // explicit lock fields yet (e.g. very old version writing only
+    // the legacy tasks key).
+    var topLine: String {
+        if let s = entry.payload.lockTitle, !s.isEmpty { return s }
+        // Default: first item's title + time, or empty-state title.
+        if let first = entry.payload.items.first {
+            if let sub = first.subtitle, !sub.isEmpty { return "\(sub) · \(first.title)" }
+            return first.title
+        }
+        return entry.payload.emptyTitle ?? "פנוי"
+    }
+    var bottomLine: String {
+        if let s = entry.payload.lockSubtitle, !s.isEmpty { return s }
+        let n = entry.payload.items.count
+        switch n {
+        case 0:  return "אין פעילויות מתוכננות"
+        case 1:  return "הפעילות הקרובה"
+        default: return "ועוד \(n - 1) פעילויות היום"
         }
     }
     var body: some View {
@@ -337,12 +362,14 @@ struct LockScreenRectangularView: View {
                 .frame(width: 28, height: 28)
                 .widgetAccentable()
             VStack(alignment: .trailing, spacing: 2) {
-                Text("אליאור רביד")
-                    .font(.system(size: 11, weight: .heavy))
-                    .foregroundStyle(.secondary)
-                Text(label)
+                Text(topLine)
                     .font(.system(size: 14, weight: .heavy))
                     .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(bottomLine)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
