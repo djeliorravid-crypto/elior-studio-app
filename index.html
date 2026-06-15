@@ -2335,6 +2335,99 @@
     }
     .face-id-retry-btn:active { transform: scale(0.96); filter: brightness(0.92); }
 
+    /* ===== Schedule Edit Modal ===== */
+    /* Reuses the notif-settings sheet styles + adds two labeled
+       fields. Bottom-sheet on mobile, centered modal on desktop —
+       same media-query thresholds as the notif modal below. */
+    #schedule-edit-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 10000;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    #schedule-edit-overlay.open { display: flex; }
+    #schedule-edit-card {
+      background: #2a1f17;
+      color: #f4ede0;
+      border: 1px solid rgba(212,165,116,0.25);
+      border-radius: 22px 22px 0 0;
+      padding: 22px 20px 26px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 -8px 36px rgba(0,0,0,0.6);
+      animation: seSlideUp 0.28s cubic-bezier(.34,1.2,.64,1);
+    }
+    @media (min-width: 600px) {
+      #schedule-edit-overlay { align-items: center; padding: 24px; }
+      #schedule-edit-card    { border-radius: 22px; max-height: 80vh; overflow-y: auto; }
+    }
+    @keyframes seSlideUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+    #schedule-edit-card h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #f4ede0;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+    #schedule-edit-card .notif-sub {
+      font-size: 12.5px;
+      color: rgba(244,237,224,0.55);
+      margin-bottom: 18px;
+    }
+    .se-field { margin-bottom: 14px; }
+    .se-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(244,237,224,0.7);
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+    }
+    .se-field input {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #f4ede0;
+      font-family: 'Heebo', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      outline: none;
+      transition: border-color .18s, box-shadow .18s;
+    }
+    .se-field input:focus {
+      border-color: rgba(212,165,116,0.6);
+      box-shadow: 0 0 0 3px rgba(212,165,116,0.18);
+    }
+    #schedule-edit-card .notif-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 18px;
+      justify-content: flex-end;
+    }
+    #schedule-edit-card .notif-actions button {
+      flex: 0 0 auto;
+      min-height: 40px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Heebo', sans-serif;
+    }
+    #schedule-edit-card .notif-test,
+    #schedule-edit-card .notif-close {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(244,237,224,0.85);
+    }
+    #schedule-edit-card .notif-test:hover { border-color: #dc2626; }
+
     /* ===== Notification Settings Modal ===== */
     #notif-settings-overlay {
       position: fixed; inset: 0;
@@ -4467,6 +4560,28 @@
   };
 </script>
 
+<!-- ===== SCHEDULE ITEM EDIT MODAL ===== -->
+<div id="schedule-edit-overlay">
+  <div id="schedule-edit-card">
+    <h3>עריכת פעילות</h3>
+    <div class="notif-sub">עדכן את הכותרת או השעה</div>
+    <div class="se-field">
+      <label>כותרת</label>
+      <input id="se-title" type="text" placeholder="כותרת הפעילות"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();saveScheduleEdit();}"/>
+    </div>
+    <div class="se-field">
+      <label>שעה</label>
+      <input id="se-time" type="time"/>
+    </div>
+    <div class="notif-actions">
+      <button type="button" class="notif-test" onclick="deleteFromScheduleEdit()" style="color:#dc2626">מחק</button>
+      <button type="button" class="notif-close" onclick="closeScheduleEdit()">בטל</button>
+      <button type="button" class="btn btn-primary" onclick="saveScheduleEdit()" style="font-size:14px">שמור</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== NOTIFICATION SETTINGS MODAL ===== -->
 <div id="notif-settings-overlay">
   <div id="notif-settings-card">
@@ -4561,7 +4676,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v244</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v245</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9987,6 +10102,7 @@ window.closeNotifSettings = function() {
 };
 document.addEventListener('click', function(e) {
   if (e.target && e.target.id === 'notif-settings-overlay') window.closeNotifSettings();
+  if (e.target && e.target.id === 'schedule-edit-overlay')  window.closeScheduleEdit();
 });
 
 window.handleNotifToggle = function(btn) {
@@ -14844,16 +14960,45 @@ function editScheduleItem(id) {
   const all = load('schedule');
   const it = all.find(x => x.id === id);
   if (!it) return;
-  const newTitle = prompt('כותרת:', it.title);
-  if (newTitle === null) return;
-  const newTime = prompt('שעה (HH:MM):', it.time);
-  if (newTime === null) return;
-  if (!/^\d{2}:\d{2}$/.test(newTime)) { alert('שעה לא תקינה'); return; }
-  it.title = newTitle.trim() || it.title;
-  it.time  = newTime;
-  save('schedule', all);
-  renderSchedule();
+  window._editScheduleId = id;
+  const title = document.getElementById('se-title');
+  const time  = document.getElementById('se-time');
+  if (title) title.value = it.title || '';
+  if (time)  time.value  = it.time  || '';
+  document.getElementById('schedule-edit-overlay').classList.add('open');
+  // Phone keyboards: jump straight to the title field so the user
+  // can start typing without an extra tap.
+  setTimeout(() => title && title.focus(), 80);
 }
+window.closeScheduleEdit = function() {
+  document.getElementById('schedule-edit-overlay').classList.remove('open');
+  window._editScheduleId = null;
+};
+window.saveScheduleEdit = function() {
+  const id = window._editScheduleId;
+  if (!id) return;
+  const newTitle = (document.getElementById('se-title').value || '').trim();
+  const newTime  =  document.getElementById('se-time').value  || '';
+  if (!newTitle) { document.getElementById('se-title').focus(); return; }
+  if (!/^\d{2}:\d{2}$/.test(newTime)) { document.getElementById('se-time').focus(); return; }
+  const all = load('schedule');
+  const it = all.find(x => x.id === id);
+  if (it) {
+    it.title = newTitle;
+    it.time  = newTime;
+    save('schedule', all);
+    renderSchedule();
+  }
+  window.closeScheduleEdit();
+};
+window.deleteFromScheduleEdit = function() {
+  const id = window._editScheduleId;
+  if (!id) return;
+  if (!confirm('למחוק את הפריט מהלוז?')) return;
+  save('schedule', load('schedule').filter(x => x.id !== id));
+  renderSchedule();
+  window.closeScheduleEdit();
+};
 
 function renderSchedule() {
   const listEl  = document.getElementById('schedule-list');
@@ -14880,14 +15025,12 @@ function renderSchedule() {
   listEl.innerHTML = items.map(it => {
     const { color } = _scheduleProximity(it.date, it.time);
     return (
-      '<div class="schedule-row" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;background:var(--surface);margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.04)">' +
+      '<div class="schedule-row" onclick="editScheduleItem(\'' + it.id + '\')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;background:var(--surface);margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.04);cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s" ' +
+           'onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
         '<span style="width:11px;height:11px;border-radius:50%;background:' + color + ';box-shadow:0 0 8px ' + color + '55;flex-shrink:0"></span>' +
         '<div style="font-family:Rubik,sans-serif;font-weight:800;font-size:18px;color:var(--accent);min-width:54px;letter-spacing:-0.02em">' + it.time + '</div>' +
         '<div style="flex:1;font-size:15px;font-weight:700;color:var(--text);min-width:0">' + _escHtml(it.title) + '</div>' +
-        '<button class="row-icon-btn" onclick="editScheduleItem(\'' + it.id + '\')" title="ערוך" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer">' +
-          '<svg style="width:14px;height:14px;color:var(--text-muted)"><use href="#ic-edit"/></svg>' +
-        '</button>' +
-        '<button class="row-icon-btn" onclick="deleteScheduleItem(\'' + it.id + '\')" title="מחק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer">' +
+        '<button class="row-icon-btn" onclick="event.stopPropagation(); deleteScheduleItem(\'' + it.id + '\')" title="מחק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">' +
           '<svg style="width:14px;height:14px;color:#b8442e"><use href="#ic-trash"/></svg>' +
         '</button>' +
       '</div>'
