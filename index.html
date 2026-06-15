@@ -4561,7 +4561,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v242</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v243</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15301,23 +15301,17 @@ window._buildWidgetPayload = function() {
     emptyText   = 'אין משימות פתוחות';
   }
   // 3. Lock-screen accessory copy — keep it short and concrete.
-  //    Show the next upcoming item (time · title) on top, with a
-  //    secondary line explaining context. If nothing is scheduled,
-  //    swap to a friendly empty state.
+  //    Title gets its own (potentially wrapping) line; the time and
+  //    "+X more" hint live on the secondary line so the title isn't
+  //    competing with metadata for horizontal space.
   let lockTitle, lockSubtitle;
   if (schedItems.length) {
-    // Prefer the next still-upcoming item (urgency > 0). If they're
-    // all in the past, fall back to the first item of the day.
     const upcoming = schedItems.find(it => (it.urgency || 0) > 0) || schedItems[0];
-    if (upcoming.subtitle) {
-      lockTitle = upcoming.subtitle + ' · ' + upcoming.title;
-    } else {
-      lockTitle = upcoming.title;
-    }
+    lockTitle = upcoming.title;
+    const time = upcoming.subtitle || '';
     const moreCount = schedItems.length - 1;
-    lockSubtitle = moreCount > 0
-      ? 'ועוד ' + moreCount + (moreCount === 1 ? ' פעילות היום' : ' פעילויות היום')
-      : 'הפעילות הקרובה';
+    const moreTxt = moreCount > 0 ? ' · +' + moreCount + ' היום' : '';
+    lockSubtitle = (time ? time : 'הפעילות הקרובה') + moreTxt;
   } else if (items.length) {
     lockTitle    = items[0].title;
     lockSubtitle = items.length === 1
