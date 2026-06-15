@@ -376,6 +376,16 @@ struct LockScreenRectangularView: View {
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        // Crisp light outline so the widget reads as its own object
+        // against a busy wallpaper. iOS renders this in vibrant mode
+        // (so it picks up the wallpaper tint rather than pure white),
+        // which is the Apple-native look for accessory widgets.
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.85), lineWidth: 1.2)
+        )
         .environment(\.layoutDirection, .rightToLeft)
         .widgetURL(URL(string: "ravidstudio://"))
         .widgetBackground(Color.clear)
