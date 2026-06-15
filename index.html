@@ -4695,7 +4695,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v250</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v251</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15103,18 +15103,39 @@ function _icsConnected() { return !!_icsUrl(); }
 async function fetchGcalIcs(silent) {
   const url = _icsUrl();
   if (!url) return;
-  try {
-    const res  = await fetch(url, { cache: 'no-store' });
-    const text = await res.text();
-    window._icsEventsCache = _parseIcs(text);
-    window._icsLastFetch   = Date.now();
-    if (!silent) toast('✓ יומן גוגל עודכן');
-    if (document.getElementById('schedule-list')) {
-      renderScheduleGcalBar();
-      renderSchedule();
-    }
-  } catch (e) {
+  // Google's ICS endpoint does NOT include CORS headers for private
+  // feeds, so a direct fetch from the WebView origin fails with a
+  // CORS error. We try the direct URL first (works in some setups
+  // / native HTTP) and fall through a chain of public CORS proxies
+  // until one returns text. corsproxy.io is the most reliable
+  // candidate today; allorigins is the backup.
+  const candidates = [
+    url,
+    'https://corsproxy.io/?'           + encodeURIComponent(url),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+    'https://api.codetabs.com/v1/proxy?quest='   + encodeURIComponent(url)
+  ];
+  let text = '';
+  for (const candidate of candidates) {
+    try {
+      const res = await fetch(candidate, { cache: 'no-store' });
+      if (!res.ok) continue;
+      const body = await res.text();
+      // Sanity-check the body is actually an ICS feed and not a
+      // proxy error page or a Google "you are not authorised" HTML.
+      if (/BEGIN:VCALENDAR/i.test(body)) { text = body; break; }
+    } catch (e) {}
+  }
+  if (!text) {
     if (!silent) toast('❌ שגיאה בקריאת היומן');
+    return;
+  }
+  window._icsEventsCache = _parseIcs(text);
+  window._icsLastFetch   = Date.now();
+  if (!silent) toast('✓ יומן גוגל עודכן (' + window._icsEventsCache.length + ' אירועים)');
+  if (document.getElementById('schedule-list')) {
+    renderScheduleGcalBar();
+    renderSchedule();
   }
 }
 
