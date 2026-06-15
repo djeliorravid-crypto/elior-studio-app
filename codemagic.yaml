@@ -39,28 +39,47 @@ workflows:
             npx cap add ios
           fi
 
-      - name: Patch AppDelegate.swift for Capacitor 8 API
-        # Capacitor 8 dropped the `continue userActivity:` overload of
-        # ApplicationDelegateProxy.shared.application — stub the
-        # universal-links method since we don't use it.
+      - name: Install custom AppDelegate.swift (quick-action support)
+        # Replace the Capacitor-generated AppDelegate with our version
+        # that handles cold-launch + warm-launch quick action shortcuts.
+        # Also fixes the Capacitor 8 `continue userActivity:` API drop.
         script: |
-          /usr/bin/sed -i '' \
-            's|return ApplicationDelegateProxy\.shared\.application(application, continue: userActivity, restorationHandler: restorationHandler)|return false|' \
-            ios/App/App/AppDelegate.swift
+          cp ios-plugin/AppDelegate.swift ios/App/App/AppDelegate.swift
 
-      - name: Patch Info.plist with NSFaceIDUsageDescription + encryption-compliance opt-out
+      - name: Patch Info.plist — Face ID + compliance + quick actions
         # 1) NSFaceIDUsageDescription — Face ID prompt copy.
         # 2) ITSAppUsesNonExemptEncryption=false — pre-answers Apple's
         #    "does your app use encryption?" question. Without it,
         #    every TestFlight build sits in "Missing Compliance" until
-        #    the user manually answers in App Store Connect, which is
-        #    why we previously had to babysit each upload.
+        #    someone answers in App Store Connect.
+        # 3) UIApplicationShortcutItems — the three home-screen
+        #    long-press quick actions (income / task / schedule). The
+        #    user info dict carries a "type" reverse-DNS string that
+        #    AppDelegate forwards to JS so the matching modal opens.
         script: |
           PLIST=ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Delete :NSFaceIDUsageDescription" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string 'אנו משתמשים ב-Face ID כדי לפתוח את האפליקציה במהירות ובאופן מאובטח'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Delete :ITSAppUsesNonExemptEncryption" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST"
+          # Quick actions — rebuild from scratch so the array stays in sync.
+          /usr/libexec/PlistBuddy -c "Delete :UIApplicationShortcutItems" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems array" "$PLIST"
+          # Item 0 — Add Income
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:0 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:0:UIApplicationShortcutItemType string 'com.ravidstudio.app.add-income'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:0:UIApplicationShortcutItemTitle string 'הוסף הכנסה'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:0:UIApplicationShortcutItemIconSymbolName string 'plus.circle.fill'" "$PLIST"
+          # Item 1 — Add Task
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:1 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:1:UIApplicationShortcutItemType string 'com.ravidstudio.app.add-task'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:1:UIApplicationShortcutItemTitle string 'הוסף משימה'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:1:UIApplicationShortcutItemIconSymbolName string 'checkmark.circle.fill'" "$PLIST"
+          # Item 2 — Add Schedule Item
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:2 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:2:UIApplicationShortcutItemType string 'com.ravidstudio.app.add-schedule'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:2:UIApplicationShortcutItemTitle string 'הוסף לוז'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems:2:UIApplicationShortcutItemIconSymbolName string 'calendar.badge.plus'" "$PLIST"
 
       - name: Install Ravid Studio app icon
         # `cap add ios` ships a Capacitor placeholder AppIcon set. Copy

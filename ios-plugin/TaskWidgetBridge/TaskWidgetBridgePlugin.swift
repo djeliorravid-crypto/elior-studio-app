@@ -1,40 +1,49 @@
 // TaskWidgetBridge — Capacitor bridge that pushes data the widget
 // reads from the App Group UserDefaults container.
 //
-// Two methods, both for forward-compat:
+// Exposed methods:
 //
 //   syncTasks({ tasks: [{id,title,done}] })
 //     LEGACY — writes the old "widget_tasks" key. Older widget
 //     binaries in user devices still read this on iOS until they
-//     get a fresh build. Keep around so the moment a user installs
-//     a new IPA, the previous old widget keeps working until iOS
-//     refreshes its timeline.
+//     get a fresh build.
 //
 //   syncPayload({ payload: { headerTitle, items, accent, ... } })
-//     NEW — writes the "widget_payload" key as a generic JSON blob.
-//     The Swift widget renderer treats EVERY visible string + colour
-//     as data, so future content/styling tweaks happen entirely in
-//     JS without rebuilding the IPA.
+//     Data-driven widget feed — the Swift widget is a "dumb"
+//     renderer driven entirely by this JSON, so future widget
+//     tweaks (text, colours, item count) don't need rebuilds.
 //
-// In both cases we kick WidgetCenter so the home/lock screen
-// widgets refresh within seconds rather than waiting for the
-// 15-min default timeline tick.
+//   setBadge({ count })
+//     Sets the red number on the app icon. iOS 16+ uses
+//     UNUserNotificationCenter.setBadgeCount; older uses the
+//     UIApplication property.
+//
+//   consumePendingShortcut()
+//     Returns and clears any quick-action shortcut type that was
+//     pending from a cold launch (stashed in UserDefaults by the
+//     AppDelegate). JS calls this on startup so we can dispatch
+//     the right "add new …" modal.
 
 import Foundation
+import UIKit
 import Capacitor
 import WidgetKit
+import UserNotifications
 
-private let APP_GROUP_ID = "group.com.ravidstudio.app"
-private let TASKS_KEY    = "widget_tasks"
-private let PAYLOAD_KEY  = "widget_payload"
+private let APP_GROUP_ID  = "group.com.ravidstudio.app"
+private let TASKS_KEY     = "widget_tasks"
+private let PAYLOAD_KEY   = "widget_payload"
+private let SHORTCUT_KEY  = "pending_shortcut"
 
 @objc(TaskWidgetBridgePlugin)
 public class TaskWidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier  = "TaskWidgetBridgePlugin"
     public let jsName      = "TaskWidgetBridge"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "syncTasks",   returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "syncPayload", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "syncTasks",              returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "syncPayload",            returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setBadge",               returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "consumePendingShortcut", returnType: CAPPluginReturnPromise)
     ]
 
     @objc func syncTasks(_ call: CAPPluginCall) {
@@ -82,6 +91,27 @@ public class TaskWidgetBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         defaults.set(str, forKey: PAYLOAD_KEY)
         _reloadWidgets()
         call.resolve(["synced": true])
+    }
+
+    @objc func setBadge(_ call: CAPPluginCall) {
+        let count = max(0, call.getInt("count") ?? 0)
+        DispatchQueue.main.async {
+            if #available(iOS 16.0, *) {
+                UNUserNotificationCenter.current().setBadgeCount(count) { _ in }
+            } else {
+                UIApplication.shared.applicationIconBadgeNumber = count
+            }
+            call.resolve(["badge": count])
+        }
+    }
+
+    @objc func consumePendingShortcut(_ call: CAPPluginCall) {
+        let defaults = UserDefaults.standard
+        let type = defaults.string(forKey: SHORTCUT_KEY) ?? ""
+        if !type.isEmpty {
+            defaults.removeObject(forKey: SHORTCUT_KEY)
+        }
+        call.resolve(["type": type])
     }
 
     private func _reloadWidgets() {

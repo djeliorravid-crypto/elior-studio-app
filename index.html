@@ -4676,7 +4676,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v245</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v246</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6366,9 +6366,14 @@ function save(key, val) {
   // 3. נסה לדחוף לענן עכשיו
   _pushKey(key);
   // 4. כשמשימות יומיות או פריט בלוז משתנים — סנכרן ל-Home-screen widget
+  //    + עדכן את ה-App Icon Badge.
   if ((key === 'daily_tasks' || key === 'schedule') &&
       typeof window.syncTasksToWidget === 'function') {
     window.syncTasksToWidget();
+  }
+  if ((key === 'daily_tasks' || key === 'schedule') &&
+      typeof window.updateAppBadge === 'function') {
+    window.updateAppBadge();
   }
 }
 
@@ -6474,6 +6479,16 @@ function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2400);
+  // Match the haptic to the visual cue — emoji prefix is the simplest
+  // signal: ✓/🎉/💾 = success, ⚠/❌ = error, otherwise a soft tap.
+  try {
+    if (window.haptic) {
+      const m = String(msg || '');
+      if (/[✓✔🎉💾🟢]/.test(m))      window.haptic.success();
+      else if (/[❌⚠🔴]/.test(m))      window.haptic.error();
+      else                              window.haptic.tap();
+    }
+  } catch (e) {}
 }
 
 // ===== NAVIGATION =====
@@ -14948,6 +14963,7 @@ function addScheduleItem() {
   save('schedule', all);
   if (tInp) tInp.value = '';
   renderSchedule();
+  if (window.haptic) window.haptic.success();
 }
 
 function deleteScheduleItem(id) {
@@ -14988,6 +15004,7 @@ window.saveScheduleEdit = function() {
     it.time  = newTime;
     save('schedule', all);
     renderSchedule();
+    if (window.haptic) window.haptic.success();
   }
   window.closeScheduleEdit();
 };
@@ -15505,6 +15522,106 @@ window.syncTasksToWidget = function(_unused) {
   if (!isNative) return;
   function attempt() {
     try { window.syncTasksToWidget(); } catch (e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attempt);
+  } else {
+    attempt();
+  }
+})();
+
+// ===== Haptic Feedback =====
+// Thin wrapper around @capacitor/haptics. All methods are no-ops on
+// the web build / when permission/plugin missing — so callers can
+// fire-and-forget without guards.
+window.haptic = (function() {
+  function getPlugin() {
+    return window.Capacitor &&
+           window.Capacitor.Plugins &&
+           window.Capacitor.Plugins.Haptics;
+  }
+  return {
+    tap:     function() { const H = getPlugin(); if (H && H.impact)         H.impact({ style: 'LIGHT'  }).catch(function(){}); },
+    medium:  function() { const H = getPlugin(); if (H && H.impact)         H.impact({ style: 'MEDIUM' }).catch(function(){}); },
+    heavy:   function() { const H = getPlugin(); if (H && H.impact)         H.impact({ style: 'HEAVY'  }).catch(function(){}); },
+    success: function() { const H = getPlugin(); if (H && H.notification)   H.notification({ type: 'SUCCESS' }).catch(function(){}); },
+    warn:    function() { const H = getPlugin(); if (H && H.notification)   H.notification({ type: 'WARNING' }).catch(function(){}); },
+    error:   function() { const H = getPlugin(); if (H && H.notification)   H.notification({ type: 'ERROR'   }).catch(function(){}); },
+    select:  function() { const H = getPlugin(); if (H && H.selectionStart) H.selectionStart().catch(function(){}); }
+  };
+})();
+
+// ===== App-icon badge =====
+// Computes a single number representing "you should look at this"
+// — open tasks + overdue items — and asks the OS to draw it on the
+// app icon. Called whenever the relevant data changes.
+window.updateAppBadge = function() {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isNative) return;
+  const Bridge = window.Capacitor.Plugins && window.Capacitor.Plugins.TaskWidgetBridge;
+  if (!Bridge || !Bridge.setBadge) return;
+  try {
+    const today = (typeof dailyDateStr === 'function') ? dailyDateStr() : new Date().toISOString().slice(0,10);
+    const tasks = load('daily_tasks') || [];
+    // "Open" tasks dated today or earlier, not done.
+    const openTasks = tasks.filter(function(t) {
+      return t && !t.done && t.text && (!t.date || t.date <= today);
+    });
+    // Schedule items still upcoming today.
+    const sched = (load('schedule') || []).filter(function(it) {
+      return it && it.date === today;
+    });
+    const upcomingSched = sched.filter(function(it) {
+      if (!it.time) return false;
+      return new Date(it.date + 'T' + it.time + ':00').getTime() > Date.now();
+    });
+    const count = openTasks.length + upcomingSched.length;
+    Bridge.setBadge({ count: count }).catch(function(){});
+  } catch (e) {}
+};
+
+// ===== Quick Actions (long-press app icon) =====
+// Cold launch: TaskWidgetBridge.consumePendingShortcut() returns the
+// shortcut type the AppDelegate stashed before the WebView booted.
+// Warm launch: BridgeViewController dispatches an 'app-shortcut'
+// CustomEvent on window. Both paths converge on _handleShortcut.
+window._handleShortcut = function(type) {
+  if (!type) return;
+  if (type === 'com.ravidstudio.app.add-income') {
+    // Navigate to income page + open the add-income modal if available.
+    try { if (typeof showPage === 'function') showPage('income'); } catch (e) {}
+    setTimeout(function() {
+      try { if (typeof openModal === 'function') openModal('income'); } catch (e) {}
+    }, 80);
+  } else if (type === 'com.ravidstudio.app.add-task') {
+    try { if (typeof showPage === 'function') showPage('daily'); } catch (e) {}
+    setTimeout(function() {
+      const inp = document.getElementById('daily-input');
+      if (inp) inp.focus();
+    }, 100);
+  } else if (type === 'com.ravidstudio.app.add-schedule') {
+    try { if (typeof showPage === 'function') showPage('schedule'); } catch (e) {}
+    setTimeout(function() {
+      const inp = document.getElementById('schedule-title-input');
+      if (inp) inp.focus();
+    }, 100);
+  }
+};
+window.addEventListener('app-shortcut', function(ev) {
+  const type = ev && ev.detail && ev.detail.type;
+  window._handleShortcut(type);
+});
+(function consumeColdLaunchShortcut() {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isNative) return;
+  function attempt() {
+    const Bridge = window.Capacitor.Plugins && window.Capacitor.Plugins.TaskWidgetBridge;
+    if (!Bridge || !Bridge.consumePendingShortcut) return;
+    Bridge.consumePendingShortcut()
+      .then(function(res) {
+        if (res && res.type) window._handleShortcut(res.type);
+      })
+      .catch(function(){});
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', attempt);
