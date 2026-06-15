@@ -48,15 +48,19 @@ workflows:
             's|return ApplicationDelegateProxy\.shared\.application(application, continue: userActivity, restorationHandler: restorationHandler)|return false|' \
             ios/App/App/AppDelegate.swift
 
-      - name: Patch Info.plist with NSFaceIDUsageDescription
-        # The biometric-auth plugin refuses to call LAContext on iOS if
-        # NSFaceIDUsageDescription is missing — and Apple rejects the
-        # IPA at upload time. Inject the Hebrew reason string here so
-        # the prompt the user sees is in their language.
+      - name: Patch Info.plist with NSFaceIDUsageDescription + encryption-compliance opt-out
+        # 1) NSFaceIDUsageDescription — Face ID prompt copy.
+        # 2) ITSAppUsesNonExemptEncryption=false — pre-answers Apple's
+        #    "does your app use encryption?" question. Without it,
+        #    every TestFlight build sits in "Missing Compliance" until
+        #    the user manually answers in App Store Connect, which is
+        #    why we previously had to babysit each upload.
         script: |
           PLIST=ios/App/App/Info.plist
           /usr/libexec/PlistBuddy -c "Delete :NSFaceIDUsageDescription" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string 'אנו משתמשים ב-Face ID כדי לפתוח את האפליקציה במהירות ובאופן מאובטח'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Delete :ITSAppUsesNonExemptEncryption" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST"
 
       - name: Install Ravid Studio app icon
         # `cap add ios` ships a Capacitor placeholder AppIcon set. Copy
