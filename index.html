@@ -544,13 +544,24 @@
       -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
     }
-    /* Kill the iOS gray-flash tap highlight on EVERY interactive
-       element. The body-level rule above doesn't inherit reliably
-       on <a>/<button>, so we explicitly null it out across the
-       board. Without this, scrolling over an income/expense card
-       briefly paints a black overlay on the touched region. */
+    /* Kill the iOS gray-flash tap highlight + long-press callout on
+       EVERY interactive element. The body-level rule above doesn't
+       inherit reliably onto <a>/<button>/<tr>, so we explicitly
+       null these out across the board. Without this, scrolling
+       over an income/expense card briefly paints a black overlay
+       on the touched region (the iOS press-and-hold preview). */
     *, *::before, *::after {
       -webkit-tap-highlight-color: transparent !important;
+      -webkit-touch-callout: none !important;
+      -webkit-user-select: none !important;
+      user-select: none !important;
+    }
+    /* …but text inside actual inputs / textareas / contentEditables
+       MUST stay selectable so the user can edit / copy values. */
+    input, textarea, [contenteditable="true"], .selectable, .selectable * {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      -webkit-touch-callout: default !important;
     }
     /* …but DO allow selecting inside actual inputs / textareas /
        contentEditable so the user can still copy-paste task text,
@@ -4684,7 +4695,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v247</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v248</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
