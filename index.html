@@ -564,6 +564,23 @@
       user-select: none !important;
       -webkit-user-drag: none !important;
     }
+    /* And — critically for dark mode — kill the SELECTION colour
+       too. Even with user-select: none iOS WebKit can briefly draw
+       the selection range rectangle during a touch; the default
+       colour is a dark blue that composites to near-black on our
+       dark-theme rows. Forcing the selection rect to fully
+       transparent makes it invisible regardless. */
+    ::selection,
+    ::-webkit-selection {
+      background-color: transparent !important;
+      background: transparent !important;
+      color: inherit !important;
+    }
+    *::selection {
+      background-color: transparent !important;
+      background: transparent !important;
+      color: inherit !important;
+    }
     /* …but text inside actual inputs / textareas / contentEditables
        MUST stay selectable so the user can edit / copy values. */
     input, textarea, [contenteditable="true"], .selectable, .selectable * {
@@ -5023,7 +5040,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v281</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v282</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
