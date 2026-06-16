@@ -2358,9 +2358,9 @@
     }
     .face-id-retry-btn:active { transform: scale(0.96); filter: brightness(0.92); }
 
-    /* ===== Google Write Setup + Device Code + Manual Paste modals ===== */
+    /* ===== Google Write Setup + Device Code + Manual Paste + Morning Receipt modals ===== */
     /* Same bottom-sheet pattern as #schedule-edit-overlay below. */
-    #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay {
+    #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay, #morning-receipt-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.55);
       backdrop-filter: blur(8px);
@@ -2373,8 +2373,9 @@
     }
     #gcal-write-setup-overlay.open,
     #device-code-overlay.open,
-    #manual-paste-overlay.open { display: flex; }
-    #gcal-write-setup-card, #device-code-card, #manual-paste-card {
+    #manual-paste-overlay.open,
+    #morning-receipt-overlay.open { display: flex; }
+    #gcal-write-setup-card, #device-code-card, #manual-paste-card, #morning-receipt-card {
       background: #2a1f17;
       color: #f4ede0;
       border: 1px solid rgba(212,165,116,0.25);
@@ -2386,34 +2387,41 @@
       animation: seSlideUp 0.28s cubic-bezier(.34,1.2,.64,1);
     }
     @media (min-width: 600px) {
-      #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay { align-items: center; padding: 24px; }
-      #gcal-write-setup-card, #device-code-card, #manual-paste-card { border-radius: 22px; }
+      #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay, #morning-receipt-overlay { align-items: center; padding: 24px; }
+      #gcal-write-setup-card, #device-code-card, #manual-paste-card, #morning-receipt-card { border-radius: 22px; }
     }
-    #gcal-write-setup-card h3, #device-code-card h3, #manual-paste-card h3 {
+    #gcal-write-setup-card h3, #device-code-card h3, #manual-paste-card h3, #morning-receipt-card h3 {
       font-size: 18px; font-weight: 800; color: #f4ede0;
       margin-bottom: 4px; letter-spacing: -0.01em;
     }
     #gcal-write-setup-card .notif-sub,
     #device-code-card .notif-sub,
-    #manual-paste-card .notif-sub {
-      font-size: 12.5px; color: rgba(244,237,224,0.55); margin-bottom: 18px;
+    #manual-paste-card .notif-sub,
+    #morning-receipt-card .notif-sub {
+      font-size: 12.5px; color: rgba(244,237,224,0.55); margin-bottom: 18px; text-align: center;
     }
     #gcal-write-setup-card .notif-actions,
     #device-code-card .notif-actions,
-    #manual-paste-card .notif-actions {
-      display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end;
+    #manual-paste-card .notif-actions,
+    #morning-receipt-card .notif-actions {
+      display: flex; gap: 8px; margin-top: 18px; justify-content: center;
     }
     #gcal-write-setup-card .notif-actions button,
     #device-code-card .notif-actions button,
-    #manual-paste-card .notif-actions button {
+    #manual-paste-card .notif-actions button,
+    #morning-receipt-card .notif-actions button {
       flex: 0 0 auto; min-height: 40px; padding: 8px 16px;
       border-radius: 10px; font-weight: 700; cursor: pointer; font-family: 'Heebo', sans-serif;
     }
     #gcal-write-setup-card .notif-close,
     #device-code-card .notif-close,
-    #manual-paste-card .notif-close {
+    #manual-paste-card .notif-close,
+    #morning-receipt-card .notif-close {
       background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(244,237,224,0.85);
     }
+    #morning-receipt-card h3 { text-align: center; }
+    #morning-receipt-card .se-field label { text-align: center; display: block; }
+    #morning-receipt-card .se-field input { text-align: center; }
     #manual-paste-card .se-field input {
       width: 100%; background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.10); border-radius: 12px;
@@ -4822,6 +4830,33 @@
   </div>
 </div>
 
+<!-- ===== MORNING RECEIPT MODAL ===== -->
+<!-- Opens whenever the user taps "צור קבלה" / retries a failed
+     create. Lets them refine the description and client name
+     before we POST to /documents — Morning prints whatever's in
+     this dialog onto the receipt PDF. -->
+<div id="morning-receipt-overlay">
+  <div id="morning-receipt-card">
+    <h3>פירוט הקבלה</h3>
+    <div class="notif-sub">על מה הקבלה?</div>
+    <div class="se-field">
+      <label>שם הלקוח</label>
+      <input id="mr-client" type="text" placeholder="שם הלקוח"
+        autocomplete="off" autocapitalize="off" spellcheck="false"/>
+    </div>
+    <div class="se-field">
+      <label>תיאור</label>
+      <input id="mr-desc" type="text" placeholder="פרודקשן שיר / מיקס / סשן הקלטה…"
+        autocomplete="off" autocapitalize="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();_confirmMorningReceiptModal();}"/>
+    </div>
+    <div class="notif-actions">
+      <button type="button" class="notif-close" onclick="_closeMorningReceiptModal()">בטל</button>
+      <button type="button" class="btn btn-primary" onclick="_confirmMorningReceiptModal()" style="font-size:14px">צור קבלה</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== SCHEDULE ITEM EDIT MODAL ===== -->
 <div id="schedule-edit-overlay">
   <div id="schedule-edit-card">
@@ -4957,7 +4992,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v272</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v273</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16400,16 +16435,64 @@ function _morningErrorMessage(res) {
   if (res.error === 'create_failed') return 'גוגל דחה את הבקשה';
   return res.error || 'שגיאה לא ידועה';
 }
-window.morningRetryReceipt = async function(incomeId) {
-  // Manual retry from the income row — clear any stored error so
-  // the next attempt isn't suppressed.
+window.morningRetryReceipt = function(incomeId) {
+  // Open the description modal so the user can refine WHAT the
+  // receipt is for before we hit Morning. The actual create call
+  // happens from _confirmMorningReceiptModal() after the user taps
+  // "צור קבלה".
   const all = load('income');
   const it = all.find(x => x.id === incomeId);
-  if (it) {
-    delete it.morningError;
-    save('income', all);
+  if (!it) return;
+  if (it.morningError) { delete it.morningError; save('income', all); }
+  window._mrPendingId  = incomeId;
+  window._mrPendingAmt = it.amount;
+  const descInp = document.getElementById('mr-desc');
+  const clntInp = document.getElementById('mr-client');
+  if (descInp) descInp.value = it.description || '';
+  if (clntInp) clntInp.value = it.clientName  || '';
+  document.getElementById('morning-receipt-overlay').classList.add('open');
+};
+window._closeMorningReceiptModal = function() {
+  document.getElementById('morning-receipt-overlay').classList.remove('open');
+  window._mrPendingId  = null;
+  window._mrPendingAmt = null;
+};
+window._confirmMorningReceiptModal = async function() {
+  const id = window._mrPendingId;
+  if (!id) return;
+  const desc = (document.getElementById('mr-desc').value   || '').trim();
+  const clnt = (document.getElementById('mr-client').value || '').trim();
+  window._closeMorningReceiptModal();
+  // Use the user-edited description / client for THIS receipt only;
+  // leave the underlying income row's fields alone.
+  const all = load('income');
+  const it  = all.find(x => x.id === id);
+  if (!it) return;
+  const incomeForReceipt = Object.assign({}, it, {
+    description: desc || it.description,
+    clientName:  clnt || it.clientName
+  });
+  if (it.morningDocId) return; // already issued
+  const res = await morningCreateReceiptFor(incomeForReceipt);
+  const fresh = load('income');
+  const ff    = fresh.find(x => x.id === id);
+  if (!ff) return;
+  if (res && res.id) {
+    ff.morningDocId     = res.id;
+    ff.morningDocNumber = res.number;
+    ff.morningDocUrl    = res.url && (res.url.he || res.url.en || (typeof res.url === 'string' ? res.url : ''));
+    save('income', fresh);
+    toast('🧾 קבלה ' + (res.number || '') + ' נוצרה ב-Morning');
+    if (window.haptic) window.haptic.success();
+    if (typeof renderIncome === 'function') renderIncome();
+  } else {
+    const msg = _morningErrorMessage(res);
+    ff.morningError = (res && res.error) || 'fail';
+    save('income', fresh);
+    toast('⚠️ Morning: ' + msg);
+    if (window.haptic) window.haptic.error();
+    console.warn('Morning create receipt failure', res);
   }
-  await window.morningIssueReceiptForIncome(incomeId);
 };
 window.morningOpenReceipt = function(url) {
   if (!url) { toast('אין URL זמין לקבלה'); return; }
