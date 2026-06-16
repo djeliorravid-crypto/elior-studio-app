@@ -4854,7 +4854,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v256</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v257</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15832,6 +15832,25 @@ function renderScheduleGcalBar() {
       '</div>';
   } else {
     const savedUrl = _icsUrl();
+    // EventKit write mode is independent of the ICS read connection,
+    // so surface a separate toggle in the disconnected state too —
+    // otherwise the user would have to set up ICS just to flip the
+    // write switch.
+    const Cal = _iosCalPlugin();
+    const writeOn = gcalWriteConnected();
+    const writeBlock = Cal
+      ? (writeOn
+          ? '<div style="background:rgba(50,90,55,0.18);border:1px solid rgba(122,168,127,0.35);border-radius:14px;padding:10px 14px;margin-top:10px;display:flex;align-items:center;gap:10px">' +
+              '<span style="font-size:18px;color:#9ec0ff">✓</span>' +
+              '<div style="flex:1"><div style="font-size:13px;font-weight:800;color:var(--text)">כתיבה ל-Apple/Google Calendar פעילה</div><div style="font-size:11px;color:var(--text-muted)">פעילויות חדשות יסתנכרנו אוטומטית</div></div>' +
+              '<button onclick="disconnectGcalWrite()" title="כיבוי" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)">✕</button>' +
+            '</div>'
+          : '<div style="background:var(--surface);border:1.5px dashed rgba(66,133,244,0.45);border-radius:14px;padding:12px 14px;margin-top:10px;display:flex;align-items:center;gap:10px">' +
+              '<span style="font-size:18px">🖊</span>' +
+              '<div style="flex:1"><div style="font-size:13px;font-weight:800;color:var(--text)">סנכרון יומן (כתיבה)</div><div style="font-size:11px;color:var(--text-muted)">דרך Apple Calendar — מסתנכרן ל-Google ברקע</div></div>' +
+              '<button onclick="gcalWriteEnable()" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:Heebo,sans-serif;white-space:nowrap">הפעל</button>' +
+            '</div>')
+      : '';
     bar.innerHTML =
       '<div style="background:var(--surface);border:1.5px dashed var(--border);border-radius:14px;padding:14px 16px">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
@@ -15856,7 +15875,7 @@ function renderScheduleGcalBar() {
         '<div style="font-size:10.5px;color:var(--text-muted);margin-top:8px;line-height:1.5">' +
           'במחשב/בדפדפן: Google Calendar → גלגל-שיניים → Settings → היומן שלך מהרשימה → גלול ל-"Integrate calendar" → העתק את "Secret address in iCal format"' +
         '</div>' +
-      '</div>';
+      '</div>' + writeBlock;
   }
 }
 
