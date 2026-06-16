@@ -935,7 +935,11 @@
       z-index: 500;
     }
     @media (max-width: 768px) {
-      .fab-container { bottom: 84px; left: 16px; }
+      /* Lift the FAB above the bottom tab bar. The sidebar is
+         min-height:70px + env(safe-area-inset-bottom); the previous
+         84px constant was hitting the bar on devices with a home
+         indicator. */
+      .fab-container { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); left: 16px; }
     }
     .fab-main {
       width: 60px; height: 60px; border-radius: 50%;
@@ -4938,7 +4942,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v268</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v269</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
