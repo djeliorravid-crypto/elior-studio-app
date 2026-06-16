@@ -2430,12 +2430,14 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       display: none;
-      /* Anchor near the top so when the iOS keyboard opens the card
-         doesn't get pinched between the status bar and the keyboard. */
-      align-items: flex-start;
+      /* Vertically centered now that there's no auto-keyboard. The
+         user only opens the keyboard if they explicitly tap the
+         title field — in that case iOS will scroll the focused
+         input into view itself. */
+      align-items: center;
       justify-content: center;
       z-index: 10000;
-      padding: max(40px, env(safe-area-inset-top, 0px) + 30px) 16px 16px;
+      padding: 24px 18px;
     }
     #schedule-edit-overlay.open { display: flex; }
     #schedule-edit-card {
@@ -2443,21 +2445,29 @@
       color: #f4ede0;
       border: 1px solid rgba(212,165,116,0.25);
       border-radius: 22px;
-      padding: 18px 18px 20px;
+      padding: 22px 22px 22px;
       width: 100%;
-      max-width: 400px;
+      max-width: 360px;
+      box-sizing: border-box;
       box-shadow: 0 14px 50px rgba(0,0,0,0.65);
       animation: seSlideUp 0.28s cubic-bezier(.34,1.2,.64,1);
     }
     /* Everything centered — title, labels, inputs, buttons — so the
        card reads like a focused dialog instead of an RTL form. */
     #schedule-edit-card { text-align: center; }
-    #schedule-edit-card h3   { font-size: 17px; margin-bottom: 2px; text-align: center; }
-    #schedule-edit-card .notif-sub { margin-bottom: 14px; text-align: center; }
-    #schedule-edit-card .se-field { margin-bottom: 10px; }
+    #schedule-edit-card h3 {
+      font-size: 17px;
+      margin-bottom: 2px;
+      text-align: center;
+    }
+    #schedule-edit-card .notif-sub {
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    #schedule-edit-card .se-field { margin-bottom: 12px; }
     #schedule-edit-card .se-field label {
       font-size: 11.5px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       text-align: center;
       display: block;
     }
@@ -2465,14 +2475,11 @@
       padding: 11px 12px;
       font-size: 15px;
       text-align: center;
-      box-sizing: border-box;
-      width: 100%;
+      box-sizing: border-box !important;
+      width: 100% !important;
       max-width: 100%;
-    }
-    #schedule-edit-card .notif-actions {
-      margin-top: 14px;
-      justify-content: center;
-      flex-wrap: wrap;
+      display: block;
+      min-width: 0;
     }
     /* Native date / time pickers in RTL on iOS push the spinner off
        the right edge — explicitly LTR centres the value text. */
@@ -2480,6 +2487,13 @@
     #schedule-edit-card .se-field input[type="time"] {
       direction: ltr;
       text-align: center;
+    }
+    #schedule-edit-card .notif-actions {
+      display: flex !important;
+      gap: 8px !important;
+      margin-top: 16px !important;
+      justify-content: center !important;
+      flex-wrap: wrap !important;
     }
     @keyframes seSlideUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
     #schedule-edit-card h3 {
@@ -2494,6 +2508,9 @@
       color: rgba(244,237,224,0.55);
       margin-bottom: 18px;
     }
+    /* Shared field defaults (used by both schedule-edit and the
+       GCal write-setup modals). Box-sizing here so width:100% on
+       the input never overflows the card padding. */
     .se-field { margin-bottom: 14px; }
     .se-field label {
       display: block;
@@ -2505,6 +2522,7 @@
     }
     .se-field input {
       width: 100%;
+      box-sizing: border-box;
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 12px;
@@ -2520,13 +2538,9 @@
       border-color: rgba(212,165,116,0.6);
       box-shadow: 0 0 0 3px rgba(212,165,116,0.18);
     }
-    #schedule-edit-card .notif-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 18px;
-      justify-content: flex-end;
-    }
-    #schedule-edit-card .notif-actions button {
+    #schedule-edit-card .notif-actions button,
+    #gcal-write-setup-card .notif-actions button,
+    #manual-paste-card .notif-actions button {
       flex: 0 0 auto;
       min-height: 40px;
       padding: 8px 16px;
@@ -2536,7 +2550,8 @@
       font-family: 'Heebo', sans-serif;
     }
     #schedule-edit-card .notif-test,
-    #schedule-edit-card .notif-close {
+    #gcal-write-setup-card .notif-test,
+    #manual-paste-card .notif-test {
       background: transparent;
       border: 1px solid rgba(255,255,255,0.15);
       color: rgba(244,237,224,0.85);
@@ -4891,7 +4906,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v266</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v267</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
