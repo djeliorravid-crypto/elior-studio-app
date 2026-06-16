@@ -555,6 +555,7 @@
       -webkit-touch-callout: none !important;
       -webkit-user-select: none !important;
       user-select: none !important;
+      -webkit-user-drag: none !important;
     }
     /* …but text inside actual inputs / textareas / contentEditables
        MUST stay selectable so the user can edit / copy values. */
@@ -563,6 +564,29 @@
       user-select: text !important;
       -webkit-touch-callout: default !important;
     }
+    /* iOS WebKit was painting a transient dark "press" rectangle
+       on table rows during scroll-overs, even with the global
+       tap-highlight reset. These rules explicitly null every
+       :hover / :active / :focus surface on rows + cells and let
+       only scroll gestures register on the row itself, which
+       suppresses the press preview. The row's actual background
+       (paid/pending/overdue tints) lives on the inline style and
+       isn't touched by these rules. */
+    table tr, table td {
+      -webkit-tap-highlight-color: transparent !important;
+      outline: none !important;
+      touch-action: pan-y !important;
+    }
+    table tr:active, table td:active,
+    table tr:focus, table td:focus,
+    table tr:focus-visible, table td:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    /* Buttons inside rows keep their own bg; just kill the
+       default focus ring iOS sometimes draws on tap. */
+    table button:focus, table button:focus-visible,
+    table button:active { outline: none !important; }
     /* …but DO allow selecting inside actual inputs / textareas /
        contentEditable so the user can still copy-paste task text,
        amounts, notes, etc. */
@@ -4992,7 +5016,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v278</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v279</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7763,7 +7787,7 @@ function renderIncome() {
       <td><span class="badge badge-purple">⏳ תשלומים</span></td>
       <td style="font-weight:800;color:var(--green)">${fmtMoney(p.amount)}</td>
       <td><span class="badge ${p.paid ? 'badge-green' : p.overdue ? 'badge-red' : 'badge-gray'}">${p.paid ? '✅ שולם' : p.overdue ? '🔴 באיחור' : 'טרם שולם'}</span></td>
-      <td></td>
+      <td style="display:none"></td>
     </tr>
   `).join('');
 
