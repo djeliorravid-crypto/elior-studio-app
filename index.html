@@ -5016,7 +5016,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v279</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v280</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7767,11 +7767,11 @@ function renderIncome() {
       </td>
       ${statusCell(i)}
       <td>
-        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           ${_receiptCell(i)}
           ${i.fromPlan ? '' : `
-            <button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:700;padding:4px 10px" onclick="openIncomeEdit('${i.id}')" title="ערוך">✏️</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')" title="מחק">🗑</button>
+            <button onclick="openIncomeEdit('${i.id}')" title="ערוך" style="background:transparent;border:1px solid rgba(255,255,255,0.10);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;color:var(--text-muted);transition:border-color .15s"><svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-edit"/></svg></button>
+            <button onclick="deleteIncome('${i.id}')" title="מחק" style="background:transparent;border:1px solid rgba(184,68,46,0.35);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;color:#b8442e;transition:border-color .15s"><svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-trash"/></svg></button>
           `}
         </div>
       </td>
