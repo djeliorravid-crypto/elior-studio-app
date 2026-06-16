@@ -4858,7 +4858,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v262</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v263</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16087,7 +16087,15 @@ function renderSchedule() {
   const manualItems = (load('schedule') || [])
     .filter(it => it.date === _scheduleDate)
     .map(it => Object.assign({}, it, { _source: 'manual' }));
-  const gcalRaw = gcalEventsForDate(_scheduleDate);
+  // De-dup: every manual item we already pushed to EventKit has its
+  // gcalEventId stamped on it (returned by Cal.createEvent). The
+  // matching EventKit event will reappear on the next refresh —
+  // skip it so the row doesn't render twice.
+  const claimedGcalIds = new Set(
+    manualItems.filter(it => it.gcalEventId).map(it => String(it.gcalEventId))
+  );
+  const gcalRaw = gcalEventsForDate(_scheduleDate)
+    .filter(e => !claimedGcalIds.has(String(e.id || '').replace(/^ek_/, '')));
   const gcalItems = gcalRaw.map(e => {
     const startDt = (e.start && e.start.dateTime) || '';
     const time = startDt ? startDt.split('T')[1].slice(0, 5) : '00:00';
@@ -16517,11 +16525,15 @@ window._buildWidgetPayload = function() {
   //    (Google Calendar via iOS sync), sorted by time with proximity
   //    colours. The widget renders whichever list is non-empty.
   const todayStr = (typeof dailyDateStr === 'function') ? dailyDateStr() : new Date().toISOString().slice(0,10);
-  const manual = (load('schedule') || [])
-    .filter(it => it && it.date === todayStr && it.title)
-    .map(it => ({ id: String(it.id || ''), title: it.title, time: it.time }));
+  const manualRaw = (load('schedule') || [])
+    .filter(it => it && it.date === todayStr && it.title);
+  const manual = manualRaw.map(it => ({ id: String(it.id || ''), title: it.title, time: it.time }));
+  // De-dup against EventKit by the gcalEventId we stamped at create-time.
+  const claimedEkIds = new Set(
+    manualRaw.filter(it => it.gcalEventId).map(it => String(it.gcalEventId))
+  );
   const fromEk = (window._eventKitCache || [])
-    .filter(ev => ev && ev.date === todayStr && ev.title)
+    .filter(ev => ev && ev.date === todayStr && ev.title && !claimedEkIds.has(String(ev.id || '')))
     .map(ev => ({ id: 'ek_' + ev.id, title: ev.title, time: ev.time }));
   const sched = manual.concat(fromEk).sort((a, b) =>
     String(a.time || '').localeCompare(String(b.time || ''))
