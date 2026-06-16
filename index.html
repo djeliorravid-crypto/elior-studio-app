@@ -2471,22 +2471,54 @@
       text-align: center;
       display: block;
     }
-    #schedule-edit-card .se-field input {
-      padding: 11px 12px;
-      font-size: 15px;
-      text-align: center;
-      box-sizing: border-box !important;
-      width: 100% !important;
-      max-width: 100%;
-      display: block;
-      min-width: 0;
-    }
-    /* Native date / time pickers in RTL on iOS push the spinner off
-       the right edge — explicitly LTR centres the value text. */
+    /* All three inputs (text, date, time) must render at IDENTICAL
+       dimensions. iOS's native date/time UA styles inject
+       -webkit-padding-start / -webkit-padding-end + a native
+       appearance that fattens them past the title input — we
+       reset the appearance, force border-box sizing and identical
+       padding/border so the rounded rectangles are pixel-twins. */
+    #schedule-edit-card .se-field input,
     #schedule-edit-card .se-field input[type="date"],
     #schedule-edit-card .se-field input[type="time"] {
-      direction: ltr;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      background:    rgba(255,255,255,0.06) !important;
+      border:        1px solid rgba(255,255,255,0.10) !important;
+      border-radius: 12px !important;
+      box-sizing:    border-box !important;
+      width:         100% !important;
+      max-width:     100% !important;
+      min-width:     0 !important;
+      padding:       11px 12px !important;
+      margin:        0 !important;
+      font-family:   'Heebo', sans-serif !important;
+      font-size:     15px !important;
+      font-weight:   600 !important;
+      color:         #f4ede0 !important;
+      text-align:    center !important;
+      display:       block !important;
+      outline:       none !important;
+      line-height:   1.3 !important;
+      height:        auto !important;
+    }
+    /* iOS hides the date/time picker indicator by default when
+       appearance is none, but sometimes leaves a stray pseudo —
+       null it so it doesn't add width. */
+    #schedule-edit-card .se-field input[type="date"]::-webkit-date-and-time-value,
+    #schedule-edit-card .se-field input[type="time"]::-webkit-date-and-time-value {
       text-align: center;
+      min-height: 1.3em;
+    }
+    #schedule-edit-card .se-field input[type="date"]::-webkit-calendar-picker-indicator,
+    #schedule-edit-card .se-field input[type="time"]::-webkit-calendar-picker-indicator {
+      display: none !important;
+    }
+    /* RTL ↔ LTR: the value text inside date/time looks correct in
+       LTR; in RTL the spinner bleeds. Force LTR direction so the
+       displayed value renders centered without overflowing. */
+    #schedule-edit-card .se-field input[type="date"],
+    #schedule-edit-card .se-field input[type="time"] {
+      direction: ltr !important;
     }
     #schedule-edit-card .notif-actions {
       display: flex !important;
@@ -4906,7 +4938,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v267</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v268</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
