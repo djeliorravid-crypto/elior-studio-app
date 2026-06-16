@@ -280,9 +280,16 @@
       --pill-gcal-text:   #d4b890;
 
       /* ── Row status backgrounds — dark ── */
-      --row-paid-bg:     #1f3318;
-      --row-pending-bg:  #3a2c22;
-      --row-overdue-bg:  #4d1f18;
+      /* Bumped from the 7%-brightness greens/browns of the
+         original dark palette to ~14%. iOS WebKit composes its
+         own (un-overridable) press overlay on top of dark
+         backgrounds during scroll-touches, and the old super-dark
+         rows turned solid black under that overlay. These tones
+         keep the paid/pending/overdue colour cue but stay readable
+         under the active overlay. */
+      --row-paid-bg:     #2d4a23;
+      --row-pending-bg:  #4d3a2a;
+      --row-overdue-bg:  #5e2a22;
       --row-paid-exp-bg: #4d1f18;
 
       /* ── Popup / floating menu — dark warm ── */
@@ -5016,7 +5023,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v280</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v281</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
