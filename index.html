@@ -4992,7 +4992,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v274</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v275</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16515,29 +16515,31 @@ window.morningOpenReceipt = function(url) {
 async function morningCreateCreditFor(income) {
   const token = await morningGetToken();
   if (!token) return { error: 'no_token' };
+  const amt = parseFloat(income.amount) || 0;
+  // For עוסק פטור, type 405 (קבלה זיכוי) is rejected by Morning.
+  // The accepted-in-Israel pattern: a second קבלה (type 400) with
+  // NEGATIVE amount, referencing the original via
+  // linkedDocumentIds. Books balance to zero, accountants pass it.
   const body = {
-    type:        405,      // קבלה זיכוי
+    type:        400,
     description: 'ביטול קבלה ' + (income.morningDocNumber ? '#' + income.morningDocNumber : ''),
     lang:        'he',
     currency:    'ILS',
     vatType:     0,
     client:      { name: String(income.clientName || 'לקוח').slice(0, 100) },
     income: [{
-      description: income.description || 'ביטול',
+      description: 'ביטול: ' + (income.description || ''),
       quantity:    1,
-      price:       parseFloat(income.amount) || 0,
+      price:       -amt,   // negative — cancels the original
       currency:    'ILS',
       vatType:     0
     }],
     payment: [{
       date:     new Date().toISOString().slice(0, 10),
-      type:     4,    // bank transfer
-      price:    parseFloat(income.amount) || 0,
+      type:     4,
+      price:    -amt,
       currency: 'ILS'
     }],
-    // Morning's field name for the original-receipt link. Both
-    // names appear in their docs depending on doc type; sending
-    // both is safe — unknown keys are ignored.
     linkedDocumentIds: income.morningDocId ? [income.morningDocId] : undefined,
     linkType:          income.morningDocId ? 1 : undefined
   };
