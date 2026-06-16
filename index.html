@@ -4858,7 +4858,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v261</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v262</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16022,24 +16022,56 @@ function gcalEventsForDate(dateStr) {
 
 // Fetch events for the currently-viewed date via EventKit. Cached
 // in window._eventKitCache; renderSchedule re-runs after the fetch
-// to pick the new data up.
+// to pick the new data up — AND the widget gets re-pushed so events
+// from Google Calendar show on the home/lock screen too.
 async function gcalRefreshEventKit() {
   const Cal = _iosCalPlugin();
   if (!Cal || !_iosCalGranted() || !Cal.listEvents) return;
   try {
-    const res = await Cal.listEvents({
-      startDate: _scheduleDate,
-      endDate:   _scheduleDate
-    });
-    const all = (res && res.events) || [];
+    // Always refresh TODAY for the widget feed, even if the user is
+    // viewing a different day in the schedule. The schedule list
+    // gets its own day if it's mounted.
+    const today = (typeof dailyDateStr === 'function') ? dailyDateStr() : new Date().toISOString().slice(0,10);
+    const day   = (typeof _scheduleDate === 'string') ? _scheduleDate : today;
+    const targets = (day === today) ? [today] : [today, day];
+    const all = [];
+    for (const t of targets) {
+      try {
+        const res = await Cal.listEvents({ startDate: t, endDate: t });
+        if (res && res.events) all.push.apply(all, res.events);
+      } catch (e) {}
+    }
     // Strip holiday / birthday calendars — even though Google
     // delivers them under the user's gmail "source", they're
     // distinct calendar titles we don't want polluting the schedule.
     const skip = /holiday|holidays|חג|חגים|מועד|מועדים|birthday|birthdays|ימי הולדת|jewish/i;
     window._eventKitCache = all.filter(ev => !skip.test(String(ev.calendar || '')));
     if (document.getElementById('schedule-list')) renderSchedule();
+    // Push the merged manual + EventKit list to the widget bridge so
+    // home / lock screen reflect new events within seconds.
+    if (typeof window.syncTasksToWidget === 'function') window.syncTasksToWidget();
   } catch (e) {}
 }
+
+// Keep the widget fresh — refresh on app boot, and again every
+// time the app returns from background. iOS's EventKit changes
+// propagate from Google Calendar within ~30s; this listener
+// catches those whenever the user looks at their phone.
+(function setupEventKitRefresh() {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (!isNative) return;
+  function attempt() {
+    if (typeof gcalRefreshEventKit === 'function') gcalRefreshEventKit();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attempt);
+  } else {
+    attempt();
+  }
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') attempt();
+  });
+})();
 
 function renderSchedule() {
   const listEl  = document.getElementById('schedule-list');
@@ -16481,14 +16513,22 @@ window.tryFaceId = async function() {
 //       { id, title, subtitle, dotColor, urgency }
 //     ] }
 window._buildWidgetPayload = function() {
-  // 1. Today's schedule items, sorted by time, with proximity colour.
+  // 1. Today's items from EVERY source — manual schedule, EventKit
+  //    (Google Calendar via iOS sync), sorted by time with proximity
+  //    colours. The widget renders whichever list is non-empty.
   const todayStr = (typeof dailyDateStr === 'function') ? dailyDateStr() : new Date().toISOString().slice(0,10);
-  const sched = (load('schedule') || [])
+  const manual = (load('schedule') || [])
     .filter(it => it && it.date === todayStr && it.title)
-    .sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+    .map(it => ({ id: String(it.id || ''), title: it.title, time: it.time }));
+  const fromEk = (window._eventKitCache || [])
+    .filter(ev => ev && ev.date === todayStr && ev.title)
+    .map(ev => ({ id: 'ek_' + ev.id, title: ev.title, time: ev.time }));
+  const sched = manual.concat(fromEk).sort((a, b) =>
+    String(a.time || '').localeCompare(String(b.time || ''))
+  );
   const schedItems = sched.map(it => {
     const prox = (typeof _scheduleProximity === 'function')
-      ? _scheduleProximity(it.date, it.time)
+      ? _scheduleProximity(todayStr, it.time)
       : { color: '#a78bfa', urgency: 1 };
     return {
       id:       String(it.id || ''),
