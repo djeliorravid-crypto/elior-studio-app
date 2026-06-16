@@ -2354,9 +2354,9 @@
     }
     .face-id-retry-btn:active { transform: scale(0.96); filter: brightness(0.92); }
 
-    /* ===== Google Write Setup + Device Code modals ===== */
+    /* ===== Google Write Setup + Device Code + Manual Paste modals ===== */
     /* Same bottom-sheet pattern as #schedule-edit-overlay below. */
-    #gcal-write-setup-overlay, #device-code-overlay {
+    #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.55);
       backdrop-filter: blur(8px);
@@ -2368,8 +2368,9 @@
       padding-bottom: env(safe-area-inset-bottom, 0);
     }
     #gcal-write-setup-overlay.open,
-    #device-code-overlay.open { display: flex; }
-    #gcal-write-setup-card, #device-code-card {
+    #device-code-overlay.open,
+    #manual-paste-overlay.open { display: flex; }
+    #gcal-write-setup-card, #device-code-card, #manual-paste-card {
       background: #2a1f17;
       color: #f4ede0;
       border: 1px solid rgba(212,165,116,0.25);
@@ -2381,29 +2382,39 @@
       animation: seSlideUp 0.28s cubic-bezier(.34,1.2,.64,1);
     }
     @media (min-width: 600px) {
-      #gcal-write-setup-overlay, #device-code-overlay { align-items: center; padding: 24px; }
-      #gcal-write-setup-card, #device-code-card { border-radius: 22px; }
+      #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay { align-items: center; padding: 24px; }
+      #gcal-write-setup-card, #device-code-card, #manual-paste-card { border-radius: 22px; }
     }
-    #gcal-write-setup-card h3, #device-code-card h3 {
+    #gcal-write-setup-card h3, #device-code-card h3, #manual-paste-card h3 {
       font-size: 18px; font-weight: 800; color: #f4ede0;
       margin-bottom: 4px; letter-spacing: -0.01em;
     }
     #gcal-write-setup-card .notif-sub,
-    #device-code-card .notif-sub {
+    #device-code-card .notif-sub,
+    #manual-paste-card .notif-sub {
       font-size: 12.5px; color: rgba(244,237,224,0.55); margin-bottom: 18px;
     }
     #gcal-write-setup-card .notif-actions,
-    #device-code-card .notif-actions {
+    #device-code-card .notif-actions,
+    #manual-paste-card .notif-actions {
       display: flex; gap: 8px; margin-top: 18px; justify-content: flex-end;
     }
     #gcal-write-setup-card .notif-actions button,
-    #device-code-card .notif-actions button {
+    #device-code-card .notif-actions button,
+    #manual-paste-card .notif-actions button {
       flex: 0 0 auto; min-height: 40px; padding: 8px 16px;
       border-radius: 10px; font-weight: 700; cursor: pointer; font-family: 'Heebo', sans-serif;
     }
     #gcal-write-setup-card .notif-close,
-    #device-code-card .notif-close {
+    #device-code-card .notif-close,
+    #manual-paste-card .notif-close {
       background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(244,237,224,0.85);
+    }
+    #manual-paste-card .se-field input {
+      width: 100%; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10); border-radius: 12px;
+      padding: 12px 14px; color: #f4ede0; font-family: 'Heebo', sans-serif;
+      font-size: 14px; font-weight: 600; outline: none;
     }
 
     /* ===== Schedule Edit Modal ===== */
@@ -4695,6 +4706,38 @@
   </div>
 </div>
 
+<!-- ===== MANUAL OAUTH PASTE FALLBACK ===== -->
+<!-- Surfaces alongside the Safari sheet so if anything in the
+     Google → callback → custom-URL-scheme chain breaks (most
+     commonly: redirect_uri not yet registered in Google Cloud),
+     the user can still finish the flow by copy-pasting the auth
+     code straight off the callback page. -->
+<div id="manual-paste-overlay">
+  <div id="manual-paste-card">
+    <h3>📋 מסלול חלופי — הדבק קוד אישור</h3>
+    <div class="notif-sub">אם Google דחה את ההתחברות, הדבק כאן את הקוד מה-URL של דף החזרה</div>
+    <div class="se-field">
+      <label>הקוד מהדף או מה-URL המלא</label>
+      <input id="mp-code-input" type="text" placeholder="4/0AaH... או הכתובת המלאה" autocapitalize="off" autocomplete="off" spellcheck="false"/>
+    </div>
+    <div style="font-size:11px;color:rgba(244,237,224,0.55);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;line-height:1.6;margin-top:8px">
+      <strong style="color:#f4ede0">אם אתה רואה Error 400 redirect_uri_mismatch:</strong><br>
+      ה-URI שצריך להיות רשום ב-<strong>Authorized redirect URIs</strong> שלך:<br>
+      <code id="mp-redirect-uri" style="display:block;background:rgba(0,0,0,0.3);padding:6px 8px;border-radius:6px;margin:4px 0;font-size:10px;word-break:break-all">…</code>
+      <button onclick="_copyRedirectUri()" style="background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:6px;padding:4px 8px;color:#d4a574;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">📋 העתק כתובת</button>
+    </div>
+    <details style="margin-top:10px;font-size:11px;color:rgba(244,237,224,0.55)">
+      <summary style="cursor:pointer;color:#d4a574">לחץ אם הסאפארי לא נפתח</summary>
+      <input id="mp-auth-url" type="text" readonly style="width:100%;border:1px solid rgba(255,255,255,0.10);border-radius:8px;padding:8px 10px;font-size:10px;background:rgba(0,0,0,0.3);color:#f4ede0;margin-top:6px;font-family:monospace"/>
+      <button onclick="_copyAuthUrl()" style="background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:6px;padding:4px 8px;color:#d4a574;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">📋 העתק את כתובת ההתחברות</button>
+    </details>
+    <div class="notif-actions">
+      <button type="button" class="notif-close" onclick="_closeManualPasteModal()">סגור</button>
+      <button type="button" class="btn btn-primary" onclick="_submitManualPaste()" style="font-size:14px">חבר עם הקוד</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== SCHEDULE ITEM EDIT MODAL ===== -->
 <div id="schedule-edit-overlay">
   <div id="schedule-edit-card">
@@ -4811,7 +4854,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v254</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v255</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15396,6 +15439,20 @@ function disconnectGcalWrite() {
   toast('כתיבה לגוגל נותקה');
 }
 
+function _gcalAuthUrl(clientId, state) {
+  const params = new URLSearchParams({
+    client_id:     clientId,
+    redirect_uri:  GCAL_W_REDIRECT_URI,
+    response_type: 'code',
+    scope:         GCAL_W_SCOPE,
+    access_type:   'offline',   // we want a refresh_token
+    prompt:        'consent',   // force the consent screen so Google
+                                // always returns the refresh_token
+    state:         state
+  });
+  return 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
 async function gcalWriteEnable() {
   const clientId     = (localStorage.getItem('gcal_w_client_id')     || '').trim();
   const clientSecret = (localStorage.getItem('gcal_w_client_secret') || '').trim();
@@ -15405,19 +15462,7 @@ async function gcalWriteEnable() {
   }
   const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
   sessionStorage.setItem('gcal_w_state', state);
-  const params = new URLSearchParams({
-    client_id:     clientId,
-    redirect_uri:  GCAL_W_REDIRECT_URI,
-    response_type: 'code',
-    scope:         GCAL_W_SCOPE,
-    access_type:   'offline',   // we want a refresh_token
-    prompt:        'consent',   // force the consent screen so Google
-                                // always returns the refresh_token
-                                // (without this, only the first
-                                // consent ever ships one)
-    state:         state
-  });
-  const url = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+  const url = _gcalAuthUrl(clientId, state);
   // Native iOS — open in a Safari sheet so the user keeps their
   // existing Google session cookies. Web fallback — same tab.
   const Browser = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
@@ -15426,7 +15471,45 @@ async function gcalWriteEnable() {
   } else {
     window.open(url, '_blank');
   }
+  // Also surface a manual-paste fallback so if the user hits Google's
+  // dreaded redirect_uri_mismatch (or the custom URL scheme bounce
+  // back into the app doesn't fire reliably on their iOS version),
+  // they can still complete the flow by copying the code off our
+  // callback page.
+  setTimeout(() => _openManualPasteModal(url), 700);
   toast('🌐 פותח את גוגל…');
+}
+
+// Manual fallback: paste the ?code= from the callback page back
+// into the app to exchange it for tokens.
+function _openManualPasteModal(authUrl) {
+  const overlay = document.getElementById('manual-paste-overlay');
+  if (!overlay) return;
+  const urlEl = document.getElementById('mp-auth-url');
+  const redirectEl = document.getElementById('mp-redirect-uri');
+  if (urlEl) urlEl.value = authUrl || '';
+  if (redirectEl) redirectEl.textContent = GCAL_W_REDIRECT_URI;
+  overlay.classList.add('open');
+}
+function _closeManualPasteModal() {
+  document.getElementById('manual-paste-overlay').classList.remove('open');
+}
+async function _submitManualPaste() {
+  const inp = document.getElementById('mp-code-input');
+  let code = (inp?.value || '').trim();
+  // Accept either the raw ?code=… code OR the full callback URL.
+  const m = code.match(/[?&]code=([^&]+)/);
+  if (m) code = decodeURIComponent(m[1]);
+  if (!code) { inp?.focus(); return; }
+  _closeManualPasteModal();
+  await _gcalHandleAuthCallback('ravidstudio://oauth?code=' + encodeURIComponent(code));
+}
+function _copyAuthUrl() {
+  const url = document.getElementById('mp-auth-url')?.value;
+  if (url) navigator.clipboard?.writeText(url).then(() => toast('📋 קישור הועתק'));
+}
+function _copyRedirectUri() {
+  navigator.clipboard?.writeText(GCAL_W_REDIRECT_URI).then(() => toast('📋 כתובת הועתקה'));
 }
 
 // Triggered by AppDelegate when the user is redirected back to
