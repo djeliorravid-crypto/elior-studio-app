@@ -4992,7 +4992,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v275</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v276</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7467,8 +7467,14 @@ function setIncomeStatus(id, status) {
   const entry = income.find(i => i.id === id);
   if (!entry) return;
   entry.status = status;
-  if (status === 'paid' && entry.date > new Date().toISOString().slice(0,10))
-    entry.date = new Date().toISOString().slice(0,10); // תאריך תשלום = היום
+  if (status === 'paid') {
+    // Stamp the exact moment the user marked it paid. The Morning
+    // receipt's payment.date pulls from this, so even a receipt
+    // issued days later carries the actual payment date.
+    entry.paidAt = new Date().toISOString();
+    if (entry.date > new Date().toISOString().slice(0,10))
+      entry.date = new Date().toISOString().slice(0,10);
+  }
   save('income', income);
 
   // סנכרן גם את תוכנית התשלום אם זו הכנסה מתוכנית
@@ -16365,7 +16371,11 @@ async function morningCreateReceiptFor(income) {
       vatType:     0
     }],
     payment: [{
-      date:     income.date || new Date().toISOString().slice(0, 10),
+      // Prefer the exact moment the user tapped "סמן כשולם"
+      // (paidAt) so a receipt issued days after the click still
+      // carries the real payment date. Falls back to income.date
+      // for older rows that pre-date this stamp.
+      date:     ((income.paidAt && income.paidAt.slice(0, 10)) || income.date || new Date().toISOString().slice(0, 10)),
       // Default to bank transfer; could be configurable per income later.
       type:     4,  // 4 = bank transfer (העברה בנקאית)
       price:    parseFloat(income.amount) || 0,
