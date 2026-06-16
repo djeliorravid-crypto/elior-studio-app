@@ -34,6 +34,7 @@ public class IosCalendarBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "requestAccess",         returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "listCalendars",         returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getDefaultCalendarId",  returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "listEvents",            returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "createEvent",           returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "updateEvent",           returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "deleteEvent",           returnType: CAPPluginReturnPromise)
@@ -85,6 +86,50 @@ public class IosCalendarBridgePlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         call.reject("No writable calendar found")
+    }
+
+    @objc func listEvents(_ call: CAPPluginCall) {
+        // startDate / endDate as YYYY-MM-DD strings — we widen the
+        // window to cover the whole day in Asia/Jerusalem so callers
+        // can pass just one date for a single-day view.
+        guard let startStr = call.getString("startDate"),
+              let endStr   = call.getString("endDate") else {
+            call.reject("Missing startDate / endDate")
+            return
+        }
+        let dayFmt = DateFormatter()
+        dayFmt.dateFormat = "yyyy-MM-dd"
+        dayFmt.timeZone   = TimeZone(identifier: "Asia/Jerusalem")
+        guard let start0 = dayFmt.date(from: startStr),
+              let end0   = dayFmt.date(from: endStr) else {
+            call.reject("Invalid date format (expected YYYY-MM-DD)")
+            return
+        }
+        let dayEnd = end0.addingTimeInterval(24 * 60 * 60 - 1)
+        let cals   = store.calendars(for: .event)
+        let pred   = store.predicateForEvents(withStart: start0, end: dayEnd, calendars: cals)
+        let events = store.events(matching: pred)
+
+        let outFmt = DateFormatter()
+        outFmt.dateFormat = "yyyy-MM-dd"
+        outFmt.timeZone   = TimeZone(identifier: "Asia/Jerusalem")
+        let timeFmt = DateFormatter()
+        timeFmt.dateFormat = "HH:mm"
+        timeFmt.timeZone   = TimeZone(identifier: "Asia/Jerusalem")
+
+        let mapped: [[String: Any]] = events.map { ev in
+            return [
+                "id":         ev.eventIdentifier ?? "",
+                "title":      ev.title ?? "",
+                "date":       outFmt.string(from: ev.startDate),
+                "time":       timeFmt.string(from: ev.startDate),
+                "allDay":     ev.isAllDay,
+                "source":     ev.calendar?.source.title ?? "",
+                "calendar":   ev.calendar?.title ?? "",
+                "color":      _colorHex(ev.calendar?.cgColor)
+            ]
+        }
+        call.resolve(["events": mapped])
     }
 
     @objc func createEvent(_ call: CAPPluginCall) {

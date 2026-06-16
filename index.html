@@ -4854,7 +4854,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v257</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v258</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6699,10 +6699,12 @@ function showPage(name) {
   if (name === 'daily') _dailyDate = dailyDateStr();
   if (name === 'schedule') {
     _scheduleDate = dailyDateStr();
-    // Pull the ICS feed (native iOS path) on every entry if the
-    // URL is configured. If the user is on desktop Safari with an
-    // OAuth token instead, refresh that cache too.
     try {
+      // EventKit refresh — native iOS, no Google setup needed.
+      if (typeof gcalRefreshEventKit === 'function') gcalRefreshEventKit();
+      // ICS / OAuth read feeds — only if the user explicitly set
+      // them up. (EventKit alone already covers reads for users
+      // who synced Google via iOS Settings.)
       if (typeof _icsConnected === 'function' && _icsConnected()) {
         fetchGcalIcs(true);
       } else {
@@ -15153,8 +15155,9 @@ function changeScheduleDate(dir) {
   const d = new Date(_scheduleDate + 'T00:00:00');
   d.setDate(d.getDate() + dir);
   _scheduleDate = dailyDateStr(d);
-  // If we crossed a month boundary and Google is connected, the
-  // cache holds the OLD month's events — refetch in the background.
+  // EventKit cache is per-day — refresh on every navigation.
+  if (typeof gcalRefreshEventKit === 'function') gcalRefreshEventKit();
+  // ICS / OAuth cache is per-month — only refetch on month change.
   if (_gcalToken && (d.getMonth() !== prev.getMonth() || d.getFullYear() !== prev.getFullYear())) {
     curMonth = d.getMonth(); curYear = d.getFullYear();
     if (typeof fetchGoogleEvents === 'function') fetchGoogleEvents(true);
@@ -15168,6 +15171,7 @@ function goScheduleToday() {
     if (typeof fetchGoogleEvents === 'function') fetchGoogleEvents(true);
   }
   _scheduleDate = dailyDateStr();
+  if (typeof gcalRefreshEventKit === 'function') gcalRefreshEventKit();
   renderSchedule();
 }
 
@@ -15879,12 +15883,28 @@ function renderScheduleGcalBar() {
   }
 }
 
-// ── Pull Google events for one specific date out of the cache ──
-// Prefers the ICS-derived cache (native iOS path); falls back to
-// the OAuth cache (Safari/desktop path) for events the user had
-// already synced via the old session-sync flow.
+// ── Pull events for one specific date from every available source.
+// Sources in priority order:
+//   1. window._eventKitCache — native iOS EventKit (the user's
+//      calendar accounts, including Google synced via iOS Settings).
+//      Populated by gcalRefreshEventKit() on schedule entry.
+//   2. window._icsEventsCache — legacy ICS read feed.
+//   3. _gcalEventsCache — legacy OAuth read cache (desktop).
+window._eventKitCache = [];
 function gcalEventsForDate(dateStr) {
   const out = [];
+  if (window._eventKitCache && window._eventKitCache.length) {
+    window._eventKitCache.forEach(ev => {
+      if (ev.date === dateStr) {
+        out.push({
+          id:       'ek_' + (ev.id || (ev.date + ev.time + ev.title)),
+          start:    { dateTime: ev.date + 'T' + ev.time + ':00' },
+          summary:  ev.title,
+          status:   'confirmed'
+        });
+      }
+    });
+  }
   if (window._icsEventsCache && window._icsEventsCache.length) {
     window._icsEventsCache.forEach(ev => {
       if (ev.date === dateStr) {
@@ -15906,6 +15926,22 @@ function gcalEventsForDate(dateStr) {
     });
   }
   return out;
+}
+
+// Fetch events for the currently-viewed date via EventKit. Cached
+// in window._eventKitCache; renderSchedule re-runs after the fetch
+// to pick the new data up.
+async function gcalRefreshEventKit() {
+  const Cal = _iosCalPlugin();
+  if (!Cal || !_iosCalGranted() || !Cal.listEvents) return;
+  try {
+    const res = await Cal.listEvents({
+      startDate: _scheduleDate,
+      endDate:   _scheduleDate
+    });
+    window._eventKitCache = (res && res.events) || [];
+    if (document.getElementById('schedule-list')) renderSchedule();
+  } catch (e) {}
 }
 
 function renderSchedule() {
