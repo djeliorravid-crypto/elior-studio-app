@@ -4992,7 +4992,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v277</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v278</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7638,15 +7638,18 @@ function renderIncome() {
   document.getElementById('i-expected-count').textContent = `${monthEntries.length} פריטים החודש`;
 
   // New compact layout — income / expenses / net profit cards.
+  // "הכנסות החודש" / "הוצאות החודש" reflect the CURRENT actual
+  // (only what was paid / received), not the future projection.
+  // The sub-line surfaces the total expected for context.
   const monthExpensesAll = load('expenses').filter(e => inCurMonth(e.date));
   const incMonthEl   = document.getElementById('stat-income-month');
   const incMonthSub  = document.getElementById('stat-income-month-sub');
   const expMonthEl   = document.getElementById('stat-expenses-month');
   const expMonthSub  = document.getElementById('stat-expenses-month-sub');
-  if (incMonthEl)  incMonthEl.textContent  = fmtMoney(totalAllExpected);
-  if (incMonthSub) incMonthSub.textContent = `${fmtMoney(totalPaid)} התקבל · ${monthEntries.length} פריטים`;
-  if (expMonthEl)  expMonthEl.textContent  = fmtMoney(monthExpensesTotal);
-  if (expMonthSub) expMonthSub.textContent = `${fmtMoney(paidExpenses)} שולם · ${monthExpensesAll.length} פריטים`;
+  if (incMonthEl)  incMonthEl.textContent  = fmtMoney(totalPaid);
+  if (incMonthSub) incMonthSub.textContent = `מתוך ${fmtMoney(totalAllExpected)} צפוי · ${paid.length}/${monthEntries.length}`;
+  if (expMonthEl)  expMonthEl.textContent  = fmtMoney(paidExpenses);
+  if (expMonthSub) expMonthSub.textContent = `מתוך ${fmtMoney(monthExpensesTotal)} חיוב · ${monthExpensesAll.filter(e => e.paid).length}/${monthExpensesAll.length}`;
 
   // Insights: top clients + 6-month trend + bank deposit
   renderTopClients(monthEntries);
