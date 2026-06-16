@@ -4887,6 +4887,21 @@
       <button type="button" class="notif-when-chip" data-lead="2880" onclick="handleNotifLead(this)">יומיים לפני</button>
     </div>
 
+    <div class="notif-section-title">🧾 קבלות אוטומטיות (Morning)</div>
+    <div style="font-size:11px;color:rgba(244,237,224,0.5);margin-bottom:10px;line-height:1.5">
+      כל הכנסה שתסומן "שולם" — קבלה תיווצר אוטומטית ב-Morning בלי שתצטרך לפתוח את האפליקציה שלהם. <span id="morning-conn-dot" style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(220,60,60,0.18);color:#ff8b6b;font-weight:700;font-size:10.5px;margin-right:6px">לא מחובר</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+      <input id="morning-id" type="text" placeholder="Morning API ID" autocomplete="off" autocapitalize="off" spellcheck="false"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;outline:none"/>
+      <input id="morning-secret" type="text" placeholder="Morning API Secret" autocomplete="off" autocapitalize="off" spellcheck="false"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;outline:none"/>
+      <button type="button" onclick="testMorningConnection()" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;align-self:flex-end">בדוק וחבר</button>
+    </div>
+    <div style="font-size:10.5px;color:rgba(244,237,224,0.4);line-height:1.5;margin-bottom:10px">
+      איפה משיגים: app.greeninvoice.co.il → Account (פרופיל) → API → Generate Key. תקבל ID + Secret, תדביק כאן שניהם.
+    </div>
+
     <div class="notif-actions">
       <button type="button" class="notif-test" onclick="testNotification()">בדוק התראה</button>
       <button type="button" class="notif-close" onclick="closeNotifSettings()">סיום</button>
@@ -4942,7 +4957,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v269</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v270</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7439,6 +7454,12 @@ function setIncomeStatus(id, status) {
     const cp = document.getElementById('congrats-popup');
     cp.classList.add('show');
     setTimeout(() => cp.classList.remove('show'), 2000);
+    // Auto-issue a receipt in Morning if the user has connected
+    // their API creds. Fire-and-forget — UI updates when done.
+    if (typeof window.morningIssueReceiptForIncome === 'function' &&
+        window.morningConnected && window.morningConnected()) {
+      window.morningIssueReceiptForIncome(id);
+    }
   }
   refreshAll();
 }
@@ -7631,6 +7652,24 @@ function renderIncome() {
     return '';
   }
 
+  // Morning-receipt status pill, only shown on PAID rows. Three
+  // states: green link (receipt exists), grey spinner-style retry
+  // (Morning attempted but failed), grey "issue now" (Morning
+  // connected but no receipt yet).
+  function _receiptCell(i) {
+    if ((i.status || 'pending') !== 'paid') return '';
+    if (!window.morningConnected || !window.morningConnected()) return '';
+    if (i.morningDocId) {
+      const url = i.morningDocUrl || '';
+      const num = i.morningDocNumber || '';
+      return '<button class="btn btn-sm" onclick="morningOpenReceipt(\'' + url.replace(/'/g, "\\'") + '\')" title="פתח קבלה" style="background:rgba(45,140,75,0.18);border:1px solid rgba(122,168,127,0.45);border-radius:8px;color:#9adf9c;font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap">🧾 ' + (num ? '#' + num : 'קבלה') + '</button>';
+    }
+    if (i.morningError) {
+      return '<button class="btn btn-sm" onclick="morningRetryReceipt(\'' + i.id + '\')" title="נסה שוב ליצור קבלה" style="background:rgba(220,60,60,0.18);border:1px dashed rgba(220,60,60,0.5);border-radius:8px;color:#ff8b6b;font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap">⚠️ נסה קבלה</button>';
+    }
+    return '<button class="btn btn-sm" onclick="morningRetryReceipt(\'' + i.id + '\')" title="צור קבלה ב-Morning" style="background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--text-muted);font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap">🧾 צור קבלה</button>';
+  }
+
   // מיון: לא שולמו/באיחור קודם, שולמו לסוף — בתוך כל קבוצה לפי תאריך
   monthEntries.sort((a,b) => {
     const aPaid = (a.status||'pending') === 'paid' ? 1 : 0;
@@ -7658,6 +7697,7 @@ function renderIncome() {
       ${statusCell(i)}
       <td>${i.fromPlan ? '' : `
         <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+          ${_receiptCell(i)}
           <button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:700;padding:4px 10px" onclick="openIncomeEdit('${i.id}')" title="ערוך">✏️</button>
           <button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')" title="מחק">🗑</button>
         </div>
@@ -10415,6 +10455,23 @@ window.openNotifSettings = function() {
     faceIdRow.style.display = isNative ? '' : 'none';
     const tog = document.getElementById('face-id-toggle');
     if (tog) tog.classList.toggle('on', !!window.getFaceIdEnabled());
+  }
+  // Morning section — fill the saved API creds and reflect status.
+  const mid = document.getElementById('morning-id');
+  const mse = document.getElementById('morning-secret');
+  const mdot = document.getElementById('morning-conn-dot');
+  if (mid)  mid.value = localStorage.getItem('morning_api_id')     || '';
+  if (mse)  mse.value = localStorage.getItem('morning_api_secret') || '';
+  if (mdot) {
+    if (window.morningConnected && window.morningConnected()) {
+      mdot.style.background = 'rgba(45,140,75,0.22)';
+      mdot.style.color      = '#9adf9c';
+      mdot.textContent      = '✓ מחובר';
+    } else {
+      mdot.style.background = 'rgba(220,60,60,0.18)';
+      mdot.style.color      = '#ff8b6b';
+      mdot.textContent      = 'לא מחובר';
+    }
   }
   overlay.classList.add('open');
 };
@@ -16178,6 +16235,169 @@ async function gcalRefreshEventKit() {
     if (document.visibilityState === 'visible') attempt();
   });
 })();
+
+// ═════════════════════════════════════════════════════════════════
+// Morning (Green Invoice) — automatic receipt issuance
+// ═════════════════════════════════════════════════════════════════
+// User pain point: they receive payments + forget to issue receipts
+// in Morning. Solution: once they paste their Morning API ID +
+// Secret here (from Account → API integrations in Morning's web
+// app), every income marked "paid" automatically triggers a receipt
+// to be created in Morning. The income row in the table shows the
+// resulting document number + a button to open the PDF.
+window.MORNING_BASE     = 'https://api.greeninvoice.co.il/api/v1';
+// Document type: 405 = קבלה (pure receipt — most common for עוסק
+// פטור). Configurable later via window.MORNING_DOC_TYPE.
+window.MORNING_DOC_TYPE = 405;
+
+function morningCreds() {
+  return {
+    id:     localStorage.getItem('morning_api_id')     || '',
+    secret: localStorage.getItem('morning_api_secret') || ''
+  };
+}
+window.morningConnected = function() {
+  const c = morningCreds();
+  return !!(c.id && c.secret);
+};
+
+async function morningGetToken() {
+  const cached = localStorage.getItem('morning_token');
+  const exp    = parseInt(localStorage.getItem('morning_token_exp') || '0');
+  if (cached && Date.now() < exp - 60000) return cached;
+  const c = morningCreds();
+  if (!c.id || !c.secret) return null;
+  try {
+    const r = await fetch(window.MORNING_BASE + '/account/token', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ id: c.id, secret: c.secret })
+    });
+    const data = await r.json();
+    if (!data || !data.token) {
+      console.warn('Morning token failed', data);
+      return null;
+    }
+    localStorage.setItem('morning_token',     data.token);
+    localStorage.setItem('morning_token_exp', String(Date.now() + (data.expires || 1800) * 1000));
+    return data.token;
+  } catch (e) {
+    console.warn('Morning token error', e);
+    return null;
+  }
+}
+
+window.testMorningConnection = async function() {
+  const ci = (document.getElementById('morning-id')?.value     || '').trim();
+  const cs = (document.getElementById('morning-secret')?.value || '').trim();
+  if (!ci || !cs) { toast('⚠️ חסר API ID או Secret'); return; }
+  localStorage.setItem('morning_api_id',     ci);
+  localStorage.setItem('morning_api_secret', cs);
+  // Force fresh token fetch.
+  localStorage.removeItem('morning_token');
+  localStorage.removeItem('morning_token_exp');
+  const t = await morningGetToken();
+  if (t) {
+    toast('✓ Morning מחובר');
+    if (window.haptic) window.haptic.success();
+    const dot = document.getElementById('morning-conn-dot');
+    if (dot) { dot.style.background = 'var(--green)'; dot.textContent = '✓ מחובר'; }
+  } else {
+    toast('❌ Morning דחה את המפתחות — בדוק שהעתקת נכון');
+    if (window.haptic) window.haptic.error();
+  }
+};
+
+async function morningCreateReceiptFor(income) {
+  if (!income) return null;
+  const token = await morningGetToken();
+  if (!token) return { error: 'no_token' };
+  const body = {
+    type:     window.MORNING_DOC_TYPE,
+    description: income.description || 'תשלום',
+    lang:     'he',
+    currency: 'ILS',
+    vatType:  0,    // 0 = exempt (matches עוסק פטור default)
+    client:   { name: String(income.clientName || 'לקוח').slice(0, 100) },
+    income: [{
+      description: income.description || 'שירות',
+      quantity:    1,
+      price:       parseFloat(income.amount) || 0,
+      currency:    'ILS',
+      vatType:     0
+    }],
+    payment: [{
+      date:     income.date || new Date().toISOString().slice(0, 10),
+      // Default to bank transfer; could be configurable per income later.
+      type:     4,  // 4 = bank transfer (העברה בנקאית)
+      price:    parseFloat(income.amount) || 0,
+      currency: 'ILS'
+    }]
+  };
+  try {
+    const r = await fetch(window.MORNING_BASE + '/documents', {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (data && data.id) return data;
+    return { error: 'create_failed', detail: data };
+  } catch (e) {
+    return { error: 'network', detail: String(e && e.message) };
+  }
+}
+
+// Fire-and-forget — call after marking an income as paid. Patches
+// the income record with the resulting Morning doc id / number /
+// URL so renderIncome() can show the receipt status.
+window.morningIssueReceiptForIncome = async function(incomeId) {
+  if (!window.morningConnected()) return;
+  const all = load('income');
+  const it  = all.find(x => x.id === incomeId);
+  if (!it) return;
+  if (it.morningDocId) return; // already issued
+  const res = await morningCreateReceiptFor(it);
+  // Re-load in case other writes happened during the async call.
+  const fresh = load('income');
+  const ff    = fresh.find(x => x.id === incomeId);
+  if (!ff) return;
+  if (res && res.id) {
+    ff.morningDocId     = res.id;
+    ff.morningDocNumber = res.number;
+    ff.morningDocUrl    = res.url && (res.url.he || res.url.en || (typeof res.url === 'string' ? res.url : ''));
+    save('income', fresh);
+    toast('🧾 קבלה ' + (res.number || '') + ' נוצרה ב-Morning');
+    if (typeof renderIncome === 'function') renderIncome();
+  } else {
+    ff.morningError = (res && res.error) || 'fail';
+    save('income', fresh);
+    toast('⚠️ יצירת קבלה נכשלה — לחץ על הקבלה לנסות שוב');
+  }
+};
+window.morningRetryReceipt = async function(incomeId) {
+  // Manual retry from the income row — clear any stored error so
+  // the next attempt isn't suppressed.
+  const all = load('income');
+  const it = all.find(x => x.id === incomeId);
+  if (it) {
+    delete it.morningError;
+    save('income', all);
+  }
+  await window.morningIssueReceiptForIncome(incomeId);
+};
+window.morningOpenReceipt = function(url) {
+  if (!url) { toast('אין URL זמין לקבלה'); return; }
+  const Browser = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+  if (Browser) {
+    Browser.open({ url: url }).catch(function() { window.open(url, '_blank'); });
+  } else {
+    window.open(url, '_blank');
+  }
+};
 
 function renderSchedule() {
   const listEl  = document.getElementById('schedule-list');
