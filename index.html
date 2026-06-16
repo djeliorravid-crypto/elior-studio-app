@@ -5053,7 +5053,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v285</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v286</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16347,6 +16347,15 @@ async function gcalRefreshEventKit() {
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible') attempt();
   });
+  // Periodic re-push while the app is foregrounded. Without this
+  // the widget's UserDefaults snapshot stays frozen on whichever
+  // day's data was last pushed — so when the calendar rolls over
+  // midnight and the user hasn't opened the app, the home-screen
+  // widget shows yesterday's schedule indefinitely. 60s is fine,
+  // we're just touching localStorage + a Capacitor bridge call.
+  setInterval(function() {
+    if (document.visibilityState === 'visible') attempt();
+  }, 60 * 1000);
 })();
 
 // ═════════════════════════════════════════════════════════════════
