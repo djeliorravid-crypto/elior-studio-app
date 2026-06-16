@@ -588,27 +588,40 @@
       user-select: text !important;
       -webkit-touch-callout: default !important;
     }
-    /* iOS WebKit was painting a transient dark "press" rectangle
-       on table rows during scroll-overs, even with the global
-       tap-highlight reset. These rules explicitly null every
-       :hover / :active / :focus surface on rows + cells and let
-       only scroll gestures register on the row itself, which
-       suppresses the press preview. The row's actual background
-       (paid/pending/overdue tints) lives on the inline style and
-       isn't touched by these rules. */
+    /* THE FINAL FIX for the dark-mode "row goes black on touch"
+       complaint: the row itself has no click handler, so it
+       shouldn't react to touch at all. Disable pointer events on
+       every row + cell, then re-enable them ONLY on the things
+       inside that DO have handlers (buttons, links, inputs). This
+       way iOS never paints any tap/press/selection feedback on
+       the row chrome — touch goes straight through to the button
+       you actually tapped, or to nothing.
+       Scrolling still works because the body / page-income is the
+       scroll container; pointer-events on rows doesn't block
+       scrolling, only direct tap targeting. */
     table tr, table td {
+      pointer-events: none !important;
       -webkit-tap-highlight-color: transparent !important;
       outline: none !important;
       touch-action: pan-y !important;
+    }
+    table tr button,
+    table tr input,
+    table tr select,
+    table tr a,
+    table tr [onclick],
+    table tr [role="button"],
+    table tr .status-pill,
+    table tr .status-action {
+      pointer-events: auto !important;
     }
     table tr:active, table td:active,
     table tr:focus, table td:focus,
     table tr:focus-visible, table td:focus-visible {
       outline: none !important;
       box-shadow: none !important;
+      background-color: revert;
     }
-    /* Buttons inside rows keep their own bg; just kill the
-       default focus ring iOS sometimes draws on tap. */
     table button:focus, table button:focus-visible,
     table button:active { outline: none !important; }
     /* …but DO allow selecting inside actual inputs / textareas /
@@ -5040,7 +5053,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v282</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v283</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
