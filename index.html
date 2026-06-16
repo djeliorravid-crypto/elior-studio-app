@@ -4854,7 +4854,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v255</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v256</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15429,14 +15429,32 @@ function gcalWriteTokens() {
   try { return JSON.parse(localStorage.getItem('gcal_w_tokens') || 'null'); }
   catch (e) { return null; }
 }
+function _iosCalPlugin() {
+  return window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.IosCalendar;
+}
+function _iosCalGranted() {
+  return localStorage.getItem('ios_cal_granted') === '1';
+}
 function gcalWriteConnected() {
+  // Two paths to "I can write to Google Calendar":
+  //   • Native iOS: user granted Calendar permission and we have a
+  //     calendar id to write into. iOS Settings handles the actual
+  //     sync to Google in the background — no OAuth needed.
+  //   • Web (desktop browser): OAuth refresh-token saved from the
+  //     redirect-URI flow.
+  if (_iosCalPlugin() && _iosCalGranted()) return true;
   const t = gcalWriteTokens();
   return !!(t && t.refresh_token);
 }
-function disconnectGcalWrite() {
+async function disconnectGcalWrite() {
+  // Native users — drop the cached permission flag (iOS keeps the
+  // grant in Settings, but our integration goes silent). Also clear
+  // any legacy OAuth tokens so the bar reverts to "off".
+  localStorage.removeItem('ios_cal_granted');
+  localStorage.removeItem('ios_cal_id');
   localStorage.removeItem('gcal_w_tokens');
   renderScheduleGcalBar();
-  toast('כתיבה לגוגל נותקה');
+  toast('סנכרון יומן נותק');
 }
 
 function _gcalAuthUrl(clientId, state) {
@@ -15454,6 +15472,41 @@ function _gcalAuthUrl(clientId, state) {
 }
 
 async function gcalWriteEnable() {
+  const isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  // Native iOS path — ask EventKit for access; iOS Settings does the
+  // Google sync for us. No OAuth, no Cloud Console, no popups.
+  const Cal = _iosCalPlugin();
+  if (isNative && !Cal) {
+    toast('היומן עוד טוען, נסה שוב בעוד רגע');
+    return;
+  }
+  if (Cal) {
+    try {
+      const res = await Cal.requestAccess();
+      if (!res || !res.granted) {
+        toast('❌ לא ניתנה גישה ליומן');
+        return;
+      }
+      // Pick the calendar we'll write into — prefer the Google one
+      // so writes propagate back to gmail in the background.
+      try {
+        const def = await Cal.getDefaultCalendarId();
+        if (def && def.id) {
+          localStorage.setItem('ios_cal_id', def.id);
+          localStorage.setItem('ios_cal_source', def.source || '');
+        }
+      } catch (e) {}
+      localStorage.setItem('ios_cal_granted', '1');
+      renderScheduleGcalBar();
+      toast('✓ סנכרון יומן הופעל');
+      if (window.haptic) window.haptic.success();
+      return;
+    } catch (e) {
+      toast('❌ ' + (e && e.message || 'שגיאה בהפעלת היומן'));
+      return;
+    }
+  }
+  // ──── Web fallback — original OAuth flow ────
   const clientId     = (localStorage.getItem('gcal_w_client_id')     || '').trim();
   const clientSecret = (localStorage.getItem('gcal_w_client_secret') || '').trim();
   if (!clientId || !clientSecret) {
@@ -15463,19 +15516,12 @@ async function gcalWriteEnable() {
   const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
   sessionStorage.setItem('gcal_w_state', state);
   const url = _gcalAuthUrl(clientId, state);
-  // Native iOS — open in a Safari sheet so the user keeps their
-  // existing Google session cookies. Web fallback — same tab.
   const Browser = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
   if (Browser) {
     Browser.open({ url: url, presentationStyle: 'popover' }).catch(function() {});
   } else {
     window.open(url, '_blank');
   }
-  // Also surface a manual-paste fallback so if the user hits Google's
-  // dreaded redirect_uri_mismatch (or the custom URL scheme bounce
-  // back into the app doesn't fire reliably on their iOS version),
-  // they can still complete the flow by copying the code off our
-  // callback page.
   setTimeout(() => _openManualPasteModal(url), 700);
   toast('🌐 פותח את גוגל…');
 }
@@ -15614,6 +15660,22 @@ function _addOneHour(timeStr) {
 }
 
 async function gcalWriteCreateEvent(item) {
+  // Native iOS path → EventKit.
+  const Cal = _iosCalPlugin();
+  if (Cal && _iosCalGranted()) {
+    try {
+      const res = await Cal.createEvent({
+        title:           item.title,
+        date:            item.date,
+        time:            item.time,
+        durationMinutes: 60,
+        calendarId:      localStorage.getItem('ios_cal_id') || '',
+        notes:           item.notes || ''
+      });
+      return res && res.id ? res.id : null;
+    } catch (e) { return null; }
+  }
+  // Web fallback → Google API.
   const access = await _gcalWriteAccessToken();
   if (!access) return null;
   const body = {
@@ -15633,8 +15695,22 @@ async function gcalWriteCreateEvent(item) {
   } catch (e) { return null; }
 }
 async function gcalWriteUpdateEvent(eventId, item) {
+  if (!eventId) return;
+  const Cal = _iosCalPlugin();
+  if (Cal && _iosCalGranted()) {
+    try {
+      await Cal.updateEvent({
+        eventId:         eventId,
+        title:           item.title,
+        date:            item.date,
+        time:            item.time,
+        durationMinutes: 60
+      });
+    } catch (e) {}
+    return;
+  }
   const access = await _gcalWriteAccessToken();
-  if (!access || !eventId) return;
+  if (!access) return;
   const body = {
     summary: item.title,
     start:   { dateTime: item.date + 'T' + item.time + ':00', timeZone: 'Asia/Jerusalem' },
@@ -15649,8 +15725,14 @@ async function gcalWriteUpdateEvent(eventId, item) {
   } catch (e) {}
 }
 async function gcalWriteDeleteEvent(eventId) {
+  if (!eventId) return;
+  const Cal = _iosCalPlugin();
+  if (Cal && _iosCalGranted()) {
+    try { await Cal.deleteEvent({ eventId: eventId }); } catch (e) {}
+    return;
+  }
   const access = await _gcalWriteAccessToken();
-  if (!access || !eventId) return;
+  if (!access) return;
   try {
     await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/' + encodeURIComponent(eventId), {
       method:  'DELETE',

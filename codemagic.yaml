@@ -62,6 +62,13 @@ workflows:
           /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string 'אנו משתמשים ב-Face ID כדי לפתוח את האפליקציה במהירות ובאופן מאובטח'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Delete :ITSAppUsesNonExemptEncryption" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST"
+          # Calendar access — needed by IosCalendarBridgePlugin so the
+          # schedule view can mirror writes to the user's iOS Calendar
+          # (which iOS auto-syncs to Google in the background).
+          /usr/libexec/PlistBuddy -c "Delete :NSCalendarsFullAccessUsageDescription" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSCalendarsFullAccessUsageDescription string 'אנו משתמשים ביומן כדי לסנכרן פעילויות מהלוז היומי ל-Apple Calendar שלך, וממנו ל-Google Calendar אם הוא מחובר.'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Delete :NSCalendarsUsageDescription" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSCalendarsUsageDescription string 'אנו משתמשים ביומן כדי לסנכרן פעילויות מהלוז היומי ל-Apple Calendar שלך, וממנו ל-Google Calendar אם הוא מחובר.'" "$PLIST"
           # Quick actions — rebuild from scratch so the array stays in sync.
           /usr/libexec/PlistBuddy -c "Delete :UIApplicationShortcutItems" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems array" "$PLIST"

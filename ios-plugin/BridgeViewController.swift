@@ -19,6 +19,7 @@ class BridgeViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(TaskWidgetBridgePlugin())
         bridge?.registerPluginInstance(BiometricBridgePlugin())
+        bridge?.registerPluginInstance(IosCalendarBridgePlugin())
 
         // Warm-launch quick action: AppDelegate posts to this
         // NotificationCenter name; we forward to JS so the right
