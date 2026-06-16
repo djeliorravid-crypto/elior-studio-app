@@ -4957,7 +4957,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v270</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v271</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16246,9 +16246,11 @@ async function gcalRefreshEventKit() {
 // to be created in Morning. The income row in the table shows the
 // resulting document number + a button to open the PDF.
 window.MORNING_BASE     = 'https://api.greeninvoice.co.il/api/v1';
-// Document type: 405 = קבלה (pure receipt — most common for עוסק
-// פטור). Configurable later via window.MORNING_DOC_TYPE.
-window.MORNING_DOC_TYPE = 405;
+// Document type: 400 = קבלה (pure receipt). 405 in earlier versions
+// was wrong — that's "קבלה זיכוי" (credit receipt) which Morning
+// rejects for a regular payment. 400 is the right code for עוסק
+// פטור receiving a payment. Configurable via window.MORNING_DOC_TYPE.
+window.MORNING_DOC_TYPE = 400;
 
 function morningCreds() {
   return {
@@ -16373,11 +16375,31 @@ window.morningIssueReceiptForIncome = async function(incomeId) {
     toast('🧾 קבלה ' + (res.number || '') + ' נוצרה ב-Morning');
     if (typeof renderIncome === 'function') renderIncome();
   } else {
+    // Surface Morning's actual error so the user can fix it (wrong
+    // document type, missing client field, exhausted credits, etc.)
+    const msg = _morningErrorMessage(res);
     ff.morningError = (res && res.error) || 'fail';
     save('income', fresh);
-    toast('⚠️ יצירת קבלה נכשלה — לחץ על הקבלה לנסות שוב');
+    toast('⚠️ Morning: ' + msg);
+    console.warn('Morning create receipt failure', res);
   }
 };
+function _morningErrorMessage(res) {
+  if (!res) return 'תשובה ריקה';
+  const d = res.detail;
+  if (d && typeof d === 'object') {
+    if (d.errorMessage) return d.errorMessage;
+    if (d.message)      return d.message;
+    if (Array.isArray(d.errors) && d.errors.length) {
+      return d.errors.map(e => e.message || e).join('; ');
+    }
+    try { return JSON.stringify(d).slice(0, 140); } catch (e) {}
+  }
+  if (res.error === 'no_token')     return 'אין טוקן — נסה לחבר שוב';
+  if (res.error === 'network')      return 'תקלת רשת';
+  if (res.error === 'create_failed') return 'גוגל דחה את הבקשה';
+  return res.error || 'שגיאה לא ידועה';
+}
 window.morningRetryReceipt = async function(incomeId) {
   // Manual retry from the income row — clear any stored error so
   // the next attempt isn't suppressed.
