@@ -2430,10 +2430,12 @@
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       display: none;
-      align-items: center;
+      /* Anchor near the top so when the iOS keyboard opens the card
+         doesn't get pinched between the status bar and the keyboard. */
+      align-items: flex-start;
       justify-content: center;
       z-index: 10000;
-      padding: 20px;
+      padding: max(40px, env(safe-area-inset-top, 0px) + 30px) 16px 16px;
     }
     #schedule-edit-overlay.open { display: flex; }
     #schedule-edit-card {
@@ -2441,14 +2443,20 @@
       color: #f4ede0;
       border: 1px solid rgba(212,165,116,0.25);
       border-radius: 22px;
-      padding: 22px 20px 24px;
+      padding: 18px 18px 20px;
       width: 100%;
-      max-width: 420px;
-      max-height: 70dvh;
-      overflow-y: auto;
+      max-width: 400px;
       box-shadow: 0 14px 50px rgba(0,0,0,0.65);
       animation: seSlideUp 0.28s cubic-bezier(.34,1.2,.64,1);
     }
+    /* Tighten the inner spacing too — keeps the card compact enough
+       to fit above the keyboard without scrolling. */
+    #schedule-edit-card h3   { font-size: 17px; margin-bottom: 2px; }
+    #schedule-edit-card .notif-sub { margin-bottom: 14px; }
+    #schedule-edit-card .se-field { margin-bottom: 10px; }
+    #schedule-edit-card .se-field label { font-size: 11.5px; margin-bottom: 4px; }
+    #schedule-edit-card .se-field input { padding: 11px 12px; font-size: 15px; }
+    #schedule-edit-card .notif-actions { margin-top: 14px; }
     @keyframes seSlideUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
     #schedule-edit-card h3 {
       font-size: 18px;
@@ -4859,7 +4867,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v264</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v265</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5485,19 +5493,20 @@
       <div><h2><svg class="icon-lg"><use href="#ic-calendar"/></svg>לוז יומי</h2><p>הפגישות והפעילויות של היום, ממוינות לפי שעה</p></div>
     </div>
 
-    <!-- בורר תאריך — לחיצה על השם פותחת את לוח השנה של iOS לקפיצה ישירה -->
+    <!-- בורר תאריך — לחיצה על השם פותחת את לוח השנה של iOS לקפיצה ישירה.
+         ה-input של type=date שקוף ומונח BEHAVIORALLY מעל הטקסט,
+         אז לחיצה על השם = לחיצה על ה-input ⇒ iOS פותח picker. -->
     <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
       <div class="month-selector">
         <button onclick="changeScheduleDate(-1)" title="יום קודם">›</button>
-        <span class="month-label" id="schedule-date-label" onclick="openScheduleDatePicker()" style="min-width:220px;text-align:center;cursor:pointer;user-select:none"></span>
+        <span class="month-label" id="schedule-date-label" style="min-width:220px;text-align:center;user-select:none;position:relative;display:inline-block">
+          <input type="date" id="schedule-date-picker" onchange="jumpScheduleToDate(this.value)"
+            aria-label="בחר תאריך"
+            style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;background:transparent;color:transparent;font-size:16px;-webkit-appearance:none;appearance:none;padding:0;margin:0"/>
+        </span>
         <button onclick="changeScheduleDate(1)" title="יום הבא">‹</button>
       </div>
       <button id="schedule-today-btn" class="btn btn-ghost btn-sm" onclick="goScheduleToday()" style="display:none">↺ חזרה להיום</button>
-      <!-- Hidden date input — opened programmatically by tapping the
-           date label above. iOS renders this as the native calendar
-           picker so the user can jump anywhere in seconds. -->
-      <input type="date" id="schedule-date-picker" onchange="jumpScheduleToDate(this.value)"
-        style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"/>
     </div>
 
     <!-- הוספה מהירה: כותרת + שעה -->
@@ -15188,30 +15197,6 @@ function goScheduleToday() {
 // Tap the date label → open the iOS native calendar picker so the
 // user can jump directly to any date instead of clicking ‹ /  ›
 // dozens of times to reach next month.
-function openScheduleDatePicker() {
-  const inp = document.getElementById('schedule-date-picker');
-  if (!inp) return;
-  inp.value = _scheduleDate || dailyDateStr();
-  // iOS requires the input to be visible + focused for showPicker()
-  // to actually open. We make it momentarily focusable, call
-  // showPicker (when supported), then re-hide.
-  inp.style.pointerEvents = 'auto';
-  try {
-    if (typeof inp.showPicker === 'function') {
-      inp.showPicker();
-    } else {
-      inp.focus();
-      inp.click();
-    }
-  } catch (e) {
-    inp.focus();
-    inp.click();
-  }
-  // Restore non-interactive state on next tick so it doesn't catch
-  // stray taps in the layout.
-  setTimeout(() => { inp.style.pointerEvents = 'none'; }, 50);
-}
-
 function jumpScheduleToDate(value) {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
   const d = new Date(value + 'T00:00:00');
@@ -16123,8 +16108,21 @@ function renderSchedule() {
   const listEl  = document.getElementById('schedule-list');
   const labelEl = document.getElementById('schedule-date-label');
   const todayBtn = document.getElementById('schedule-today-btn');
+  const picker  = document.getElementById('schedule-date-picker');
   if (!listEl) return;
-  if (labelEl) labelEl.textContent = _scheduleDateLabel(_scheduleDate);
+  if (labelEl) {
+    // Keep the overlay <input type=date> child intact — set the
+    // label text without wiping the picker.
+    const label = _scheduleDateLabel(_scheduleDate);
+    if (picker) {
+      labelEl.firstChild && labelEl.firstChild.nodeType === 3
+        ? labelEl.firstChild.nodeValue = label
+        : labelEl.insertBefore(document.createTextNode(label), picker);
+    } else {
+      labelEl.textContent = label;
+    }
+  }
+  if (picker) picker.value = _scheduleDate;
   if (todayBtn) todayBtn.style.display = (_scheduleDate === dailyDateStr()) ? 'none' : '';
 
   // Manual items + Google events for the displayed date, merged
