@@ -105,7 +105,7 @@
     #snapshot-curtain { display: none; }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Frank+Ruhl+Libre:wght@400;700;900&family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -2418,35 +2418,36 @@
     }
 
     /* ===== Schedule Edit Modal ===== */
-    /* Reuses the notif-settings sheet styles + adds two labeled
-       fields. Bottom-sheet on mobile, centered modal on desktop —
-       same media-query thresholds as the notif modal below. */
+    /* Centered card that stays visible above the iOS keyboard.
+       Earlier this was a bottom-sheet, but the keyboard pushed it
+       up into a half-rendered slab with a huge gap above — looked
+       like a glitch. A centered modal with max-height: 70dvh
+       keeps the card compact + entirely on-screen regardless of
+       whether the keyboard is up. */
     #schedule-edit-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.55);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       display: none;
-      align-items: flex-end;
+      align-items: center;
       justify-content: center;
       z-index: 10000;
-      padding-bottom: env(safe-area-inset-bottom, 0);
+      padding: 20px;
     }
     #schedule-edit-overlay.open { display: flex; }
     #schedule-edit-card {
       background: #2a1f17;
       color: #f4ede0;
       border: 1px solid rgba(212,165,116,0.25);
-      border-radius: 22px 22px 0 0;
-      padding: 22px 20px 26px;
+      border-radius: 22px;
+      padding: 22px 20px 24px;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 -8px 36px rgba(0,0,0,0.6);
+      max-height: 70dvh;
+      overflow-y: auto;
+      box-shadow: 0 14px 50px rgba(0,0,0,0.65);
       animation: seSlideUp 0.28s cubic-bezier(.34,1.2,.64,1);
-    }
-    @media (min-width: 600px) {
-      #schedule-edit-overlay { align-items: center; padding: 24px; }
-      #schedule-edit-card    { border-radius: 22px; max-height: 80vh; overflow-y: auto; }
     }
     @keyframes seSlideUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
     #schedule-edit-card h3 {
@@ -4858,7 +4859,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v263</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v264</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5484,14 +5485,19 @@
       <div><h2><svg class="icon-lg"><use href="#ic-calendar"/></svg>לוז יומי</h2><p>הפגישות והפעילויות של היום, ממוינות לפי שעה</p></div>
     </div>
 
-    <!-- בורר תאריך -->
+    <!-- בורר תאריך — לחיצה על השם פותחת את לוח השנה של iOS לקפיצה ישירה -->
     <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
       <div class="month-selector">
         <button onclick="changeScheduleDate(-1)" title="יום קודם">›</button>
-        <span class="month-label" id="schedule-date-label" style="min-width:220px;text-align:center"></span>
+        <span class="month-label" id="schedule-date-label" onclick="openScheduleDatePicker()" style="min-width:220px;text-align:center;cursor:pointer;user-select:none"></span>
         <button onclick="changeScheduleDate(1)" title="יום הבא">‹</button>
       </div>
       <button id="schedule-today-btn" class="btn btn-ghost btn-sm" onclick="goScheduleToday()" style="display:none">↺ חזרה להיום</button>
+      <!-- Hidden date input — opened programmatically by tapping the
+           date label above. iOS renders this as the native calendar
+           picker so the user can jump anywhere in seconds. -->
+      <input type="date" id="schedule-date-picker" onchange="jumpScheduleToDate(this.value)"
+        style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"/>
     </div>
 
     <!-- הוספה מהירה: כותרת + שעה -->
@@ -15177,6 +15183,46 @@ function goScheduleToday() {
   _scheduleDate = dailyDateStr();
   if (typeof gcalRefreshEventKit === 'function') gcalRefreshEventKit();
   renderSchedule();
+}
+
+// Tap the date label → open the iOS native calendar picker so the
+// user can jump directly to any date instead of clicking ‹ /  ›
+// dozens of times to reach next month.
+function openScheduleDatePicker() {
+  const inp = document.getElementById('schedule-date-picker');
+  if (!inp) return;
+  inp.value = _scheduleDate || dailyDateStr();
+  // iOS requires the input to be visible + focused for showPicker()
+  // to actually open. We make it momentarily focusable, call
+  // showPicker (when supported), then re-hide.
+  inp.style.pointerEvents = 'auto';
+  try {
+    if (typeof inp.showPicker === 'function') {
+      inp.showPicker();
+    } else {
+      inp.focus();
+      inp.click();
+    }
+  } catch (e) {
+    inp.focus();
+    inp.click();
+  }
+  // Restore non-interactive state on next tick so it doesn't catch
+  // stray taps in the layout.
+  setTimeout(() => { inp.style.pointerEvents = 'none'; }, 50);
+}
+
+function jumpScheduleToDate(value) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+  const d = new Date(value + 'T00:00:00');
+  if (_gcalToken && (d.getMonth() !== curMonth || d.getFullYear() !== curYear)) {
+    curMonth = d.getMonth(); curYear = d.getFullYear();
+    if (typeof fetchGoogleEvents === 'function') fetchGoogleEvents(true);
+  }
+  _scheduleDate = value;
+  if (typeof gcalRefreshEventKit === 'function') gcalRefreshEventKit();
+  renderSchedule();
+  if (window.haptic) window.haptic.tap();
 }
 
 async function addScheduleItem() {
