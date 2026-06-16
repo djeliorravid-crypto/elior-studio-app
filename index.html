@@ -4749,6 +4749,10 @@
         onkeydown="if(event.key==='Enter'){event.preventDefault();saveScheduleEdit();}"/>
     </div>
     <div class="se-field">
+      <label>תאריך</label>
+      <input id="se-date" type="date"/>
+    </div>
+    <div class="se-field">
       <label>שעה</label>
       <input id="se-time" type="time"/>
     </div>
@@ -4854,7 +4858,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v258</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v259</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15209,8 +15213,19 @@ async function addScheduleItem() {
   }
 }
 
-function deleteScheduleItem(id) {
+async function deleteScheduleItem(id) {
   if (!confirm('למחוק את הפריט מהלוז?')) return;
+  // EventKit-sourced event — delete via the plugin + refresh cache.
+  if (typeof id === 'string' && id.indexOf('gcal_ek_') === 0) {
+    const ekId = id.substring('gcal_ek_'.length);
+    const Cal  = _iosCalPlugin();
+    if (Cal && ekId) {
+      try { await Cal.deleteEvent({ eventId: ekId }); } catch (e) {}
+    }
+    await gcalRefreshEventKit();
+    renderSchedule();
+    return;
+  }
   const all = load('schedule');
   const it  = all.find(x => x.id === id);
   if (gcalWriteConnected() && it && it.gcalEventId) {
@@ -15221,14 +15236,39 @@ function deleteScheduleItem(id) {
 }
 
 function editScheduleItem(id) {
-  const all = load('schedule');
-  const it = all.find(x => x.id === id);
-  if (!it) return;
-  window._editScheduleId = id;
+  let it = null;
+  let source = 'manual';
+  // EventKit-sourced events (read from iOS Calendar via the
+  // IosCalendar plugin) come through with an id like "gcal_ek_<EKEvent.eventIdentifier>".
+  // Those aren't in our localStorage 'schedule' — they live in
+  // _eventKitCache. Recognise the prefix and pull from there.
+  if (typeof id === 'string' && id.indexOf('gcal_ek_') === 0) {
+    const ekId = id.substring('gcal_ek_'.length);
+    const cached = (window._eventKitCache || []).find(e => e.id === ekId);
+    if (!cached) return;
+    it = {
+      id:    id,
+      title: cached.title,
+      date:  cached.date,
+      time:  cached.time
+    };
+    source = 'eventkit';
+  } else if (typeof id === 'string' && id.indexOf('gcal_') === 0) {
+    // ICS or OAuth event — read-only, no edit modal
+    return;
+  } else {
+    const all = load('schedule');
+    it = all.find(x => x.id === id);
+    if (!it) return;
+  }
+  window._editScheduleId     = id;
+  window._editScheduleSource = source;
   const title = document.getElementById('se-title');
   const time  = document.getElementById('se-time');
+  const date  = document.getElementById('se-date');
   if (title) title.value = it.title || '';
   if (time)  time.value  = it.time  || '';
+  if (date)  date.value  = it.date  || _scheduleDate;
   document.getElementById('schedule-edit-overlay').classList.add('open');
   // Phone keyboards: jump straight to the title field so the user
   // can start typing without an extra tap.
@@ -15243,20 +15283,45 @@ window.saveScheduleEdit = async function() {
   if (!id) return;
   const newTitle = (document.getElementById('se-title').value || '').trim();
   const newTime  =  document.getElementById('se-time').value  || '';
+  const newDate  = (document.getElementById('se-date')?.value || _scheduleDate);
   if (!newTitle) { document.getElementById('se-title').focus(); return; }
   if (!/^\d{2}:\d{2}$/.test(newTime)) { document.getElementById('se-time').focus(); return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) { document.getElementById('se-date')?.focus(); return; }
+  // EventKit-sourced event — update via the plugin, refresh cache.
+  if (window._editScheduleSource === 'eventkit') {
+    const ekId = String(id).replace(/^gcal_ek_/, '');
+    const Cal  = _iosCalPlugin();
+    if (Cal && ekId) {
+      try {
+        await Cal.updateEvent({
+          eventId: ekId,
+          title:   newTitle,
+          date:    newDate,
+          time:    newTime
+        });
+        if (window.haptic) window.haptic.success();
+      } catch (e) {
+        toast('❌ עדכון נכשל: ' + (e && e.message || ''));
+      }
+    }
+    await gcalRefreshEventKit();
+    renderSchedule();
+    window.closeScheduleEdit();
+    return;
+  }
+  // Manual local item.
   const all = load('schedule');
   const it = all.find(x => x.id === id);
   if (it) {
     it.title = newTitle;
     it.time  = newTime;
+    it.date  = newDate;
     save('schedule', all);
     renderSchedule();
     if (window.haptic) window.haptic.success();
     if (gcalWriteConnected() && it.gcalEventId) {
       gcalWriteUpdateEvent(it.gcalEventId, it);
     } else if (gcalWriteConnected() && !it.gcalEventId) {
-      // Item created before write was enabled — push it now.
       const gid = await gcalWriteCreateEvent(it);
       if (gid) {
         const cur = load('schedule');
@@ -15267,10 +15332,24 @@ window.saveScheduleEdit = async function() {
   }
   window.closeScheduleEdit();
 };
-window.deleteFromScheduleEdit = function() {
+window.deleteFromScheduleEdit = async function() {
   const id = window._editScheduleId;
   if (!id) return;
   if (!confirm('למחוק את הפריט מהלוז?')) return;
+  // EventKit-sourced item — delete via the plugin, then refresh.
+  if (window._editScheduleSource === 'eventkit') {
+    const ekId = String(id || '').replace(/^gcal_ek_/, '');
+    const Cal  = _iosCalPlugin();
+    if (Cal && ekId) {
+      try { await Cal.deleteEvent({ eventId: ekId }); } catch (e) {}
+    }
+    await gcalRefreshEventKit();
+    renderSchedule();
+    window.closeScheduleEdit();
+    return;
+  }
+  // Manual local item — delete from localStorage (and also from
+  // Google if the user has write enabled + the item has a remote id).
   const all = load('schedule');
   const it  = all.find(x => x.id === id);
   if (gcalWriteConnected() && it && it.gcalEventId) {
@@ -15896,6 +15975,10 @@ function gcalEventsForDate(dateStr) {
   if (window._eventKitCache && window._eventKitCache.length) {
     window._eventKitCache.forEach(ev => {
       if (ev.date === dateStr) {
+        // Use the raw EKEvent.eventIdentifier as the id so we can
+        // round-trip edits/deletes through the IosCalendar plugin.
+        // The `ek_` prefix in the merged id (added in renderSchedule)
+        // is how editScheduleItem distinguishes EventKit rows.
         out.push({
           id:       'ek_' + (ev.id || (ev.date + ev.time + ev.title)),
           start:    { dateTime: ev.date + 'T' + ev.time + ':00' },
@@ -15986,28 +16069,27 @@ function renderSchedule() {
   listEl.innerHTML = items.map(it => {
     const { color } = _scheduleProximity(it.date, it.time);
     const isGcal = (it._source === 'gcal');
-    // Google events get a left accent stripe + a small G logo so the
-    // origin reads at a glance, and they're read-only (no trash btn).
-    const tap = isGcal
-      ? '' // No action — tapping does nothing; user edits in Google Calendar
-      : 'onclick="editScheduleItem(\'' + it.id + '\')"';
-    const cursor = isGcal ? 'default' : 'pointer';
-    const leftStripe = isGcal
-      ? 'border-right:3px solid #4285f4;'
+    // EventKit items (id prefix `gcal_ek_…`) are editable round-trip
+    // via the IosCalendar plugin. ICS / OAuth items stay read-only.
+    const isEditable = !isGcal || (typeof it.id === 'string' && it.id.indexOf('gcal_ek_') === 0);
+    const tap = isEditable
+      ? 'onclick="editScheduleItem(\'' + it.id + '\')"'
       : '';
-    const trashBtn = isGcal
-      ? '<span style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="אירוע מ-Google — ערוך ב-Google Calendar">' +
+    const cursor = isEditable ? 'pointer' : 'default';
+    const leftStripe = isGcal ? 'border-right:3px solid #4285f4;' : '';
+    const trashBtn = isEditable
+      ? '<button class="row-icon-btn" onclick="event.stopPropagation(); deleteScheduleItem(\'' + it.id + '\')" title="מחק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">' +
+          '<svg style="width:14px;height:14px;color:#b8442e"><use href="#ic-trash"/></svg>' +
+        '</button>'
+      : '<span style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0" title="אירוע מ-Google — ערוך ב-Google Calendar">' +
           '<svg viewBox="0 0 24 24" width="14" height="14" style="opacity:0.7">' +
             '<rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="#4285f4" stroke-width="2"/>' +
             '<line x1="3" y1="10" x2="21" y2="10" stroke="#4285f4" stroke-width="2"/>' +
           '</svg>' +
-        '</span>'
-      : '<button class="row-icon-btn" onclick="event.stopPropagation(); deleteScheduleItem(\'' + it.id + '\')" title="מחק" style="background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">' +
-          '<svg style="width:14px;height:14px;color:#b8442e"><use href="#ic-trash"/></svg>' +
-        '</button>';
+        '</span>';
     return (
       '<div class="schedule-row" ' + tap + ' style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);' + leftStripe + 'border-radius:14px;background:var(--surface);margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.04);cursor:' + cursor + ';transition:transform .15s,border-color .15s,box-shadow .15s" ' +
-           (isGcal ? '' : 'onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'"') + '>' +
+           (isEditable ? 'onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'"' : '') + '>' +
         '<span style="width:11px;height:11px;border-radius:50%;background:' + color + ';box-shadow:0 0 8px ' + color + '55;flex-shrink:0"></span>' +
         '<div style="font-family:Rubik,sans-serif;font-weight:800;font-size:18px;color:' + (isGcal ? '#4285f4' : 'var(--accent)') + ';min-width:54px;letter-spacing:-0.02em">' + it.time + '</div>' +
         '<div style="flex:1;font-size:15px;font-weight:700;color:var(--text);min-width:0">' + _escHtml(it.title) + '</div>' +

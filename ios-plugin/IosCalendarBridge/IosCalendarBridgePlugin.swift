@@ -106,7 +106,21 @@ public class IosCalendarBridgePlugin: CAPPlugin, CAPBridgedPlugin {
             return
         }
         let dayEnd = end0.addingTimeInterval(24 * 60 * 60 - 1)
-        let cals   = store.calendars(for: .event)
+        // Default: read only from Google-sourced calendars (Gmail
+        // accounts the user synced via iOS Settings). Callers can
+        // pass `googleOnly: false` to fall back to every calendar.
+        let googleOnly = call.getBool("googleOnly") ?? true
+        let all = store.calendars(for: .event)
+        let cals: [EKCalendar] = googleOnly
+            ? all.filter { c in
+                let s = c.source.title.lowercased()
+                return s.contains("google") || s.contains("gmail")
+              }
+            : all
+        if cals.isEmpty {
+            call.resolve(["events": []])
+            return
+        }
         let pred   = store.predicateForEvents(withStart: start0, end: dayEnd, calendars: cals)
         let events = store.events(matching: pred)
 
@@ -191,9 +205,12 @@ public class IosCalendarBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         let timeStr = call.getString("time")
         if let dateStr = dateStr, let timeStr = timeStr,
            let start = _parseDate(dateStr, timeStr) {
+            // Preserve the existing duration so we don't accidentally
+            // shrink a 3-hour workshop to 1 hour when the user just
+            // wanted to reschedule it.
+            let originalDuration = max(event.endDate.timeIntervalSince(event.startDate), 60 * 60)
             event.startDate = start
-            let dur = TimeInterval((call.getInt("durationMinutes") ?? 60) * 60)
-            event.endDate = start.addingTimeInterval(dur)
+            event.endDate   = start.addingTimeInterval(originalDuration)
         }
         if let notes = call.getString("notes") { event.notes = notes }
         do {
