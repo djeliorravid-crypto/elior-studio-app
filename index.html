@@ -4992,7 +4992,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v276</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v277</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5332,7 +5332,24 @@
       </div>
     </div>
 
-    <!-- יעד חודשי -->
+    <!-- 1. ===== BANK DEPOSIT (manual) ===== -->
+    <div id="bank-deposit-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;margin-bottom:14px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;transition:box-shadow .3s">
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-glow) 0%,transparent 60%);pointer-events:none"></div>
+      <div style="position:relative;display:flex;align-items:center;gap:14px;flex:1;min-width:200px">
+        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 6px 18px var(--accent-glow)"><svg style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-bank"/></svg></div>
+        <div>
+          <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">פיקדון בבנק</div>
+          <div id="bank-deposit-amount" style="font-size:30px;font-weight:900;color:var(--accent);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1">₪0</div>
+          <div id="bank-deposit-updated" style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600"></div>
+        </div>
+      </div>
+      <div style="position:relative;display:flex;align-items:center;gap:8px">
+        <input type="number" id="bank-deposit-input" placeholder="הזן סכום..." style="padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:15px;font-weight:700;width:160px;text-align:left;outline:none;transition:border-color .2s,box-shadow .2s;font-family:'Heebo',inherit" oninput="this.style.borderColor='var(--accent)'"/>
+        <button class="btn btn-primary" onclick="saveBankDeposit()">עדכן</button>
+      </div>
+    </div>
+
+    <!-- 2. ===== MONTHLY GOAL ===== -->
     <div class="goal-bar-wrap" id="goal-bar-section">
       <div class="goal-bar-top">
         <div>
@@ -5352,94 +5369,68 @@
       </div>
     </div>
 
-    <!-- ===== BANK DEPOSIT (manual) ===== -->
-    <div id="bank-deposit-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;transition:box-shadow .3s">
-      <div style="position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-glow) 0%,transparent 60%);pointer-events:none"></div>
-      <div style="position:relative;display:flex;align-items:center;gap:14px;flex:1;min-width:200px">
-        <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 6px 18px var(--accent-glow)"><svg style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-bank"/></svg></div>
-        <div>
-          <div style="font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px">פיקדון בבנק</div>
-          <div id="bank-deposit-amount" style="font-size:30px;font-weight:900;color:var(--accent);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1">₪0</div>
-          <div id="bank-deposit-updated" style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600"></div>
-        </div>
-      </div>
-      <div style="position:relative;display:flex;align-items:center;gap:8px">
-        <input type="number" id="bank-deposit-input" placeholder="הזן סכום..." style="padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:15px;font-weight:700;width:160px;text-align:left;outline:none;transition:border-color .2s,box-shadow .2s;font-family:'Heebo',inherit" oninput="this.style.borderColor='var(--accent)'"/>
-        <button class="btn btn-primary" onclick="saveBankDeposit()">עדכן</button>
-      </div>
-    </div>
-
-    <!-- 3 תיבות מאוחדות -->
-    <div class="income-triple-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px">
-
-      <!-- תיבה 1: הכנסות החודש -->
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)">
-        <div style="background:var(--accent-light);border-bottom:1.5px solid var(--border-glow);padding:12px 20px;display:flex;align-items:center;gap:8px">
-          <svg class="icon-md" style="color:var(--accent)"><use href="#ic-coin-bag"/></svg>
-          <span style="font-size:13px;font-weight:800;color:var(--accent)">הכנסות החודש</span>
-        </div>
-        <div style="padding:0">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
-            <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg class="icon"><use href="#ic-hourglass"/></svg> צפוי להתקבל</div>
-            <div class="card-value purple" id="i-expected" style="font-size:32px;font-weight:900;margin:0;line-height:1">₪0</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="i-expected-count"></div>
-          </div>
-          <div style="padding:16px 20px;background:var(--pill-green-bg)">
-            <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg class="icon"><use href="#ic-check-circle"/></svg> התקבל בפועל</div>
-            <div class="card-value green" id="i-total" style="font-size:32px;font-weight:900;margin:0;line-height:1">₪0</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="i-count"></div>
-          </div>
+    <!-- 3-7. ===== MONTHLY STAT GRID — income / expenses / pending / net ===== -->
+    <div class="income-month-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <!-- הכנסות החודש (סה"כ — שולם + ממתין) -->
+      <div class="stat-card stat-green" style="background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(90,122,46,0.10) 0%,transparent 60%);pointer-events:none"></div>
+        <div style="position:relative">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--green);letter-spacing:0.04em;margin-bottom:6px"><svg class="icon" style="width:14px;height:14px"><use href="#ic-coin-bag"/></svg> הכנסות החודש</div>
+          <div id="stat-income-month" style="font-size:24px;font-weight:900;color:var(--green);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1">₪0</div>
+          <div id="stat-income-month-sub" style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600"></div>
         </div>
       </div>
 
-      <!-- תיבה 2: נשאר -->
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)" id="pending-summary-box">
-        <div style="background:var(--surface2);border-bottom:1.5px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
-          <svg class="icon-md" style="color:var(--text-muted)"><use href="#ic-hourglass"/></svg>
-          <span style="font-size:13px;font-weight:800;color:var(--text)">ממתין לטיפול</span>
-        </div>
-        <div style="padding:0">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
-            <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg class="icon"><use href="#ic-trend-up"/></svg> נשאר להכניס</div>
-            <div id="pending-income-amt" style="font-size:32px;font-weight:900;color:var(--green);line-height:1">₪0</div>
-            <div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:10px">
-              <div id="pending-income-bar" style="height:100%;border-radius:3px;background:var(--green);transition:width .5s;width:0%"></div>
-            </div>
-            <div id="pending-income-pct" style="font-size:12px;color:var(--text-muted);font-weight:700;margin-top:4px">0% גבוי</div>
-            <div id="pending-income-sub" style="display:none"></div>
-          </div>
-          <div style="padding:16px 20px;background:var(--pill-red-bg)">
-            <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px;display:flex;align-items:center;gap:6px"><svg class="icon"><use href="#ic-trend-down"/></svg> נשאר להוציא</div>
-            <div id="pending-expenses-amt" style="font-size:32px;font-weight:900;color:var(--red);line-height:1">₪0</div>
-            <div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:10px">
-              <div id="pending-expenses-bar" style="height:100%;border-radius:3px;background:var(--red);transition:width .5s;width:0%"></div>
-            </div>
-            <div id="pending-expenses-pct" style="font-size:12px;color:var(--text-muted);font-weight:700;margin-top:4px">0% שולם</div>
-            <div id="pending-expenses-sub" style="display:none"></div>
-          </div>
+      <!-- הוצאות החודש (סה"כ — שולם + ממתין) -->
+      <div class="stat-card stat-red" style="background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(184,68,46,0.10) 0%,transparent 60%);pointer-events:none"></div>
+        <div style="position:relative">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--red);letter-spacing:0.04em;margin-bottom:6px"><svg class="icon" style="width:14px;height:14px"><use href="#ic-trend-down"/></svg> הוצאות החודש</div>
+          <div id="stat-expenses-month" style="font-size:24px;font-weight:900;color:var(--red);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1">₪0</div>
+          <div id="stat-expenses-month-sub" style="font-size:11px;color:var(--text-muted);margin-top:4px;font-weight:600"></div>
         </div>
       </div>
 
-      <!-- תיבה 3: רווח -->
-      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)">
-        <div style="background:var(--surface2);border-bottom:1.5px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:8px">
-          <svg class="icon-md" style="color:var(--text-muted)"><use href="#ic-chart-bars"/></svg>
-          <span style="font-size:13px;font-weight:800;color:var(--text)">רווח</span>
+      <!-- נשאר להכניס -->
+      <div class="stat-card" style="background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:0.04em;margin-bottom:6px"><svg class="icon" style="width:14px;height:14px"><use href="#ic-hourglass"/></svg> נשאר להכניס</div>
+        <div id="pending-income-amt" style="font-size:24px;font-weight:900;color:var(--green);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1">₪0</div>
+        <div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:8px">
+          <div id="pending-income-bar" style="height:100%;border-radius:3px;background:var(--green);transition:width .5s;width:0%"></div>
         </div>
-        <div style="padding:0">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
-            <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px">🔭 רווח נקי עתידי</div>
-            <div class="card-value blue" id="i-future-profit" style="font-size:32px;font-weight:900;margin:0;line-height:1">₪0</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="i-future-profit-sub"></div>
-          </div>
-          <div style="padding:16px 20px">
-            <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:6px"><svg class="icon"><use href="#ic-bank"/></svg> בנק העסק עכשיו</div>
-            <div class="card-value" id="i-net-profit" style="font-size:32px;font-weight:900;margin:0;line-height:1">₪0</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="i-net-profit-sub"></div>
-          </div>
-        </div>
+        <div id="pending-income-pct" style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:4px">0% גבוי</div>
+        <div id="pending-income-sub" style="display:none"></div>
       </div>
 
+      <!-- נשאר להוציא -->
+      <div class="stat-card" style="background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:0.04em;margin-bottom:6px"><svg class="icon" style="width:14px;height:14px"><use href="#ic-hourglass"/></svg> נשאר להוציא</div>
+        <div id="pending-expenses-amt" style="font-size:24px;font-weight:900;color:var(--red);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1">₪0</div>
+        <div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:8px">
+          <div id="pending-expenses-bar" style="height:100%;border-radius:3px;background:var(--red);transition:width .5s;width:0%"></div>
+        </div>
+        <div id="pending-expenses-pct" style="font-size:11px;color:var(--text-muted);font-weight:600;margin-top:4px">0% שולם</div>
+        <div id="pending-expenses-sub" style="display:none"></div>
+      </div>
+
+      <!-- רווח נקי החודש (עכשווי — שולם פחות יצא) — spans both columns -->
+      <div class="stat-card" style="grid-column:span 2;background:linear-gradient(135deg,var(--surface),var(--surface2));border:1.5px solid var(--accent);border-radius:16px;padding:18px 20px;box-shadow:0 6px 18px var(--accent-glow);position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-glow) 0%,transparent 70%);pointer-events:none"></div>
+        <div style="position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--accent);letter-spacing:0.06em;margin-bottom:6px"><svg class="icon" style="width:15px;height:15px"><use href="#ic-bank"/></svg> רווח נקי החודש (עכשווי)</div>
+            <div class="card-value" id="i-net-profit" style="font-size:30px;font-weight:900;letter-spacing:-0.025em;margin:0;line-height:1">₪0</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:5px;font-weight:600" id="i-net-profit-sub"></div>
+          </div>
+          <!-- Hidden — kept so renderIncome doesn't NPE on i-future-profit / i-expected etc. -->
+          <span id="i-future-profit" style="display:none">₪0</span>
+          <span id="i-future-profit-sub" style="display:none"></span>
+          <span id="i-expected" style="display:none">₪0</span>
+          <span id="i-expected-count" style="display:none"></span>
+          <span id="i-total" style="display:none">₪0</span>
+          <span id="i-count" style="display:none"></span>
+        </div>
+      </div>
     </div>
 
     <div class="table-card">
@@ -7646,6 +7637,17 @@ function renderIncome() {
   document.getElementById('i-expected').textContent       = fmtMoney(totalAllExpected);
   document.getElementById('i-expected-count').textContent = `${monthEntries.length} פריטים החודש`;
 
+  // New compact layout — income / expenses / net profit cards.
+  const monthExpensesAll = load('expenses').filter(e => inCurMonth(e.date));
+  const incMonthEl   = document.getElementById('stat-income-month');
+  const incMonthSub  = document.getElementById('stat-income-month-sub');
+  const expMonthEl   = document.getElementById('stat-expenses-month');
+  const expMonthSub  = document.getElementById('stat-expenses-month-sub');
+  if (incMonthEl)  incMonthEl.textContent  = fmtMoney(totalAllExpected);
+  if (incMonthSub) incMonthSub.textContent = `${fmtMoney(totalPaid)} התקבל · ${monthEntries.length} פריטים`;
+  if (expMonthEl)  expMonthEl.textContent  = fmtMoney(monthExpensesTotal);
+  if (expMonthSub) expMonthSub.textContent = `${fmtMoney(paidExpenses)} שולם · ${monthExpensesAll.length} פריטים`;
+
   // Insights: top clients + 6-month trend + bank deposit
   renderTopClients(monthEntries);
   renderIncomeTrend(income);
@@ -7737,13 +7739,15 @@ function renderIncome() {
         </span>
       </td>
       ${statusCell(i)}
-      <td>${i.fromPlan ? '' : `
+      <td>
         <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
           ${_receiptCell(i)}
-          <button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:700;padding:4px 10px" onclick="openIncomeEdit('${i.id}')" title="ערוך">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')" title="מחק">🗑</button>
+          ${i.fromPlan ? '' : `
+            <button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:700;padding:4px 10px" onclick="openIncomeEdit('${i.id}')" title="ערוך">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteIncome('${i.id}')" title="מחק">🗑</button>
+          `}
         </div>
-      `}</td>
+      </td>
     </tr>
   `; }).join('');
 
