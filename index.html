@@ -2449,14 +2449,38 @@
       box-shadow: 0 14px 50px rgba(0,0,0,0.65);
       animation: seSlideUp 0.28s cubic-bezier(.34,1.2,.64,1);
     }
-    /* Tighten the inner spacing too — keeps the card compact enough
-       to fit above the keyboard without scrolling. */
-    #schedule-edit-card h3   { font-size: 17px; margin-bottom: 2px; }
-    #schedule-edit-card .notif-sub { margin-bottom: 14px; }
+    /* Everything centered — title, labels, inputs, buttons — so the
+       card reads like a focused dialog instead of an RTL form. */
+    #schedule-edit-card { text-align: center; }
+    #schedule-edit-card h3   { font-size: 17px; margin-bottom: 2px; text-align: center; }
+    #schedule-edit-card .notif-sub { margin-bottom: 14px; text-align: center; }
     #schedule-edit-card .se-field { margin-bottom: 10px; }
-    #schedule-edit-card .se-field label { font-size: 11.5px; margin-bottom: 4px; }
-    #schedule-edit-card .se-field input { padding: 11px 12px; font-size: 15px; }
-    #schedule-edit-card .notif-actions { margin-top: 14px; }
+    #schedule-edit-card .se-field label {
+      font-size: 11.5px;
+      margin-bottom: 4px;
+      text-align: center;
+      display: block;
+    }
+    #schedule-edit-card .se-field input {
+      padding: 11px 12px;
+      font-size: 15px;
+      text-align: center;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
+    }
+    #schedule-edit-card .notif-actions {
+      margin-top: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    /* Native date / time pickers in RTL on iOS push the spinner off
+       the right edge — explicitly LTR centres the value text. */
+    #schedule-edit-card .se-field input[type="date"],
+    #schedule-edit-card .se-field input[type="time"] {
+      direction: ltr;
+      text-align: center;
+    }
     @keyframes seSlideUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
     #schedule-edit-card h3 {
       font-size: 18px;
@@ -4867,7 +4891,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v265</small>
+    <small style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v266</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15301,9 +15325,9 @@ function editScheduleItem(id) {
   if (time)  time.value  = it.time  || '';
   if (date)  date.value  = it.date  || _scheduleDate;
   document.getElementById('schedule-edit-overlay').classList.add('open');
-  // Phone keyboards: jump straight to the title field so the user
-  // can start typing without an extra tap.
-  setTimeout(() => title && title.focus(), 80);
+  // No auto-focus on title — the user usually just wants to change
+  // the time or date, not the title. Keyboard only opens when they
+  // explicitly tap the title input.
 }
 window.closeScheduleEdit = function() {
   document.getElementById('schedule-edit-overlay').classList.remove('open');
