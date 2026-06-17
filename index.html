@@ -5084,10 +5084,14 @@
         style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;outline:none"/>
       <input id="morning-secret" type="text" placeholder="Morning API Secret" autocomplete="off" autocapitalize="off" spellcheck="false"
         style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;outline:none"/>
-      <button type="button" onclick="testMorningConnection()" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;align-self:flex-end">בדוק וחבר</button>
+      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <button type="button" onclick="morningDisconnect()" style="background:transparent;color:#ff8b6b;border:1px solid rgba(220,60,60,0.4);border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">התנתק</button>
+        <button type="button" onclick="testMorningConnection()" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">בדוק וחבר</button>
+      </div>
     </div>
     <div style="font-size:10.5px;color:rgba(244,237,224,0.4);line-height:1.5;margin-bottom:10px">
-      איפה משיגים: app.greeninvoice.co.il → Account (פרופיל) → API → Generate Key. תקבל ID + Secret, תדביק כאן שניהם.
+      איפה משיגים: app.greeninvoice.co.il → Account (פרופיל) → API → Generate Key. תקבל ID + Secret, תדביק כאן שניהם.<br>
+      <strong style="color:rgba(255,200,150,0.8)">חשוב:</strong> ודא שהמפתח כולל הרשאת <strong>"מסמכים — כתיבה / ניהול מסמכים"</strong>. בלי זה הקבלות יידחו עם "גישה נדחתה".
     </div>
 
     <div class="notif-actions">
@@ -16602,6 +16606,26 @@ window.testMorningConnection = async function() {
   }
 };
 
+// Wipe everything Morning-related from local storage so the user can
+// paste fresh credentials. Used when persistent auth failures suggest
+// the saved key is stale / revoked / scope-mismatched.
+window.morningDisconnect = function() {
+  if (!confirm('להתנתק מ-Morning?\n(תצטרך לשים שוב API ID + Secret כדי ליצור קבלות אוטומטיות)')) return;
+  localStorage.removeItem('morning_api_id');
+  localStorage.removeItem('morning_api_secret');
+  localStorage.removeItem('morning_token');
+  localStorage.removeItem('morning_token_exp');
+  const mid = document.getElementById('morning-id');
+  const mse = document.getElementById('morning-secret');
+  if (mid) mid.value = '';
+  if (mse) mse.value = '';
+  const dot = document.getElementById('morning-conn-dot');
+  if (dot) { dot.style.background = 'rgba(220,60,60,0.18)'; dot.style.color = '#ff8b6b'; dot.textContent = 'לא מחובר'; }
+  toast('✓ נותקת מ-Morning');
+  if (window.haptic) window.haptic.tap();
+  if (typeof renderIncome === 'function') renderIncome();
+};
+
 // Detects Morning's "your token is no good" response. We trust either
 // the HTTP status OR Morning's Hebrew/English error string, because
 // they sometimes return 200 with an error body on auth issues.
@@ -16618,6 +16642,7 @@ function _morningIsAuthFail(status, data) {
 async function _morningPostDocWithRetry(body) {
   let token = await morningGetToken();
   if (!token) return { error: 'no_token' };
+  let lastStatus = 0, lastData = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const r = await fetch(window.MORNING_BASE + '/documents', {
@@ -16628,16 +16653,26 @@ async function _morningPostDocWithRetry(body) {
         },
         body: JSON.stringify(body)
       });
-      const data = await r.json();
-      if (data && data.id) return data;
-      if (_morningIsAuthFail(r.status, data) && attempt === 0) {
+      lastStatus = r.status;
+      lastData   = await r.json();
+      if (lastData && lastData.id) return lastData;
+      if (_morningIsAuthFail(r.status, lastData) && attempt === 0) {
         localStorage.removeItem('morning_token');
         localStorage.removeItem('morning_token_exp');
         token = await morningGetToken();
         if (!token) return { error: 'no_token' };
         continue;
       }
-      return { error: 'create_failed', detail: data };
+      // Second attempt also failed → expose if it's an auth-permission
+      // problem (token works for /account/token but rejected for
+      // /documents — typically means the API key lacks write scope).
+      const persistentAuthFail = _morningIsAuthFail(r.status, lastData);
+      console.warn('Morning create persistently failed', { status: lastStatus, body: lastData });
+      return {
+        error:           persistentAuthFail ? 'auth_no_write' : 'create_failed',
+        status:          lastStatus,
+        detail:          lastData
+      };
     } catch (e) {
       return { error: 'network', detail: String(e && e.message) };
     }
@@ -16713,6 +16748,14 @@ window.morningIssueReceiptForIncome = async function(incomeId) {
 };
 function _morningErrorMessage(res) {
   if (!res) return 'תשובה ריקה';
+  // Persistent auth fail after token refresh — means the API key
+  // can fetch a token but can't create documents. The fix is on
+  // Morning's side: the user must grant "documents:write" scope
+  // (or regenerate the key with that scope) in the Greeninvoice
+  // dashboard. Give them a clear, actionable hint.
+  if (res.error === 'auth_no_write') {
+    return 'המפתח חסר הרשאת יצירת מסמכים. פתח app.greeninvoice.co.il → API → ערוך את המפתח → הוסף "מסמכים — כתיבה". או לחץ "התנתק" בהגדרות ושים מפתח חדש.';
+  }
   const d = res.detail;
   if (d && typeof d === 'object') {
     if (d.errorMessage) return d.errorMessage;
@@ -16724,7 +16767,7 @@ function _morningErrorMessage(res) {
   }
   if (res.error === 'no_token')     return 'אין טוקן — נסה לחבר שוב';
   if (res.error === 'network')      return 'תקלת רשת';
-  if (res.error === 'create_failed') return 'גוגל דחה את הבקשה';
+  if (res.error === 'create_failed') return 'Morning דחה את הבקשה';
   return res.error || 'שגיאה לא ידועה';
 }
 window.morningRetryReceipt = function(incomeId) {
