@@ -16602,10 +16602,50 @@ window.testMorningConnection = async function() {
   }
 };
 
+// Detects Morning's "your token is no good" response. We trust either
+// the HTTP status OR Morning's Hebrew/English error string, because
+// they sometimes return 200 with an error body on auth issues.
+function _morningIsAuthFail(status, data) {
+  if (status === 401 || status === 403) return true;
+  const msg = (data && (data.errorMessage || data.message)) || '';
+  return /גישה נדחתה|להתחבר מחדש|unauthorized|forbidden|invalid token|token expired/i.test(msg);
+}
+
+// POST a document body to Morning. If the server says the bearer
+// token is bad, blow away our cached token, grab a fresh one, and
+// try once more — Morning rotates tokens on their side and our
+// local "valid until" clock doesn't always know about it.
+async function _morningPostDocWithRetry(body) {
+  let token = await morningGetToken();
+  if (!token) return { error: 'no_token' };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const r = await fetch(window.MORNING_BASE + '/documents', {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(body)
+      });
+      const data = await r.json();
+      if (data && data.id) return data;
+      if (_morningIsAuthFail(r.status, data) && attempt === 0) {
+        localStorage.removeItem('morning_token');
+        localStorage.removeItem('morning_token_exp');
+        token = await morningGetToken();
+        if (!token) return { error: 'no_token' };
+        continue;
+      }
+      return { error: 'create_failed', detail: data };
+    } catch (e) {
+      return { error: 'network', detail: String(e && e.message) };
+    }
+  }
+}
+
 async function morningCreateReceiptFor(income) {
   if (!income) return null;
-  const token = await morningGetToken();
-  if (!token) return { error: 'no_token' };
   const body = {
     type:     window.MORNING_DOC_TYPE,
     description: income.description || 'תשלום',
@@ -16637,21 +16677,7 @@ async function morningCreateReceiptFor(income) {
     linkedDocumentIds: income.morningPrId ? [income.morningPrId] : undefined,
     linkType:          income.morningPrId ? 1 : undefined  // 1 = full close
   };
-  try {
-    const r = await fetch(window.MORNING_BASE + '/documents', {
-      method:  'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify(body)
-    });
-    const data = await r.json();
-    if (data && data.id) return data;
-    return { error: 'create_failed', detail: data };
-  } catch (e) {
-    return { error: 'network', detail: String(e && e.message) };
-  }
+  return _morningPostDocWithRetry(body);
 }
 
 // Fire-and-forget — call after marking an income as paid. Patches
@@ -16778,8 +16804,6 @@ window.morningOpenReceipt = function(url) {
 // clear the local morningDocId so the user can immediately issue a
 // fresh receipt with the correct details.
 async function morningCreateCreditFor(income) {
-  const token = await morningGetToken();
-  if (!token) return { error: 'no_token' };
   const amt = parseFloat(income.amount) || 0;
   // For עוסק פטור, type 405 (קבלה זיכוי) is rejected by Morning.
   // The accepted-in-Israel pattern: a second קבלה (type 400) with
@@ -16808,21 +16832,7 @@ async function morningCreateCreditFor(income) {
     linkedDocumentIds: income.morningDocId ? [income.morningDocId] : undefined,
     linkType:          income.morningDocId ? 1 : undefined
   };
-  try {
-    const r = await fetch(window.MORNING_BASE + '/documents', {
-      method:  'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify(body)
-    });
-    const data = await r.json();
-    if (data && data.id) return data;
-    return { error: 'cancel_failed', detail: data };
-  } catch (e) {
-    return { error: 'network', detail: String(e && e.message) };
-  }
+  return _morningPostDocWithRetry(body);
 }
 
 window.morningCancelReceipt = async function(incomeId) {
@@ -16873,8 +16883,6 @@ window.MORNING_PR_DOC_TYPE = 320;
 
 async function morningCreatePaymentRequestFor(income) {
   if (!income) return null;
-  const token = await morningGetToken();
-  if (!token) return { error: 'no_token' };
   const body = {
     type:        window.MORNING_PR_DOC_TYPE,
     description: income.description || 'תשלום',
@@ -16891,21 +16899,7 @@ async function morningCreatePaymentRequestFor(income) {
     }]
     // No `payment` section — money hasn't been received yet.
   };
-  try {
-    const r = await fetch(window.MORNING_BASE + '/documents', {
-      method:  'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify(body)
-    });
-    const data = await r.json();
-    if (data && data.id) return data;
-    return { error: 'create_failed', detail: data };
-  } catch (e) {
-    return { error: 'network', detail: String(e && e.message) };
-  }
+  return _morningPostDocWithRetry(body);
 }
 
 // Open the description modal so the user can refine WHAT the
