@@ -5164,7 +5164,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v298</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v299</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17108,12 +17108,17 @@ window.MORNING_PR_DOC_TYPE = 320;
 
 async function morningCreatePaymentRequestFor(income) {
   if (!income) return null;
+  const today = new Date();
+  const due   = new Date(today.getTime() + 14 * 86400000); // +14d default
+  const iso   = d => d.toISOString().slice(0, 10);
   const body = {
     type:        window.MORNING_PR_DOC_TYPE,
     description: income.description || 'תשלום',
     lang:        'he',
     currency:    'ILS',
     vatType:     0,
+    date:        iso(today),
+    dueDate:     iso(due),
     client:      { name: String(income.clientName || 'לקוח').slice(0, 100) },
     income: [{
       description: income.description || 'שירות',
@@ -17183,9 +17188,24 @@ window._confirmMorningPaymentRequestModal = async function() {
     if (window.haptic) window.haptic.success();
     if (typeof renderIncome === 'function') renderIncome();
   } else {
-    toast('⚠️ Morning: ' + _morningErrorMessage(res));
     if (window.haptic) window.haptic.error();
     console.warn('Morning PR create failure', res);
+    // Surface the full Morning response so the user can copy it back
+    // here and we can iterate on what fields Morning actually wants.
+    let detailStr = '';
+    try { detailStr = JSON.stringify(res, null, 2); } catch (_) { detailStr = String(res); }
+    const summary = _morningErrorMessage(res);
+    const full = 'Morning דחה את דרישת התשלום.\n\n' +
+                 'הודעה: ' + summary + '\n\n' +
+                 'תשובה מלאה מ-Morning (העתק ושלח לי):\n' + detailStr;
+    if (confirm(full + '\n\nלהעתיק את התשובה ללוח?')) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(detailStr);
+          toast('הועתק ללוח — הדבק בצ\'אט');
+        }
+      } catch(_) {}
+    }
   }
 };
 
