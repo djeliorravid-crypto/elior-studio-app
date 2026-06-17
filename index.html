@@ -6998,8 +6998,8 @@ function showPage(name) {
     if (!ctx || !ctx.current) return;
     const idx = ctx.list.indexOf(ctx.current);
     if (idx < 0) return;
-    // RTL: dx<0 (swipe left) = next; dx>0 (swipe right) = previous.
-    const newIdx = idx + (dx < 0 ? 1 : -1);
+    // RTL: dx>0 (swipe right) = next-on-the-left; dx<0 (swipe left) = previous-on-the-right.
+    const newIdx = idx + (dx > 0 ? 1 : -1);
     if (newIdx < 0 || newIdx >= ctx.list.length) return;
 
     try { if (window.haptic) window.haptic.tap(); } catch(_) {}
