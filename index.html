@@ -2447,9 +2447,9 @@
     }
     .face-id-retry-btn:active { transform: scale(0.96); filter: brightness(0.92); }
 
-    /* ===== Google Write Setup + Device Code + Manual Paste + Morning Receipt modals ===== */
+    /* ===== Google Write Setup + Device Code + Manual Paste + Morning Receipt + Morning Payment-Request modals ===== */
     /* Same bottom-sheet pattern as #schedule-edit-overlay below. */
-    #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay, #morning-receipt-overlay {
+    #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay, #morning-receipt-overlay, #morning-pr-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.55);
       backdrop-filter: blur(8px);
@@ -2463,8 +2463,9 @@
     #gcal-write-setup-overlay.open,
     #device-code-overlay.open,
     #manual-paste-overlay.open,
-    #morning-receipt-overlay.open { display: flex; }
-    #gcal-write-setup-card, #device-code-card, #manual-paste-card, #morning-receipt-card {
+    #morning-receipt-overlay.open,
+    #morning-pr-overlay.open { display: flex; }
+    #gcal-write-setup-card, #device-code-card, #manual-paste-card, #morning-receipt-card, #morning-pr-card {
       background: #2a1f17;
       color: #f4ede0;
       border: 1px solid rgba(212,165,116,0.25);
@@ -2476,41 +2477,45 @@
       animation: seSlideUp 0.28s cubic-bezier(.34,1.2,.64,1);
     }
     @media (min-width: 600px) {
-      #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay, #morning-receipt-overlay { align-items: center; padding: 24px; }
-      #gcal-write-setup-card, #device-code-card, #manual-paste-card, #morning-receipt-card { border-radius: 22px; }
+      #gcal-write-setup-overlay, #device-code-overlay, #manual-paste-overlay, #morning-receipt-overlay, #morning-pr-overlay { align-items: center; padding: 24px; }
+      #gcal-write-setup-card, #device-code-card, #manual-paste-card, #morning-receipt-card, #morning-pr-card { border-radius: 22px; }
     }
-    #gcal-write-setup-card h3, #device-code-card h3, #manual-paste-card h3, #morning-receipt-card h3 {
+    #gcal-write-setup-card h3, #device-code-card h3, #manual-paste-card h3, #morning-receipt-card h3, #morning-pr-card h3 {
       font-size: 18px; font-weight: 800; color: #f4ede0;
       margin-bottom: 4px; letter-spacing: -0.01em;
     }
     #gcal-write-setup-card .notif-sub,
     #device-code-card .notif-sub,
     #manual-paste-card .notif-sub,
-    #morning-receipt-card .notif-sub {
+    #morning-receipt-card .notif-sub,
+    #morning-pr-card .notif-sub {
       font-size: 12.5px; color: rgba(244,237,224,0.55); margin-bottom: 18px; text-align: center;
     }
     #gcal-write-setup-card .notif-actions,
     #device-code-card .notif-actions,
     #manual-paste-card .notif-actions,
-    #morning-receipt-card .notif-actions {
+    #morning-receipt-card .notif-actions,
+    #morning-pr-card .notif-actions {
       display: flex; gap: 8px; margin-top: 18px; justify-content: center;
     }
     #gcal-write-setup-card .notif-actions button,
     #device-code-card .notif-actions button,
     #manual-paste-card .notif-actions button,
-    #morning-receipt-card .notif-actions button {
+    #morning-receipt-card .notif-actions button,
+    #morning-pr-card .notif-actions button {
       flex: 0 0 auto; min-height: 40px; padding: 8px 16px;
       border-radius: 10px; font-weight: 700; cursor: pointer; font-family: 'Heebo', sans-serif;
     }
     #gcal-write-setup-card .notif-close,
     #device-code-card .notif-close,
     #manual-paste-card .notif-close,
-    #morning-receipt-card .notif-close {
+    #morning-receipt-card .notif-close,
+    #morning-pr-card .notif-close {
       background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(244,237,224,0.85);
     }
-    #morning-receipt-card h3 { text-align: center; }
-    #morning-receipt-card .se-field label { text-align: center; display: block; }
-    #morning-receipt-card .se-field input { text-align: center; }
+    #morning-receipt-card h3, #morning-pr-card h3 { text-align: center; }
+    #morning-receipt-card .se-field label, #morning-pr-card .se-field label { text-align: center; display: block; }
+    #morning-receipt-card .se-field input, #morning-pr-card .se-field input { text-align: center; }
     #manual-paste-card .se-field input {
       width: 100%; background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.10); border-radius: 12px;
@@ -4974,6 +4979,33 @@
     <div class="notif-actions">
       <button type="button" class="notif-close" onclick="_closeMorningReceiptModal()">בטל</button>
       <button type="button" class="btn btn-primary" onclick="_confirmMorningReceiptModal()" style="font-size:14px">צור קבלה</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment request modal. Same bottom-sheet pattern as the receipt
+     modal above. Creates a Morning "חשבונית עסקה" (type 320) — that's
+     the payment-demand document for an עוסק פטור. When the income is
+     later marked as paid, the receipt that's auto-issued is linked
+     back to this document via linkedDocumentIds, closing the loop. -->
+<div id="morning-pr-overlay">
+  <div id="morning-pr-card">
+    <h3>פרטי דרישת תשלום</h3>
+    <div class="notif-sub">המסמך ייווצר ב-Morning. תוכל לשתף את הקישור ללקוח</div>
+    <div class="se-field">
+      <label>שם הלקוח</label>
+      <input id="mpr-client" type="text" placeholder="שם הלקוח"
+        autocomplete="off" autocapitalize="off" spellcheck="false"/>
+    </div>
+    <div class="se-field">
+      <label>תיאור</label>
+      <input id="mpr-desc" type="text" placeholder="פרודקשן שיר / מיקס / סשן הקלטה…"
+        autocomplete="off" autocapitalize="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();_confirmMorningPaymentRequestModal();}"/>
+    </div>
+    <div class="notif-actions">
+      <button type="button" class="notif-close" onclick="_closeMorningPaymentRequestModal()">בטל</button>
+      <button type="button" class="btn btn-primary" onclick="_confirmMorningPaymentRequestModal()" style="font-size:14px">צור דרישת תשלום</button>
     </div>
   </div>
 </div>
@@ -7899,6 +7931,21 @@ function renderIncome() {
     return '<button class="btn btn-sm" onclick="morningRetryReceipt(\'' + i.id + '\')" title="צור קבלה ב-Morning" style="background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--text-muted);font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap">🧾 צור קבלה</button>';
   }
 
+  // Payment-request pill. On unpaid rows we offer to issue one. On
+  // any row (paid or not) that already has one, we show the link so
+  // the user can re-share it; the receipt closes the loop server-
+  // side via linkedDocumentIds.
+  function _payReqCell(i) {
+    if (!window.morningConnected || !window.morningConnected()) return '';
+    if (i.morningPrId) {
+      const url = i.morningPrUrl || '';
+      const num = i.morningPrNumber || '';
+      return '<button class="btn btn-sm" onclick="morningOpenPaymentRequest(\'' + url.replace(/'/g, "\\'") + '\')" title="פתח דרישת תשלום" style="background:rgba(124,92,255,0.18);border:1px solid rgba(124,92,255,0.45);border-radius:8px;color:#c9b8ff;font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap"><svg class="icon" style="opacity:0.9"><use href="#ic-doc-text"/></svg> דרישה' + (num ? ' #' + num : '') + '</button>';
+    }
+    if ((i.status || 'pending') === 'paid') return '';
+    return '<button class="btn btn-sm" onclick="morningRequestPayment(\'' + i.id + '\')" title="צור דרישת תשלום ב-Morning" style="background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--text-muted);font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap"><svg class="icon" style="opacity:0.85"><use href="#ic-doc-text"/></svg> דרישת תשלום</button>';
+  }
+
   // מיון: לא שולמו/באיחור קודם, שולמו לסוף — בתוך כל קבוצה לפי תאריך
   monthEntries.sort((a,b) => {
     const aPaid = (a.status||'pending') === 'paid' ? 1 : 0;
@@ -7926,6 +7973,7 @@ function renderIncome() {
       ${statusCell(i)}
       <td>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          ${_payReqCell(i)}
           ${_receiptCell(i)}
           ${i.fromPlan ? '' : `
             <button onclick="openIncomeEdit('${i.id}')" title="ערוך" style="background:transparent;border:1px solid rgba(255,255,255,0.10);border-radius:8px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;color:var(--text-muted);transition:border-color .15s"><svg style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-edit"/></svg></button>
@@ -16582,7 +16630,12 @@ async function morningCreateReceiptFor(income) {
       type:     4,  // 4 = bank transfer (העברה בנקאית)
       price:    parseFloat(income.amount) || 0,
       currency: 'ILS'
-    }]
+    }],
+    // If a דרישת תשלום (type 320) was issued earlier for this income,
+    // link the receipt back so Morning closes the open balance and the
+    // bookkeeping shows the payment-request → receipt chain.
+    linkedDocumentIds: income.morningPrId ? [income.morningPrId] : undefined,
+    linkType:          income.morningPrId ? 1 : undefined  // 1 = full close
   };
   try {
     const r = await fetch(window.MORNING_BASE + '/documents', {
@@ -16808,6 +16861,122 @@ window.morningCancelReceipt = async function(incomeId) {
     toast('⚠️ Morning: ' + _morningErrorMessage(res));
     if (window.haptic) window.haptic.error();
     console.warn('Morning cancel failure', res);
+  }
+};
+
+// ===== Morning — דרישת תשלום (Payment Request, doc type 320) =====
+// For an עוסק פטור this is the "חשבונית עסקה" — the document that
+// tells the client "here's the amount, please pay". When the income
+// is later marked paid, the receipt that's issued links back to this
+// PR via linkedDocumentIds (handled in morningCreateReceiptFor above).
+window.MORNING_PR_DOC_TYPE = 320;
+
+async function morningCreatePaymentRequestFor(income) {
+  if (!income) return null;
+  const token = await morningGetToken();
+  if (!token) return { error: 'no_token' };
+  const body = {
+    type:        window.MORNING_PR_DOC_TYPE,
+    description: income.description || 'תשלום',
+    lang:        'he',
+    currency:    'ILS',
+    vatType:     0,
+    client:      { name: String(income.clientName || 'לקוח').slice(0, 100) },
+    income: [{
+      description: income.description || 'שירות',
+      quantity:    1,
+      price:       parseFloat(income.amount) || 0,
+      currency:    'ILS',
+      vatType:     0
+    }]
+    // No `payment` section — money hasn't been received yet.
+  };
+  try {
+    const r = await fetch(window.MORNING_BASE + '/documents', {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (data && data.id) return data;
+    return { error: 'create_failed', detail: data };
+  } catch (e) {
+    return { error: 'network', detail: String(e && e.message) };
+  }
+}
+
+// Open the description modal so the user can refine WHAT the
+// payment request is for before we hit Morning. The actual create
+// happens in _confirmMorningPaymentRequestModal().
+window.morningRequestPayment = function(incomeId) {
+  if (!window.morningConnected || !window.morningConnected()) {
+    toast('חיבור ל-Morning לא פעיל');
+    return;
+  }
+  const all = load('income');
+  const it = all.find(x => x.id === incomeId);
+  if (!it) return;
+  if (it.morningPrId) {
+    toast('כבר קיימת דרישת תשלום');
+    return;
+  }
+  window._mprPendingId = incomeId;
+  const descInp = document.getElementById('mpr-desc');
+  const clntInp = document.getElementById('mpr-client');
+  if (descInp) descInp.value = it.description || '';
+  if (clntInp) clntInp.value = it.clientName  || '';
+  document.getElementById('morning-pr-overlay').classList.add('open');
+};
+
+window._closeMorningPaymentRequestModal = function() {
+  document.getElementById('morning-pr-overlay').classList.remove('open');
+  window._mprPendingId = null;
+};
+
+window._confirmMorningPaymentRequestModal = async function() {
+  const id = window._mprPendingId;
+  if (!id) return;
+  const desc = (document.getElementById('mpr-desc').value   || '').trim();
+  const clnt = (document.getElementById('mpr-client').value || '').trim();
+  window._closeMorningPaymentRequestModal();
+  const all = load('income');
+  const it  = all.find(x => x.id === id);
+  if (!it) return;
+  if (it.morningPrId) return;
+  const forPr = Object.assign({}, it, {
+    description: desc || it.description,
+    clientName:  clnt || it.clientName
+  });
+  toast('יוצר דרישת תשלום ב-Morning…');
+  const res = await morningCreatePaymentRequestFor(forPr);
+  const fresh = load('income');
+  const ff    = fresh.find(x => x.id === id);
+  if (!ff) return;
+  if (res && res.id) {
+    ff.morningPrId     = res.id;
+    ff.morningPrNumber = res.number;
+    ff.morningPrUrl    = res.url && (res.url.he || res.url.en || (typeof res.url === 'string' ? res.url : ''));
+    save('income', fresh);
+    toast('דרישת תשלום ' + (res.number ? '#' + res.number : '') + ' נוצרה ב-Morning ✓');
+    if (window.haptic) window.haptic.success();
+    if (typeof renderIncome === 'function') renderIncome();
+  } else {
+    toast('⚠️ Morning: ' + _morningErrorMessage(res));
+    if (window.haptic) window.haptic.error();
+    console.warn('Morning PR create failure', res);
+  }
+};
+
+window.morningOpenPaymentRequest = function(url) {
+  if (!url) { toast('אין URL זמין לדרישת התשלום'); return; }
+  const Browser = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+  if (Browser) {
+    Browser.open({ url: url }).catch(function() { window.open(url, '_blank'); });
+  } else {
+    window.open(url, '_blank');
   }
 };
 
