@@ -5164,7 +5164,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v299</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v300</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17099,12 +17099,14 @@ window.morningCancelReceipt = async function(incomeId) {
   }
 };
 
-// ===== Morning — דרישת תשלום (Payment Request, doc type 320) =====
-// For an עוסק פטור this is the "חשבונית עסקה" — the document that
-// tells the client "here's the amount, please pay". When the income
-// is later marked paid, the receipt that's issued links back to this
-// PR via linkedDocumentIds (handled in morningCreateReceiptFor above).
-window.MORNING_PR_DOC_TYPE = 320;
+// ===== Morning — דרישת תשלום (Payment Request) =====
+// Type 100 = הצעת מחיר (Quote). It's the only "please pay this"
+// document Greeninvoice accepts for an עוסק פטור — they reject
+// type 320 (חשבונית עסקה) with errorCode 2403 because that doc
+// type is reserved for עוסק מורשה. When the income is later marked
+// paid, the receipt (type 400) links back to this Quote via
+// linkedDocumentIds (handled in morningCreateReceiptFor above).
+window.MORNING_PR_DOC_TYPE = 100;
 
 async function morningCreatePaymentRequestFor(income) {
   if (!income) return null;
