@@ -1308,6 +1308,20 @@
     .table-header h3 { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; font-family: 'Frank Ruhl Libre', 'Heebo', serif; display: flex; align-items: center; gap: 10px; }
     .table-header h3 svg.icon-lg { width: 22px; height: 22px; opacity: 0.85; flex-shrink: 0; }
 
+    /* Today / daily-avg pill strip on the income page */
+    .today-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 7px 12px;
+      font-size: 12px; line-height: 1.2;
+      font-family: 'Heebo', sans-serif;
+    }
+    .today-chip svg { width: 13px; height: 13px; opacity: 0.7; }
+    .today-chip-lbl { color: var(--text-muted); font-weight: 700; }
+    .today-chip-val { font-weight: 900; font-variant-numeric: tabular-nums; color: var(--text); letter-spacing: -0.01em; }
+    .today-chip-val.green { color: var(--green); }
+    .today-chip-sub { color: var(--text-muted); font-weight: 600; font-size: 10.5px; opacity: 0.7; }
+
     table { width: 100%; border-collapse: collapse; }
 
     th {
@@ -5150,7 +5164,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v297</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v298</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5527,6 +5541,24 @@
         <input type="number" id="goal-input" placeholder="15000" min="0"
           oninput="saveGoal(this.value)" />
         <span id="goal-status-msg" style="font-size:12px;font-weight:700;color:var(--text-muted)"></span>
+      </div>
+    </div>
+
+    <!-- Small today + daily-average pill strip — sits right above the
+         monthly stat grid so the user gets a "what did I make today"
+         glance without scrolling. Always reflects all-time data, not
+         the month selector. -->
+    <div id="today-strip" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+      <div class="today-chip">
+        <svg class="icon"><use href="#ic-coin-bag"/></svg>
+        <span class="today-chip-lbl">היום</span>
+        <span class="today-chip-val green" id="today-earned-amt">₪0</span>
+      </div>
+      <div class="today-chip">
+        <svg class="icon"><use href="#ic-chart-bars"/></svg>
+        <span class="today-chip-lbl">ממוצע יומי</span>
+        <span class="today-chip-val" id="daily-avg-amt">₪0</span>
+        <span class="today-chip-sub" id="daily-avg-sub">30 ימים</span>
       </div>
     </div>
 
@@ -7789,6 +7821,34 @@ function renderIncome() {
   const search = (document.getElementById('i-search')?.value || '').toLowerCase();
   const cf     = document.getElementById('i-client-filter')?.value || '';
   const today  = new Date(); today.setHours(0,0,0,0);
+
+  // ── Today + 30-day rolling daily-average pill strip ──
+  // "Today" = total amount of incomes that became paid today. We use
+  // paidAt if it exists (added in v270+); fall back to the income's
+  // own date for older rows that pre-date that stamp.
+  // "Daily avg" = sum of paid amounts in the last 30 days / 30.
+  (function renderTodayStrip() {
+    const todayMs = today.getTime();
+    const tomorrowMs = todayMs + 86400000;
+    let todayAmt = 0;
+    let last30Amt = 0;
+    const cutoff30 = todayMs - 29 * 86400000; // include today + 29 prev days
+    income.forEach(i => {
+      if ((i.status || 'pending') !== 'paid') return;
+      const stampStr = (i.paidAt && i.paidAt.slice(0, 10)) || i.date;
+      if (!stampStr) return;
+      const d = new Date(stampStr); d.setHours(0,0,0,0);
+      const t = d.getTime();
+      if (t >= todayMs && t < tomorrowMs) todayAmt  += Number(i.amount) || 0;
+      if (t >= cutoff30 && t < tomorrowMs) last30Amt += Number(i.amount) || 0;
+    });
+    const todayEl = document.getElementById('today-earned-amt');
+    const avgEl   = document.getElementById('daily-avg-amt');
+    const subEl   = document.getElementById('daily-avg-sub');
+    if (todayEl) todayEl.textContent = fmtMoney(todayAmt);
+    if (avgEl)   avgEl.textContent   = fmtMoney(Math.round(last30Amt / 30));
+    if (subEl)   subEl.textContent   = '30 ימים';
+  })();
 
   // הכנסות החודש
   const monthEntries = income.filter(i => {
