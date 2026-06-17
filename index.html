@@ -6924,6 +6924,89 @@ function showPage(name) {
   refreshAll();
 }
 
+// ===== SWIPE NAV =====
+// Horizontal finger swipe on the page area switches between tabs.
+// RTL: swipe-left = next tab, swipe-right = previous tab.
+(function setupSwipeNav() {
+  const BIZ_TABS   = ['income','expenses','schedule','installments','workshops','proposals','contracts','students','dashboard'];
+  const MUSIC_TABS = ['released','sketches'];
+  const MIN_DX = 70;        // min horizontal distance (px)
+  const MAX_DT = 600;       // max swipe duration (ms)
+  const MAX_DY_RATIO = 0.6; // |dy| must be < 60% of |dx|
+
+  let sx = 0, sy = 0, st = 0, tracking = false;
+
+  function isInteractive(el) {
+    let n = el;
+    while (n && n !== document.body && n.nodeType === 1) {
+      const tag = n.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'CANVAS' || tag === 'BUTTON') return true;
+      if (n.isContentEditable) return true;
+      if (n.id === 'sidebar-nav' || n.id === 'music-nav') return true;
+      if (n.id === 'business-sidebar' || n.id === 'music-sidebar') return true;
+      if (n.classList && n.classList.contains('modal') && n.classList.contains('open')) return true;
+      const cs = getComputedStyle(n);
+      if ((cs.overflowX === 'auto' || cs.overflowX === 'scroll') && n.scrollWidth > n.clientWidth + 4) return true;
+      n = n.parentNode;
+    }
+    return false;
+  }
+
+  function activeCtx() {
+    const mm = document.getElementById('music-main');
+    if (mm && getComputedStyle(mm).display !== 'none') {
+      const a = document.querySelector('#music-nav a.active');
+      return { list: MUSIC_TABS, current: a?.dataset.mpage, fn: 'showMusicPage' };
+    }
+    const bm = document.getElementById('business-main');
+    if (bm && getComputedStyle(bm).display !== 'none') {
+      const a = document.querySelector('#sidebar-nav a.active');
+      return { list: BIZ_TABS, current: a?.dataset.page, fn: 'showPage' };
+    }
+    return null;
+  }
+
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) { tracking = false; return; }
+    if (isInteractive(e.target)) { tracking = false; return; }
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY; st = Date.now();
+    tracking = true;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!tracking) return;
+    if (e.touches.length !== 1) { tracking = false; return; }
+    const t = e.touches[0];
+    const dy = Math.abs(t.clientY - sy);
+    const dx = Math.abs(t.clientX - sx);
+    if (dy > 24 && dy > dx) tracking = false; // vertical scroll wins
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+    const dt = Date.now() - st;
+    if (dt > MAX_DT) return;
+    if (Math.abs(dx) < MIN_DX) return;
+    if (Math.abs(dy) > Math.abs(dx) * MAX_DY_RATIO) return;
+
+    const ctx = activeCtx();
+    if (!ctx || !ctx.current) return;
+    const idx = ctx.list.indexOf(ctx.current);
+    if (idx < 0) return;
+    // RTL: dx<0 (swipe left) = next; dx>0 (swipe right) = previous.
+    const newIdx = idx + (dx < 0 ? 1 : -1);
+    if (newIdx < 0 || newIdx >= ctx.list.length) return;
+
+    try { if (window.haptic) window.haptic.tap(); } catch(_) {}
+    try { window[ctx.fn](ctx.list[newIdx]); } catch(_) {}
+  }, { passive: true });
+})();
+
 // ===== MONTH =====
 function changeMonth(dir) {
   curMonth += dir;
