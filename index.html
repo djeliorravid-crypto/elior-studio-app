@@ -5086,6 +5086,7 @@
         style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;outline:none"/>
       <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
         <button type="button" onclick="morningDisconnect()" style="background:transparent;color:#ff8b6b;border:1px solid rgba(220,60,60,0.4);border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">התנתק</button>
+        <button type="button" onclick="morningDeepDiagnose()" style="background:transparent;color:#d4a574;border:1px solid rgba(212,165,116,0.5);border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">בדיקה מפורטת</button>
         <button type="button" onclick="testMorningConnection()" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">בדוק וחבר</button>
       </div>
     </div>
@@ -16603,6 +16604,127 @@ window.testMorningConnection = async function() {
   } else {
     toast('❌ Morning דחה את המפתחות — בדוק שהעתקת נכון');
     if (window.haptic) window.haptic.error();
+  }
+};
+
+// Runs each step of the Morning auth/permissions ladder separately so
+// we can pinpoint exactly where it breaks: token fetch → read /account
+// → read /clients → minimal POST /documents probe. Shows everything in
+// an alert with a "copy" button so the user can paste the output here.
+window.morningDeepDiagnose = async function() {
+  const c = morningCreds();
+  const lines = [];
+  function add(label, status, note) {
+    const mark = status === 'ok' ? '✓' : status === 'fail' ? '✗' : '…';
+    lines.push(mark + ' ' + label + (note ? ' — ' + note : ''));
+  }
+  if (!c.id || !c.secret) {
+    alert('אין API ID או Secret. שים אותם בשדות למעלה ונסה שוב.');
+    return;
+  }
+  add('credentials', 'ok', 'id=' + c.id.slice(0, 6) + '… secret=' + c.secret.slice(0, 4) + '…');
+
+  // 1) token endpoint
+  let token = null, tokenData = null, tokenStatus = 0;
+  try {
+    const r = await fetch(window.MORNING_BASE + '/account/token', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ id: c.id, secret: c.secret })
+    });
+    tokenStatus = r.status;
+    tokenData = await r.json();
+    if (tokenData && tokenData.token) {
+      token = tokenData.token;
+      add('1. POST /account/token', 'ok', 'HTTP ' + r.status + ' · token ' + token.slice(0, 12) + '…');
+    } else {
+      add('1. POST /account/token', 'fail', 'HTTP ' + r.status + ' · ' + (tokenData && (tokenData.errorMessage || tokenData.message) || JSON.stringify(tokenData).slice(0, 80)));
+    }
+  } catch (e) {
+    add('1. POST /account/token', 'fail', 'network: ' + (e && e.message));
+  }
+
+  // 2) GET /account — pure read, no scope beyond auth
+  if (token) {
+    try {
+      const r = await fetch(window.MORNING_BASE + '/account', {
+        method:  'GET',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await r.json();
+      if (r.ok && data && !data.errorMessage) {
+        add('2. GET /account (קריאה)', 'ok', 'HTTP ' + r.status);
+      } else {
+        add('2. GET /account (קריאה)', 'fail', 'HTTP ' + r.status + ' · ' + (data && (data.errorMessage || data.message) || '?'));
+      }
+    } catch (e) {
+      add('2. GET /account', 'fail', 'network: ' + (e && e.message));
+    }
+  } else {
+    add('2. GET /account', 'fail', 'דילוג — אין טוקן');
+  }
+
+  // 3) GET /clients/search — read with explicit scope
+  if (token) {
+    try {
+      const r = await fetch(window.MORNING_BASE + '/clients/search?page=1&pageSize=1', {
+        method:  'GET',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await r.json();
+      if (r.ok && data && !data.errorMessage) {
+        add('3. GET /clients (קריאת לקוחות)', 'ok', 'HTTP ' + r.status);
+      } else {
+        add('3. GET /clients (קריאת לקוחות)', 'fail', 'HTTP ' + r.status + ' · ' + (data && (data.errorMessage || data.message) || '?'));
+      }
+    } catch (e) {
+      add('3. GET /clients', 'fail', 'network: ' + (e && e.message));
+    }
+  }
+
+  // 4) POST /documents — write. We send a deliberately-empty body so
+  // Morning will respond with either "validation failed" (= write
+  // permission is OK, just our payload is bad — meaning normal create
+  // flow should work) or "access denied" (= the API key actually
+  // lacks write permission, regardless of what the UI shows).
+  if (token) {
+    try {
+      const r = await fetch(window.MORNING_BASE + '/documents', {
+        method:  'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({}) // intentionally empty — probe only
+      });
+      const data = await r.json();
+      const errMsg = (data && (data.errorMessage || data.message)) || '';
+      if (r.ok) {
+        add('4. POST /documents (כתיבה)', 'ok', 'HTTP ' + r.status + ' (לא צפוי — בדוק שהמסמך לא נוצר)');
+      } else if (/גישה נדחתה|להתחבר מחדש|unauthorized|forbidden/i.test(errMsg)) {
+        add('4. POST /documents (כתיבה)', 'fail', 'HTTP ' + r.status + ' · ' + errMsg + '  ← בעיית הרשאה');
+      } else {
+        // Validation error = write permission OK
+        add('4. POST /documents (כתיבה)', 'ok', 'HTTP ' + r.status + ' · ולידציה (' + errMsg.slice(0, 60) + ') — הרשאה תקינה');
+      }
+    } catch (e) {
+      add('4. POST /documents', 'fail', 'network: ' + (e && e.message));
+    }
+  }
+
+  const report = lines.join('\n');
+  console.log('Morning diagnostic:\n' + report);
+  // Show + copy
+  const txt = 'אבחון Morning:\n\n' + report + '\n\nלשלוח את התוצאה הזו ב-WhatsApp?';
+  if (confirm(txt)) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+        toast('✓ הועתק ללוח — הדבק בצ\'אט');
+      } else {
+        toast('הדבק בעצמך מ-Console');
+      }
+    } catch (_) { toast('לא הצלחתי להעתיק'); }
   }
 };
 
