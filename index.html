@@ -5164,7 +5164,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v300</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v301</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8005,7 +8005,8 @@ function renderIncome() {
     if (i.morningPrId) {
       const url = i.morningPrUrl || '';
       const num = i.morningPrNumber || '';
-      return '<button class="btn btn-sm" onclick="morningOpenPaymentRequest(\'' + url.replace(/'/g, "\\'") + '\')" title="פתח דרישת תשלום" style="background:rgba(124,92,255,0.18);border:1px solid rgba(124,92,255,0.45);border-radius:8px;color:#c9b8ff;font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap"><svg class="icon" style="opacity:0.9"><use href="#ic-doc-text"/></svg> דרישה' + (num ? ' #' + num : '') + '</button>';
+      return '<button class="btn btn-sm" onclick="morningOpenPaymentRequest(\'' + url.replace(/'/g, "\\'") + '\')" title="פתח דרישת תשלום" style="background:rgba(124,92,255,0.18);border:1px solid rgba(124,92,255,0.45);border-radius:8px;color:#c9b8ff;font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap"><svg class="icon" style="opacity:0.9"><use href="#ic-doc-text"/></svg> דרישה' + (num ? ' #' + num : '') + '</button>' +
+             '<button class="btn btn-sm" onclick="morningCancelPaymentRequest(\'' + i.id + '\')" title="בטל את דרישת התשלום הקיימת והוצא חדשה" style="background:rgba(220,60,60,0.16);border:1px solid rgba(220,60,60,0.4);border-radius:8px;color:#ff8b6b;font-weight:800;padding:4px 8px;font-size:11.5px;white-space:nowrap">✕</button>';
     }
     if ((i.status || 'pending') === 'paid') return '';
     return '<button class="btn btn-sm" onclick="morningRequestPayment(\'' + i.id + '\')" title="צור דרישת תשלום ב-Morning" style="background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--text-muted);font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap"><svg class="icon" style="opacity:0.85"><use href="#ic-doc-text"/></svg> דרישת תשלום</button>';
@@ -17219,6 +17220,65 @@ window.morningOpenPaymentRequest = function(url) {
   } else {
     window.open(url, '_blank');
   }
+};
+
+// Cancel a payment request linked to an income, then unlink it so the
+// user can issue a fresh one. We always unlink locally — that part is
+// guaranteed to work. We *also* try to close the document in Morning
+// (POST /documents/:id/closeDocument), best-effort: if that fails the
+// user just has to mark the old quote as cancelled in Morning's web
+// UI themselves. Both outcomes free the income row to issue a new PR.
+window.morningCancelPaymentRequest = async function(incomeId) {
+  const all = load('income');
+  const it  = all.find(x => x.id === incomeId);
+  if (!it || !it.morningPrId) { toast('אין דרישה לבטל'); return; }
+  const num = it.morningPrNumber ? '#' + it.morningPrNumber : '';
+  if (!confirm('לבטל את דרישת התשלום ' + num + '?\n(אחר כך תוכל להוציא חדשה עם פרטים מתוקנים)')) return;
+  const prId = it.morningPrId;
+  toast('מבטל דרישת תשלום…');
+
+  // Best-effort: ask Morning to close the document. If the API rejects
+  // it (some doc types / states don't support close) we still unlink
+  // locally so the user isn't stuck.
+  let closedOnServer = false;
+  if (window.morningConnected && window.morningConnected()) {
+    const token = await morningGetToken();
+    if (token) {
+      try {
+        const r = await fetch(window.MORNING_BASE + '/documents/' + encodeURIComponent(prId) + '/closeDocument', {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ status: 'closed' })
+        });
+        closedOnServer = r.ok;
+      } catch (_) { /* swallow — local unlink is what matters */ }
+    }
+  }
+
+  // Always unlink locally — archive in case the user wants the audit trail.
+  const fresh = load('income');
+  const ff    = fresh.find(x => x.id === incomeId);
+  if (!ff) return;
+  ff.morningCanceledPRs = ff.morningCanceledPRs || [];
+  ff.morningCanceledPRs.push({
+    docId:      ff.morningPrId,
+    docNumber:  ff.morningPrNumber,
+    docUrl:     ff.morningPrUrl,
+    canceledAt: new Date().toISOString(),
+    closedOnServer
+  });
+  delete ff.morningPrId;
+  delete ff.morningPrNumber;
+  delete ff.morningPrUrl;
+  save('income', fresh);
+  toast(closedOnServer
+    ? '✓ דרישה ' + num + ' בוטלה — עכשיו אפשר ליצור חדשה'
+    : '✓ דרישה ' + num + ' נותקה. בדוק ב-Morning שהיא סגורה — עכשיו אפשר ליצור חדשה');
+  if (window.haptic) window.haptic.success();
+  if (typeof renderIncome === 'function') renderIncome();
 };
 
 function renderSchedule() {
