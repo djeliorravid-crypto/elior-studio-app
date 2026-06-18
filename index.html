@@ -4981,14 +4981,34 @@
     <div class="notif-sub">על מה הקבלה?</div>
     <div class="se-field">
       <label>שם הלקוח</label>
-      <input id="mr-client" type="text" placeholder="שם הלקוח"
+      <input id="mr-client" type="text" placeholder="שם הלקוח / שם החברה"
         autocomplete="off" autocapitalize="off" spellcheck="false"/>
     </div>
     <div class="se-field">
       <label>תיאור</label>
       <input id="mr-desc" type="text" placeholder="פרודקשן שיר / מיקס / סשן הקלטה…"
-        autocomplete="off" autocapitalize="off" spellcheck="false"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();_confirmMorningReceiptModal();}"/>
+        autocomplete="off" autocapitalize="off" spellcheck="false"/>
+    </div>
+    <div class="mr-biz-toggle" onclick="_toggleMrBiz()" style="margin-top:6px;font-size:12px;font-weight:700;color:#d4a574;cursor:pointer;text-align:center;padding:6px">
+      <span id="mr-biz-arrow">▾</span> פרטי עסק נוספים (לחשבונית עם ח.פ + כתובת)
+    </div>
+    <div id="mr-biz-fields" style="display:none">
+      <div class="se-field">
+        <label>ח.פ / ע.מ</label>
+        <input id="mr-taxid" type="text" placeholder="515500783"
+          autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="numeric"/>
+      </div>
+      <div class="se-field">
+        <label>כתובת (רחוב + מספר)</label>
+        <input id="mr-address" type="text" placeholder="יבניאלי 19"
+          autocomplete="off" autocapitalize="off" spellcheck="false"/>
+      </div>
+      <div class="se-field">
+        <label>עיר + מיקוד</label>
+        <input id="mr-city" type="text" placeholder="גבעתיים 5360319"
+          autocomplete="off" autocapitalize="off" spellcheck="false"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();_confirmMorningReceiptModal();}"/>
+      </div>
     </div>
     <div class="notif-actions">
       <button type="button" class="notif-close" onclick="_closeMorningReceiptModal()">בטל</button>
@@ -4997,25 +5017,44 @@
   </div>
 </div>
 
-<!-- Payment request modal. Same bottom-sheet pattern as the receipt
-     modal above. Creates a Morning "חשבונית עסקה" (type 320) — that's
-     the payment-demand document for an עוסק פטור. When the income is
-     later marked as paid, the receipt that's auto-issued is linked
-     back to this document via linkedDocumentIds, closing the loop. -->
+<!-- Payment request modal. Creates a Morning הצעת מחיר (type 100) —
+     the only "please pay this" document an עוסק פטור can issue. When
+     the income is later marked paid, the receipt that's auto-issued
+     is linked back to this document via linkedDocumentIds. -->
 <div id="morning-pr-overlay">
   <div id="morning-pr-card">
     <h3>פרטי דרישת תשלום</h3>
     <div class="notif-sub">המסמך ייווצר ב-Morning. תוכל לשתף את הקישור ללקוח</div>
     <div class="se-field">
       <label>שם הלקוח</label>
-      <input id="mpr-client" type="text" placeholder="שם הלקוח"
+      <input id="mpr-client" type="text" placeholder="שם הלקוח / שם החברה"
         autocomplete="off" autocapitalize="off" spellcheck="false"/>
     </div>
     <div class="se-field">
       <label>תיאור</label>
       <input id="mpr-desc" type="text" placeholder="פרודקשן שיר / מיקס / סשן הקלטה…"
-        autocomplete="off" autocapitalize="off" spellcheck="false"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();_confirmMorningPaymentRequestModal();}"/>
+        autocomplete="off" autocapitalize="off" spellcheck="false"/>
+    </div>
+    <div class="mr-biz-toggle" onclick="_toggleMprBiz()" style="margin-top:6px;font-size:12px;font-weight:700;color:#d4a574;cursor:pointer;text-align:center;padding:6px">
+      <span id="mpr-biz-arrow">▾</span> פרטי עסק נוספים (לחשבונית עם ח.פ + כתובת)
+    </div>
+    <div id="mpr-biz-fields" style="display:none">
+      <div class="se-field">
+        <label>ח.פ / ע.מ</label>
+        <input id="mpr-taxid" type="text" placeholder="515500783"
+          autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="numeric"/>
+      </div>
+      <div class="se-field">
+        <label>כתובת (רחוב + מספר)</label>
+        <input id="mpr-address" type="text" placeholder="יבניאלי 19"
+          autocomplete="off" autocapitalize="off" spellcheck="false"/>
+      </div>
+      <div class="se-field">
+        <label>עיר + מיקוד</label>
+        <input id="mpr-city" type="text" placeholder="גבעתיים 5360319"
+          autocomplete="off" autocapitalize="off" spellcheck="false"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();_confirmMorningPaymentRequestModal();}"/>
+      </div>
     </div>
     <div class="notif-actions">
       <button type="button" class="notif-close" onclick="_closeMorningPaymentRequestModal()">בטל</button>
@@ -5164,7 +5203,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v301</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v302</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16862,6 +16901,18 @@ async function _morningPostDocWithRetry(body) {
   }
 }
 
+// Build a Morning `client` object from the income row, optionally
+// folding in business fields (taxId / address / city) that the user
+// filled into the receipt or PR modal. Empty fields are dropped so
+// Morning treats them as "not provided" rather than empty strings.
+function _morningBuildClient(income) {
+  const c = { name: String(income.clientName || 'לקוח').slice(0, 100) };
+  if (income.clientTaxId)   c.taxId   = String(income.clientTaxId).trim();
+  if (income.clientAddress) c.address = String(income.clientAddress).trim();
+  if (income.clientCity)    c.city    = String(income.clientCity).trim();
+  return c;
+}
+
 async function morningCreateReceiptFor(income) {
   if (!income) return null;
   const body = {
@@ -16870,7 +16921,7 @@ async function morningCreateReceiptFor(income) {
     lang:     'he',
     currency: 'ILS',
     vatType:  0,    // 0 = exempt (matches עוסק פטור default)
-    client:   { name: String(income.clientName || 'לקוח').slice(0, 100) },
+    client:   _morningBuildClient(income),
     income: [{
       description: income.description || 'שירות',
       quantity:    1,
@@ -16953,6 +17004,24 @@ function _morningErrorMessage(res) {
   if (res.error === 'create_failed') return 'Morning דחה את הבקשה';
   return res.error || 'שגיאה לא ידועה';
 }
+// Toggles for the optional "business details" section in each modal.
+window._toggleMrBiz = function() {
+  const el = document.getElementById('mr-biz-fields');
+  const ar = document.getElementById('mr-biz-arrow');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (ar) ar.textContent = open ? '▾' : '▴';
+};
+window._toggleMprBiz = function() {
+  const el = document.getElementById('mpr-biz-fields');
+  const ar = document.getElementById('mpr-biz-arrow');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (ar) ar.textContent = open ? '▾' : '▴';
+};
+
 window.morningRetryReceipt = function(incomeId) {
   // Open the description modal so the user can refine WHAT the
   // receipt is for before we hit Morning. The actual create call
@@ -16968,6 +17037,22 @@ window.morningRetryReceipt = function(incomeId) {
   const clntInp = document.getElementById('mr-client');
   if (descInp) descInp.value = it.description || '';
   if (clntInp) clntInp.value = it.clientName  || '';
+  // Pre-fill the optional business fields from whatever was saved
+  // last time for this income, so re-issuing a receipt doesn't lose
+  // the company details the user already typed.
+  const taxIn  = document.getElementById('mr-taxid');
+  const adrIn  = document.getElementById('mr-address');
+  const cityIn = document.getElementById('mr-city');
+  if (taxIn)  taxIn.value  = it.clientTaxId   || '';
+  if (adrIn)  adrIn.value  = it.clientAddress || '';
+  if (cityIn) cityIn.value = it.clientCity    || '';
+  // Auto-expand the business section if we have anything saved on it,
+  // otherwise leave collapsed so the modal stays tidy.
+  const hasBiz = !!(it.clientTaxId || it.clientAddress || it.clientCity);
+  const bizEl  = document.getElementById('mr-biz-fields');
+  const bizAr  = document.getElementById('mr-biz-arrow');
+  if (bizEl) bizEl.style.display = hasBiz ? 'block' : 'none';
+  if (bizAr) bizAr.textContent   = hasBiz ? '▴' : '▾';
   document.getElementById('morning-receipt-overlay').classList.add('open');
 };
 window._closeMorningReceiptModal = function() {
@@ -16978,14 +17063,24 @@ window._closeMorningReceiptModal = function() {
 window._confirmMorningReceiptModal = async function() {
   const id = window._mrPendingId;
   if (!id) return;
-  const desc = (document.getElementById('mr-desc').value   || '').trim();
-  const clnt = (document.getElementById('mr-client').value || '').trim();
+  const desc = (document.getElementById('mr-desc').value    || '').trim();
+  const clnt = (document.getElementById('mr-client').value  || '').trim();
+  const tax  = (document.getElementById('mr-taxid').value   || '').trim();
+  const adr  = (document.getElementById('mr-address').value || '').trim();
+  const city = (document.getElementById('mr-city').value    || '').trim();
   window._closeMorningReceiptModal();
-  // Use the user-edited description / client for THIS receipt only;
-  // leave the underlying income row's fields alone.
+  // Save the optional business fields back onto the income row so
+  // future receipts / payment requests for the same client carry
+  // them forward without re-typing.
   const all = load('income');
   const it  = all.find(x => x.id === id);
   if (!it) return;
+  let dirty = false;
+  if (clnt && clnt !== it.clientName)      { it.clientName    = clnt; dirty = true; }
+  if (tax  !== (it.clientTaxId   || ''))   { it.clientTaxId   = tax;  dirty = true; }
+  if (adr  !== (it.clientAddress || ''))   { it.clientAddress = adr;  dirty = true; }
+  if (city !== (it.clientCity    || ''))   { it.clientCity    = city; dirty = true; }
+  if (dirty) save('income', all);
   const incomeForReceipt = Object.assign({}, it, {
     description: desc || it.description,
     clientName:  clnt || it.clientName
@@ -17122,7 +17217,7 @@ async function morningCreatePaymentRequestFor(income) {
     vatType:     0,
     date:        iso(today),
     dueDate:     iso(due),
-    client:      { name: String(income.clientName || 'לקוח').slice(0, 100) },
+    client:      _morningBuildClient(income),
     income: [{
       description: income.description || 'שירות',
       quantity:    1,
@@ -17155,6 +17250,17 @@ window.morningRequestPayment = function(incomeId) {
   const clntInp = document.getElementById('mpr-client');
   if (descInp) descInp.value = it.description || '';
   if (clntInp) clntInp.value = it.clientName  || '';
+  const taxIn  = document.getElementById('mpr-taxid');
+  const adrIn  = document.getElementById('mpr-address');
+  const cityIn = document.getElementById('mpr-city');
+  if (taxIn)  taxIn.value  = it.clientTaxId   || '';
+  if (adrIn)  adrIn.value  = it.clientAddress || '';
+  if (cityIn) cityIn.value = it.clientCity    || '';
+  const hasBiz = !!(it.clientTaxId || it.clientAddress || it.clientCity);
+  const bizEl  = document.getElementById('mpr-biz-fields');
+  const bizAr  = document.getElementById('mpr-biz-arrow');
+  if (bizEl) bizEl.style.display = hasBiz ? 'block' : 'none';
+  if (bizAr) bizAr.textContent   = hasBiz ? '▴' : '▾';
   document.getElementById('morning-pr-overlay').classList.add('open');
 };
 
@@ -17166,13 +17272,24 @@ window._closeMorningPaymentRequestModal = function() {
 window._confirmMorningPaymentRequestModal = async function() {
   const id = window._mprPendingId;
   if (!id) return;
-  const desc = (document.getElementById('mpr-desc').value   || '').trim();
-  const clnt = (document.getElementById('mpr-client').value || '').trim();
+  const desc = (document.getElementById('mpr-desc').value    || '').trim();
+  const clnt = (document.getElementById('mpr-client').value  || '').trim();
+  const tax  = (document.getElementById('mpr-taxid').value   || '').trim();
+  const adr  = (document.getElementById('mpr-address').value || '').trim();
+  const city = (document.getElementById('mpr-city').value    || '').trim();
   window._closeMorningPaymentRequestModal();
   const all = load('income');
   const it  = all.find(x => x.id === id);
   if (!it) return;
   if (it.morningPrId) return;
+  // Save business details onto the income so the receipt that goes
+  // out when the user marks it paid carries the same client info.
+  let dirty = false;
+  if (clnt && clnt !== it.clientName)    { it.clientName    = clnt; dirty = true; }
+  if (tax  !== (it.clientTaxId   || '')) { it.clientTaxId   = tax;  dirty = true; }
+  if (adr  !== (it.clientAddress || '')) { it.clientAddress = adr;  dirty = true; }
+  if (city !== (it.clientCity    || '')) { it.clientCity    = city; dirty = true; }
+  if (dirty) save('income', all);
   const forPr = Object.assign({}, it, {
     description: desc || it.description,
     clientName:  clnt || it.clientName
