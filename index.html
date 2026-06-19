@@ -1308,6 +1308,163 @@
     .table-header h3 { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; font-family: 'Frank Ruhl Libre', 'Heebo', serif; display: flex; align-items: center; gap: 10px; }
     .table-header h3 svg.icon-lg { width: 22px; height: 22px; opacity: 0.85; flex-shrink: 0; }
 
+    /* ===== Active Productions page ===== */
+    .prod-chip {
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 800;
+      color: var(--text-muted); cursor: pointer; font-family: 'Heebo', sans-serif;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .prod-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .prod-status-tally {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 11px; border-radius: 10px;
+      font-size: 11.5px; font-weight: 800; line-height: 1;
+    }
+    .prod-status-tally .tally-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* The focus section — sits above the list */
+    .prod-focus-wrap {
+      background: linear-gradient(135deg, rgba(180,140,90,0.10), rgba(124,92,255,0.06));
+      border: 1.5px solid rgba(180,140,90,0.28);
+      border-radius: 16px; padding: 16px 18px;
+    }
+    .prod-focus-header {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 900; letter-spacing: 0.04em;
+      color: var(--orange); text-transform: uppercase; margin-bottom: 12px;
+    }
+    .prod-focus-header svg { width: 16px; height: 16px; }
+    .prod-focus-card {
+      display: flex; align-items: flex-start; gap: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+      cursor: pointer; transition: border-color .15s, transform .15s;
+    }
+    .prod-focus-card:last-child { margin-bottom: 0; }
+    .prod-focus-card:active { transform: scale(0.99); }
+    .prod-focus-card:hover { border-color: var(--accent); }
+    .prod-focus-icon {
+      flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(180,140,90,0.16); color: var(--orange);
+    }
+    .prod-focus-icon svg { width: 20px; height: 20px; }
+    .prod-focus-title { font-size: 14.5px; font-weight: 800; color: var(--text); line-height: 1.3; }
+    .prod-focus-reason { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+
+    /* "Everything calm" empty-state for focus */
+    .prod-focus-clear {
+      background: var(--surface); border: 1px dashed var(--border);
+      border-radius: 14px; padding: 16px 18px; text-align: center;
+      color: var(--text-muted); font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .prod-focus-clear svg { width: 22px; height: 22px; color: var(--green); }
+
+    /* Individual production card */
+    .prod-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 14px 16px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .prod-card.urgent { border-color: rgba(220,60,60,0.45); box-shadow: 0 0 0 1px rgba(220,60,60,0.15); }
+    .prod-card-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; margin-bottom: 8px;
+    }
+    .prod-card-title {
+      font-size: 16px; font-weight: 900; color: var(--text);
+      letter-spacing: -0.01em; line-height: 1.25;
+    }
+    .prod-card-client { font-size: 12.5px; color: var(--text-muted); font-weight: 700; margin-top: 2px; }
+    .prod-status-badge {
+      flex-shrink: 0; font-size: 11px; font-weight: 800;
+      padding: 4px 10px; border-radius: 999px;
+      white-space: nowrap; border: 1.5px solid;
+    }
+    .prod-next {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--surface2); border-radius: 10px;
+      padding: 9px 12px; font-size: 13px; color: var(--text);
+      font-weight: 600; line-height: 1.4; margin: 8px 0;
+      cursor: text;
+    }
+    .prod-next.empty { color: var(--text-muted); font-style: italic; cursor: pointer; }
+    .prod-next svg { width: 13px; height: 13px; opacity: 0.6; flex-shrink: 0; }
+    .prod-meta {
+      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+      font-size: 11px; color: var(--text-muted); font-weight: 700;
+    }
+    .prod-tag {
+      background: rgba(124,92,255,0.16); color: var(--accent);
+      padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    }
+    .prod-age { margin-right: auto; font-size: 11px; color: var(--text-muted); }
+    .prod-stuck { color: #dc2626; font-weight: 800; }
+    .prod-actions {
+      display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center;
+    }
+    .prod-advance-btn {
+      flex: 1; min-width: 0;
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 10px; padding: 8px 12px; font-size: 12.5px; font-weight: 800;
+      cursor: pointer; font-family: 'Heebo', sans-serif;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .prod-advance-btn:disabled { opacity: 0.5; cursor: default; }
+    .prod-expand-btn {
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 8px 12px; font-size: 12.5px; font-weight: 800;
+      cursor: pointer; font-family: 'Heebo', sans-serif;
+    }
+    .prod-card-expand { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .prod-card-expand.open { display: block; }
+    .prod-expand-h { font-size: 11px; font-weight: 900; letter-spacing: .04em; color: var(--text-muted); text-transform: uppercase; margin: 12px 0 6px; }
+    .prod-expand-h:first-child { margin-top: 0; }
+    .prod-stage-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .prod-stage-pill {
+      background: var(--surface2); border: 1.5px solid var(--border);
+      color: var(--text-muted); border-radius: 999px;
+      padding: 6px 12px; font-size: 11.5px; font-weight: 800;
+      cursor: pointer; font-family: 'Heebo', sans-serif;
+    }
+    .prod-next-input, .prod-notes-input {
+      width: 100%; box-sizing: border-box;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 10px 12px;
+      font-size: 13.5px; color: var(--text); outline: none;
+      font-family: 'Heebo', sans-serif;
+    }
+    .prod-notes-input { min-height: 70px; resize: vertical; font-weight: 500; }
+    .prod-delete-link {
+      background: transparent; border: none; color: #dc2626;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      margin-top: 12px; padding: 6px 0; font-family: 'Heebo', sans-serif;
+    }
+
+    .prod-empty {
+      text-align: center; padding: 36px 18px;
+      background: var(--surface); border: 1.5px dashed var(--border);
+      border-radius: 16px; color: var(--text-muted);
+    }
+    .prod-empty-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 56px; height: 56px; border-radius: 16px;
+      background: var(--surface2); color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .prod-empty-icon svg { width: 28px; height: 28px; }
+    .prod-empty-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .prod-delivered-toggle {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; font-size: 13px; font-weight: 800;
+      color: var(--text-muted); cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: 'Heebo', sans-serif;
+    }
+
     table { width: 100%; border-collapse: collapse; }
 
     th {
@@ -5189,7 +5346,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v303</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v304</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5304,6 +5461,7 @@
     <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span> הכנסות</a>
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg></span> הוצאות</a>
     <a onclick="showPage('schedule')" data-page="schedule"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><circle cx="8" cy="14" r="0.8" fill="currentColor"/><circle cx="12" cy="14" r="0.8" fill="currentColor"/><circle cx="16" cy="14" r="0.8" fill="currentColor"/></svg></span> לוז יומי</a>
+    <a onclick="showPage('productions')" data-page="productions"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> הפקות פעילות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span> תשלומים</a>
     <!-- כרטיסיית לקוחות מוסתרת לפי בקשה — להחזרה: מחק את style="display:none" -->
     <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="8" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> לקוחות</a>
@@ -5747,6 +5905,47 @@
     </div>
 
     <div id="plans-list" style="display:flex;flex-direction:column;gap:18px"></div>
+  </div>
+
+  <!-- ===== ACTIVE PRODUCTIONS (הפקות פעילות) ===== -->
+  <!-- A unified pipeline view of every active production (song/mix/
+       recording), sourced from income rows + manual projects + payment
+       plans. Each row carries its own stage (5 stages defined in
+       PROJ_STATUSES), next-action note, and a "touched at" stamp so
+       we can highlight what's been sitting for too long. -->
+  <div class="page" id="page-productions">
+    <div class="page-header">
+      <div>
+        <h2><svg class="icon-lg"><use href="#ic-music-note"/></svg>הפקות פעילות</h2>
+        <p>מה צריך לקרות, ולמי, ומתי</p>
+      </div>
+      <button class="btn btn-primary" onclick="prodOpenAddManual()">+ הפקה ידנית</button>
+    </div>
+
+    <!-- Today's focus — the algorithm picks 1-3 productions that should
+         be the user's mental priority this morning. Each one is a tap-
+         to-jump card with a one-line reason. -->
+    <div id="prod-focus-section" style="margin-bottom:20px"></div>
+
+    <!-- Sort + status filter chips -->
+    <div id="prod-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+      <div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-left:6px">מיין:</div>
+      <button class="prod-chip active" data-sort="urgency" onclick="prodSetSort('urgency')">דחיפות</button>
+      <button class="prod-chip" data-sort="age" onclick="prodSetSort('age')">ישנים קודם</button>
+      <button class="prod-chip" data-sort="client" onclick="prodSetSort('client')">לפי לקוח</button>
+    </div>
+
+    <!-- Status-tally strip — visual count per stage so the user can see
+         "I have 3 in revisions" without scanning the list. -->
+    <div id="prod-status-strip" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"></div>
+
+    <!-- The production list itself. Each card is inline-editable: tap
+         any status pill to switch stages, edit the next-action in place,
+         and "→ הבא" advances stages with one tap. -->
+    <div id="prod-list" style="display:flex;flex-direction:column;gap:12px"></div>
+
+    <!-- Delivered section — collapsed by default to keep the page tight. -->
+    <div id="prod-delivered-wrap" style="margin-top:24px"></div>
   </div>
 
   <!-- ===== DAILY BOARD (לוח יומי) ===== -->
@@ -6785,7 +6984,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','proj_touched_at','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -7005,7 +7204,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, schedule:2, installments:3, profiles:4, daily:5, workshops:6, proposals:7, contracts:8, students:9, dashboard:10};
+  const map = {income:0, expenses:1, schedule:2, productions:3, installments:4, profiles:5, daily:6, workshops:7, proposals:8, contracts:9, students:10, dashboard:11};
   if (name === 'daily') _dailyDate = dailyDateStr();
   if (name === 'schedule') {
     _scheduleDate = dailyDateStr();
@@ -7032,6 +7231,7 @@ function showPage(name) {
   const idx = map[key];
   if (idx !== undefined) navLinks[idx]?.classList.add('active');
   if (name === 'gcal') { setTimeout(() => { gcalInitPage(); }, 50); }
+  if (name === 'productions') { try { renderProductions(); } catch(_) {} }
   refreshAll();
 }
 
@@ -7039,7 +7239,7 @@ function showPage(name) {
 // Horizontal finger swipe on the page area switches between tabs.
 // RTL: swipe-left = next tab, swipe-right = previous tab.
 (function setupSwipeNav() {
-  const BIZ_TABS   = ['income','expenses','schedule','installments','workshops','proposals','contracts','students','dashboard'];
+  const BIZ_TABS   = ['income','expenses','schedule','productions','installments','workshops','proposals','contracts','students','dashboard'];
   const MUSIC_TABS = ['released','sketches'];
   const MIN_DX = 70;        // min horizontal distance (px)
   const MAX_DT = 600;       // max swipe duration (ms)
@@ -11079,6 +11279,310 @@ function deleteManualProject(id){
 }
 
 function backToStudies(){ renderStudies(); window.scrollTo(0, 0); }
+
+// ===== ACTIVE PRODUCTIONS (הפקות פעילות) =====
+// Lives in business mode as its own tab. Reuses the existing
+// PROJ_STATUSES + proj_status / proj_next / proj_services / proj_notes
+// stores so every project the user touches here also reflects in the
+// "studies" projects-hub, and vice versa.
+let _prodSort = 'urgency';
+let _prodExpanded = new Set();
+let _prodShowDelivered = false;
+
+function projTouchedAt(id) { const o = loadObj('proj_touched_at'); return o[id] || null; }
+function projTouch(id) {
+  const o = loadObj('proj_touched_at');
+  o[id] = new Date().toISOString();
+  save('proj_touched_at', o);
+}
+
+function _daysBetween(a, b) {
+  if (!a) return 0;
+  const ad = (typeof a === 'string') ? new Date(a) : a;
+  const bd = (typeof b === 'string') ? new Date(b) : (b || new Date());
+  const ms = bd.getTime() - ad.getTime();
+  return Math.max(0, Math.floor(ms / 86400000));
+}
+
+function projUrgencyScore(p) {
+  const status = projStatus(p.id);
+  const next   = projNext(p.id);
+  const lastT  = projTouchedAt(p.id) || p.date;
+  const sinceTouch = _daysBetween(lastT, new Date());
+  const open       = _daysBetween(p.date, new Date());
+  let s = 0;
+  if (status === 'client' && sinceTouch > 3) s += 10;
+  if (status === 'work'   && sinceTouch > 5) s += 8;
+  if (status === 'rev'    && sinceTouch > 2) s += 7;
+  if (status === 'todo')                     s += 4;
+  if (next && sinceTouch > 2)                s += 5;
+  if (open > 30)                             s += 3;
+  if (open > 60)                             s += 4;
+  if (open > 90)                             s += 5;
+  return s;
+}
+
+function projUrgencyReason(p) {
+  const status = projStatus(p.id);
+  const next   = projNext(p.id);
+  const lastT  = projTouchedAt(p.id) || p.date;
+  const sinceTouch = _daysBetween(lastT, new Date());
+  const open       = _daysBetween(p.date, new Date());
+  if (status === 'client' && sinceTouch > 3) return `ממתין ללקוח ${sinceTouch} ימים — תזכיר לו`;
+  if (status === 'work'   && sinceTouch > 5) return `בעבודה ${sinceTouch} ימים בלי תזוזה — תגע במשהו`;
+  if (status === 'rev'    && sinceTouch > 2) return `${sinceTouch} ימים ברוויזיות — סגור או החזר ללקוח`;
+  if (open > 90) return `פתוח ${open} ימים — אולי הגיע הזמן לסגור`;
+  if (open > 60) return `פתוח ${open} ימים — מקדים את עצמו לסיום`;
+  if (next && sinceTouch > 2) return 'יש פעולה הבאה: ' + String(next).slice(0, 50);
+  if (status === 'todo') return 'עוד לא התחיל';
+  return 'דורש תשומת לב';
+}
+
+function _statusLabelMap() {
+  const m = {};
+  PROJ_STATUSES.forEach(s => m[s.k] = s);
+  return m;
+}
+
+function renderProductions() {
+  const wrap = document.getElementById('prod-list');
+  if (!wrap) return;
+  const all = getProjectsList();
+  const active = all.filter(p => projStatus(p.id) !== 'done');
+  const done   = all.filter(p => projStatus(p.id) === 'done');
+
+  active.forEach(p => p._score = projUrgencyScore(p));
+
+  if (_prodSort === 'urgency') {
+    active.sort((a, b) => b._score - a._score || (new Date(a.date) - new Date(b.date)));
+  } else if (_prodSort === 'age') {
+    active.sort((a, b) => new Date(a.date) - new Date(b.date));
+  } else if (_prodSort === 'client') {
+    active.sort((a, b) => (a.clientName || 'zzz').localeCompare(b.clientName || 'zzz'));
+  }
+
+  // Focus section: top 3 by score, only show if score > 5
+  const focus = [...active].sort((a, b) => b._score - a._score).slice(0, 3).filter(p => p._score > 5);
+  _renderProdFocus(focus, active.length);
+
+  // Status tally strip
+  _renderProdStatusStrip(active);
+
+  // List
+  if (active.length === 0) {
+    wrap.innerHTML = `
+      <div class="prod-empty">
+        <div class="prod-empty-icon"><svg><use href="#ic-music-note"/></svg></div>
+        <div class="prod-empty-title">אין הפקות פעילות</div>
+        <div style="font-size:13px;line-height:1.6">תרשום הכנסה מסוג <strong>הפקה / מיקס / הקלטה</strong> והיא תופיע כאן אוטומטית, או הוסף הפקה ידנית בכפתור למעלה.</div>
+      </div>`;
+  } else {
+    wrap.innerHTML = active.map(p => _prodCard(p)).join('');
+  }
+
+  // Delivered toggle
+  const delWrap = document.getElementById('prod-delivered-wrap');
+  if (delWrap) {
+    if (done.length === 0) { delWrap.innerHTML = ''; }
+    else {
+      delWrap.innerHTML = `
+        <div class="prod-delivered-toggle" onclick="prodToggleDelivered()">
+          <span><svg class="icon"><use href="#ic-check-circle"/></svg> נמסרו (${done.length})</span>
+          <span>${_prodShowDelivered ? '▴' : '▾'}</span>
+        </div>` +
+        (_prodShowDelivered ? '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' + done.map(p => _prodCard(p)).join('') + '</div>' : '');
+    }
+  }
+}
+
+function _renderProdFocus(focus, totalActive) {
+  const el = document.getElementById('prod-focus-section');
+  if (!el) return;
+  if (totalActive === 0) { el.innerHTML = ''; return; }
+  if (focus.length === 0) {
+    el.innerHTML = `
+      <div class="prod-focus-clear">
+        <svg><use href="#ic-check-circle"/></svg>
+        <span>הכל תחת שליטה — אין הפקה דחופה כרגע</span>
+      </div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="prod-focus-wrap">
+      <div class="prod-focus-header">
+        <svg><use href="#ic-target"/></svg>
+        <span>תתחיל מפה היום</span>
+      </div>
+      ${focus.map(p => `
+        <div class="prod-focus-card" onclick="prodExpand('${p.id}'); document.getElementById('prod-card-${p.id}')?.scrollIntoView({behavior:'smooth',block:'center'})">
+          <div class="prod-focus-icon"><svg><use href="#ic-alert-circle"/></svg></div>
+          <div style="flex:1;min-width:0">
+            <div class="prod-focus-title">${_escape(p.name)} · <span style="color:var(--text-muted);font-weight:700">${_escape(p.clientName || 'ללא לקוח')}</span></div>
+            <div class="prod-focus-reason">${_escape(projUrgencyReason(p))}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function _renderProdStatusStrip(active) {
+  const el = document.getElementById('prod-status-strip');
+  if (!el) return;
+  const counts = {};
+  PROJ_STATUSES.forEach(s => counts[s.k] = 0);
+  active.forEach(p => { const k = projStatus(p.id); counts[k] = (counts[k] || 0) + 1; });
+  el.innerHTML = PROJ_STATUSES.filter(s => s.k !== 'done' && counts[s.k] > 0).map(s => `
+    <div class="prod-status-tally" style="background:${s.color}1f;color:${s.color}">
+      <span class="tally-dot" style="background:${s.color}"></span>
+      ${counts[s.k]} ${s.label}
+    </div>`).join('');
+}
+
+function _escape(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function _prodCard(p) {
+  const status   = projStatus(p.id);
+  const meta     = projStatusMeta(status);
+  const services = projServices(p.id);
+  const next     = projNext(p.id);
+  const notes    = (loadObj('proj_notes'))[p.id] || '';
+  const lastT    = projTouchedAt(p.id) || p.date;
+  const open     = _daysBetween(p.date, new Date());
+  const stuck    = _daysBetween(lastT, new Date());
+  const urgent   = projUrgencyScore(p) >= 10;
+  const expanded = _prodExpanded.has(p.id);
+  const statusIdx  = PROJ_STATUSES.findIndex(s => s.k === status);
+  const nextStage  = PROJ_STATUSES[statusIdx + 1];
+  const canAdvance = !!nextStage;
+  const idEsc = _escape(p.id);
+
+  const statusPills = PROJ_STATUSES.map(s => {
+    const on = s.k === status;
+    const style = on ? `background:${s.color};border-color:${s.color};color:#fff` : '';
+    return `<button class="prod-stage-pill" style="${style}" onclick="prodSetStatus('${idEsc}','${s.k}')">${s.label}</button>`;
+  }).join('');
+
+  const serviceChips = PROJ_SERVICES.map(s => {
+    const on = services.indexOf(s) >= 0;
+    const style = on ? 'background:rgba(124,92,255,0.22);border-color:var(--accent);color:var(--accent)' : '';
+    return `<button class="prod-stage-pill" style="${style}" onclick="prodToggleService('${idEsc}','${_escape(s)}')">${_escape(s)}</button>`;
+  }).join('');
+
+  return `
+    <div class="prod-card ${urgent ? 'urgent' : ''}" id="prod-card-${idEsc}">
+      <div class="prod-card-top">
+        <div style="flex:1;min-width:0">
+          <div class="prod-card-title">${_escape(p.name)}</div>
+          <div class="prod-card-client">${_escape(p.clientName || 'ללא לקוח')}${p.amount ? ' · ' + fmtMoney(p.amount) : ''}</div>
+        </div>
+        <span class="prod-status-badge" style="background:${meta.color}22;color:${meta.color};border-color:${meta.color}66">${meta.label}</span>
+      </div>
+      ${next
+        ? `<div class="prod-next" onclick="prodExpand('${idEsc}')"><svg><use href="#ic-target"/></svg>${_escape(next)}</div>`
+        : `<div class="prod-next empty" onclick="prodExpand('${idEsc}')"><svg><use href="#ic-target"/></svg>הגדר פעולה הבאה →</div>`
+      }
+      <div class="prod-meta">
+        ${services.map(s => `<span class="prod-tag">${_escape(s)}</span>`).join('')}
+        <span class="prod-age">${open} יום פתוח${stuck > 3 ? ` · <span class="prod-stuck">נתקע ${stuck} ימים</span>` : ''}</span>
+      </div>
+      <div class="prod-actions">
+        ${canAdvance
+          ? `<button class="prod-advance-btn" onclick="prodAdvanceStatus('${idEsc}')">→ ${nextStage.label}</button>`
+          : `<button class="prod-advance-btn" disabled>בשלב הסופי</button>`}
+        <button class="prod-expand-btn" onclick="prodExpand('${idEsc}')">${expanded ? '▴ סגור' : '▾ פרטים'}</button>
+      </div>
+      <div class="prod-card-expand ${expanded ? 'open' : ''}">
+        <div class="prod-expand-h">שלב</div>
+        <div class="prod-stage-row">${statusPills}</div>
+        <div class="prod-expand-h">מה אני עושה בפרויקט</div>
+        <div class="prod-stage-row">${serviceChips}</div>
+        <div class="prod-expand-h">פעולה הבאה</div>
+        <input class="prod-next-input" type="text" value="${_escape(next)}" placeholder="מה השלב הבא? (למשל: לשלוח מיקס לאישור)" oninput="prodSaveNext('${idEsc}', this.value)"/>
+        <div class="prod-expand-h">הערות</div>
+        <textarea class="prod-notes-input" placeholder="הערות על הפרויקט..." oninput="prodSaveNote('${idEsc}', this.value)">${_escape(notes)}</textarea>
+        ${p.src === 'manual' ? `<button class="prod-delete-link" onclick="prodDeleteManual('${idEsc}')"><svg class="icon"><use href="#ic-trash"/></svg> מחק הפקה</button>` : ''}
+      </div>
+    </div>`;
+}
+
+window.prodSetSort = function(mode) {
+  _prodSort = mode;
+  document.querySelectorAll('#prod-controls .prod-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.sort === mode);
+  });
+  renderProductions();
+};
+
+window.prodExpand = function(id) {
+  if (_prodExpanded.has(id)) _prodExpanded.delete(id); else _prodExpanded.add(id);
+  renderProductions();
+};
+
+window.prodToggleDelivered = function() { _prodShowDelivered = !_prodShowDelivered; renderProductions(); };
+
+window.prodSetStatus = function(id, k) {
+  const o = loadObj('proj_status'); o[id] = k; save('proj_status', o);
+  projTouch(id);
+  if (window.haptic) window.haptic.tap();
+  renderProductions();
+};
+
+window.prodAdvanceStatus = function(id) {
+  const cur = projStatus(id);
+  const idx = PROJ_STATUSES.findIndex(s => s.k === cur);
+  const next = PROJ_STATUSES[idx + 1];
+  if (!next) { toast('כבר בשלב הסופי'); return; }
+  prodSetStatus(id, next.k);
+  if (window.haptic) window.haptic.success();
+  toast('עבר ל: ' + next.label);
+};
+
+window.prodToggleService = function(id, s) {
+  const o = loadObj('proj_services'); const arr = o[id] || [];
+  const i = arr.indexOf(s);
+  if (i < 0) arr.push(s); else arr.splice(i, 1);
+  o[id] = arr; save('proj_services', o);
+  projTouch(id);
+  renderProductions();
+};
+
+window.prodSaveNext = function(id, v) {
+  const o = loadObj('proj_next'); o[id] = v; save('proj_next', o);
+  projTouch(id);
+};
+
+window.prodSaveNote = function(id, v) {
+  const o = loadObj('proj_notes'); o[id] = v; save('proj_notes', o);
+  projTouch(id);
+};
+
+window.prodDeleteManual = function(id) {
+  if (!confirm('למחוק את ההפקה?')) return;
+  save('projects', load('projects').filter(p => p.id !== id));
+  ['proj_status','proj_services','proj_next','proj_notes','proj_touched_at'].forEach(k => {
+    const o = loadObj(k); if (o[id] !== undefined) { delete o[id]; save(k, o); }
+  });
+  if (window.haptic) window.haptic.success();
+  toast('ההפקה נמחקה');
+  renderProductions();
+};
+
+window.prodOpenAddManual = function() {
+  const name = prompt('שם השיר / ההפקה:');
+  if (!name || !name.trim()) return;
+  const client = prompt('שם הלקוח (אופציונלי):') || '';
+  const id = 'manual_' + Date.now();
+  const arr = load('projects') || [];
+  arr.push({ id, name: name.trim(), clientName: client.trim(), date: new Date().toISOString().slice(0, 10) });
+  save('projects', arr);
+  projTouch(id);
+  if (window.haptic) window.haptic.success();
+  toast('נוספה הפקה — תתחיל לעבוד');
+  renderProductions();
+};
 
 // ===== WORKSHOPS (סדנאות) =====
 let _wkEditId = null;
