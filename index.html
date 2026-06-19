@@ -5416,7 +5416,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v305</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v306</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11411,12 +11411,12 @@ function backToStudies(){ renderStudies(); window.scrollTo(0, 0); }
 //     notes, sessions:[{ts,note,minutes}], price, priority,
 //     createdAt, touchedAt }
 const PROD_STAGES = [
-  { k:'preprod',   label:'הכנה',     color:'#9aa0aa', tasks:['רפרנס נבחר','טונאליות + טמפו','מבנה השיר','שיחה עם האמן'] },
-  { k:'record',    label:'הקלטות',   color:'#f0a830', tasks:['ווקאל ראשי','גיבויים / כפילים','כלים אקוסטיים','כלים אלקטרוניים'] },
-  { k:'edit',      label:'עריכה',    color:'#a78bfa', tasks:['קומפינג ווקאל','טיוב','ניקוי רעשים','אוטומציה ראשונית'] },
-  { k:'mix',       label:'מיקס',     color:'#7c5cff', tasks:['באלאנס','EQ + קומפרסיה','אפקטים + מרחב','אוטומציה סופית','שליחת רוויזיה ללקוח'] },
-  { k:'master',    label:'מאסטר',    color:'#4aa3ff', tasks:['EQ אבסולוטי','דחיסה / לימיטר','בדיקה ב-3 מערכות','ייצוא בפורמטים'] },
-  { k:'delivered', label:'נמסר',     color:'#34c759', tasks:[] }
+  { k:'preprod',   label:'הכנה',     color:'#9aa0aa' },
+  { k:'record',    label:'הקלטות',   color:'#f0a830' },
+  { k:'edit',      label:'עריכה',    color:'#a78bfa' },
+  { k:'mix',       label:'מיקס',     color:'#7c5cff' },
+  { k:'master',    label:'מאסטר',    color:'#4aa3ff' },
+  { k:'delivered', label:'נמסר',     color:'#34c759' }
 ];
 
 let _prodSort = 'urgency';
@@ -11453,13 +11453,6 @@ function _prodDaysUntil(deadlineStr) {
   const d = new Date(deadlineStr); d.setHours(0,0,0,0);
   return Math.floor((d.getTime() - today.getTime()) / 86400000);
 }
-function _prodStageProgress(p) {
-  const stage = prodStageMeta(p.stage);
-  if (!stage.tasks.length) return { done: 0, total: 0, pct: 100 };
-  const cl = p.checklist || {};
-  const done = stage.tasks.filter(t => cl[p.stage + ':' + t]).length;
-  return { done, total: stage.tasks.length, pct: Math.round((done / stage.tasks.length) * 100) };
-}
 function _prodSessionsThisWeek(p) {
   const sevenAgo = Date.now() - 7 * 86400000;
   return (p.sessions || []).filter(s => new Date(s.ts).getTime() > sevenAgo);
@@ -11484,9 +11477,6 @@ function prodUrgencyScore(p) {
   if (p.stage === 'master' && stuck > 2) s += 8;
   if (stuck > 7)  s += 5;
   if (stuck > 14) s += 5;
-  // "Almost done" — in mix/master with checklist > 70% done
-  const prog = _prodStageProgress(p);
-  if ((p.stage === 'mix' || p.stage === 'master') && prog.pct >= 70 && prog.pct < 100) s += 6;
   // Recording stage with no sessions logged this week
   if (p.stage === 'record' && _prodSessionsThisWeek(p).length === 0 && stuck > 3) s += 5;
   return s;
@@ -11496,11 +11486,8 @@ function prodUrgencyReason(p) {
   const du = _prodDaysUntil(p.deadline);
   const lastT = p.touchedAt || p.createdAt;
   const stuck = _prodDaysBetween(lastT, new Date());
-  const prog = _prodStageProgress(p);
   if (du !== null && du < 0) return `דד-ליין עבר ב-${-du} ימים`;
   if (du !== null && du <= 2) return `דד-ליין בעוד ${du === 0 ? 'היום' : (du + ' ימים')}`;
-  if ((p.stage === 'mix' || p.stage === 'master') && prog.pct >= 70 && prog.pct < 100)
-    return `${prog.done}/${prog.total} משימות ב${prodStageMeta(p.stage).label} — קרוב לסיום, תסגור`;
   if (p.stage === 'mix' && stuck > 4) return `${stuck} ימים שלא נגעת במיקס`;
   if (p.stage === 'master' && stuck > 2) return `${stuck} ימים בלי תזוזה במאסטר`;
   if (stuck > 14) return `נתקע ${stuck} ימים — תקבל החלטה`;
@@ -11671,7 +11658,6 @@ function _prodCardHtml(p) {
   const lastT = p.touchedAt || p.createdAt;
   const stuck = _prodDaysBetween(lastT, new Date());
   const du = _prodDaysUntil(p.deadline);
-  const prog = _prodStageProgress(p);
   const score = prodUrgencyScore(p);
   const urgent = score >= 12;
   const id = _escape(p.id);
@@ -11689,22 +11675,6 @@ function _prodCardHtml(p) {
   const lastSessText = lastSession
     ? `סשן אחרון לפני ${_prodDaysBetween(lastSession.ts, new Date()) || '< יום'}${typeof _prodDaysBetween(lastSession.ts, new Date()) === 'number' ? ' ימים' : ''}`
     : 'עוד אין סשנים';
-
-  // Checklist for current stage
-  let checklistHtml = '';
-  if (stage.tasks.length) {
-    const cl = p.checklist || {};
-    checklistHtml = `<div class="prod-checklist">${stage.tasks.map(t => {
-      const k = p.stage + ':' + t;
-      const checked = !!cl[k];
-      return `<div class="prod-checklist-item ${checked ? 'done' : ''}" onclick="prodToggleTask('${id}','${_escape(t)}')">
-        <span class="prod-checklist-box">${checked ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</span>
-        <span class="prod-checklist-text">${_escape(t)}</span>
-      </div>`;
-    }).join('')}</div>`;
-  } else {
-    checklistHtml = `<div class="prod-checklist prod-checklist-stage-done">✓ נמסר</div>`;
-  }
 
   const stagePills = PROD_STAGES.map(s => {
     const on = s.k === p.stage;
@@ -11746,17 +11716,6 @@ function _prodCardHtml(p) {
         </div>
         <span class="prod-stage-badge" style="background:${stage.color}22;color:${stage.color};border-color:${stage.color}66">${stage.label}</span>
       </div>
-
-      ${checklistHtml}
-
-      ${stage.tasks.length ? `
-      <div class="prod-progress-wrap">
-        <div class="prod-progress-row">
-          <span>${prog.done}/${prog.total} במשימות השלב</span>
-          <span style="color:${stage.color};font-weight:900">${prog.pct}%</span>
-        </div>
-        <div class="prod-progress-bar"><div class="prod-progress-fill" style="width:${prog.pct}%;background:${stage.color}"></div></div>
-      </div>` : ''}
 
       <div class="prod-meta-row">
         ${deadlineHtml}
