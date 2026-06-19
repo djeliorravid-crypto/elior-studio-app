@@ -1316,14 +1316,31 @@
       transition: background .15s, color .15s, border-color .15s;
     }
     .prod-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .prod-status-tally {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 11px; border-radius: 10px;
-      font-size: 11.5px; font-weight: 800; line-height: 1;
-    }
-    .prod-status-tally .tally-dot { width: 8px; height: 8px; border-radius: 50%; }
 
-    /* The focus section — sits above the list */
+    /* Top stats strip — total active, sessions this week, time worked */
+    .prod-stats-strip {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      margin-bottom: 18px;
+    }
+    .prod-stat-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 12px 14px;
+    }
+    .prod-stat-num { font-size: 24px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+    .prod-stat-lbl { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-top: 4px; letter-spacing: 0.04em; }
+
+    /* Stage tally chip — count per stage, clickable to filter */
+    .prod-stage-tally {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 10px;
+      font-size: 12px; font-weight: 800; line-height: 1;
+      cursor: pointer; border: 1.5px solid transparent;
+      transition: opacity .15s;
+    }
+    .prod-stage-tally.muted { opacity: 0.45; }
+    .prod-stage-tally .tally-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* Focus section — top of page */
     .prod-focus-wrap {
       background: linear-gradient(135deg, rgba(180,140,90,0.10), rgba(124,92,255,0.06));
       border: 1.5px solid rgba(180,140,90,0.28);
@@ -1353,7 +1370,6 @@
     .prod-focus-title { font-size: 14.5px; font-weight: 800; color: var(--text); line-height: 1.3; }
     .prod-focus-reason { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
 
-    /* "Everything calm" empty-state for focus */
     .prod-focus-clear {
       background: var(--surface); border: 1px dashed var(--border);
       border-radius: 14px; padding: 16px 18px; text-align: center;
@@ -1368,60 +1384,99 @@
       border-radius: 14px; padding: 14px 16px;
       transition: border-color .2s, box-shadow .2s;
     }
-    .prod-card.urgent { border-color: rgba(220,60,60,0.45); box-shadow: 0 0 0 1px rgba(220,60,60,0.15); }
+    .prod-card.urgent { border-color: rgba(220,60,60,0.4); box-shadow: 0 0 0 1px rgba(220,60,60,0.12); }
+    .prod-card.priority-high { border-right: 4px solid var(--orange); }
     .prod-card-top {
       display: flex; align-items: flex-start; justify-content: space-between;
       gap: 12px; margin-bottom: 8px;
     }
     .prod-card-title {
-      font-size: 16px; font-weight: 900; color: var(--text);
-      letter-spacing: -0.01em; line-height: 1.25;
+      font-size: 17px; font-weight: 900; color: var(--text);
+      letter-spacing: -0.02em; line-height: 1.2;
     }
-    .prod-card-client { font-size: 12.5px; color: var(--text-muted); font-weight: 700; margin-top: 2px; }
-    .prod-status-badge {
-      flex-shrink: 0; font-size: 11px; font-weight: 800;
-      padding: 4px 10px; border-radius: 999px;
+    .prod-card-artist { font-size: 13px; color: var(--text-muted); font-weight: 700; margin-top: 3px; }
+    .prod-card-artist .prod-genre-pill {
+      display: inline-block; background: var(--surface2); border-radius: 6px;
+      padding: 1px 7px; font-size: 10.5px; margin-right: 6px;
+      color: var(--text-muted); font-weight: 800;
+    }
+    .prod-stage-badge {
+      flex-shrink: 0; font-size: 11.5px; font-weight: 800;
+      padding: 5px 11px; border-radius: 999px;
       white-space: nowrap; border: 1.5px solid;
     }
-    .prod-next {
-      display: flex; align-items: center; gap: 6px;
-      background: var(--surface2); border-radius: 10px;
-      padding: 9px 12px; font-size: 13px; color: var(--text);
-      font-weight: 600; line-height: 1.4; margin: 8px 0;
-      cursor: text;
+
+    /* Stage progress bar */
+    .prod-progress-wrap { margin: 12px 0 10px; }
+    .prod-progress-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 5px; }
+    .prod-progress-bar { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+    .prod-progress-fill { height: 100%; transition: width .35s; border-radius: 3px; }
+
+    /* Checklist of current-stage tasks */
+    .prod-checklist {
+      background: var(--surface2); border-radius: 10px; padding: 10px 12px;
+      margin: 10px 0;
     }
-    .prod-next.empty { color: var(--text-muted); font-style: italic; cursor: pointer; }
-    .prod-next svg { width: 13px; height: 13px; opacity: 0.6; flex-shrink: 0; }
-    .prod-meta {
-      display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
-      font-size: 11px; color: var(--text-muted); font-weight: 700;
+    .prod-checklist-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 6px 0; font-size: 13.5px; cursor: pointer;
+      color: var(--text); font-weight: 600;
     }
-    .prod-tag {
-      background: rgba(124,92,255,0.16); color: var(--accent);
-      padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700;
+    .prod-checklist-item:not(:last-child) { border-bottom: 1px solid var(--border); }
+    .prod-checklist-box {
+      width: 18px; height: 18px; border-radius: 5px;
+      border: 1.8px solid var(--border); flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background .15s, border-color .15s;
     }
-    .prod-age { margin-right: auto; font-size: 11px; color: var(--text-muted); }
-    .prod-stuck { color: #dc2626; font-weight: 800; }
+    .prod-checklist-item.done .prod-checklist-box {
+      background: var(--green); border-color: var(--green);
+    }
+    .prod-checklist-item.done .prod-checklist-box svg { width: 12px; height: 12px; color: #fff; }
+    .prod-checklist-item.done .prod-checklist-text { text-decoration: line-through; color: var(--text-muted); }
+    .prod-checklist-stage-done {
+      text-align: center; padding: 10px; color: var(--green);
+      font-size: 12.5px; font-weight: 800;
+    }
+
+    /* Meta row: deadline, sessions, days-stuck */
+    .prod-meta-row {
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+      font-size: 11.5px; color: var(--text-muted); font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .prod-meta-row .meta-item { display: inline-flex; align-items: center; gap: 5px; }
+    .prod-meta-row .meta-item svg { width: 12px; height: 12px; opacity: 0.7; }
+    .prod-meta-row .deadline-soon { color: var(--orange); font-weight: 800; }
+    .prod-meta-row .deadline-overdue { color: #dc2626; font-weight: 900; }
+    .prod-meta-row .stuck-warn { color: #dc2626; font-weight: 800; }
+
     .prod-actions {
-      display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center;
+      display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; align-items: center;
     }
-    .prod-advance-btn {
+    .prod-btn {
       flex: 1; min-width: 0;
       background: var(--accent); color: #fff; border: none;
-      border-radius: 10px; padding: 8px 12px; font-size: 12.5px; font-weight: 800;
+      border-radius: 10px; padding: 9px 12px; font-size: 12.5px; font-weight: 800;
       cursor: pointer; font-family: 'Heebo', sans-serif;
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     }
-    .prod-advance-btn:disabled { opacity: 0.5; cursor: default; }
-    .prod-expand-btn {
-      background: transparent; color: var(--text-muted);
-      border: 1px solid var(--border); border-radius: 10px;
-      padding: 8px 12px; font-size: 12.5px; font-weight: 800;
-      cursor: pointer; font-family: 'Heebo', sans-serif;
+    .prod-btn:disabled { opacity: 0.5; cursor: default; }
+    .prod-btn.secondary {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
     }
+    .prod-btn.ghost {
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border);
+      flex: 0 0 auto;
+    }
+    .prod-btn svg { width: 13px; height: 13px; }
+
+    /* Expanded section */
     .prod-card-expand { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
     .prod-card-expand.open { display: block; }
-    .prod-expand-h { font-size: 11px; font-weight: 900; letter-spacing: .04em; color: var(--text-muted); text-transform: uppercase; margin: 12px 0 6px; }
+    .prod-expand-h { font-size: 11px; font-weight: 900; letter-spacing: .04em; color: var(--text-muted); text-transform: uppercase; margin: 14px 0 6px; }
     .prod-expand-h:first-child { margin-top: 0; }
     .prod-stage-row { display: flex; flex-wrap: wrap; gap: 6px; }
     .prod-stage-pill {
@@ -1430,33 +1485,48 @@
       padding: 6px 12px; font-size: 11.5px; font-weight: 800;
       cursor: pointer; font-family: 'Heebo', sans-serif;
     }
-    .prod-next-input, .prod-notes-input {
+    .prod-input, .prod-textarea {
       width: 100%; box-sizing: border-box;
       background: var(--surface2); border: 1.5px solid var(--border);
       border-radius: 10px; padding: 10px 12px;
       font-size: 13.5px; color: var(--text); outline: none;
       font-family: 'Heebo', sans-serif;
     }
-    .prod-notes-input { min-height: 70px; resize: vertical; font-weight: 500; }
+    .prod-textarea { min-height: 70px; resize: vertical; font-weight: 500; }
+
+    .prod-session-log {
+      max-height: 180px; overflow-y: auto;
+      background: var(--surface2); border-radius: 10px; padding: 4px 0;
+    }
+    .prod-session-row {
+      display: flex; gap: 10px; padding: 7px 12px;
+      font-size: 12.5px; border-bottom: 1px solid var(--border);
+    }
+    .prod-session-row:last-child { border-bottom: none; }
+    .prod-session-when { color: var(--text-muted); font-weight: 700; flex-shrink: 0; min-width: 75px; }
+    .prod-session-what { color: var(--text); flex: 1; }
+    .prod-session-mins { color: var(--accent); font-weight: 800; }
+
     .prod-delete-link {
       background: transparent; border: none; color: #dc2626;
       font-size: 12px; font-weight: 700; cursor: pointer;
-      margin-top: 12px; padding: 6px 0; font-family: 'Heebo', sans-serif;
+      margin-top: 14px; padding: 6px 0; font-family: 'Heebo', sans-serif;
+      display: inline-flex; align-items: center; gap: 5px;
     }
 
     .prod-empty {
-      text-align: center; padding: 36px 18px;
+      text-align: center; padding: 40px 20px;
       background: var(--surface); border: 1.5px dashed var(--border);
       border-radius: 16px; color: var(--text-muted);
     }
     .prod-empty-icon {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 56px; height: 56px; border-radius: 16px;
+      width: 64px; height: 64px; border-radius: 18px;
       background: var(--surface2); color: var(--text-muted);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
-    .prod-empty-icon svg { width: 28px; height: 28px; }
-    .prod-empty-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .prod-empty-icon svg { width: 30px; height: 30px; }
+    .prod-empty-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
     .prod-delivered-toggle {
       width: 100%; background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px; padding: 12px 14px; font-size: 13px; font-weight: 800;
@@ -5346,7 +5416,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v304</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v305</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5458,10 +5528,10 @@
     </div>
   </div>
   <nav id="sidebar-nav">
-    <a class="active" onclick="showPage('income')" data-page="income"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span> הכנסות</a>
+    <a class="active" onclick="showPage('productions')" data-page="productions"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> הפקות פעילות</a>
+    <a onclick="showPage('income')" data-page="income"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span> הכנסות</a>
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg></span> הוצאות</a>
     <a onclick="showPage('schedule')" data-page="schedule"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><circle cx="8" cy="14" r="0.8" fill="currentColor"/><circle cx="12" cy="14" r="0.8" fill="currentColor"/><circle cx="16" cy="14" r="0.8" fill="currentColor"/></svg></span> לוז יומי</a>
-    <a onclick="showPage('productions')" data-page="productions"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> הפקות פעילות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span> תשלומים</a>
     <!-- כרטיסיית לקוחות מוסתרת לפי בקשה — להחזרה: מחק את style="display:none" -->
     <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="8" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> לקוחות</a>
@@ -5677,7 +5747,7 @@
   </div>
 
   <!-- ===== INCOME ===== -->
-  <div class="page active" id="page-income">
+  <div class="page" id="page-income">
     <div class="page-header">
       <div><h2><svg class="icon-lg"><use href="#ic-trend-up"/></svg>הכנסה חודשית</h2><p>ניהול כל ההכנסות שלך</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -5908,44 +5978,96 @@
   </div>
 
   <!-- ===== ACTIVE PRODUCTIONS (הפקות פעילות) ===== -->
-  <!-- A unified pipeline view of every active production (song/mix/
-       recording), sourced from income rows + manual projects + payment
-       plans. Each row carries its own stage (5 stages defined in
-       PROJ_STATUSES), next-action note, and a "touched at" stamp so
-       we can highlight what's been sitting for too long. -->
-  <div class="page" id="page-productions">
+  <!-- Self-contained pipeline of every active production. Stores its
+       OWN data in localStorage 'productions' — no link to income or
+       any other module. Six stages, each with a built-in checklist of
+       concrete sub-tasks. Per-production: deadline, reference link,
+       session log, notes, priority. -->
+  <div class="page active" id="page-productions">
     <div class="page-header">
       <div>
         <h2><svg class="icon-lg"><use href="#ic-music-note"/></svg>הפקות פעילות</h2>
-        <p>מה צריך לקרות, ולמי, ומתי</p>
+        <p>השיר, השלב, המשימה הבאה — בלי לחפש</p>
       </div>
-      <button class="btn btn-primary" onclick="prodOpenAddManual()">+ הפקה ידנית</button>
+      <button class="btn btn-primary" onclick="prodOpenAddModal()">+ הפקה חדשה</button>
     </div>
 
-    <!-- Today's focus — the algorithm picks 1-3 productions that should
-         be the user's mental priority this morning. Each one is a tap-
-         to-jump card with a one-line reason. -->
+    <!-- Top stats strip -->
+    <div id="prod-stats-strip"></div>
+
+    <!-- Today's focus — top 1-3 productions that need attention now -->
     <div id="prod-focus-section" style="margin-bottom:20px"></div>
 
-    <!-- Sort + status filter chips -->
-    <div id="prod-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-      <div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-left:6px">מיין:</div>
+    <!-- Controls: sort + stage filter -->
+    <div id="prod-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+      <div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-left:4px">מיין:</div>
       <button class="prod-chip active" data-sort="urgency" onclick="prodSetSort('urgency')">דחיפות</button>
-      <button class="prod-chip" data-sort="age" onclick="prodSetSort('age')">ישנים קודם</button>
-      <button class="prod-chip" data-sort="client" onclick="prodSetSort('client')">לפי לקוח</button>
+      <button class="prod-chip" data-sort="deadline" onclick="prodSetSort('deadline')">דד-ליין</button>
+      <button class="prod-chip" data-sort="touched" onclick="prodSetSort('touched')">נתקעו</button>
+      <button class="prod-chip" data-sort="new" onclick="prodSetSort('new')">חדשים</button>
     </div>
 
-    <!-- Status-tally strip — visual count per stage so the user can see
-         "I have 3 in revisions" without scanning the list. -->
-    <div id="prod-status-strip" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"></div>
+    <!-- Stage tally strip — counts per stage. Clickable to filter. -->
+    <div id="prod-stage-strip" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"></div>
 
-    <!-- The production list itself. Each card is inline-editable: tap
-         any status pill to switch stages, edit the next-action in place,
-         and "→ הבא" advances stages with one tap. -->
+    <!-- The productions list -->
     <div id="prod-list" style="display:flex;flex-direction:column;gap:12px"></div>
 
-    <!-- Delivered section — collapsed by default to keep the page tight. -->
+    <!-- Delivered section — collapsed by default -->
     <div id="prod-delivered-wrap" style="margin-top:24px"></div>
+  </div>
+
+  <!-- Productions add/edit modal -->
+  <div class="modal-overlay" id="modal-production">
+    <div class="modal">
+      <h3 id="prod-modal-title">הפקה חדשה</h3>
+      <div class="form-group"><label>שם השיר *</label><input type="text" id="prod-title" placeholder="למשל: אהבה שלי"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>שם האמן / לקוח</label><input type="text" id="prod-artist" placeholder="שם האמן"/></div>
+        <div class="form-group"><label>ז'אנר</label><input type="text" id="prod-genre" placeholder="פופ, היפ-הופ, רוק..."/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>שלב התחלתי</label>
+          <select id="prod-stage">
+            <option value="preprod">הכנה</option>
+            <option value="record">הקלטות</option>
+            <option value="edit">עריכה</option>
+            <option value="mix">מיקס</option>
+            <option value="master">מאסטר</option>
+          </select>
+        </div>
+        <div class="form-group"><label>דד-ליין (אופציונלי)</label><input type="date" id="prod-deadline"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>מחיר משוער (אופציונלי)</label><input type="number" id="prod-price" placeholder="0" min="0"/></div>
+        <div class="form-group"><label>עדיפות</label>
+          <select id="prod-priority">
+            <option value="low">נמוכה</option>
+            <option value="normal" selected>רגילה</option>
+            <option value="high">גבוהה</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>קישור רפרנס (YouTube / Spotify)</label><input type="url" id="prod-ref" placeholder="https://..."/></div>
+      <div class="form-group"><label>הערות התחלתיות</label><textarea id="prod-notes" placeholder="כל מה שצריך לזכור..." style="min-height:70px;resize:vertical;font-family:inherit"></textarea></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('production')">ביטול</button>
+        <button class="btn btn-primary" onclick="prodSaveFromModal()">שמור</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick session log modal -->
+  <div class="modal-overlay" id="modal-session">
+    <div class="modal">
+      <h3>סשן עכשיו</h3>
+      <div class="form-group"><label>על מה עבדת? (אופציונלי)</label><input type="text" id="prod-sess-note" placeholder="למשל: הקלטת ווקאל לידיסט"/></div>
+      <div class="form-group"><label>כמה זמן? (דקות)</label><input type="number" id="prod-sess-mins" placeholder="60" min="0" max="480"/></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('session')">ביטול</button>
+        <button class="btn btn-primary" onclick="prodLogSession()">סגור סשן</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== DAILY BOARD (לוח יומי) ===== -->
@@ -6984,7 +7106,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','proj_touched_at','projects','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','proj_touched_at','projects','productions','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -7204,7 +7326,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {income:0, expenses:1, schedule:2, productions:3, installments:4, profiles:5, daily:6, workshops:7, proposals:8, contracts:9, students:10, dashboard:11};
+  const map = {productions:0, income:1, expenses:2, schedule:3, installments:4, profiles:5, daily:6, workshops:7, proposals:8, contracts:9, students:10, dashboard:11};
   if (name === 'daily') _dailyDate = dailyDateStr();
   if (name === 'schedule') {
     _scheduleDate = dailyDateStr();
@@ -7239,7 +7361,7 @@ function showPage(name) {
 // Horizontal finger swipe on the page area switches between tabs.
 // RTL: swipe-left = next tab, swipe-right = previous tab.
 (function setupSwipeNav() {
-  const BIZ_TABS   = ['income','expenses','schedule','productions','installments','workshops','proposals','contracts','students','dashboard'];
+  const BIZ_TABS   = ['productions','income','expenses','schedule','installments','workshops','proposals','contracts','students','dashboard'];
   const MUSIC_TABS = ['released','sketches'];
   const MIN_DX = 70;        // min horizontal distance (px)
   const MAX_DT = 600;       // max swipe duration (ms)
@@ -11281,103 +11403,166 @@ function deleteManualProject(id){
 function backToStudies(){ renderStudies(); window.scrollTo(0, 0); }
 
 // ===== ACTIVE PRODUCTIONS (הפקות פעילות) =====
-// Lives in business mode as its own tab. Reuses the existing
-// PROJ_STATUSES + proj_status / proj_next / proj_services / proj_notes
-// stores so every project the user touches here also reflects in the
-// "studies" projects-hub, and vice versa.
+// Fully self-contained. Storage key 'productions' — no link to income,
+// clients, or any other module.
+//
+// Per-production shape:
+//   { id, title, artist, genre, stage, checklist, deadline, refLink,
+//     notes, sessions:[{ts,note,minutes}], price, priority,
+//     createdAt, touchedAt }
+const PROD_STAGES = [
+  { k:'preprod',   label:'הכנה',     color:'#9aa0aa', tasks:['רפרנס נבחר','טונאליות + טמפו','מבנה השיר','שיחה עם האמן'] },
+  { k:'record',    label:'הקלטות',   color:'#f0a830', tasks:['ווקאל ראשי','גיבויים / כפילים','כלים אקוסטיים','כלים אלקטרוניים'] },
+  { k:'edit',      label:'עריכה',    color:'#a78bfa', tasks:['קומפינג ווקאל','טיוב','ניקוי רעשים','אוטומציה ראשונית'] },
+  { k:'mix',       label:'מיקס',     color:'#7c5cff', tasks:['באלאנס','EQ + קומפרסיה','אפקטים + מרחב','אוטומציה סופית','שליחת רוויזיה ללקוח'] },
+  { k:'master',    label:'מאסטר',    color:'#4aa3ff', tasks:['EQ אבסולוטי','דחיסה / לימיטר','בדיקה ב-3 מערכות','ייצוא בפורמטים'] },
+  { k:'delivered', label:'נמסר',     color:'#34c759', tasks:[] }
+];
+
 let _prodSort = 'urgency';
+let _prodFilter = null; // stage key or null
 let _prodExpanded = new Set();
 let _prodShowDelivered = false;
+let _prodSessionTarget = null;
 
-function projTouchedAt(id) { const o = loadObj('proj_touched_at'); return o[id] || null; }
-function projTouch(id) {
-  const o = loadObj('proj_touched_at');
-  o[id] = new Date().toISOString();
-  save('proj_touched_at', o);
+function prodList() { try { return load('productions') || []; } catch(_) { return []; } }
+function prodSaveAll(arr) { save('productions', arr); }
+function prodById(id) { return prodList().find(p => p.id === id); }
+function prodUpdate(id, patch) {
+  const arr = prodList();
+  const idx = arr.findIndex(p => p.id === id);
+  if (idx < 0) return null;
+  arr[idx] = Object.assign({}, arr[idx], patch, { touchedAt: new Date().toISOString() });
+  prodSaveAll(arr);
+  return arr[idx];
 }
+function prodDelete(id) {
+  prodSaveAll(prodList().filter(p => p.id !== id));
+}
+function prodStageMeta(k) { return PROD_STAGES.find(s => s.k === k) || PROD_STAGES[0]; }
 
-function _daysBetween(a, b) {
+function _prodDaysBetween(a, b) {
   if (!a) return 0;
   const ad = (typeof a === 'string') ? new Date(a) : a;
   const bd = (typeof b === 'string') ? new Date(b) : (b || new Date());
-  const ms = bd.getTime() - ad.getTime();
-  return Math.max(0, Math.floor(ms / 86400000));
+  return Math.max(0, Math.floor((bd.getTime() - ad.getTime()) / 86400000));
+}
+function _prodDaysUntil(deadlineStr) {
+  if (!deadlineStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(deadlineStr); d.setHours(0,0,0,0);
+  return Math.floor((d.getTime() - today.getTime()) / 86400000);
+}
+function _prodStageProgress(p) {
+  const stage = prodStageMeta(p.stage);
+  if (!stage.tasks.length) return { done: 0, total: 0, pct: 100 };
+  const cl = p.checklist || {};
+  const done = stage.tasks.filter(t => cl[p.stage + ':' + t]).length;
+  return { done, total: stage.tasks.length, pct: Math.round((done / stage.tasks.length) * 100) };
+}
+function _prodSessionsThisWeek(p) {
+  const sevenAgo = Date.now() - 7 * 86400000;
+  return (p.sessions || []).filter(s => new Date(s.ts).getTime() > sevenAgo);
 }
 
-function projUrgencyScore(p) {
-  const status = projStatus(p.id);
-  const next   = projNext(p.id);
-  const lastT  = projTouchedAt(p.id) || p.date;
-  const sinceTouch = _daysBetween(lastT, new Date());
-  const open       = _daysBetween(p.date, new Date());
+function prodUrgencyScore(p) {
   let s = 0;
-  if (status === 'client' && sinceTouch > 3) s += 10;
-  if (status === 'work'   && sinceTouch > 5) s += 8;
-  if (status === 'rev'    && sinceTouch > 2) s += 7;
-  if (status === 'todo')                     s += 4;
-  if (next && sinceTouch > 2)                s += 5;
-  if (open > 30)                             s += 3;
-  if (open > 60)                             s += 4;
-  if (open > 90)                             s += 5;
+  // Deadline pressure
+  const du = _prodDaysUntil(p.deadline);
+  if (du !== null) {
+    if (du < 0)       s += 20;            // overdue
+    else if (du <= 2) s += 15;
+    else if (du <= 7) s += 8;
+  }
+  // Priority override
+  if (p.priority === 'high') s += 8;
+  if (p.priority === 'low')  s -= 5;
+  // Stuck (no edits / sessions for a while)
+  const lastT = p.touchedAt || p.createdAt;
+  const stuck = _prodDaysBetween(lastT, new Date());
+  if (p.stage === 'mix'    && stuck > 4) s += 7;
+  if (p.stage === 'master' && stuck > 2) s += 8;
+  if (stuck > 7)  s += 5;
+  if (stuck > 14) s += 5;
+  // "Almost done" — in mix/master with checklist > 70% done
+  const prog = _prodStageProgress(p);
+  if ((p.stage === 'mix' || p.stage === 'master') && prog.pct >= 70 && prog.pct < 100) s += 6;
+  // Recording stage with no sessions logged this week
+  if (p.stage === 'record' && _prodSessionsThisWeek(p).length === 0 && stuck > 3) s += 5;
   return s;
 }
 
-function projUrgencyReason(p) {
-  const status = projStatus(p.id);
-  const next   = projNext(p.id);
-  const lastT  = projTouchedAt(p.id) || p.date;
-  const sinceTouch = _daysBetween(lastT, new Date());
-  const open       = _daysBetween(p.date, new Date());
-  if (status === 'client' && sinceTouch > 3) return `ממתין ללקוח ${sinceTouch} ימים — תזכיר לו`;
-  if (status === 'work'   && sinceTouch > 5) return `בעבודה ${sinceTouch} ימים בלי תזוזה — תגע במשהו`;
-  if (status === 'rev'    && sinceTouch > 2) return `${sinceTouch} ימים ברוויזיות — סגור או החזר ללקוח`;
-  if (open > 90) return `פתוח ${open} ימים — אולי הגיע הזמן לסגור`;
-  if (open > 60) return `פתוח ${open} ימים — מקדים את עצמו לסיום`;
-  if (next && sinceTouch > 2) return 'יש פעולה הבאה: ' + String(next).slice(0, 50);
-  if (status === 'todo') return 'עוד לא התחיל';
+function prodUrgencyReason(p) {
+  const du = _prodDaysUntil(p.deadline);
+  const lastT = p.touchedAt || p.createdAt;
+  const stuck = _prodDaysBetween(lastT, new Date());
+  const prog = _prodStageProgress(p);
+  if (du !== null && du < 0) return `דד-ליין עבר ב-${-du} ימים`;
+  if (du !== null && du <= 2) return `דד-ליין בעוד ${du === 0 ? 'היום' : (du + ' ימים')}`;
+  if ((p.stage === 'mix' || p.stage === 'master') && prog.pct >= 70 && prog.pct < 100)
+    return `${prog.done}/${prog.total} משימות ב${prodStageMeta(p.stage).label} — קרוב לסיום, תסגור`;
+  if (p.stage === 'mix' && stuck > 4) return `${stuck} ימים שלא נגעת במיקס`;
+  if (p.stage === 'master' && stuck > 2) return `${stuck} ימים בלי תזוזה במאסטר`;
+  if (stuck > 14) return `נתקע ${stuck} ימים — תקבל החלטה`;
+  if (du !== null && du <= 7) return `דד-ליין בעוד ${du} ימים`;
+  if (p.priority === 'high') return 'מסומן כעדיפות גבוהה';
   return 'דורש תשומת לב';
 }
 
-function _statusLabelMap() {
-  const m = {};
-  PROJ_STATUSES.forEach(s => m[s.k] = s);
-  return m;
+function _escape(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function renderProductions() {
   const wrap = document.getElementById('prod-list');
   if (!wrap) return;
-  const all = getProjectsList();
-  const active = all.filter(p => projStatus(p.id) !== 'done');
-  const done   = all.filter(p => projStatus(p.id) === 'done');
+  const all = prodList();
+  const active = all.filter(p => p.stage !== 'delivered');
+  const done   = all.filter(p => p.stage === 'delivered');
 
-  active.forEach(p => p._score = projUrgencyScore(p));
+  // Top stats strip
+  _renderProdStats(all);
 
+  // Focus section
+  const focusCandidates = [...active].map(p => Object.assign({}, p, { _score: prodUrgencyScore(p) }));
+  focusCandidates.sort((a, b) => b._score - a._score);
+  _renderProdFocus(focusCandidates.filter(p => p._score > 6).slice(0, 3), active.length);
+
+  // Stage tally
+  _renderProdStageStrip(active);
+
+  // Sort the active list
+  let visible = active.slice();
+  if (_prodFilter) visible = visible.filter(p => p.stage === _prodFilter);
+  visible.forEach(p => p._score = prodUrgencyScore(p));
   if (_prodSort === 'urgency') {
-    active.sort((a, b) => b._score - a._score || (new Date(a.date) - new Date(b.date)));
-  } else if (_prodSort === 'age') {
-    active.sort((a, b) => new Date(a.date) - new Date(b.date));
-  } else if (_prodSort === 'client') {
-    active.sort((a, b) => (a.clientName || 'zzz').localeCompare(b.clientName || 'zzz'));
+    visible.sort((a, b) => b._score - a._score || (new Date(a.createdAt) - new Date(b.createdAt)));
+  } else if (_prodSort === 'deadline') {
+    visible.sort((a, b) => {
+      const da = a.deadline ? new Date(a.deadline).getTime() : Number.POSITIVE_INFINITY;
+      const db = b.deadline ? new Date(b.deadline).getTime() : Number.POSITIVE_INFINITY;
+      return da - db;
+    });
+  } else if (_prodSort === 'touched') {
+    visible.sort((a, b) => new Date(a.touchedAt || a.createdAt) - new Date(b.touchedAt || b.createdAt));
+  } else if (_prodSort === 'new') {
+    visible.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
-  // Focus section: top 3 by score, only show if score > 5
-  const focus = [...active].sort((a, b) => b._score - a._score).slice(0, 3).filter(p => p._score > 5);
-  _renderProdFocus(focus, active.length);
-
-  // Status tally strip
-  _renderProdStatusStrip(active);
-
-  // List
+  // Render list
   if (active.length === 0) {
     wrap.innerHTML = `
       <div class="prod-empty">
         <div class="prod-empty-icon"><svg><use href="#ic-music-note"/></svg></div>
         <div class="prod-empty-title">אין הפקות פעילות</div>
-        <div style="font-size:13px;line-height:1.6">תרשום הכנסה מסוג <strong>הפקה / מיקס / הקלטה</strong> והיא תופיע כאן אוטומטית, או הוסף הפקה ידנית בכפתור למעלה.</div>
+        <div style="font-size:13px;line-height:1.6">לחץ "+ הפקה חדשה" למעלה כדי להוסיף את ההפקה הראשונה.</div>
       </div>`;
+  } else if (visible.length === 0) {
+    wrap.innerHTML = `<div class="prod-empty"><div class="prod-empty-title">אין הפקות בשלב הזה</div></div>`;
   } else {
-    wrap.innerHTML = active.map(p => _prodCard(p)).join('');
+    wrap.innerHTML = visible.map(p => _prodCardHtml(p)).join('');
   }
 
   // Delivered toggle
@@ -11390,9 +11575,40 @@ function renderProductions() {
           <span><svg class="icon"><use href="#ic-check-circle"/></svg> נמסרו (${done.length})</span>
           <span>${_prodShowDelivered ? '▴' : '▾'}</span>
         </div>` +
-        (_prodShowDelivered ? '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' + done.map(p => _prodCard(p)).join('') + '</div>' : '');
+        (_prodShowDelivered ? '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' + done.map(p => _prodCardHtml(p)).join('') + '</div>' : '');
     }
   }
+}
+
+function _renderProdStats(all) {
+  const el = document.getElementById('prod-stats-strip');
+  if (!el) return;
+  const active = all.filter(p => p.stage !== 'delivered').length;
+  // Sessions this week across all productions
+  const weekAgo = Date.now() - 7 * 86400000;
+  let sessThisWeek = 0;
+  let minutesThisWeek = 0;
+  all.forEach(p => (p.sessions || []).forEach(s => {
+    if (new Date(s.ts).getTime() > weekAgo) {
+      sessThisWeek++;
+      minutesThisWeek += Number(s.minutes) || 0;
+    }
+  }));
+  const hours = (minutesThisWeek / 60).toFixed(1).replace(/\.0$/, '');
+  el.className = 'prod-stats-strip';
+  el.innerHTML = `
+    <div class="prod-stat-card">
+      <div class="prod-stat-num">${active}</div>
+      <div class="prod-stat-lbl">הפקות פעילות</div>
+    </div>
+    <div class="prod-stat-card">
+      <div class="prod-stat-num">${sessThisWeek}</div>
+      <div class="prod-stat-lbl">סשנים השבוע</div>
+    </div>
+    <div class="prod-stat-card">
+      <div class="prod-stat-num">${hours}<span style="font-size:14px;font-weight:700;color:var(--text-muted)">ש'</span></div>
+      <div class="prod-stat-lbl">זמן עבודה השבוע</div>
+    </div>`;
 }
 
 function _renderProdFocus(focus, totalActive) {
@@ -11414,96 +11630,171 @@ function _renderProdFocus(focus, totalActive) {
         <span>תתחיל מפה היום</span>
       </div>
       ${focus.map(p => `
-        <div class="prod-focus-card" onclick="prodExpand('${p.id}'); document.getElementById('prod-card-${p.id}')?.scrollIntoView({behavior:'smooth',block:'center'})">
+        <div class="prod-focus-card" onclick="prodScrollTo('${p.id}')">
           <div class="prod-focus-icon"><svg><use href="#ic-alert-circle"/></svg></div>
           <div style="flex:1;min-width:0">
-            <div class="prod-focus-title">${_escape(p.name)} · <span style="color:var(--text-muted);font-weight:700">${_escape(p.clientName || 'ללא לקוח')}</span></div>
-            <div class="prod-focus-reason">${_escape(projUrgencyReason(p))}</div>
+            <div class="prod-focus-title">${_escape(p.title)} · <span style="color:var(--text-muted);font-weight:700">${_escape(p.artist || 'ללא אמן')}</span></div>
+            <div class="prod-focus-reason">${_escape(prodUrgencyReason(p))}</div>
           </div>
         </div>`).join('')}
     </div>`;
 }
 
-function _renderProdStatusStrip(active) {
-  const el = document.getElementById('prod-status-strip');
+function _renderProdStageStrip(active) {
+  const el = document.getElementById('prod-stage-strip');
   if (!el) return;
   const counts = {};
-  PROJ_STATUSES.forEach(s => counts[s.k] = 0);
-  active.forEach(p => { const k = projStatus(p.id); counts[k] = (counts[k] || 0) + 1; });
-  el.innerHTML = PROJ_STATUSES.filter(s => s.k !== 'done' && counts[s.k] > 0).map(s => `
-    <div class="prod-status-tally" style="background:${s.color}1f;color:${s.color}">
-      <span class="tally-dot" style="background:${s.color}"></span>
-      ${counts[s.k]} ${s.label}
-    </div>`).join('');
+  PROD_STAGES.forEach(s => counts[s.k] = 0);
+  active.forEach(p => { counts[p.stage] = (counts[p.stage] || 0) + 1; });
+  el.innerHTML = PROD_STAGES.filter(s => s.k !== 'delivered').map(s => {
+    const cnt = counts[s.k] || 0;
+    const isFilter = _prodFilter === s.k;
+    const isMuted = _prodFilter && !isFilter;
+    return `
+      <div class="prod-stage-tally ${isMuted ? 'muted' : ''}"
+           style="background:${s.color}1f;color:${s.color};border-color:${isFilter ? s.color : 'transparent'}"
+           onclick="prodSetFilter('${s.k}')">
+        <span class="tally-dot" style="background:${s.color}"></span>
+        ${cnt} ${s.label}
+      </div>`;
+  }).join('') + (_prodFilter
+    ? `<button class="prod-chip" onclick="prodSetFilter(null)" style="margin-right:auto">בטל סינון ✕</button>`
+    : '');
 }
 
-function _escape(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function _prodCard(p) {
-  const status   = projStatus(p.id);
-  const meta     = projStatusMeta(status);
-  const services = projServices(p.id);
-  const next     = projNext(p.id);
-  const notes    = (loadObj('proj_notes'))[p.id] || '';
-  const lastT    = projTouchedAt(p.id) || p.date;
-  const open     = _daysBetween(p.date, new Date());
-  const stuck    = _daysBetween(lastT, new Date());
-  const urgent   = projUrgencyScore(p) >= 10;
+function _prodCardHtml(p) {
+  const stage = prodStageMeta(p.stage);
   const expanded = _prodExpanded.has(p.id);
-  const statusIdx  = PROJ_STATUSES.findIndex(s => s.k === status);
-  const nextStage  = PROJ_STATUSES[statusIdx + 1];
+  const stageIdx = PROD_STAGES.findIndex(s => s.k === p.stage);
+  const nextStage = PROD_STAGES[stageIdx + 1];
   const canAdvance = !!nextStage;
-  const idEsc = _escape(p.id);
+  const lastT = p.touchedAt || p.createdAt;
+  const stuck = _prodDaysBetween(lastT, new Date());
+  const du = _prodDaysUntil(p.deadline);
+  const prog = _prodStageProgress(p);
+  const score = prodUrgencyScore(p);
+  const urgent = score >= 12;
+  const id = _escape(p.id);
 
-  const statusPills = PROJ_STATUSES.map(s => {
-    const on = s.k === status;
+  // Deadline pill text + style
+  let deadlineHtml = '';
+  if (du !== null) {
+    if (du < 0)        deadlineHtml = `<span class="meta-item deadline-overdue"><svg><use href="#ic-alert-circle"/></svg>באיחור ${-du} ימים</span>`;
+    else if (du === 0) deadlineHtml = `<span class="meta-item deadline-soon"><svg><use href="#ic-clock"/></svg>היום</span>`;
+    else if (du <= 7)  deadlineHtml = `<span class="meta-item deadline-soon"><svg><use href="#ic-clock"/></svg>נשאר ${du} ימים</span>`;
+    else               deadlineHtml = `<span class="meta-item"><svg><use href="#ic-calendar"/></svg>${du} ימים לדד-ליין</span>`;
+  }
+  const sessionsWeek = _prodSessionsThisWeek(p).length;
+  const lastSession  = (p.sessions || []).slice(-1)[0];
+  const lastSessText = lastSession
+    ? `סשן אחרון לפני ${_prodDaysBetween(lastSession.ts, new Date()) || '< יום'}${typeof _prodDaysBetween(lastSession.ts, new Date()) === 'number' ? ' ימים' : ''}`
+    : 'עוד אין סשנים';
+
+  // Checklist for current stage
+  let checklistHtml = '';
+  if (stage.tasks.length) {
+    const cl = p.checklist || {};
+    checklistHtml = `<div class="prod-checklist">${stage.tasks.map(t => {
+      const k = p.stage + ':' + t;
+      const checked = !!cl[k];
+      return `<div class="prod-checklist-item ${checked ? 'done' : ''}" onclick="prodToggleTask('${id}','${_escape(t)}')">
+        <span class="prod-checklist-box">${checked ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</span>
+        <span class="prod-checklist-text">${_escape(t)}</span>
+      </div>`;
+    }).join('')}</div>`;
+  } else {
+    checklistHtml = `<div class="prod-checklist prod-checklist-stage-done">✓ נמסר</div>`;
+  }
+
+  const stagePills = PROD_STAGES.map(s => {
+    const on = s.k === p.stage;
     const style = on ? `background:${s.color};border-color:${s.color};color:#fff` : '';
-    return `<button class="prod-stage-pill" style="${style}" onclick="prodSetStatus('${idEsc}','${s.k}')">${s.label}</button>`;
+    return `<button class="prod-stage-pill" style="${style}" onclick="prodSetStage('${id}','${s.k}')">${s.label}</button>`;
   }).join('');
 
-  const serviceChips = PROJ_SERVICES.map(s => {
-    const on = services.indexOf(s) >= 0;
-    const style = on ? 'background:rgba(124,92,255,0.22);border-color:var(--accent);color:var(--accent)' : '';
-    return `<button class="prod-stage-pill" style="${style}" onclick="prodToggleService('${idEsc}','${_escape(s)}')">${_escape(s)}</button>`;
+  const priorityPills = ['low','normal','high'].map(pr => {
+    const lbl = {low:'נמוכה',normal:'רגילה',high:'גבוהה'}[pr];
+    const on = (p.priority || 'normal') === pr;
+    const color = pr === 'high' ? 'var(--orange)' : (pr === 'low' ? 'var(--text-muted)' : 'var(--accent)');
+    const style = on ? `background:${color};border-color:${color};color:#fff` : '';
+    return `<button class="prod-stage-pill" style="${style}" onclick="prodSetPriority('${id}','${pr}')">${lbl}</button>`;
   }).join('');
+
+  const sessions = (p.sessions || []).slice().reverse();
+  const sessionLogHtml = sessions.length
+    ? `<div class="prod-session-log">${sessions.slice(0, 20).map(s => {
+        const d = new Date(s.ts);
+        const when = d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' }) + ' · ' + d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+        return `<div class="prod-session-row">
+          <span class="prod-session-when">${when}</span>
+          <span class="prod-session-what">${_escape(s.note || 'סשן')}</span>
+          ${s.minutes ? `<span class="prod-session-mins">${s.minutes}ד'</span>` : ''}
+        </div>`;
+      }).join('')}</div>`
+    : '<div style="font-size:12.5px;color:var(--text-muted);text-align:center;padding:8px">אין סשנים מתועדים</div>';
 
   return `
-    <div class="prod-card ${urgent ? 'urgent' : ''}" id="prod-card-${idEsc}">
+    <div class="prod-card ${urgent ? 'urgent' : ''} ${p.priority === 'high' ? 'priority-high' : ''}" id="prod-card-${id}">
       <div class="prod-card-top">
         <div style="flex:1;min-width:0">
-          <div class="prod-card-title">${_escape(p.name)}</div>
-          <div class="prod-card-client">${_escape(p.clientName || 'ללא לקוח')}${p.amount ? ' · ' + fmtMoney(p.amount) : ''}</div>
+          <div class="prod-card-title">${_escape(p.title)}</div>
+          <div class="prod-card-artist">
+            ${p.genre ? `<span class="prod-genre-pill">${_escape(p.genre)}</span>` : ''}
+            ${_escape(p.artist || 'ללא אמן')}
+            ${p.price ? ` · ${fmtMoney(p.price)}` : ''}
+          </div>
         </div>
-        <span class="prod-status-badge" style="background:${meta.color}22;color:${meta.color};border-color:${meta.color}66">${meta.label}</span>
+        <span class="prod-stage-badge" style="background:${stage.color}22;color:${stage.color};border-color:${stage.color}66">${stage.label}</span>
       </div>
-      ${next
-        ? `<div class="prod-next" onclick="prodExpand('${idEsc}')"><svg><use href="#ic-target"/></svg>${_escape(next)}</div>`
-        : `<div class="prod-next empty" onclick="prodExpand('${idEsc}')"><svg><use href="#ic-target"/></svg>הגדר פעולה הבאה →</div>`
-      }
-      <div class="prod-meta">
-        ${services.map(s => `<span class="prod-tag">${_escape(s)}</span>`).join('')}
-        <span class="prod-age">${open} יום פתוח${stuck > 3 ? ` · <span class="prod-stuck">נתקע ${stuck} ימים</span>` : ''}</span>
+
+      ${checklistHtml}
+
+      ${stage.tasks.length ? `
+      <div class="prod-progress-wrap">
+        <div class="prod-progress-row">
+          <span>${prog.done}/${prog.total} במשימות השלב</span>
+          <span style="color:${stage.color};font-weight:900">${prog.pct}%</span>
+        </div>
+        <div class="prod-progress-bar"><div class="prod-progress-fill" style="width:${prog.pct}%;background:${stage.color}"></div></div>
+      </div>` : ''}
+
+      <div class="prod-meta-row">
+        ${deadlineHtml}
+        <span class="meta-item ${stuck > 5 ? 'stuck-warn' : ''}"><svg><use href="#ic-hourglass"/></svg>נתקע ${stuck} ימים</span>
+        <span class="meta-item"><svg><use href="#ic-music-note"/></svg>${sessionsWeek} סשנים השבוע</span>
       </div>
+
       <div class="prod-actions">
+        <button class="prod-btn" onclick="prodOpenSessionModal('${id}')"><svg><use href="#ic-clock"/></svg> סשן עכשיו</button>
         ${canAdvance
-          ? `<button class="prod-advance-btn" onclick="prodAdvanceStatus('${idEsc}')">→ ${nextStage.label}</button>`
-          : `<button class="prod-advance-btn" disabled>בשלב הסופי</button>`}
-        <button class="prod-expand-btn" onclick="prodExpand('${idEsc}')">${expanded ? '▴ סגור' : '▾ פרטים'}</button>
+          ? `<button class="prod-btn secondary" onclick="prodAdvanceStage('${id}')">→ ${nextStage.label}</button>`
+          : ''}
+        <button class="prod-btn ghost" onclick="prodExpand('${id}')">${expanded ? '▴' : '▾'}</button>
       </div>
+
       <div class="prod-card-expand ${expanded ? 'open' : ''}">
         <div class="prod-expand-h">שלב</div>
-        <div class="prod-stage-row">${statusPills}</div>
-        <div class="prod-expand-h">מה אני עושה בפרויקט</div>
-        <div class="prod-stage-row">${serviceChips}</div>
-        <div class="prod-expand-h">פעולה הבאה</div>
-        <input class="prod-next-input" type="text" value="${_escape(next)}" placeholder="מה השלב הבא? (למשל: לשלוח מיקס לאישור)" oninput="prodSaveNext('${idEsc}', this.value)"/>
+        <div class="prod-stage-row">${stagePills}</div>
+
+        <div class="prod-expand-h">עדיפות</div>
+        <div class="prod-stage-row">${priorityPills}</div>
+
+        <div class="prod-expand-h">דד-ליין</div>
+        <input class="prod-input" type="date" value="${_escape(p.deadline || '')}" onchange="prodSetDeadline('${id}', this.value)"/>
+
+        <div class="prod-expand-h">קישור רפרנס</div>
+        <div style="display:flex;gap:6px">
+          <input class="prod-input" type="url" placeholder="https://youtube.com/... או https://open.spotify.com/..." value="${_escape(p.refLink || '')}" oninput="prodSetRef('${id}', this.value)" style="flex:1"/>
+          ${p.refLink ? `<button class="prod-btn secondary" style="flex:0 0 auto" onclick="prodOpenRef('${id}')">פתח</button>` : ''}
+        </div>
+
         <div class="prod-expand-h">הערות</div>
-        <textarea class="prod-notes-input" placeholder="הערות על הפרויקט..." oninput="prodSaveNote('${idEsc}', this.value)">${_escape(notes)}</textarea>
-        ${p.src === 'manual' ? `<button class="prod-delete-link" onclick="prodDeleteManual('${idEsc}')"><svg class="icon"><use href="#ic-trash"/></svg> מחק הפקה</button>` : ''}
+        <textarea class="prod-textarea" placeholder="הערות, רעיונות, תזכורות..." oninput="prodSetNotes('${id}', this.value)">${_escape(p.notes || '')}</textarea>
+
+        <div class="prod-expand-h">סשנים</div>
+        ${sessionLogHtml}
+
+        <button class="prod-delete-link" onclick="prodConfirmDelete('${id}')"><svg class="icon"><use href="#ic-trash"/></svg> מחק הפקה</button>
       </div>
     </div>`;
 }
@@ -11515,72 +11806,133 @@ window.prodSetSort = function(mode) {
   });
   renderProductions();
 };
-
+window.prodSetFilter = function(k) {
+  _prodFilter = (_prodFilter === k) ? null : k;
+  renderProductions();
+};
 window.prodExpand = function(id) {
   if (_prodExpanded.has(id)) _prodExpanded.delete(id); else _prodExpanded.add(id);
   renderProductions();
 };
-
+window.prodScrollTo = function(id) {
+  _prodExpanded.add(id);
+  renderProductions();
+  setTimeout(() => {
+    const el = document.getElementById('prod-card-' + id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 60);
+};
 window.prodToggleDelivered = function() { _prodShowDelivered = !_prodShowDelivered; renderProductions(); };
 
-window.prodSetStatus = function(id, k) {
-  const o = loadObj('proj_status'); o[id] = k; save('proj_status', o);
-  projTouch(id);
+window.prodToggleTask = function(id, task) {
+  const p = prodById(id); if (!p) return;
+  const cl = Object.assign({}, p.checklist || {});
+  const k = p.stage + ':' + task;
+  if (cl[k]) delete cl[k]; else cl[k] = true;
+  prodUpdate(id, { checklist: cl });
   if (window.haptic) window.haptic.tap();
   renderProductions();
 };
-
-window.prodAdvanceStatus = function(id) {
-  const cur = projStatus(id);
-  const idx = PROJ_STATUSES.findIndex(s => s.k === cur);
-  const next = PROJ_STATUSES[idx + 1];
-  if (!next) { toast('כבר בשלב הסופי'); return; }
-  prodSetStatus(id, next.k);
-  if (window.haptic) window.haptic.success();
-  toast('עבר ל: ' + next.label);
-};
-
-window.prodToggleService = function(id, s) {
-  const o = loadObj('proj_services'); const arr = o[id] || [];
-  const i = arr.indexOf(s);
-  if (i < 0) arr.push(s); else arr.splice(i, 1);
-  o[id] = arr; save('proj_services', o);
-  projTouch(id);
+window.prodSetStage = function(id, k) {
+  prodUpdate(id, { stage: k });
+  if (window.haptic) window.haptic.tap();
   renderProductions();
 };
-
-window.prodSaveNext = function(id, v) {
-  const o = loadObj('proj_next'); o[id] = v; save('proj_next', o);
-  projTouch(id);
+window.prodAdvanceStage = function(id) {
+  const p = prodById(id); if (!p) return;
+  const idx = PROD_STAGES.findIndex(s => s.k === p.stage);
+  const next = PROD_STAGES[idx + 1];
+  if (!next) { toast('כבר בשלב הסופי'); return; }
+  prodUpdate(id, { stage: next.k });
+  if (window.haptic) window.haptic.success();
+  toast('עבר ל: ' + next.label);
+  renderProductions();
+};
+window.prodSetPriority = function(id, pr) {
+  prodUpdate(id, { priority: pr });
+  if (window.haptic) window.haptic.tap();
+  renderProductions();
+};
+window.prodSetDeadline = function(id, v) { prodUpdate(id, { deadline: v || null }); renderProductions(); };
+window.prodSetRef      = function(id, v) { prodUpdate(id, { refLink: v });           };
+window.prodSetNotes    = function(id, v) { prodUpdate(id, { notes: v });             };
+window.prodOpenRef = function(id) {
+  const p = prodById(id); if (!p || !p.refLink) return;
+  const Browser = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+  if (Browser) Browser.open({ url: p.refLink }).catch(() => window.open(p.refLink, '_blank'));
+  else window.open(p.refLink, '_blank');
 };
 
-window.prodSaveNote = function(id, v) {
-  const o = loadObj('proj_notes'); o[id] = v; save('proj_notes', o);
-  projTouch(id);
-};
-
-window.prodDeleteManual = function(id) {
-  if (!confirm('למחוק את ההפקה?')) return;
-  save('projects', load('projects').filter(p => p.id !== id));
-  ['proj_status','proj_services','proj_next','proj_notes','proj_touched_at'].forEach(k => {
-    const o = loadObj(k); if (o[id] !== undefined) { delete o[id]; save(k, o); }
-  });
+window.prodConfirmDelete = function(id) {
+  const p = prodById(id); if (!p) return;
+  if (!confirm('למחוק את ההפקה "' + p.title + '"?')) return;
+  prodDelete(id);
   if (window.haptic) window.haptic.success();
   toast('ההפקה נמחקה');
   renderProductions();
 };
 
-window.prodOpenAddManual = function() {
-  const name = prompt('שם השיר / ההפקה:');
-  if (!name || !name.trim()) return;
-  const client = prompt('שם הלקוח (אופציונלי):') || '';
-  const id = 'manual_' + Date.now();
-  const arr = load('projects') || [];
-  arr.push({ id, name: name.trim(), clientName: client.trim(), date: new Date().toISOString().slice(0, 10) });
-  save('projects', arr);
-  projTouch(id);
+// ===== Add/edit modal =====
+window.prodOpenAddModal = function() {
+  document.getElementById('prod-modal-title').textContent = 'הפקה חדשה';
+  ['prod-title','prod-artist','prod-genre','prod-deadline','prod-ref','prod-notes','prod-price'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('prod-stage').value = 'preprod';
+  document.getElementById('prod-priority').value = 'normal';
+  document.getElementById('modal-production').classList.add('open');
+  setTimeout(() => document.getElementById('prod-title').focus(), 100);
+};
+window.prodSaveFromModal = function() {
+  const title = document.getElementById('prod-title').value.trim();
+  if (!title) { toast('שם השיר חובה'); return; }
+  const now = new Date().toISOString();
+  const p = {
+    id: 'prod_' + Date.now(),
+    title,
+    artist:   document.getElementById('prod-artist').value.trim(),
+    genre:    document.getElementById('prod-genre').value.trim(),
+    stage:    document.getElementById('prod-stage').value || 'preprod',
+    deadline: document.getElementById('prod-deadline').value || null,
+    refLink:  document.getElementById('prod-ref').value.trim(),
+    notes:    document.getElementById('prod-notes').value.trim(),
+    price:    parseFloat(document.getElementById('prod-price').value) || null,
+    priority: document.getElementById('prod-priority').value || 'normal',
+    checklist: {},
+    sessions:  [],
+    createdAt: now,
+    touchedAt: now
+  };
+  const arr = prodList();
+  arr.push(p);
+  prodSaveAll(arr);
+  closeModal('production');
   if (window.haptic) window.haptic.success();
-  toast('נוספה הפקה — תתחיל לעבוד');
+  toast('נוספה הפקה "' + title + '"');
+  renderProductions();
+};
+
+// ===== Quick session log =====
+window.prodOpenSessionModal = function(id) {
+  _prodSessionTarget = id;
+  document.getElementById('prod-sess-note').value = '';
+  document.getElementById('prod-sess-mins').value = '';
+  document.getElementById('modal-session').classList.add('open');
+  setTimeout(() => document.getElementById('prod-sess-note').focus(), 100);
+};
+window.prodLogSession = function() {
+  const id = _prodSessionTarget;
+  if (!id) return;
+  const p = prodById(id); if (!p) { closeModal('session'); return; }
+  const note    = document.getElementById('prod-sess-note').value.trim();
+  const minutes = parseInt(document.getElementById('prod-sess-mins').value) || 0;
+  const sessions = (p.sessions || []).slice();
+  sessions.push({ ts: new Date().toISOString(), note, minutes });
+  prodUpdate(id, { sessions });
+  closeModal('session');
+  _prodSessionTarget = null;
+  if (window.haptic) window.haptic.success();
+  toast('סשן נרשם ✓');
   renderProductions();
 };
 
