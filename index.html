@@ -1405,6 +1405,34 @@
       padding: 5px 11px; border-radius: 999px;
       white-space: nowrap; border: 1.5px solid;
     }
+    .prod-stage-mini {
+      display: inline-flex; align-items: center;
+      font-size: 11px; font-weight: 800;
+      padding: 2px 9px; border-radius: 999px;
+      border: 1.5px solid; line-height: 1.5;
+      margin-left: 6px;
+    }
+    .prod-deadline-box {
+      text-align: center; flex-shrink: 0; cursor: pointer;
+      min-width: 84px; padding: 0 4px;
+    }
+    .prod-deadline-box .deadline-big {
+      font-size: 16px; font-weight: 900; line-height: 1.15;
+      letter-spacing: -0.01em;
+    }
+    .prod-deadline-box .deadline-date {
+      font-size: 11px; color: var(--text-muted);
+      font-weight: 700; margin-top: 3px;
+      font-variant-numeric: tabular-nums;
+    }
+    .prod-deadline-empty {
+      flex-shrink: 0; cursor: pointer;
+      font-size: 11.5px; font-weight: 700; color: var(--text-muted);
+      border: 1px dashed var(--border); border-radius: 8px;
+      padding: 5px 10px;
+      font-family: 'Heebo', sans-serif;
+      background: transparent;
+    }
 
     /* Stage progress bar */
     .prod-progress-wrap { margin: 12px 0 10px; }
@@ -5480,7 +5508,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v309</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v310</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6081,11 +6109,11 @@
       <div class="form-row">
         <div class="form-group"><label>שלב התחלתי</label>
           <select id="prod-stage">
-            <option value="preprod">הכנה</option>
-            <option value="record">הקלטות</option>
-            <option value="edit">עריכה</option>
+            <option value="sketch">סקיצה</option>
+            <option value="prod">הפקה</option>
             <option value="mix">מיקס</option>
             <option value="master">מאסטר</option>
+            <option value="sent">שליחה לאמן</option>
           </select>
         </div>
         <div class="form-group"><label>עדיפות</label>
@@ -6132,18 +6160,6 @@
     </div>
   </div>
 
-  <!-- Quick session log modal -->
-  <div class="modal-overlay" id="modal-session">
-    <div class="modal">
-      <h3>סשן עכשיו</h3>
-      <div class="form-group"><label>על מה עבדת? (אופציונלי)</label><input type="text" id="prod-sess-note" placeholder="למשל: הקלטת ווקאל לידיסט"/></div>
-      <div class="form-group"><label>כמה זמן? (דקות)</label><input type="number" id="prod-sess-mins" placeholder="60" min="0" max="480"/></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeModal('session')">ביטול</button>
-        <button class="btn btn-primary" onclick="prodLogSession()">סגור סשן</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ===== DAILY BOARD (לוח יומי) ===== -->
   <div class="page" id="page-daily">
@@ -11487,21 +11503,37 @@ function backToStudies(){ renderStudies(); window.scrollTo(0, 0); }
 //     notes, sessions:[{ts,note,minutes}], price, priority,
 //     createdAt, touchedAt }
 const PROD_STAGES = [
-  { k:'preprod',   label:'הכנה',     color:'#9aa0aa' },
-  { k:'record',    label:'הקלטות',   color:'#f0a830' },
-  { k:'edit',      label:'עריכה',    color:'#a78bfa' },
-  { k:'mix',       label:'מיקס',     color:'#7c5cff' },
-  { k:'master',    label:'מאסטר',    color:'#4aa3ff' },
-  { k:'delivered', label:'נמסר',     color:'#34c759' }
+  { k:'sketch', label:'סקיצה',         color:'#9aa0aa' },
+  { k:'prod',   label:'הפקה',          color:'#f0a830' },
+  { k:'mix',    label:'מיקס',          color:'#7c5cff' },
+  { k:'master', label:'מאסטר',         color:'#4aa3ff' },
+  { k:'sent',   label:'שליחה לאמן',    color:'#34c759' }
 ];
+// Old → new stage mapping for productions saved before v310.
+const _PROD_STAGE_MIGRATION = {
+  preprod:   'sketch',
+  record:    'prod',
+  edit:      'prod',
+  delivered: 'sent'
+};
 
 let _prodSort = 'urgency';
 let _prodFilter = null; // stage key or null
 let _prodExpanded = new Set();
 let _prodShowDelivered = false;
-let _prodSessionTarget = null;
 
-function prodList() { try { return load('productions') || []; } catch(_) { return []; } }
+function prodList() {
+  let arr;
+  try { arr = load('productions') || []; } catch(_) { return []; }
+  // Lazy-migrate old stage keys (preprod / record / edit / delivered)
+  let dirty = false;
+  arr.forEach(p => {
+    const m = _PROD_STAGE_MIGRATION[p.stage];
+    if (m) { p.stage = m; dirty = true; }
+  });
+  if (dirty) save('productions', arr);
+  return arr;
+}
 function prodSaveAll(arr) { save('productions', arr); }
 function prodById(id) { return prodList().find(p => p.id === id); }
 function prodUpdate(id, patch) {
@@ -11529,11 +11561,6 @@ function _prodDaysUntil(deadlineStr) {
   const d = new Date(deadlineStr); d.setHours(0,0,0,0);
   return Math.floor((d.getTime() - today.getTime()) / 86400000);
 }
-function _prodSessionsThisWeek(p) {
-  const sevenAgo = Date.now() - 7 * 86400000;
-  return (p.sessions || []).filter(s => new Date(s.ts).getTime() > sevenAgo);
-}
-
 function prodUrgencyScore(p) {
   let s = 0;
   // Deadline pressure
@@ -11553,8 +11580,6 @@ function prodUrgencyScore(p) {
   if (p.stage === 'master' && stuck > 2) s += 8;
   if (stuck > 7)  s += 5;
   if (stuck > 14) s += 5;
-  // Recording stage with no sessions logged this week
-  if (p.stage === 'record' && _prodSessionsThisWeek(p).length === 0 && stuck > 3) s += 5;
   // Waiting-for date passed → the blocker should be unblocked by now
   if (p.waitingFor && p.waitingFor.date) {
     const wdu = _prodDaysUntil(p.waitingFor.date);
@@ -11592,8 +11617,8 @@ function renderProductions() {
   const wrap = document.getElementById('prod-list');
   if (!wrap) return;
   const all = prodList();
-  const active = all.filter(p => p.stage !== 'delivered');
-  const done   = all.filter(p => p.stage === 'delivered');
+  const active = all.filter(p => p.stage !== 'sent');
+  const done   = all.filter(p => p.stage === 'sent');
 
   // Top stats strip
   _renderProdStats(all);
@@ -11656,7 +11681,7 @@ function renderProductions() {
 function _renderProdStats(all) {
   const el = document.getElementById('prod-stats-strip');
   if (!el) return;
-  const active = all.filter(p => p.stage !== 'delivered').length;
+  const active = all.filter(p => p.stage !== 'sent').length;
   el.className = 'prod-stats-strip';
   el.style.gridTemplateColumns = '1fr';
   el.innerHTML = `
@@ -11730,20 +11755,28 @@ function _prodCardHtml(p) {
   const urgent = score >= 12;
   const id = _escape(p.id);
 
-  // Deadline pill text + style
-  let deadlineHtml = '';
+  // Big deadline badge for the top-left of the card. Shows "נשאר 5 ימים"
+  // (or "איחור 3 ימים" / "היום") in big text, with the actual date in
+  // small text underneath. Color shifts as the deadline approaches.
+  let deadlineBoxHtml = '';
   if (du !== null) {
-    if (du < 0)        deadlineHtml = `<span class="meta-item deadline-overdue"><svg><use href="#ic-alert-circle"/></svg>באיחור ${-du} ימים</span>`;
-    else if (du === 0) deadlineHtml = `<span class="meta-item deadline-soon"><svg><use href="#ic-clock"/></svg>היום</span>`;
-    else if (du <= 7)  deadlineHtml = `<span class="meta-item deadline-soon"><svg><use href="#ic-clock"/></svg>נשאר ${du} ימים</span>`;
-    else               deadlineHtml = `<span class="meta-item"><svg><use href="#ic-calendar"/></svg>${du} ימים לדד-ליין</span>`;
+    let bigText, color;
+    if (du < 0)        { bigText = `איחור ${-du} ימים`; color = '#dc2626'; }
+    else if (du === 0) { bigText = 'היום!';              color = '#dc2626'; }
+    else if (du <= 3)  { bigText = `נשאר ${du} ימים`;    color = '#dc2626'; }
+    else if (du <= 7)  { bigText = `נשאר ${du} ימים`;    color = 'var(--orange)'; }
+    else               { bigText = `נשאר ${du} ימים`;    color = 'var(--text)'; }
+    const dateStr = new Date(p.deadline).toLocaleDateString('he-IL', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+    deadlineBoxHtml = `
+      <div class="prod-deadline-box" onclick="prodExpand('${id}')">
+        <div class="deadline-big" style="color:${color}">${bigText}</div>
+        <div class="deadline-date">${dateStr}</div>
+      </div>`;
+  } else {
+    deadlineBoxHtml = `<button class="prod-deadline-empty" onclick="prodExpand('${id}')">+ דד-ליין</button>`;
   }
-  const sessionsWeek = _prodSessionsThisWeek(p).length;
-  const lastSession  = (p.sessions || []).slice(-1)[0];
-  const lastSessText = lastSession
-    ? `סשן אחרון לפני ${_prodDaysBetween(lastSession.ts, new Date()) || '< יום'}${typeof _prodDaysBetween(lastSession.ts, new Date()) === 'number' ? ' ימים' : ''}`
-    : 'עוד אין סשנים';
-
   const stagePills = PROD_STAGES.map(s => {
     const on = s.k === p.stage;
     const style = on ? `background:${s.color};border-color:${s.color};color:#fff` : '';
@@ -11757,19 +11790,6 @@ function _prodCardHtml(p) {
     const style = on ? `background:${color};border-color:${color};color:#fff` : '';
     return `<button class="prod-stage-pill" style="${style}" onclick="prodSetPriority('${id}','${pr}')">${lbl}</button>`;
   }).join('');
-
-  const sessions = (p.sessions || []).slice().reverse();
-  const sessionLogHtml = sessions.length
-    ? `<div class="prod-session-log">${sessions.slice(0, 20).map(s => {
-        const d = new Date(s.ts);
-        const when = d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' }) + ' · ' + d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-        return `<div class="prod-session-row">
-          <span class="prod-session-when">${when}</span>
-          <span class="prod-session-what">${_escape(s.note || 'סשן')}</span>
-          ${s.minutes ? `<span class="prod-session-mins">${s.minutes}ד'</span>` : ''}
-        </div>`;
-      }).join('')}</div>`
-    : '<div style="font-size:12.5px;color:var(--text-muted);text-align:center;padding:8px">אין סשנים מתועדים</div>';
 
   // ── Payment block ──────────────────────────────────────────────
   // Sums historical payments + lets the user "+ חצי" / "+ הכל" /
@@ -11848,29 +11868,24 @@ function _prodCardHtml(p) {
         <div style="flex:1;min-width:0">
           <div class="prod-card-title">${_escape(p.title)}</div>
           <div class="prod-card-artist">
-            ${p.genre ? `<span class="prod-genre-pill">${_escape(p.genre)}</span>` : ''}
             ${_escape(p.artist || 'ללא אמן')}
+            <span class="prod-stage-mini" style="background:${stage.color}22;color:${stage.color};border-color:${stage.color}66">${stage.label}</span>
           </div>
         </div>
-        <span class="prod-stage-badge" style="background:${stage.color}22;color:${stage.color};border-color:${stage.color}66">${stage.label}</span>
+        ${deadlineBoxHtml}
       </div>
 
       ${payHtml}
 
       ${waitingHtml || `<button class="prod-waiting-empty" onclick="prodOpenWaitingModal('${id}')"><svg><use href="#ic-hourglass"/></svg>+ מחכים למישהו/משהו</button>`}
 
-      <div class="prod-meta-row">
-        ${deadlineHtml}
-        <span class="meta-item ${stuck > 5 ? 'stuck-warn' : ''}"><svg><use href="#ic-hourglass"/></svg>נתקע ${stuck} ימים</span>
-        <span class="meta-item"><svg><use href="#ic-music-note"/></svg>${sessionsWeek} סשנים השבוע</span>
-      </div>
+      ${stuck > 5 ? `<div class="prod-meta-row"><span class="meta-item stuck-warn"><svg><use href="#ic-hourglass"/></svg>נתקע ${stuck} ימים</span></div>` : ''}
 
       <div class="prod-actions">
-        <button class="prod-btn" onclick="prodOpenSessionModal('${id}')"><svg><use href="#ic-clock"/></svg> סשן עכשיו</button>
         ${canAdvance
-          ? `<button class="prod-btn secondary" onclick="prodAdvanceStage('${id}')">→ ${nextStage.label}</button>`
+          ? `<button class="prod-btn" onclick="prodAdvanceStage('${id}')">→ ${nextStage.label}</button>`
           : ''}
-        <button class="prod-btn ghost" onclick="prodExpand('${id}')">${expanded ? '▴' : '▾'}</button>
+        <button class="prod-btn ghost" onclick="prodExpand('${id}')">${expanded ? '▴' : '▾ פרטים'}</button>
       </div>
 
       <div class="prod-card-expand ${expanded ? 'open' : ''}">
@@ -11883,17 +11898,8 @@ function _prodCardHtml(p) {
         <div class="prod-expand-h">דד-ליין</div>
         <input class="prod-input" type="date" value="${_escape(p.deadline || '')}" onchange="prodSetDeadline('${id}', this.value)"/>
 
-        <div class="prod-expand-h">קישור רפרנס</div>
-        <div style="display:flex;gap:6px">
-          <input class="prod-input" type="url" placeholder="https://youtube.com/... או https://open.spotify.com/..." value="${_escape(p.refLink || '')}" oninput="prodSetRef('${id}', this.value)" style="flex:1"/>
-          ${p.refLink ? `<button class="prod-btn secondary" style="flex:0 0 auto" onclick="prodOpenRef('${id}')">פתח</button>` : ''}
-        </div>
-
         <div class="prod-expand-h">הערות</div>
         <textarea class="prod-textarea" placeholder="הערות, רעיונות, תזכורות..." oninput="prodSetNotes('${id}', this.value)">${_escape(p.notes || '')}</textarea>
-
-        <div class="prod-expand-h">סשנים</div>
-        ${sessionLogHtml}
 
         <button class="prod-delete-link" onclick="prodConfirmDelete('${id}')"><svg class="icon"><use href="#ic-trash"/></svg> מחק הפקה</button>
       </div>
@@ -12104,7 +12110,7 @@ window.prodOpenAddModal = function() {
   ['prod-title','prod-artist','prod-deadline','prod-notes','prod-price'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  const stage = document.getElementById('prod-stage');    if (stage)    stage.value = 'preprod';
+  const stage = document.getElementById('prod-stage');    if (stage)    stage.value = 'sketch';
   const prio  = document.getElementById('prod-priority'); if (prio)     prio.value  = 'normal';
   document.getElementById('modal-production').classList.add('open');
   setTimeout(() => { const t2 = document.getElementById('prod-title'); if (t2) t2.focus(); }, 100);
@@ -12117,7 +12123,7 @@ window.prodSaveFromModal = function() {
     id: 'prod_' + Date.now(),
     title,
     artist:   _prodFieldVal('prod-artist').trim(),
-    stage:    _prodFieldVal('prod-stage') || 'preprod',
+    stage:    _prodFieldVal('prod-stage') || 'sketch',
     deadline: _prodFieldVal('prod-deadline') || null,
     notes:    _prodFieldVal('prod-notes').trim(),
     price:    parseFloat(_prodFieldVal('prod-price')) || null,
@@ -12133,30 +12139,6 @@ window.prodSaveFromModal = function() {
   closeModal('production');
   if (window.haptic) window.haptic.success();
   toast('נוספה הפקה "' + title + '"');
-  renderProductions();
-};
-
-// ===== Quick session log =====
-window.prodOpenSessionModal = function(id) {
-  _prodSessionTarget = id;
-  document.getElementById('prod-sess-note').value = '';
-  document.getElementById('prod-sess-mins').value = '';
-  document.getElementById('modal-session').classList.add('open');
-  setTimeout(() => document.getElementById('prod-sess-note').focus(), 100);
-};
-window.prodLogSession = function() {
-  const id = _prodSessionTarget;
-  if (!id) return;
-  const p = prodById(id); if (!p) { closeModal('session'); return; }
-  const note    = document.getElementById('prod-sess-note').value.trim();
-  const minutes = parseInt(document.getElementById('prod-sess-mins').value) || 0;
-  const sessions = (p.sessions || []).slice();
-  sessions.push({ ts: new Date().toISOString(), note, minutes });
-  prodUpdate(id, { sessions });
-  closeModal('session');
-  _prodSessionTarget = null;
-  if (window.haptic) window.haptic.success();
-  toast('סשן נרשם ✓');
   renderProductions();
 };
 
