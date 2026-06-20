@@ -5480,7 +5480,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v307</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v308</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6058,21 +6058,6 @@
 
     <!-- Top stats strip -->
     <div id="prod-stats-strip"></div>
-
-    <!-- Today's focus — top 1-3 productions that need attention now -->
-    <div id="prod-focus-section" style="margin-bottom:20px"></div>
-
-    <!-- Controls: sort + stage filter -->
-    <div id="prod-controls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
-      <div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-left:4px">מיין:</div>
-      <button class="prod-chip active" data-sort="urgency" onclick="prodSetSort('urgency')">דחיפות</button>
-      <button class="prod-chip" data-sort="deadline" onclick="prodSetSort('deadline')">דד-ליין</button>
-      <button class="prod-chip" data-sort="touched" onclick="prodSetSort('touched')">נתקעו</button>
-      <button class="prod-chip" data-sort="new" onclick="prodSetSort('new')">חדשים</button>
-    </div>
-
-    <!-- Stage tally strip — counts per stage. Clickable to filter. -->
-    <div id="prod-stage-strip" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"></div>
 
     <!-- The productions list -->
     <div id="prod-list" style="display:flex;flex-direction:column;gap:12px"></div>
@@ -12127,33 +12112,36 @@ window.prodConfirmDelete = function(id) {
 };
 
 // ===== Add/edit modal =====
+function _prodFieldVal(id) {
+  const el = document.getElementById(id);
+  return el && typeof el.value === 'string' ? el.value : '';
+}
 window.prodOpenAddModal = function() {
-  document.getElementById('prod-modal-title').textContent = 'הפקה חדשה';
-  ['prod-title','prod-artist','prod-genre','prod-deadline','prod-ref','prod-notes','prod-price'].forEach(id => {
+  const t = document.getElementById('prod-modal-title');
+  if (t) t.textContent = 'הפקה חדשה';
+  ['prod-title','prod-artist','prod-deadline','prod-notes','prod-price'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  document.getElementById('prod-stage').value = 'preprod';
-  document.getElementById('prod-priority').value = 'normal';
+  const stage = document.getElementById('prod-stage');    if (stage)    stage.value = 'preprod';
+  const prio  = document.getElementById('prod-priority'); if (prio)     prio.value  = 'normal';
   document.getElementById('modal-production').classList.add('open');
-  setTimeout(() => document.getElementById('prod-title').focus(), 100);
+  setTimeout(() => { const t2 = document.getElementById('prod-title'); if (t2) t2.focus(); }, 100);
 };
 window.prodSaveFromModal = function() {
-  const title = document.getElementById('prod-title').value.trim();
+  const title = _prodFieldVal('prod-title').trim();
   if (!title) { toast('שם השיר חובה'); return; }
   const now = new Date().toISOString();
   const p = {
     id: 'prod_' + Date.now(),
     title,
-    artist:   document.getElementById('prod-artist').value.trim(),
-    genre:    document.getElementById('prod-genre').value.trim(),
-    stage:    document.getElementById('prod-stage').value || 'preprod',
-    deadline: document.getElementById('prod-deadline').value || null,
-    refLink:  document.getElementById('prod-ref').value.trim(),
-    notes:    document.getElementById('prod-notes').value.trim(),
-    price:    parseFloat(document.getElementById('prod-price').value) || null,
-    priority: document.getElementById('prod-priority').value || 'normal',
-    checklist: {},
+    artist:   _prodFieldVal('prod-artist').trim(),
+    stage:    _prodFieldVal('prod-stage') || 'preprod',
+    deadline: _prodFieldVal('prod-deadline') || null,
+    notes:    _prodFieldVal('prod-notes').trim(),
+    price:    parseFloat(_prodFieldVal('prod-price')) || null,
+    priority: _prodFieldVal('prod-priority') || 'normal',
     sessions:  [],
+    payments:  [],
     createdAt: now,
     touchedAt: now
   };
