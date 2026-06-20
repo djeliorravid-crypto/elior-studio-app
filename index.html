@@ -5480,7 +5480,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v308</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v309</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11657,30 +11657,12 @@ function _renderProdStats(all) {
   const el = document.getElementById('prod-stats-strip');
   if (!el) return;
   const active = all.filter(p => p.stage !== 'delivered').length;
-  // Sessions this week across all productions
-  const weekAgo = Date.now() - 7 * 86400000;
-  let sessThisWeek = 0;
-  let minutesThisWeek = 0;
-  all.forEach(p => (p.sessions || []).forEach(s => {
-    if (new Date(s.ts).getTime() > weekAgo) {
-      sessThisWeek++;
-      minutesThisWeek += Number(s.minutes) || 0;
-    }
-  }));
-  const hours = (minutesThisWeek / 60).toFixed(1).replace(/\.0$/, '');
   el.className = 'prod-stats-strip';
+  el.style.gridTemplateColumns = '1fr';
   el.innerHTML = `
-    <div class="prod-stat-card">
+    <div class="prod-stat-card" style="text-align:center">
       <div class="prod-stat-num">${active}</div>
       <div class="prod-stat-lbl">הפקות פעילות</div>
-    </div>
-    <div class="prod-stat-card">
-      <div class="prod-stat-num">${sessThisWeek}</div>
-      <div class="prod-stat-lbl">סשנים השבוע</div>
-    </div>
-    <div class="prod-stat-card">
-      <div class="prod-stat-num">${hours}<span style="font-size:14px;font-weight:700;color:var(--text-muted)">ש'</span></div>
-      <div class="prod-stat-lbl">זמן עבודה השבוע</div>
     </div>`;
 }
 
