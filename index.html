@@ -1308,324 +1308,216 @@
     .table-header h3 { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; font-family: 'Frank Ruhl Libre', 'Heebo', serif; display: flex; align-items: center; gap: 10px; }
     .table-header h3 svg.icon-lg { width: 22px; height: 22px; opacity: 0.85; flex-shrink: 0; }
 
-    /* ===== Active Productions page ===== */
-    .prod-chip {
-      background: var(--surface2); border: 1.5px solid var(--border);
-      border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 800;
-      color: var(--text-muted); cursor: pointer; font-family: 'Heebo', sans-serif;
-      transition: background .15s, color .15s, border-color .15s;
-    }
-    .prod-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    /* ===== Active Productions — Apple Reminders / Things-style ===== */
 
-    /* Top stats strip — total active, sessions this week, time worked */
-    .prod-stats-strip {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-      margin-bottom: 18px;
-    }
-    .prod-stat-card {
-      background: var(--surface); border: 1.5px solid var(--border);
-      border-radius: 14px; padding: 12px 14px;
-    }
-    .prod-stat-num { font-size: 24px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
-    .prod-stat-lbl { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-top: 4px; letter-spacing: 0.04em; }
-
-    /* Stage tally chip — count per stage, clickable to filter */
-    .prod-stage-tally {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 12px; border-radius: 10px;
-      font-size: 12px; font-weight: 800; line-height: 1;
-      cursor: pointer; border: 1.5px solid transparent;
-      transition: opacity .15s;
-    }
-    .prod-stage-tally.muted { opacity: 0.45; }
-    .prod-stage-tally .tally-dot { width: 8px; height: 8px; border-radius: 50%; }
-
-    /* Focus section — top of page */
-    .prod-focus-wrap {
-      background: linear-gradient(135deg, rgba(180,140,90,0.10), rgba(124,92,255,0.06));
-      border: 1.5px solid rgba(180,140,90,0.28);
-      border-radius: 16px; padding: 16px 18px;
-    }
-    .prod-focus-header {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 12px; font-weight: 900; letter-spacing: 0.04em;
-      color: var(--orange); text-transform: uppercase; margin-bottom: 12px;
-    }
-    .prod-focus-header svg { width: 16px; height: 16px; }
-    .prod-focus-card {
-      display: flex; align-items: flex-start; gap: 12px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
-      cursor: pointer; transition: border-color .15s, transform .15s;
-    }
-    .prod-focus-card:last-child { margin-bottom: 0; }
-    .prod-focus-card:active { transform: scale(0.99); }
-    .prod-focus-card:hover { border-color: var(--accent); }
-    .prod-focus-icon {
-      flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px;
-      display: inline-flex; align-items: center; justify-content: center;
-      background: rgba(180,140,90,0.16); color: var(--orange);
-    }
-    .prod-focus-icon svg { width: 20px; height: 20px; }
-    .prod-focus-title { font-size: 14.5px; font-weight: 800; color: var(--text); line-height: 1.3; }
-    .prod-focus-reason { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
-
-    .prod-focus-clear {
-      background: var(--surface); border: 1px dashed var(--border);
-      border-radius: 14px; padding: 16px 18px; text-align: center;
-      color: var(--text-muted); font-size: 13px; font-weight: 700;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-    }
-    .prod-focus-clear svg { width: 22px; height: 22px; color: var(--green); }
-
-    /* Individual production card */
+    /* Card — flat, breathable, no nested boxes */
     .prod-card {
-      background: var(--surface); border: 1.5px solid var(--border);
-      border-radius: 14px; padding: 14px 16px;
-      transition: border-color .2s, box-shadow .2s;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px 22px;
+      transition: transform .15s, border-color .15s;
     }
-    .prod-card.urgent { border-color: rgba(220,60,60,0.4); box-shadow: 0 0 0 1px rgba(220,60,60,0.12); }
-    .prod-card.priority-high { border-right: 4px solid var(--orange); }
+    .prod-card.priority-high::before {
+      content: '';
+      display: inline-block; width: 6px; height: 6px;
+      border-radius: 50%; background: var(--orange);
+      margin-left: 8px; vertical-align: middle;
+    }
+
+    /* Top row — title + artist on right, deadline on left */
     .prod-card-top {
       display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 12px; margin-bottom: 8px;
+      gap: 16px; margin-bottom: 14px;
     }
     .prod-card-title {
-      font-size: 17px; font-weight: 900; color: var(--text);
+      font-size: 19px; font-weight: 800; color: var(--text);
       letter-spacing: -0.02em; line-height: 1.2;
     }
-    .prod-card-artist { font-size: 13px; color: var(--text-muted); font-weight: 700; margin-top: 3px; }
-    .prod-card-artist .prod-genre-pill {
-      display: inline-block; background: var(--surface2); border-radius: 6px;
-      padding: 1px 7px; font-size: 10.5px; margin-right: 6px;
-      color: var(--text-muted); font-weight: 800;
+    .prod-card-artist {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13.5px; color: var(--text-muted); font-weight: 600;
+      margin-top: 5px;
     }
-    .prod-stage-badge {
-      flex-shrink: 0; font-size: 11.5px; font-weight: 800;
-      padding: 5px 11px; border-radius: 999px;
-      white-space: nowrap; border: 1.5px solid;
+    .prod-stage-dot {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12.5px; font-weight: 700;
     }
-    .prod-stage-mini {
-      display: inline-flex; align-items: center;
-      font-size: 11px; font-weight: 800;
-      padding: 2px 9px; border-radius: 999px;
-      border: 1.5px solid; line-height: 1.5;
-      margin-left: 6px;
+    .prod-stage-dot::before {
+      content: ''; width: 7px; height: 7px;
+      border-radius: 50%; background: currentColor;
+      display: inline-block;
     }
+
+    /* Deadline tile — text-only, no border or background */
     .prod-deadline-box {
       text-align: center; flex-shrink: 0; cursor: pointer;
-      min-width: 84px; padding: 0 4px;
+      min-width: 84px;
     }
     .prod-deadline-box .deadline-big {
-      font-size: 16px; font-weight: 900; line-height: 1.15;
+      font-size: 15.5px; font-weight: 800; line-height: 1.15;
       letter-spacing: -0.01em;
     }
     .prod-deadline-box .deadline-date {
       font-size: 11px; color: var(--text-muted);
-      font-weight: 700; margin-top: 3px;
+      font-weight: 600; margin-top: 4px;
       font-variant-numeric: tabular-nums;
     }
     .prod-deadline-empty {
       flex-shrink: 0; cursor: pointer;
-      font-size: 11.5px; font-weight: 700; color: var(--text-muted);
-      border: 1px dashed var(--border); border-radius: 8px;
-      padding: 5px 10px;
-      font-family: 'Heebo', sans-serif;
-      background: transparent;
+      font-size: 12px; font-weight: 600; color: var(--text-muted);
+      background: transparent; border: none; padding: 4px 0;
+      font-family: 'Heebo', sans-serif; opacity: 0.65;
     }
+    .prod-deadline-empty:hover { opacity: 1; color: var(--accent); }
 
-    /* Stage progress bar */
-    .prod-progress-wrap { margin: 12px 0 10px; }
-    .prod-progress-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; color: var(--text-muted); font-weight: 700; margin-bottom: 5px; }
-    .prod-progress-bar { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
-    .prod-progress-fill { height: 100%; transition: width .35s; border-radius: 3px; }
-
-    /* Checklist of current-stage tasks */
-    .prod-checklist {
-      background: var(--surface2); border-radius: 10px; padding: 10px 12px;
-      margin: 10px 0;
+    /* Payment — flat, inline, no wrapping box */
+    .prod-pay {
+      margin: 6px 0 14px;
     }
-    .prod-checklist-item {
-      display: flex; align-items: center; gap: 9px;
-      padding: 6px 0; font-size: 13.5px; cursor: pointer;
-      color: var(--text); font-weight: 600;
-    }
-    .prod-checklist-item:not(:last-child) { border-bottom: 1px solid var(--border); }
-    .prod-checklist-box {
-      width: 18px; height: 18px; border-radius: 5px;
-      border: 1.8px solid var(--border); flex-shrink: 0;
-      display: inline-flex; align-items: center; justify-content: center;
-      transition: background .15s, border-color .15s;
-    }
-    .prod-checklist-item.done .prod-checklist-box {
-      background: var(--green); border-color: var(--green);
-    }
-    .prod-checklist-item.done .prod-checklist-box svg { width: 12px; height: 12px; color: #fff; }
-    .prod-checklist-item.done .prod-checklist-text { text-decoration: line-through; color: var(--text-muted); }
-    .prod-checklist-stage-done {
-      text-align: center; padding: 10px; color: var(--green);
-      font-size: 12.5px; font-weight: 800;
-    }
-
-    /* Price + payment block */
-    .prod-pay-wrap {
-      background: var(--surface2); border-radius: 12px;
-      padding: 12px 14px; margin: 12px 0 10px;
-    }
-    .prod-pay-top {
+    .prod-pay-row1 {
       display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 13.5px; color: var(--text-muted); font-weight: 600;
       margin-bottom: 8px;
     }
-    .prod-pay-total {
-      font-size: 18px; font-weight: 900; color: var(--text);
-      letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+    .prod-pay-row1 .total {
+      font-size: 15px; font-weight: 800; color: var(--text);
+      letter-spacing: -0.01em;
     }
-    .prod-pay-status {
-      font-size: 12px; font-weight: 800;
+    .prod-pay-row1 .pct.full    { color: var(--green); font-weight: 800; }
+    .prod-pay-row1 .pct.partial { color: var(--orange); font-weight: 800; }
+    .prod-pay-row1 .pct.none    { color: var(--text-muted); }
+    .prod-pay-bar {
+      height: 4px; background: var(--surface3);
+      border-radius: 2px; overflow: hidden;
     }
-    .prod-pay-status.full { color: var(--green); }
-    .prod-pay-status.partial { color: var(--orange); }
-    .prod-pay-status.none { color: var(--text-muted); }
-    .prod-pay-bar { height: 7px; background: var(--surface3); border-radius: 4px; overflow: hidden; }
-    .prod-pay-fill { height: 100%; background: var(--green); transition: width .35s; border-radius: 4px; }
-    .prod-pay-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-    .prod-pay-btn {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 800;
-      color: var(--text); cursor: pointer; font-family: 'Heebo', sans-serif;
-      display: inline-flex; align-items: center; gap: 4px;
+    .prod-pay-fill { height: 100%; transition: width .35s; border-radius: 2px; }
+    .prod-pay-actions {
+      display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap;
+      font-size: 12.5px; color: var(--accent); font-weight: 700;
     }
-    .prod-pay-btn:hover { border-color: var(--accent); }
-    .prod-pay-btn:disabled { opacity: 0.4; cursor: default; }
+    .prod-pay-link {
+      background: none; border: none; color: var(--accent);
+      cursor: pointer; padding: 0; font-family: 'Heebo', sans-serif;
+      font-size: 12.5px; font-weight: 700;
+    }
+    .prod-pay-link:disabled { opacity: 0.35; cursor: default; }
+    .prod-pay-link.danger { color: #dc2626; opacity: 0.7; }
     .prod-pay-list {
-      margin-top: 8px; font-size: 11.5px; color: var(--text-muted);
-      max-height: 90px; overflow-y: auto;
+      margin-top: 10px; font-size: 12px;
+      max-height: 110px; overflow-y: auto;
+      padding-top: 8px; border-top: 1px solid var(--border);
     }
-    .prod-pay-row { display: flex; gap: 8px; padding: 3px 0; }
-    .prod-pay-row .ts { min-width: 60px; }
-    .prod-pay-row .amt { font-weight: 800; color: var(--green); }
+    .prod-pay-row {
+      display: flex; gap: 10px; padding: 4px 0;
+      color: var(--text-muted); align-items: center;
+    }
+    .prod-pay-row .ts  { min-width: 50px; font-weight: 600; }
+    .prod-pay-row .amt { font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
     .prod-pay-row .note { color: var(--text-muted); flex: 1; }
-    .prod-pay-row .del { background: transparent; border: none; color: #dc2626; cursor: pointer; font-size: 14px; padding: 0 4px; }
+    .prod-pay-row .del {
+      background: transparent; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 16px; padding: 0 4px; opacity: 0.5;
+    }
+    .prod-pay-row .del:hover { opacity: 1; color: #dc2626; }
+    .prod-pay-empty {
+      font-size: 13px; color: var(--text-muted); font-weight: 600;
+      padding: 6px 0; cursor: pointer; opacity: 0.7;
+    }
+    .prod-pay-empty:hover { opacity: 1; color: var(--accent); }
 
-    /* Waiting-for badge */
+    /* Waiting-for — flat, inline line with accent color */
     .prod-waiting {
-      background: rgba(212,165,116,0.14);
-      border: 1px solid rgba(212,165,116,0.32);
-      border-right: 4px solid #d4a574;
-      border-radius: 10px;
-      padding: 9px 12px;
-      font-size: 13px; color: var(--text); font-weight: 700;
-      margin-bottom: 10px;
-      cursor: pointer;
       display: flex; align-items: center; gap: 8px;
-    }
-    .prod-waiting svg { width: 14px; height: 14px; color: #d4a574; flex-shrink: 0; }
-    .prod-waiting-date { color: var(--text-muted); font-weight: 700; font-size: 12px; margin-right: auto; }
-    .prod-waiting-date.overdue { color: #dc2626; font-weight: 900; }
-    .prod-waiting-empty {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: transparent; border: 1px dashed var(--border);
-      border-radius: 8px; padding: 5px 10px;
-      font-size: 11.5px; color: var(--text-muted); font-weight: 700;
-      cursor: pointer; font-family: 'Heebo', sans-serif;
-    }
-    .prod-waiting-empty svg { width: 12px; height: 12px; opacity: 0.7; }
-
-    /* Meta row: deadline, sessions, days-stuck */
-    .prod-meta-row {
-      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
-      font-size: 11.5px; color: var(--text-muted); font-weight: 700;
+      font-size: 13px; color: #d4a574; font-weight: 700;
+      padding: 6px 0; cursor: pointer;
       margin-bottom: 10px;
     }
-    .prod-meta-row .meta-item { display: inline-flex; align-items: center; gap: 5px; }
-    .prod-meta-row .meta-item svg { width: 12px; height: 12px; opacity: 0.7; }
-    .prod-meta-row .deadline-soon { color: var(--orange); font-weight: 800; }
-    .prod-meta-row .deadline-overdue { color: #dc2626; font-weight: 900; }
-    .prod-meta-row .stuck-warn { color: #dc2626; font-weight: 800; }
+    .prod-waiting svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .prod-waiting-date { color: var(--text-muted); font-weight: 600; font-size: 12px; }
+    .prod-waiting-date.overdue { color: #dc2626; font-weight: 800; }
+    .prod-waiting-empty {
+      background: transparent; border: none; padding: 4px 0;
+      font-size: 12px; color: var(--text-muted); font-weight: 600;
+      cursor: pointer; font-family: 'Heebo', sans-serif; opacity: 0.6;
+      margin-bottom: 8px; display: inline-flex; align-items: center; gap: 5px;
+    }
+    .prod-waiting-empty:hover { opacity: 1; color: var(--accent); }
+    .prod-waiting-empty svg { width: 12px; height: 12px; }
 
+    /* Stuck warning — just a small muted line */
+    .prod-stuck-line {
+      font-size: 12px; color: #dc2626; font-weight: 700;
+      padding: 4px 0; margin-bottom: 6px;
+    }
+
+    /* Action row — primary advance + quiet text link */
     .prod-actions {
-      display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; align-items: center;
+      display: flex; gap: 10px; margin-top: 14px; align-items: center;
+      padding-top: 14px; border-top: 1px solid var(--border);
     }
-    .prod-btn {
-      flex: 1; min-width: 0;
+    .prod-advance {
       background: var(--accent); color: #fff; border: none;
-      border-radius: 10px; padding: 9px 12px; font-size: 12.5px; font-weight: 800;
+      border-radius: 999px; padding: 8px 18px; font-size: 12.5px; font-weight: 800;
       cursor: pointer; font-family: 'Heebo', sans-serif;
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
     }
-    .prod-btn:disabled { opacity: 0.5; cursor: default; }
-    .prod-btn.secondary {
-      background: var(--surface2); color: var(--text);
-      border: 1px solid var(--border);
+    .prod-details {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 12.5px; font-weight: 700; cursor: pointer;
+      font-family: 'Heebo', sans-serif; margin-right: auto;
+      padding: 4px 0;
     }
-    .prod-btn.ghost {
-      background: transparent; color: var(--text-muted);
-      border: 1px solid var(--border);
-      flex: 0 0 auto;
-    }
-    .prod-btn svg { width: 13px; height: 13px; }
+    .prod-details:hover { color: var(--accent); }
 
-    /* Expanded section */
-    .prod-card-expand { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    /* Expanded — quiet section */
+    .prod-card-expand { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
     .prod-card-expand.open { display: block; }
-    .prod-expand-h { font-size: 11px; font-weight: 900; letter-spacing: .04em; color: var(--text-muted); text-transform: uppercase; margin: 14px 0 6px; }
+    .prod-expand-h { font-size: 11px; font-weight: 800; letter-spacing: .04em; color: var(--text-muted); text-transform: uppercase; margin: 16px 0 8px; }
     .prod-expand-h:first-child { margin-top: 0; }
     .prod-stage-row { display: flex; flex-wrap: wrap; gap: 6px; }
     .prod-stage-pill {
-      background: var(--surface2); border: 1.5px solid var(--border);
+      background: var(--surface2); border: 1px solid var(--border);
       color: var(--text-muted); border-radius: 999px;
-      padding: 6px 12px; font-size: 11.5px; font-weight: 800;
+      padding: 6px 12px; font-size: 11.5px; font-weight: 700;
       cursor: pointer; font-family: 'Heebo', sans-serif;
     }
     .prod-input, .prod-textarea {
       width: 100%; box-sizing: border-box;
-      background: var(--surface2); border: 1.5px solid var(--border);
+      background: var(--surface2); border: 1px solid var(--border);
       border-radius: 10px; padding: 10px 12px;
       font-size: 13.5px; color: var(--text); outline: none;
       font-family: 'Heebo', sans-serif;
     }
     .prod-textarea { min-height: 70px; resize: vertical; font-weight: 500; }
-
-    .prod-session-log {
-      max-height: 180px; overflow-y: auto;
-      background: var(--surface2); border-radius: 10px; padding: 4px 0;
-    }
-    .prod-session-row {
-      display: flex; gap: 10px; padding: 7px 12px;
-      font-size: 12.5px; border-bottom: 1px solid var(--border);
-    }
-    .prod-session-row:last-child { border-bottom: none; }
-    .prod-session-when { color: var(--text-muted); font-weight: 700; flex-shrink: 0; min-width: 75px; }
-    .prod-session-what { color: var(--text); flex: 1; }
-    .prod-session-mins { color: var(--accent); font-weight: 800; }
-
     .prod-delete-link {
       background: transparent; border: none; color: #dc2626;
-      font-size: 12px; font-weight: 700; cursor: pointer;
-      margin-top: 14px; padding: 6px 0; font-family: 'Heebo', sans-serif;
-      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      margin-top: 18px; padding: 6px 0; font-family: 'Heebo', sans-serif;
+      display: inline-flex; align-items: center; gap: 5px; opacity: 0.7;
     }
+    .prod-delete-link:hover { opacity: 1; }
 
     .prod-empty {
-      text-align: center; padding: 40px 20px;
-      background: var(--surface); border: 1.5px dashed var(--border);
-      border-radius: 16px; color: var(--text-muted);
+      text-align: center; padding: 48px 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px; color: var(--text-muted);
     }
     .prod-empty-icon {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 64px; height: 64px; border-radius: 18px;
+      width: 56px; height: 56px; border-radius: 16px;
       background: var(--surface2); color: var(--text-muted);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
-    .prod-empty-icon svg { width: 30px; height: 30px; }
-    .prod-empty-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+    .prod-empty-icon svg { width: 28px; height: 28px; }
+    .prod-empty-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
     .prod-delivered-toggle {
-      width: 100%; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 12px 14px; font-size: 13px; font-weight: 800;
+      width: 100%; background: transparent; border: none;
+      padding: 14px 4px; font-size: 13px; font-weight: 700;
       color: var(--text-muted); cursor: pointer;
       display: flex; justify-content: space-between; align-items: center;
       font-family: 'Heebo', sans-serif;
     }
+    .prod-delivered-toggle:hover { color: var(--text); }
 
     table { width: 100%; border-collapse: collapse; }
 
@@ -5508,7 +5400,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v310</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v311</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6079,19 +5971,16 @@
     <div class="page-header">
       <div>
         <h2><svg class="icon-lg"><use href="#ic-music-note"/></svg>הפקות פעילות</h2>
-        <p>השיר, השלב, המשימה הבאה — בלי לחפש</p>
+        <p id="prod-page-sub">השיר, השלב, המשימה הבאה</p>
       </div>
       <button class="btn btn-primary" onclick="prodOpenAddModal()">+ הפקה חדשה</button>
     </div>
 
-    <!-- Top stats strip -->
-    <div id="prod-stats-strip"></div>
-
     <!-- The productions list -->
-    <div id="prod-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    <div id="prod-list" style="display:flex;flex-direction:column;gap:14px"></div>
 
     <!-- Delivered section — collapsed by default -->
-    <div id="prod-delivered-wrap" style="margin-top:24px"></div>
+    <div id="prod-delivered-wrap" style="margin-top:28px"></div>
   </div>
 
   <!-- Productions add/edit modal -->
@@ -11620,34 +11509,22 @@ function renderProductions() {
   const active = all.filter(p => p.stage !== 'sent');
   const done   = all.filter(p => p.stage === 'sent');
 
-  // Top stats strip
-  _renderProdStats(all);
+  // Active count in the page subtitle (replaces the old stats card)
+  const sub = document.getElementById('prod-page-sub');
+  if (sub) sub.textContent = active.length
+    ? active.length + ' פעילות · השיר, השלב, התשלום'
+    : 'אין הפקות פעילות';
 
-  // Focus section
-  const focusCandidates = [...active].map(p => Object.assign({}, p, { _score: prodUrgencyScore(p) }));
-  focusCandidates.sort((a, b) => b._score - a._score);
-  _renderProdFocus(focusCandidates.filter(p => p._score > 6).slice(0, 3), active.length);
-
-  // Stage tally
-  _renderProdStageStrip(active);
-
-  // Sort the active list
-  let visible = active.slice();
-  if (_prodFilter) visible = visible.filter(p => p.stage === _prodFilter);
-  visible.forEach(p => p._score = prodUrgencyScore(p));
-  if (_prodSort === 'urgency') {
-    visible.sort((a, b) => b._score - a._score || (new Date(a.createdAt) - new Date(b.createdAt)));
-  } else if (_prodSort === 'deadline') {
-    visible.sort((a, b) => {
-      const da = a.deadline ? new Date(a.deadline).getTime() : Number.POSITIVE_INFINITY;
-      const db = b.deadline ? new Date(b.deadline).getTime() : Number.POSITIVE_INFINITY;
-      return da - db;
-    });
-  } else if (_prodSort === 'touched') {
-    visible.sort((a, b) => new Date(a.touchedAt || a.createdAt) - new Date(b.touchedAt || b.createdAt));
-  } else if (_prodSort === 'new') {
-    visible.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }
+  // Sort: by deadline ASC (closest first), no deadline at the bottom.
+  // Within "no deadline" — newest first.
+  const visible = active.slice().sort((a, b) => {
+    const da = a.deadline ? new Date(a.deadline).getTime() : null;
+    const db = b.deadline ? new Date(b.deadline).getTime() : null;
+    if (da == null && db == null) return new Date(b.createdAt) - new Date(a.createdAt);
+    if (da == null) return 1;
+    if (db == null) return -1;
+    return da - db;
+  });
 
   // Render list
   if (active.length === 0) {
@@ -11657,8 +11534,6 @@ function renderProductions() {
         <div class="prod-empty-title">אין הפקות פעילות</div>
         <div style="font-size:13px;line-height:1.6">לחץ "+ הפקה חדשה" למעלה כדי להוסיף את ההפקה הראשונה.</div>
       </div>`;
-  } else if (visible.length === 0) {
-    wrap.innerHTML = `<div class="prod-empty"><div class="prod-empty-title">אין הפקות בשלב הזה</div></div>`;
   } else {
     wrap.innerHTML = visible.map(p => _prodCardHtml(p)).join('');
   }
@@ -11678,18 +11553,6 @@ function renderProductions() {
   }
 }
 
-function _renderProdStats(all) {
-  const el = document.getElementById('prod-stats-strip');
-  if (!el) return;
-  const active = all.filter(p => p.stage !== 'sent').length;
-  el.className = 'prod-stats-strip';
-  el.style.gridTemplateColumns = '1fr';
-  el.innerHTML = `
-    <div class="prod-stat-card" style="text-align:center">
-      <div class="prod-stat-num">${active}</div>
-      <div class="prod-stat-lbl">הפקות פעילות</div>
-    </div>`;
-}
 
 function _renderProdFocus(focus, totalActive) {
   const el = document.getElementById('prod-focus-section');
@@ -11791,10 +11654,7 @@ function _prodCardHtml(p) {
     return `<button class="prod-stage-pill" style="${style}" onclick="prodSetPriority('${id}','${pr}')">${lbl}</button>`;
   }).join('');
 
-  // ── Payment block ──────────────────────────────────────────────
-  // Sums historical payments + lets the user "+ חצי" / "+ הכל" /
-  // open the manual-payment modal. Each entry in p.payments has
-  // {amount, date, note}. Legacy `paid` (flat number) still adds in.
+  // ── Payment block (flat, inline) ─────────────────────────────
   const price       = Number(p.price) || 0;
   const payments    = Array.isArray(p.payments) ? p.payments : [];
   const paidFromLog = payments.reduce((s, x) => s + (Number(x.amount) || 0), 0);
@@ -11802,24 +11662,27 @@ function _prodCardHtml(p) {
   const paidTotal   = paidFromLog + paidLegacy;
   const payPct      = price > 0 ? Math.min(100, Math.round((paidTotal / price) * 100)) : 0;
   const payState    = price > 0 && paidTotal >= price ? 'full' : (paidTotal > 0 ? 'partial' : 'none');
-  const payStatusText = price > 0
-    ? `${fmtMoney(paidTotal)} / ${fmtMoney(price)} · ${payPct}%`
-    : 'לא הוגדר מחיר';
+  const payFillCol  = payState === 'full' ? 'var(--green)' : (payState === 'partial' ? 'var(--orange)' : 'var(--text-muted)');
 
   let payHtml = '';
   if (price > 0) {
+    const remainingPart = paidTotal > 0
+      ? `<span>שולם ${fmtMoney(paidTotal)} מתוך ${fmtMoney(price)}</span>`
+      : `<span>${fmtMoney(price)}</span>`;
     payHtml = `
-      <div class="prod-pay-wrap">
-        <div class="prod-pay-top">
-          <div class="prod-pay-total">${fmtMoney(price)}</div>
-          <div class="prod-pay-status ${payState}">${payStatusText}</div>
+      <div class="prod-pay">
+        <div class="prod-pay-row1">
+          ${paidTotal > 0
+            ? `<span class="total">${fmtMoney(paidTotal)} <span style="color:var(--text-muted);font-weight:600">/ ${fmtMoney(price)}</span></span>`
+            : `<span class="total">${fmtMoney(price)}</span>`}
+          <span class="pct ${payState}">${payPct}%</span>
         </div>
-        <div class="prod-pay-bar"><div class="prod-pay-fill" style="width:${payPct}%${payState==='full'?'':';background:var(--orange)'}"></div></div>
+        <div class="prod-pay-bar"><div class="prod-pay-fill" style="width:${payPct}%;background:${payFillCol}"></div></div>
         <div class="prod-pay-actions">
-          <button class="prod-pay-btn" onclick="prodPayHalf('${id}')" ${paidTotal >= price ? 'disabled' : ''}>+ חצי</button>
-          <button class="prod-pay-btn" onclick="prodPayFull('${id}')" ${paidTotal >= price ? 'disabled' : ''}>+ הכל</button>
-          <button class="prod-pay-btn" onclick="prodOpenPaymentModal('${id}')">+ סכום אחר</button>
-          ${paidTotal > 0 ? `<button class="prod-pay-btn" onclick="prodResetPayments('${id}')" style="color:#dc2626">איפוס</button>` : ''}
+          <button class="prod-pay-link" onclick="prodPayHalf('${id}')" ${paidTotal >= price ? 'disabled' : ''}>+ חצי</button>
+          <button class="prod-pay-link" onclick="prodPayFull('${id}')" ${paidTotal >= price ? 'disabled' : ''}>+ הכל</button>
+          <button class="prod-pay-link" onclick="prodOpenPaymentModal('${id}')">+ סכום אחר</button>
+          ${paidTotal > 0 ? `<button class="prod-pay-link danger" onclick="prodResetPayments('${id}')" style="margin-right:auto">איפוס</button>` : ''}
         </div>
         ${payments.length ? `<div class="prod-pay-list">${payments.slice().reverse().map((x, ri) => {
           const realIdx = payments.length - 1 - ri;
@@ -11834,10 +11697,7 @@ function _prodCardHtml(p) {
         }).join('')}</div>` : ''}
       </div>`;
   } else {
-    payHtml = `
-      <div class="prod-pay-wrap" style="text-align:center;cursor:pointer" onclick="prodPromptPrice('${id}')">
-        <div style="font-size:13px;color:var(--text-muted);font-weight:700">לחץ להגדרת מחיר ההפקה</div>
-      </div>`;
+    payHtml = `<div class="prod-pay-empty" onclick="prodPromptPrice('${id}')">+ הגדר מחיר</div>`;
   }
 
   // ── Waiting-for badge (blocking item) ─────────────────────────
@@ -11863,13 +11723,14 @@ function _prodCardHtml(p) {
   }
 
   return `
-    <div class="prod-card ${urgent ? 'urgent' : ''} ${p.priority === 'high' ? 'priority-high' : ''}" id="prod-card-${id}">
+    <div class="prod-card ${p.priority === 'high' ? 'priority-high' : ''}" id="prod-card-${id}">
       <div class="prod-card-top">
         <div style="flex:1;min-width:0">
           <div class="prod-card-title">${_escape(p.title)}</div>
           <div class="prod-card-artist">
-            ${_escape(p.artist || 'ללא אמן')}
-            <span class="prod-stage-mini" style="background:${stage.color}22;color:${stage.color};border-color:${stage.color}66">${stage.label}</span>
+            <span>${_escape(p.artist || 'ללא אמן')}</span>
+            <span style="opacity:0.4">·</span>
+            <span class="prod-stage-dot" style="color:${stage.color}">${stage.label}</span>
           </div>
         </div>
         ${deadlineBoxHtml}
@@ -11879,13 +11740,13 @@ function _prodCardHtml(p) {
 
       ${waitingHtml || `<button class="prod-waiting-empty" onclick="prodOpenWaitingModal('${id}')"><svg><use href="#ic-hourglass"/></svg>+ מחכים למישהו/משהו</button>`}
 
-      ${stuck > 5 ? `<div class="prod-meta-row"><span class="meta-item stuck-warn"><svg><use href="#ic-hourglass"/></svg>נתקע ${stuck} ימים</span></div>` : ''}
+      ${stuck > 5 ? `<div class="prod-stuck-line">נתקע ${stuck} ימים</div>` : ''}
 
       <div class="prod-actions">
         ${canAdvance
-          ? `<button class="prod-btn" onclick="prodAdvanceStage('${id}')">→ ${nextStage.label}</button>`
+          ? `<button class="prod-advance" onclick="prodAdvanceStage('${id}')">→ ${nextStage.label}</button>`
           : ''}
-        <button class="prod-btn ghost" onclick="prodExpand('${id}')">${expanded ? '▴' : '▾ פרטים'}</button>
+        <button class="prod-details" onclick="prodExpand('${id}')">${expanded ? 'סגור פרטים' : 'פרטים ›'}</button>
       </div>
 
       <div class="prod-card-expand ${expanded ? 'open' : ''}">
