@@ -1439,6 +1439,70 @@
       font-size: 12.5px; font-weight: 800;
     }
 
+    /* Price + payment block */
+    .prod-pay-wrap {
+      background: var(--surface2); border-radius: 12px;
+      padding: 12px 14px; margin: 12px 0 10px;
+    }
+    .prod-pay-top {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .prod-pay-total {
+      font-size: 18px; font-weight: 900; color: var(--text);
+      letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+    }
+    .prod-pay-status {
+      font-size: 12px; font-weight: 800;
+    }
+    .prod-pay-status.full { color: var(--green); }
+    .prod-pay-status.partial { color: var(--orange); }
+    .prod-pay-status.none { color: var(--text-muted); }
+    .prod-pay-bar { height: 7px; background: var(--surface3); border-radius: 4px; overflow: hidden; }
+    .prod-pay-fill { height: 100%; background: var(--green); transition: width .35s; border-radius: 4px; }
+    .prod-pay-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .prod-pay-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 800;
+      color: var(--text); cursor: pointer; font-family: 'Heebo', sans-serif;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .prod-pay-btn:hover { border-color: var(--accent); }
+    .prod-pay-btn:disabled { opacity: 0.4; cursor: default; }
+    .prod-pay-list {
+      margin-top: 8px; font-size: 11.5px; color: var(--text-muted);
+      max-height: 90px; overflow-y: auto;
+    }
+    .prod-pay-row { display: flex; gap: 8px; padding: 3px 0; }
+    .prod-pay-row .ts { min-width: 60px; }
+    .prod-pay-row .amt { font-weight: 800; color: var(--green); }
+    .prod-pay-row .note { color: var(--text-muted); flex: 1; }
+    .prod-pay-row .del { background: transparent; border: none; color: #dc2626; cursor: pointer; font-size: 14px; padding: 0 4px; }
+
+    /* Waiting-for badge */
+    .prod-waiting {
+      background: rgba(212,165,116,0.14);
+      border: 1px solid rgba(212,165,116,0.32);
+      border-right: 4px solid #d4a574;
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 13px; color: var(--text); font-weight: 700;
+      margin-bottom: 10px;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .prod-waiting svg { width: 14px; height: 14px; color: #d4a574; flex-shrink: 0; }
+    .prod-waiting-date { color: var(--text-muted); font-weight: 700; font-size: 12px; margin-right: auto; }
+    .prod-waiting-date.overdue { color: #dc2626; font-weight: 900; }
+    .prod-waiting-empty {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: transparent; border: 1px dashed var(--border);
+      border-radius: 8px; padding: 5px 10px;
+      font-size: 11.5px; color: var(--text-muted); font-weight: 700;
+      cursor: pointer; font-family: 'Heebo', sans-serif;
+    }
+    .prod-waiting-empty svg { width: 12px; height: 12px; opacity: 0.7; }
+
     /* Meta row: deadline, sessions, days-stuck */
     .prod-meta-row {
       display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
@@ -5416,7 +5480,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v306</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v307</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6021,10 +6085,13 @@
   <div class="modal-overlay" id="modal-production">
     <div class="modal">
       <h3 id="prod-modal-title">הפקה חדשה</h3>
-      <div class="form-group"><label>שם השיר *</label><input type="text" id="prod-title" placeholder="למשל: אהבה שלי"/></div>
       <div class="form-row">
-        <div class="form-group"><label>שם האמן / לקוח</label><input type="text" id="prod-artist" placeholder="שם האמן"/></div>
-        <div class="form-group"><label>ז'אנר</label><input type="text" id="prod-genre" placeholder="פופ, היפ-הופ, רוק..."/></div>
+        <div class="form-group"><label>שם השיר *</label><input type="text" id="prod-title" placeholder="למשל: אהבה שלי"/></div>
+        <div class="form-group"><label>שם הזמר/אמן</label><input type="text" id="prod-artist" placeholder="שם האמן"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>מחיר ההפקה (₪)</label><input type="number" id="prod-price" placeholder="0" min="0"/></div>
+        <div class="form-group"><label>דד-ליין</label><input type="date" id="prod-deadline"/></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>שלב התחלתי</label>
@@ -6036,10 +6103,6 @@
             <option value="master">מאסטר</option>
           </select>
         </div>
-        <div class="form-group"><label>דד-ליין (אופציונלי)</label><input type="date" id="prod-deadline"/></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>מחיר משוער (אופציונלי)</label><input type="number" id="prod-price" placeholder="0" min="0"/></div>
         <div class="form-group"><label>עדיפות</label>
           <select id="prod-priority">
             <option value="low">נמוכה</option>
@@ -6048,11 +6111,38 @@
           </select>
         </div>
       </div>
-      <div class="form-group"><label>קישור רפרנס (YouTube / Spotify)</label><input type="url" id="prod-ref" placeholder="https://..."/></div>
-      <div class="form-group"><label>הערות התחלתיות</label><textarea id="prod-notes" placeholder="כל מה שצריך לזכור..." style="min-height:70px;resize:vertical;font-family:inherit"></textarea></div>
+      <div class="form-group"><label>הערות (אופציונלי)</label><textarea id="prod-notes" placeholder="כל מה שצריך לזכור..." style="min-height:60px;resize:vertical;font-family:inherit"></textarea></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal('production')">ביטול</button>
         <button class="btn btn-primary" onclick="prodSaveFromModal()">שמור</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual payment entry modal -->
+  <div class="modal-overlay" id="modal-prod-payment">
+    <div class="modal">
+      <h3>תשלום חדש</h3>
+      <div class="form-group"><label>סכום (₪)</label><input type="number" id="prod-pay-amt" placeholder="0" min="0"/></div>
+      <div class="form-group"><label>תאריך</label><input type="date" id="prod-pay-date"/></div>
+      <div class="form-group"><label>הערה (אופציונלי)</label><input type="text" id="prod-pay-note" placeholder="למשל: מקדמה / חצי / סיום"/></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('prod-payment')">ביטול</button>
+        <button class="btn btn-primary" onclick="prodSavePayment()">הוסף תשלום</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Waiting-for modal — what's blocking the production + when it'll arrive -->
+  <div class="modal-overlay" id="modal-prod-waiting">
+    <div class="modal">
+      <h3>מחכים למה?</h3>
+      <div class="form-group"><label>מה / מי</label><input type="text" id="prod-wait-what" placeholder="למשל: נגן גיטרה / ווקאל מהאמן / מילים סופיות"/></div>
+      <div class="form-group"><label>מתי צפוי להגיע (אופציונלי)</label><input type="date" id="prod-wait-date"/></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="prodClearWaiting()" style="color:#dc2626">נקה</button>
+        <button class="btn btn-ghost" onclick="closeModal('prod-waiting')">ביטול</button>
+        <button class="btn btn-primary" onclick="prodSaveWaiting()">שמור</button>
       </div>
     </div>
   </div>
@@ -10262,6 +10352,7 @@ function refreshAll() {
   renderProposals();
   renderContracts();
   renderStudents();
+  try { renderProductions(); } catch(_) {}
 }
 
 // ===== גיבוי ושחזור =====
@@ -11479,6 +11570,12 @@ function prodUrgencyScore(p) {
   if (stuck > 14) s += 5;
   // Recording stage with no sessions logged this week
   if (p.stage === 'record' && _prodSessionsThisWeek(p).length === 0 && stuck > 3) s += 5;
+  // Waiting-for date passed → the blocker should be unblocked by now
+  if (p.waitingFor && p.waitingFor.date) {
+    const wdu = _prodDaysUntil(p.waitingFor.date);
+    if (wdu !== null && wdu < 0)      s += 10;  // overdue blocker
+    else if (wdu !== null && wdu === 0) s += 5;
+  }
   return s;
 }
 
@@ -11486,6 +11583,10 @@ function prodUrgencyReason(p) {
   const du = _prodDaysUntil(p.deadline);
   const lastT = p.touchedAt || p.createdAt;
   const stuck = _prodDaysBetween(lastT, new Date());
+  if (p.waitingFor && p.waitingFor.date) {
+    const wdu = _prodDaysUntil(p.waitingFor.date);
+    if (wdu !== null && wdu < 0) return `מחכים ל-${p.waitingFor.what} כבר ${-wdu} ימים — תזכיר`;
+  }
   if (du !== null && du < 0) return `דד-ליין עבר ב-${-du} ימים`;
   if (du !== null && du <= 2) return `דד-ליין בעוד ${du === 0 ? 'היום' : (du + ' ימים')}`;
   if (p.stage === 'mix' && stuck > 4) return `${stuck} ימים שלא נגעת במיקס`;
@@ -11703,6 +11804,77 @@ function _prodCardHtml(p) {
       }).join('')}</div>`
     : '<div style="font-size:12.5px;color:var(--text-muted);text-align:center;padding:8px">אין סשנים מתועדים</div>';
 
+  // ── Payment block ──────────────────────────────────────────────
+  // Sums historical payments + lets the user "+ חצי" / "+ הכל" /
+  // open the manual-payment modal. Each entry in p.payments has
+  // {amount, date, note}. Legacy `paid` (flat number) still adds in.
+  const price       = Number(p.price) || 0;
+  const payments    = Array.isArray(p.payments) ? p.payments : [];
+  const paidFromLog = payments.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+  const paidLegacy  = Number(p.paid) || 0;
+  const paidTotal   = paidFromLog + paidLegacy;
+  const payPct      = price > 0 ? Math.min(100, Math.round((paidTotal / price) * 100)) : 0;
+  const payState    = price > 0 && paidTotal >= price ? 'full' : (paidTotal > 0 ? 'partial' : 'none');
+  const payStatusText = price > 0
+    ? `${fmtMoney(paidTotal)} / ${fmtMoney(price)} · ${payPct}%`
+    : 'לא הוגדר מחיר';
+
+  let payHtml = '';
+  if (price > 0) {
+    payHtml = `
+      <div class="prod-pay-wrap">
+        <div class="prod-pay-top">
+          <div class="prod-pay-total">${fmtMoney(price)}</div>
+          <div class="prod-pay-status ${payState}">${payStatusText}</div>
+        </div>
+        <div class="prod-pay-bar"><div class="prod-pay-fill" style="width:${payPct}%${payState==='full'?'':';background:var(--orange)'}"></div></div>
+        <div class="prod-pay-actions">
+          <button class="prod-pay-btn" onclick="prodPayHalf('${id}')" ${paidTotal >= price ? 'disabled' : ''}>+ חצי</button>
+          <button class="prod-pay-btn" onclick="prodPayFull('${id}')" ${paidTotal >= price ? 'disabled' : ''}>+ הכל</button>
+          <button class="prod-pay-btn" onclick="prodOpenPaymentModal('${id}')">+ סכום אחר</button>
+          ${paidTotal > 0 ? `<button class="prod-pay-btn" onclick="prodResetPayments('${id}')" style="color:#dc2626">איפוס</button>` : ''}
+        </div>
+        ${payments.length ? `<div class="prod-pay-list">${payments.slice().reverse().map((x, ri) => {
+          const realIdx = payments.length - 1 - ri;
+          const d = new Date(x.date || x.ts || Date.now());
+          const when = d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
+          return `<div class="prod-pay-row">
+            <span class="ts">${when}</span>
+            <span class="amt">+${fmtMoney(x.amount)}</span>
+            <span class="note">${_escape(x.note || '')}</span>
+            <button class="del" onclick="prodDeletePayment('${id}', ${realIdx})" title="מחק">×</button>
+          </div>`;
+        }).join('')}</div>` : ''}
+      </div>`;
+  } else {
+    payHtml = `
+      <div class="prod-pay-wrap" style="text-align:center;cursor:pointer" onclick="prodPromptPrice('${id}')">
+        <div style="font-size:13px;color:var(--text-muted);font-weight:700">לחץ להגדרת מחיר ההפקה</div>
+      </div>`;
+  }
+
+  // ── Waiting-for badge (blocking item) ─────────────────────────
+  const wf = p.waitingFor;
+  let waitingHtml = '';
+  if (wf && wf.what) {
+    let dateLabel = '';
+    let overdue = false;
+    if (wf.date) {
+      const wd = new Date(wf.date); wd.setHours(0,0,0,0);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const diff = Math.floor((wd.getTime() - today.getTime()) / 86400000);
+      if (diff < 0) { dateLabel = `איחור ${-diff} ימים`; overdue = true; }
+      else if (diff === 0) dateLabel = 'היום';
+      else dateLabel = `עד ${wd.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}`;
+    }
+    waitingHtml = `
+      <div class="prod-waiting" onclick="prodOpenWaitingModal('${id}')">
+        <svg><use href="#ic-hourglass"/></svg>
+        <span>מחכים ל-${_escape(wf.what)}</span>
+        ${dateLabel ? `<span class="prod-waiting-date ${overdue ? 'overdue' : ''}">· ${dateLabel}</span>` : ''}
+      </div>`;
+  }
+
   return `
     <div class="prod-card ${urgent ? 'urgent' : ''} ${p.priority === 'high' ? 'priority-high' : ''}" id="prod-card-${id}">
       <div class="prod-card-top">
@@ -11711,11 +11883,14 @@ function _prodCardHtml(p) {
           <div class="prod-card-artist">
             ${p.genre ? `<span class="prod-genre-pill">${_escape(p.genre)}</span>` : ''}
             ${_escape(p.artist || 'ללא אמן')}
-            ${p.price ? ` · ${fmtMoney(p.price)}` : ''}
           </div>
         </div>
         <span class="prod-stage-badge" style="background:${stage.color}22;color:${stage.color};border-color:${stage.color}66">${stage.label}</span>
       </div>
+
+      ${payHtml}
+
+      ${waitingHtml || `<button class="prod-waiting-empty" onclick="prodOpenWaitingModal('${id}')"><svg><use href="#ic-hourglass"/></svg>+ מחכים למישהו/משהו</button>`}
 
       <div class="prod-meta-row">
         ${deadlineHtml}
@@ -11820,6 +11995,126 @@ window.prodOpenRef = function(id) {
   const Browser = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
   if (Browser) Browser.open({ url: p.refLink }).catch(() => window.open(p.refLink, '_blank'));
   else window.open(p.refLink, '_blank');
+};
+
+// ===== Payments =====
+function _prodAddPayment(id, amount, note) {
+  const p = prodById(id); if (!p) return;
+  const payments = (p.payments || []).slice();
+  payments.push({
+    amount: Math.round(Number(amount) || 0),
+    date:   new Date().toISOString().slice(0, 10),
+    note:   note || ''
+  });
+  prodUpdate(id, { payments });
+}
+window.prodPayHalf = function(id) {
+  const p = prodById(id); if (!p) return;
+  const price = Number(p.price) || 0;
+  if (!price) { toast('הגדר מחיר קודם'); return; }
+  const already = (p.payments || []).reduce((s, x) => s + (Number(x.amount) || 0), 0) + (Number(p.paid) || 0);
+  const half = Math.round(price / 2);
+  const remaining = Math.max(0, price - already);
+  const amount = Math.min(half, remaining);
+  if (amount <= 0) { toast('כבר שולם הכל'); return; }
+  _prodAddPayment(id, amount, 'חצי');
+  if (window.haptic) window.haptic.success();
+  toast('+ ' + fmtMoney(amount));
+  renderProductions();
+};
+window.prodPayFull = function(id) {
+  const p = prodById(id); if (!p) return;
+  const price = Number(p.price) || 0;
+  if (!price) { toast('הגדר מחיר קודם'); return; }
+  const already = (p.payments || []).reduce((s, x) => s + (Number(x.amount) || 0), 0) + (Number(p.paid) || 0);
+  const remaining = Math.max(0, price - already);
+  if (remaining <= 0) { toast('כבר שולם הכל'); return; }
+  _prodAddPayment(id, remaining, 'יתרה');
+  if (window.haptic) window.haptic.success();
+  toast('שולם במלואו ✓');
+  renderProductions();
+};
+window.prodResetPayments = function(id) {
+  if (!confirm('לאפס את כל היסטוריית התשלומים בהפקה הזו?')) return;
+  prodUpdate(id, { payments: [], paid: 0 });
+  if (window.haptic) window.haptic.tap();
+  toast('היסטוריית תשלומים נוקתה');
+  renderProductions();
+};
+window.prodDeletePayment = function(id, idx) {
+  const p = prodById(id); if (!p) return;
+  const payments = (p.payments || []).slice();
+  if (idx < 0 || idx >= payments.length) return;
+  if (!confirm('למחוק את התשלום הזה?')) return;
+  payments.splice(idx, 1);
+  prodUpdate(id, { payments });
+  renderProductions();
+};
+window.prodOpenPaymentModal = function(id) {
+  window._prodPayTarget = id;
+  document.getElementById('prod-pay-amt').value  = '';
+  document.getElementById('prod-pay-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('prod-pay-note').value = '';
+  document.getElementById('modal-prod-payment').classList.add('open');
+  setTimeout(() => document.getElementById('prod-pay-amt').focus(), 100);
+};
+window.prodSavePayment = function() {
+  const id = window._prodPayTarget;
+  if (!id) return;
+  const amount = parseFloat(document.getElementById('prod-pay-amt').value);
+  if (!(amount > 0)) { toast('סכום לא תקין'); return; }
+  const date = document.getElementById('prod-pay-date').value || new Date().toISOString().slice(0, 10);
+  const note = document.getElementById('prod-pay-note').value.trim();
+  const p = prodById(id);
+  if (!p) { closeModal('prod-payment'); return; }
+  const payments = (p.payments || []).slice();
+  payments.push({ amount: Math.round(amount), date, note });
+  prodUpdate(id, { payments });
+  closeModal('prod-payment');
+  window._prodPayTarget = null;
+  if (window.haptic) window.haptic.success();
+  toast('+ ' + fmtMoney(amount));
+  renderProductions();
+};
+window.prodPromptPrice = function(id) {
+  const p = prodById(id); if (!p) return;
+  const v = prompt('מחיר ההפקה (₪):', p.price || '');
+  if (v === null) return;
+  const num = parseFloat(v) || 0;
+  prodUpdate(id, { price: num });
+  renderProductions();
+};
+
+// ===== Waiting-for =====
+window.prodOpenWaitingModal = function(id) {
+  window._prodWaitingTarget = id;
+  const p = prodById(id);
+  const wf = (p && p.waitingFor) || {};
+  document.getElementById('prod-wait-what').value = wf.what || '';
+  document.getElementById('prod-wait-date').value = wf.date || '';
+  document.getElementById('modal-prod-waiting').classList.add('open');
+  setTimeout(() => document.getElementById('prod-wait-what').focus(), 100);
+};
+window.prodSaveWaiting = function() {
+  const id = window._prodWaitingTarget;
+  if (!id) return;
+  const what = document.getElementById('prod-wait-what').value.trim();
+  const date = document.getElementById('prod-wait-date').value || '';
+  if (!what) { toast('כתוב למה אתה מחכה'); return; }
+  prodUpdate(id, { waitingFor: { what, date } });
+  closeModal('prod-waiting');
+  window._prodWaitingTarget = null;
+  if (window.haptic) window.haptic.tap();
+  renderProductions();
+};
+window.prodClearWaiting = function() {
+  const id = window._prodWaitingTarget;
+  if (!id) return;
+  prodUpdate(id, { waitingFor: null });
+  closeModal('prod-waiting');
+  window._prodWaitingTarget = null;
+  if (window.haptic) window.haptic.tap();
+  renderProductions();
 };
 
 window.prodConfirmDelete = function(id) {
