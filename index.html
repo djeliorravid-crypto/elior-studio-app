@@ -5452,7 +5452,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v317</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v318</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8961,27 +8961,31 @@ window.txCopyShortcutURL = async function() {
 // Capacitor App.appUrlOpen — fires when the app is opened/foregrounded
 // via the ravidstudio:// URL scheme (set up via iOS Shortcuts).
 (function _txAttachUrlListener() {
+  // Same URL can be delivered by both appUrlOpen and getLaunchUrl
+  // (and re-fired on appStateChange). De-dupe by URL within a short
+  // window so a single Shortcut tap creates one expense, not two.
+  const recent = new Map();
+  const DEDUPE_MS = 8000;
+
   function handleUrl(url) {
-    // Verbose debug mode — every step surfaces a toast so we can see
-    // exactly where the chain breaks on a real device.
-    if (!url) { toast('🔴 URL ריק'); return; }
-    toast('📥 URL: ' + String(url).slice(0, 80));
+    if (!url) return;
+    const now = Date.now();
+    const last = recent.get(url);
+    if (last && (now - last) < DEDUPE_MS) return;
+    recent.set(url, now);
+    // GC old entries
+    for (const [k, ts] of recent) { if (now - ts > DEDUPE_MS) recent.delete(k); }
+
     try {
       const u = new URL(url);
       const host = (u.host || u.hostname || '').toLowerCase();
-      if (host !== 'wallet' && host !== 'expense' && host !== 'tx') {
-        toast('⚠️ host לא מוכר: ' + host);
-        return;
-      }
+      if (host !== 'wallet' && host !== 'expense' && host !== 'tx') return;
       const text = u.searchParams.get('text') || u.searchParams.get('body') || '';
-      if (!text) { toast('⚠️ אין פרמטר text'); return; }
-      toast('📝 text: ' + text.slice(0, 60));
+      if (!text) return;
       let decoded = text;
       try { decoded = decodeURIComponent(text); } catch (_) { /* already decoded */ }
-      const ok = txIngest(decoded);
-      if (!ok) toast('❌ הפרסר לא חילץ סכום');
+      txIngest(decoded);
     } catch (e) {
-      toast('💥 שגיאה: ' + (e && e.message ? e.message.slice(0, 60) : 'לא ידוע'));
       console.warn('tx URL parse failed', url, e);
     }
   }
@@ -8990,17 +8994,9 @@ window.txCopyShortcutURL = async function() {
       const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
       if (!App || !App.addListener) return false;
       App.addListener('appUrlOpen', data => handleUrl(data && data.url));
-      App.addListener('appStateChange', state => {
-        // When app becomes active, re-check the launch URL in case the
-        // appUrlOpen event fired before our listener was ready.
-        if (state && state.isActive && App.getLaunchUrl) {
-          App.getLaunchUrl().then(r => { if (r && r.url) handleUrl(r.url); }).catch(() => {});
-        }
-      });
       if (App.getLaunchUrl) {
         App.getLaunchUrl().then(r => { if (r && r.url) handleUrl(r.url); }).catch(() => {});
       }
-      window.__txListenerAttached = true;
       return true;
     } catch (_) { return false; }
   }
