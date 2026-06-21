@@ -5452,7 +5452,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v313</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v314</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8648,8 +8648,8 @@ function toggleExpensePaid(id) {
 // matching is case-insensitive + substring. First match wins so
 // more specific patterns should come first within a category.
 const TX_MERCHANT_DICT = [
-  // מזון — supermarkets, restaurants, cafes
-  { cat: 'מזון', icon: '🛒', re: /שופרסל|רמי לוי|טיב טעם|מגה|יוחננוף|ויקטורי|אושר עד|אקדמיה|am pm|ampm|tiv ?taam|shufersal|rami|victory|fresh market|carrefour|coop|פרש|סופר|מינימרקט|בשרים|פירות|ירקות/i },
+  // מזון — supermarkets, restaurants, cafes, makolot
+  { cat: 'מזון', icon: '🛒', re: /שופרסל|רמי לוי|טיב טעם|מגה|יוחננוף|ויקטורי|אושר עד|אקדמיה|am pm|ampm|tiv ?taam|shufersal|supersal|rami|victory|fresh market|carrefour|coop|פרש|סופר|מינימרקט|מכולת|makolet|grocery|בשרים|פירות|ירקות|eden ?lev|אדן לוי|אדן ?לבי/i },
   { cat: 'מזון', icon: '🍔', re: /מקדונלד|burger|בורגר|פיצה|pizza|דומינוס|רולדין|ארומה|cofix|cofizz|נוטרינו|רולדין|לנדוור|caf[eé]|קפה|הול דנפ|ג'אפניקה|japanika|מסעדה|אסיא|asia|פתרון|wolt|10bis|cibus|tenbis|פלאפל|חומוס|שווארמה|סושי|sushi|מקדונלדס|מיט|מיטסביסקי|biscotti/i },
 
   // תוכנות / מנויים דיגיטליים
@@ -8659,7 +8659,7 @@ const TX_MERCHANT_DICT = [
   { cat: 'ציוד', icon: '🎚️', re: /thomann|sweetwater|guitar ?center|reverb|kabbalat|קבלת|kli ?zemer|musicbox|כלי ?נגינה|halilit|חליליט|moog|korg|roland|yamaha|fender|gibson|martin|taylor|focusrite|universal ?audio|apogee|presonus|behringer|shure|neumann|sennheiser|akg|rode|audio.?technica|adam ?audio|genelec|kii|barefoot|jbl|krk|mackie|allen ?heath|midas|soundcraft|microsoft|אפל|apple ?store|מחשבים|מחשב|computer|לפטופ|laptop|ipad|אייפד|אייפון|iphone/i },
 
   // תחבורה / דלק / חניה
-  { cat: 'תחבורה', icon: '⛽', re: /פז|paz|דלק|delek|sonol|סונול|דור ?אלון|ten|טן|alon|אלון|רב.?קו|moovit|gett|uber|פיירפי|fuelfly|חניון|חניה|parking|pango|cellopark|רכבת ?ישראל|israel ?railways|אגד|egged|דן|מטרופולין|kavim|קווים/i },
+  { cat: 'תחבורה', icon: '⛽', re: /פז|paz|דלק|delek|sonol|סונול|דור ?אלון|ten|טן|alon|אלון|רב.?קו|moovit|gett|uber|פיירפי|fuelfly|חניון|חניה|parking|pango|cellopark|אזרי?אלי? ?(parking|חניון)|azrieli ?parking|רכבת ?ישראל|israel ?railways|אגד|egged|דן|מטרופולין|kavim|קווים/i },
 
   // שכירות
   { cat: 'שכירות', icon: '🏠', re: /שכירות|rent ?payment|אמנון|השכרה|דירה/i },
@@ -8711,20 +8711,53 @@ function _txParseNotification(text) {
   if (m) amount = parseFloat(m[1].replace(/,/g, ''));
   if (!(amount > 0)) return null;
 
-  // Merchant — anything after "ב-" / "at" / "from" / "ל-" / "אצל"
-  // up to end of line or a date / punctuation.
+  // Merchant extraction. Multiple strategies, first hit wins.
+  // STRATEGY A — Israeli bank push pattern: "Discount — <ctx>, MERCHANT, ₪ 9.00"
+  //   The merchant is the comma-separated chunk immediately before the amount.
+  //   Same shape works for Cal / Max / Isracard pushes.
+  // STRATEGY B — explicit "ב-" / "אצל" / "בעסק" anchor.
+  // STRATEGY C — English "at / from / paid to" anchor.
+  // STRATEGY D — last text chunk that isn't a number, ₪ symbol, or
+  //   common context word (fallback for very terse notifications).
   let merchant = '';
-  const merchantPatterns = [
-    /(?:ב\-|אצל|בעסק|ב\s)\s*([^.,\n0-9₪]+?)(?=\s*(?:מתאריך|תאריך|בתאריך|בעת|ב\-|בכרטיס|ב\s\d|[.,\n]|$))/i,
-    /(?:at|from|to)\s+([A-Za-z][A-Za-z0-9 &'\-.]+?)(?=\s*(?:on|at|via|using|today|\d|[.,\n]|$))/i,
-    /paid\s+(?:to\s+)?([A-Za-z][A-Za-z0-9 &'\-.]+?)(?=\s*(?:via|using|today|on|\d|[.,\n]|$))/i
-  ];
-  for (const p of merchantPatterns) {
-    const mm = t.match(p);
-    if (mm && mm[1]) { merchant = mm[1].trim(); break; }
+
+  // A) Comma-separated chunk right before the amount marker
+  const beforeAmount = t.split(/(?:₪|ש"?ח|NIS|ILS)/i)[0] || '';
+  if (beforeAmount.indexOf(',') !== -1) {
+    const parts = beforeAmount.split(',').map(s => s.trim()).filter(Boolean);
+    // Skip pure-context chunks like "מחויב במרכז רמלה" or "Discount"
+    // and prefer the chunk most likely to be a merchant name.
+    const candidates = parts.filter(p => !/^discount$|^max$|^cal$|^isracard$|^american ?express$/i.test(p));
+    if (candidates.length) merchant = candidates[candidates.length - 1];
   }
-  // Trim trailing garbage
-  merchant = merchant.replace(/[\-•·–—.,]+$/, '').trim();
+
+  if (!merchant) {
+    const patterns = [
+      // B) Hebrew anchors — "ב " / "ב-" / "אצל" / "בעסק"
+      /(?:ב\-|אצל|בעסק|ב\s)\s*([^.,\n0-9₪]+?)(?=\s*(?:מתאריך|תאריך|בתאריך|בעת|ב\-|בכרטיס|ב\s\d|[.,\n]|$))/i,
+      // C) English anchors
+      /(?:at|from|to)\s+([A-Za-z][A-Za-z0-9 &'\-.]+?)(?=\s*(?:on|at|via|using|today|\d|[.,\n]|$))/i,
+      /paid\s+(?:to\s+)?([A-Za-z][A-Za-z0-9 &'\-.]+?)(?=\s*(?:via|using|today|on|\d|[.,\n]|$))/i
+    ];
+    for (const p of patterns) {
+      const mm = t.match(p);
+      if (mm && mm[1]) { merchant = mm[1].trim(); break; }
+    }
+  }
+
+  // D) Last-resort — strip the amount + currency tokens and the
+  // word "Discount" / sender name, then take what's left.
+  if (!merchant) {
+    let leftover = t
+      .replace(/(?:₪|ש"?ח|NIS|ILS)\s*[0-9][0-9,]*(?:\.[0-9]{1,2})?/gi, '')
+      .replace(/[0-9][0-9,]*(?:\.[0-9]{1,2})?\s*(?:₪|ש"?ח|NIS|ILS)/gi, '')
+      .replace(/^(?:Discount|Max|Cal|Isracard|American Express|Apple Pay)[\s\-:—–]*/i, '')
+      .replace(/[.,\-•·–—]+/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+    if (leftover.length > 1) merchant = leftover.slice(0, 60);
+  }
+
+  merchant = (merchant || '').replace(/[\-•·–—.,]+$/, '').trim();
   if (!merchant) merchant = 'תנועה לא מזוהה';
 
   return {
