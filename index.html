@@ -5452,7 +5452,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v322</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v323</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9132,16 +9132,21 @@ window.txCopyShortcutURL = async function() {
         } catch (_) { /* fall through to other paths */ }
       }
 
-      // 2) Individual structured params (any subset)
-      const a = parseFloat(dec(amountRaw));
-      const haveStructured = (Number.isFinite(a) && a > 0) || (merchantRaw && dec(merchantRaw).trim().length > 0);
+      // 2) Individual structured params (any subset). Pass the RAW
+      //    amount string through — _txParseAmount handles the iOS
+      //    locale format (₪5.00 / $1,234.56 / etc.) that breaks
+      //    a naive parseFloat.
+      const amountStr   = dec(amountRaw   || '').trim();
+      const merchantStr = dec(merchantRaw || '').trim();
+      const aClean = _txParseAmount(amountStr);
+      const haveStructured = aClean > 0 || merchantStr.length > 0;
       if (haveStructured) {
         txIngestStructured({
-          amount:   Number.isFinite(a) && a > 0 ? a : 0,
-          merchant: (dec(merchantRaw) || '').trim(),
+          amount:   amountStr,  // raw — txIngestStructured re-parses with currency-aware logic
+          merchant: merchantStr,
           date:     (dec(dateRaw) || '').trim() || null,
           category: (dec(categoryRaw) || '').trim() || null,
-          raw:      'amount=' + dec(amountRaw || '') + ' merchant=' + dec(merchantRaw || '')
+          raw:      'amount=' + amountStr + ' merchant=' + merchantStr
         });
         return;
       }
