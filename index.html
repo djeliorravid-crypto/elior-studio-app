@@ -5452,7 +5452,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v321</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v322</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6149,25 +6149,36 @@
        the iOS Shortcut automation so wallet notifications auto-feed
        the app's pending inbox. -->
   <div class="modal-overlay" id="modal-tx-wallet-guide">
-    <div class="modal" style="max-width:520px">
-      <h3>חיבור Apple Wallet → אוטומציה</h3>
+    <div class="modal" style="max-width:560px">
+      <h3>הגדרת Apple Wallet — צעד-אחר-צעד</h3>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
-        כל תשלום שתעשה ב-Apple Pay יעבור אוטומטית לתור ההוצאות, עם זיהוי חכם של הקטגוריה.
-        הגדרה חד-פעמית של 3 דקות באייפון שלך.
+        אחרי הגדרה זו, כל תשלום ב-Apple Pay ייכנס אוטומטית להוצאות עם <strong>סכום</strong> + <strong>שם בית עסק</strong> + <strong>קטגוריה</strong>. אפס לחיצות פר תשלום.
       </p>
-      <div id="tx-guide-steps" style="font-size:13.5px;line-height:1.75;color:var(--text)">
-        <div style="margin-bottom:14px"><strong>1.</strong> פתח את אפליקציית <strong>Shortcuts</strong> באייפון</div>
-        <div style="margin-bottom:14px"><strong>2.</strong> תחתית המסך → <strong>Automation</strong> → <strong>+</strong> חדש</div>
-        <div style="margin-bottom:14px"><strong>3.</strong> טריגר: <strong>"Notification"</strong> → בחר אפליקציה: <strong>"Wallet"</strong> (אם רוצה גם מהאפליקציה של דיסקונט / Max / Cal — אפשר להוסיף כמה גם יחד)</div>
-        <div style="margin-bottom:14px"><strong>4.</strong> Run Immediately = <strong>On</strong> (ירוץ ברקע בלי לשאול)</div>
-        <div style="margin-bottom:14px"><strong>5.</strong> כפעולה — <strong>"Open URLs"</strong> → הדבק את הכתובת הזו (לחץ להעתקה):</div>
-        <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;font-family:'Menlo','Courier',monospace;font-size:12px;direction:ltr;text-align:left;cursor:pointer;color:var(--accent);user-select:all;word-break:break-all" onclick="txCopyShortcutURL()">
-          ravidstudio://wallet?text=[Shortcut Input]
+      <div style="font-size:13.5px;line-height:1.7;color:var(--text)">
+        <div style="margin-bottom:12px"><strong>1.</strong> פתח <strong>"קיצורי דרך"</strong> (Shortcuts) → לשונית <strong>אוטומציה</strong> → <strong>+</strong> חדש</div>
+        <div style="margin-bottom:12px"><strong>2.</strong> טריגר: <strong>"ארנק"</strong> (Wallet) → סמן את כל הכרטיסים → <strong>"הפעלה מיידית"</strong></div>
+        <div style="margin-bottom:12px"><strong>3.</strong> חפש פעולה: <strong>"פתיחת כתובות אינטרנט"</strong> (Open URLs)</div>
+        <div style="margin-bottom:8px"><strong>4.</strong> בשדה ה-URL הקלד:</div>
+        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-family:'Menlo','Courier',monospace;font-size:11.5px;direction:ltr;text-align:left;color:var(--accent);user-select:all;word-break:break-all;margin-bottom:8px">
+          ravidstudio://wallet?amount=
         </div>
-        <div style="margin:6px 0 14px;font-size:11.5px;color:var(--text-muted)">החליפו את <code style="background:var(--surface2);padding:1px 4px;border-radius:4px">[Shortcut Input]</code> במשתנה <strong>"Notification"</strong> (לחץ Add Variable למעלה במקלדת)</div>
-        <div style="margin-bottom:14px"><strong>6.</strong> שמור. סיימת.</div>
+        <div style="margin-bottom:12px;color:var(--text-muted);font-size:12px">→ לחץ <strong>"בחירת משתנה"</strong> → בחר <strong>"קלט של קיצור"</strong> (יופיע בלוק כחול) → <strong>לחץ פעם נוספת על הבלוק הכחול</strong> → תופיע אפשרות לבחור שדה → בחר <strong>"Amount"</strong></div>
+
+        <div style="margin-bottom:8px"><strong>5.</strong> המשך להקליד באותו שדה URL:</div>
+        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-family:'Menlo','Courier',monospace;font-size:11.5px;direction:ltr;text-align:left;color:var(--accent);user-select:all;word-break:break-all;margin-bottom:8px">
+          &amp;merchant=
+        </div>
+        <div style="margin-bottom:12px;color:var(--text-muted);font-size:12px">→ לחץ שוב <strong>"בחירת משתנה"</strong> → <strong>"קלט של קיצור"</strong> → <strong>לחץ על הבלוק הכחול</strong> → בחר <strong>"Merchant"</strong></div>
+
+        <div style="margin-bottom:12px"><strong>6.</strong> סיום. ה-URL הסופי צריך להראות כך:</div>
+        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-family:'Menlo','Courier',monospace;font-size:11.5px;direction:ltr;text-align:left;color:var(--accent);word-break:break-all;margin-bottom:14px">
+          ravidstudio://wallet?amount=<span style="background:rgba(0,122,255,0.2);padding:1px 6px;border-radius:4px;color:#4a90e2">Amount</span>&amp;merchant=<span style="background:rgba(0,122,255,0.2);padding:1px 6px;border-radius:4px;color:#4a90e2">Merchant</span>
+        </div>
+        <div style="background:rgba(255,180,0,0.10);border:1px solid rgba(255,180,0,0.3);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text);margin-bottom:14px">
+          <strong>הטריק הקריטי:</strong> ה"בלוק הכחול" צריך להציג "Amount" או "Merchant" בתוכו — לא "Shortcut Input". אם הוא מציג "Shortcut Input" עדיין — לא לחצת פעמיים. <strong>לחיצה ראשונה</strong> מוסיפה את הבלוק, <strong>לחיצה שנייה</strong> פותחת תפריט לבחירת השדה.
+        </div>
         <div style="background:rgba(122,168,127,0.12);border:1px solid rgba(122,168,127,0.35);border-radius:10px;padding:10px 12px;font-size:12.5px;font-weight:700;color:var(--green)">
-          ✓ בדיקה: שלם משהו ב-Apple Pay. תוך 2 שניות תראה את ההוצאה בתור ההוצאות באפליקציה — מוכנה לאישור.
+          ✓ בדיקה: שלם ב-Apple Pay בקופה פיזית (תשלום באתרים אונליין לא מפעיל את הטריגר). תוך 2 שניות תראה הוצאה אוטומטית בתור — עם הסכום והקטגוריה הנכונים.
         </div>
       </div>
       <div class="modal-actions">
@@ -8818,6 +8829,66 @@ function _txParseNotification(text) {
 function txList()        { try { return load('pending_tx') || []; } catch (_) { return []; } }
 function txSaveAll(arr)  { save('pending_tx', arr); }
 
+// Parse iOS Wallet's locale-formatted amount text like "₪45.00",
+// "$1,234.56", "€1.234,56". Strips currency symbols and resolves the
+// decimal separator heuristically: if both . and , present, the
+// right-most is the decimal; if only , present and exactly 2 digits
+// follow it, treat as decimal; otherwise treat all , as thousands.
+function _txParseAmount(rawAmount) {
+  if (rawAmount == null) return 0;
+  if (typeof rawAmount === 'number') return rawAmount > 0 ? rawAmount : 0;
+  let s = String(rawAmount).replace(/[^0-9.,]/g, '');
+  if (!s) return 0;
+  const lastDot = s.lastIndexOf('.');
+  const lastComma = s.lastIndexOf(',');
+  if (lastDot > -1 && lastComma > -1) {
+    if (lastComma > lastDot) { s = s.replace(/\./g, '').replace(',', '.'); }
+    else                     { s = s.replace(/,/g, ''); }
+  } else if (lastComma > -1) {
+    const after = s.slice(lastComma + 1);
+    if (after.length === 2) s = s.replace(',', '.');
+    else                    s = s.replace(/,/g, '');
+  }
+  const n = parseFloat(s);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+// Ingest a transaction from STRUCTURED params (the path we take when
+// the Shortcut sends amount + merchant + date as separate URL fields).
+// Always queues — never throws away data.
+function txIngestStructured(parsed) {
+  const cleanAmount   = _txParseAmount(parsed.amount);
+  const cleanMerchant = String(parsed.merchant || '').trim();
+  if (!cleanMerchant && !cleanAmount) {
+    toast('⚠️ עסקה ריקה — בדוק את ה-Shortcut');
+    if (window.haptic) window.haptic.error();
+    return false;
+  }
+  const merchant = cleanMerchant || 'תנועה ללא שם';
+  const guess = parsed.category
+    ? { cat: parsed.category, icon: '💳' }
+    : _txGuessCategory(merchant);
+  const item = {
+    id: 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    ts: new Date().toISOString(),
+    amount:   cleanAmount,
+    merchant: merchant,
+    date:     parsed.date || new Date().toISOString().slice(0, 10),
+    category: guess.cat,
+    icon:     guess.icon,
+    raw:      parsed.raw || (parsed.amount + ' · ' + cleanMerchant),
+    needsAmount: !(cleanAmount > 0)
+  };
+  const arr = txList();
+  arr.push(item);
+  txSaveAll(arr);
+  if (window.haptic) window.haptic.success();
+  if (cleanAmount > 0) toast('+ ' + fmtMoney(cleanAmount) + ' מ-' + merchant);
+  else                 toast(merchant + ' — הוסף סכום');
+  if (typeof renderExpenses === 'function') renderExpenses();
+  return true;
+}
+
 function txIngest(raw) {
   const parsed = _txParseNotification(raw);
   if (!parsed) {
@@ -9028,11 +9099,57 @@ window.txCopyShortcutURL = async function() {
       const u = new URL(url);
       const host = (u.host || u.hostname || '').toLowerCase();
       if (host !== 'wallet' && host !== 'expense' && host !== 'tx') return;
-      const text = u.searchParams.get('text') || u.searchParams.get('body') || '';
-      if (!text) return;
-      let decoded = text;
-      try { decoded = decodeURIComponent(text); } catch (_) { /* already decoded */ }
-      txIngest(decoded);
+
+      // Accept multiple URL shapes (we don't know yet what iOS Shortcuts
+      // exposes; build for any of them):
+      //   ravidstudio://wallet?text=<freetext>                ← v1
+      //   ravidstudio://wallet?amount=5&merchant=Aroma         ← structured
+      //   ravidstudio://wallet?amount=5&merchant=Aroma&date=2026-06-21
+      //   ravidstudio://wallet?json=<urlencoded JSON>          ← bulk
+      const dec = v => { if (!v) return ''; try { return decodeURIComponent(v); } catch (_) { return v; } };
+
+      const amountRaw   = u.searchParams.get('amount');
+      const merchantRaw = u.searchParams.get('merchant') || u.searchParams.get('store') || u.searchParams.get('name');
+      const dateRaw     = u.searchParams.get('date');
+      const categoryRaw = u.searchParams.get('category') || u.searchParams.get('cat');
+      const jsonRaw     = u.searchParams.get('json') || u.searchParams.get('data');
+      const textRaw     = u.searchParams.get('text') || u.searchParams.get('body');
+
+      // 1) Structured JSON wins if present
+      if (jsonRaw) {
+        try {
+          const obj = JSON.parse(dec(jsonRaw));
+          if (obj && typeof obj === 'object') {
+            txIngestStructured({
+              amount:   Number(obj.amount || obj.Amount || obj.value || 0) || 0,
+              merchant: String(obj.merchant || obj.Merchant || obj.store || obj.name || '').trim(),
+              date:     String(obj.date     || obj.Date     || '').trim() || null,
+              category: String(obj.category || obj.cat      || '').trim() || null,
+              raw:      dec(jsonRaw)
+            });
+            return;
+          }
+        } catch (_) { /* fall through to other paths */ }
+      }
+
+      // 2) Individual structured params (any subset)
+      const a = parseFloat(dec(amountRaw));
+      const haveStructured = (Number.isFinite(a) && a > 0) || (merchantRaw && dec(merchantRaw).trim().length > 0);
+      if (haveStructured) {
+        txIngestStructured({
+          amount:   Number.isFinite(a) && a > 0 ? a : 0,
+          merchant: (dec(merchantRaw) || '').trim(),
+          date:     (dec(dateRaw) || '').trim() || null,
+          category: (dec(categoryRaw) || '').trim() || null,
+          raw:      'amount=' + dec(amountRaw || '') + ' merchant=' + dec(merchantRaw || '')
+        });
+        return;
+      }
+
+      // 3) Freetext fallback (current Shortcut Input behaviour)
+      if (textRaw) {
+        txIngest(dec(textRaw));
+      }
     } catch (e) {
       console.warn('tx URL parse failed', url, e);
     }
