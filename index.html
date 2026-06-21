@@ -5452,7 +5452,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v314</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v315</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8700,7 +8700,8 @@ function _txGuessCategory(merchant) {
 // { amount, merchant, date } or null if we couldn't extract a number.
 function _txParseNotification(text) {
   if (!text) return null;
-  const t = String(text).replace(/\s+/g, ' ').trim();
+  const raw = String(text);
+  const t = raw.replace(/\s+/g, ' ').trim();
 
   // Amount — prefer the explicit ₪ / ש"ח prefixed number, fall back
   // to the first decimal number in the text.
@@ -8712,30 +8713,63 @@ function _txParseNotification(text) {
   if (!(amount > 0)) return null;
 
   // Merchant extraction. Multiple strategies, first hit wins.
-  // STRATEGY A — Israeli bank push pattern: "Discount — <ctx>, MERCHANT, ₪ 9.00"
-  //   The merchant is the comma-separated chunk immediately before the amount.
-  //   Same shape works for Cal / Max / Isracard pushes.
-  // STRATEGY B — explicit "ב-" / "אצל" / "בעסק" anchor.
-  // STRATEGY C — English "at / from / paid to" anchor.
-  // STRATEGY D — last text chunk that isn't a number, ₪ symbol, or
-  //   common context word (fallback for very terse notifications).
+  // STRATEGY 0 — Multi-line notification format: Apple Wallet pushes
+  //   them as 3 lines: card name / merchant (or description) / amount.
+  //   Pick the merchant line (not first, not amount-containing).
+  // STRATEGY A — Comma-separated chunk right before the amount marker.
+  //   Used by Discount push for retail: "...רמלה, Eden Levi, ₪ 9.00".
+  // STRATEGY B — Single-line minus sender prefix. Wolt-style:
+  //   "Discount Wolt ₪ 79.20" → strip "Discount" → "Wolt".
+  // STRATEGY C — Hebrew explicit anchor.
+  // STRATEGY D — English explicit anchor.
+  // STRATEGY E — Last-resort: strip amount + sender, take what's left.
   let merchant = '';
 
-  // A) Comma-separated chunk right before the amount marker
-  const beforeAmount = t.split(/(?:₪|ש"?ח|NIS|ILS)/i)[0] || '';
-  if (beforeAmount.indexOf(',') !== -1) {
-    const parts = beforeAmount.split(',').map(s => s.trim()).filter(Boolean);
-    // Skip pure-context chunks like "מחויב במרכז רמלה" or "Discount"
-    // and prefer the chunk most likely to be a merchant name.
-    const candidates = parts.filter(p => !/^discount$|^max$|^cal$|^isracard$|^american ?express$/i.test(p));
-    if (candidates.length) merchant = candidates[candidates.length - 1];
+  // 0) Multi-line
+  const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!merchant && lines.length >= 2) {
+    const amtRe = /(?:₪|ש"?ח|NIS|ILS).*[0-9]|[0-9].*(?:₪|ש"?ח|NIS|ILS)/i;
+    const senderRe = /^(?:discount|max|cal|isracard|american ?express|apple ?pay|wallet|ארנק)$/i;
+    for (let i = 0; i < lines.length; i++) {
+      const ln = lines[i];
+      if (amtRe.test(ln)) continue;          // amount line, skip
+      if (senderRe.test(ln)) continue;       // sender label, skip
+      // Found a merchant/description line
+      if (ln.indexOf(',') !== -1) {
+        const parts = ln.split(',').map(s => s.trim()).filter(Boolean);
+        const cands = parts.filter(p => !senderRe.test(p));
+        if (cands.length) merchant = cands[cands.length - 1];
+      } else {
+        merchant = ln;
+      }
+      if (merchant) break;
+    }
   }
 
+  // A) Comma-chunk before amount
+  if (!merchant) {
+    const beforeAmount = t.split(/(?:₪|ש"?ח|NIS|ILS)/i)[0] || '';
+    if (beforeAmount.indexOf(',') !== -1) {
+      const parts = beforeAmount.split(',').map(s => s.trim()).filter(Boolean);
+      const cands = parts.filter(p => !/^(?:discount|max|cal|isracard|american ?express|apple ?pay|wallet|ארנק)$/i.test(p));
+      if (cands.length) merchant = cands[cands.length - 1];
+    }
+  }
+
+  // B) Single-line minus sender prefix
+  if (!merchant) {
+    const beforeAmount = t.split(/(?:₪|ש"?ח|NIS|ILS)/i)[0] || '';
+    const leftover = beforeAmount
+      .replace(/^(?:Discount|Max|Cal|Isracard|American ?Express|Apple ?Pay|Wallet|ארנק)[\s\-:—–]+/i, '')
+      .replace(/[\-:—–.,]+$/, '')
+      .trim();
+    if (leftover && leftover.length > 1) merchant = leftover;
+  }
+
+  // C-D) Anchored patterns
   if (!merchant) {
     const patterns = [
-      // B) Hebrew anchors — "ב " / "ב-" / "אצל" / "בעסק"
       /(?:ב\-|אצל|בעסק|ב\s)\s*([^.,\n0-9₪]+?)(?=\s*(?:מתאריך|תאריך|בתאריך|בעת|ב\-|בכרטיס|ב\s\d|[.,\n]|$))/i,
-      // C) English anchors
       /(?:at|from|to)\s+([A-Za-z][A-Za-z0-9 &'\-.]+?)(?=\s*(?:on|at|via|using|today|\d|[.,\n]|$))/i,
       /paid\s+(?:to\s+)?([A-Za-z][A-Za-z0-9 &'\-.]+?)(?=\s*(?:via|using|today|on|\d|[.,\n]|$))/i
     ];
@@ -8745,13 +8779,12 @@ function _txParseNotification(text) {
     }
   }
 
-  // D) Last-resort — strip the amount + currency tokens and the
-  // word "Discount" / sender name, then take what's left.
+  // E) Last-resort
   if (!merchant) {
     let leftover = t
       .replace(/(?:₪|ש"?ח|NIS|ILS)\s*[0-9][0-9,]*(?:\.[0-9]{1,2})?/gi, '')
       .replace(/[0-9][0-9,]*(?:\.[0-9]{1,2})?\s*(?:₪|ש"?ח|NIS|ILS)/gi, '')
-      .replace(/^(?:Discount|Max|Cal|Isracard|American Express|Apple Pay)[\s\-:—–]*/i, '')
+      .replace(/^(?:Discount|Max|Cal|Isracard|American Express|Apple Pay|ארנק)[\s\-:—–]*/i, '')
       .replace(/[.,\-•·–—]+/g, ' ')
       .replace(/\s+/g, ' ').trim();
     if (leftover.length > 1) merchant = leftover.slice(0, 60);

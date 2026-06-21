@@ -1,5 +1,5 @@
 // Service Worker — אפליקציה אמיתית עם תמיכה offline
-const CACHE_NAME = 'elior-app-v85';
+const CACHE_NAME = 'elior-app-v86';
 const APP_SHELL = [
   '/elior-studio-app/',
   '/elior-studio-app/index.html',
