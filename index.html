@@ -5452,7 +5452,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v318</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v319</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8961,20 +8961,32 @@ window.txCopyShortcutURL = async function() {
 // Capacitor App.appUrlOpen — fires when the app is opened/foregrounded
 // via the ravidstudio:// URL scheme (set up via iOS Shortcuts).
 (function _txAttachUrlListener() {
-  // Same URL can be delivered by both appUrlOpen and getLaunchUrl
-  // (and re-fired on appStateChange). De-dupe by URL within a short
-  // window so a single Shortcut tap creates one expense, not two.
-  const recent = new Map();
-  const DEDUPE_MS = 8000;
+  // iOS re-delivers the launch URL on every cold start AND on
+  // appUrlOpen, so de-dupe needs to survive across app restarts.
+  // Persist a small ring buffer of processed URLs to localStorage.
+  const DEDUPE_MS = 5 * 60 * 1000; // 5 minutes
+  function _wasProcessed(url) {
+    try {
+      const arr = JSON.parse(localStorage.getItem('_tx_processed_urls') || '[]');
+      const now = Date.now();
+      return arr.some(x => x.u === url && (now - x.t) < DEDUPE_MS);
+    } catch (_) { return false; }
+  }
+  function _markProcessed(url) {
+    try {
+      const now = Date.now();
+      let arr = JSON.parse(localStorage.getItem('_tx_processed_urls') || '[]');
+      arr.push({ u: url, t: now });
+      arr = arr.filter(x => (now - x.t) < DEDUPE_MS);
+      if (arr.length > 60) arr = arr.slice(-60);
+      localStorage.setItem('_tx_processed_urls', JSON.stringify(arr));
+    } catch (_) {}
+  }
 
   function handleUrl(url) {
     if (!url) return;
-    const now = Date.now();
-    const last = recent.get(url);
-    if (last && (now - last) < DEDUPE_MS) return;
-    recent.set(url, now);
-    // GC old entries
-    for (const [k, ts] of recent) { if (now - ts > DEDUPE_MS) recent.delete(k); }
+    if (_wasProcessed(url)) return;
+    _markProcessed(url);
 
     try {
       const u = new URL(url);
