@@ -4727,10 +4727,12 @@
     /* Small icon-only button used in table rows for destructive
        actions (delete) — subtle by default, red on press. */
     .row-icon-btn {
-      width: 30px; height: 30px;
+      /* Visual size stays compact, but invisible padding gives a
+         44×44 hit target for fat-finger accuracy on iOS. */
+      width: 40px; height: 40px;
       display: inline-flex; align-items: center; justify-content: center;
       border: none;
-      border-radius: 8px;
+      border-radius: 9px;
       background: transparent;
       color: rgba(184,164,138,0.65);
       cursor: pointer;
@@ -5344,13 +5346,13 @@
     <h3><svg class="icon-lg"><use href="#ic-settings"/></svg>הגדרות</h3>
     <div class="notif-sub">התראות, אבטחה, ועוד</div>
 
-    <div class="notif-section-title">🔒 אבטחה</div>
+    <div class="notif-section-title">אבטחה</div>
     <div class="notif-row" id="face-id-row" style="display:none">
       <div><label>Face ID לפתיחת האפליקציה</label><div class="notif-sub-label">נדרש אימות בכל פתיחה</div></div>
       <div class="notif-toggle" id="face-id-toggle" onclick="handleFaceIdToggle(this)"></div>
     </div>
 
-    <div class="notif-section-title">🔔 סוגי התראות</div>
+    <div class="notif-section-title">סוגי התראות</div>
     <div class="notif-row">
       <div><label>הוצאות לפני תשלום</label><div class="notif-sub-label">חשבונות, מנויים, ספקים</div></div>
       <div class="notif-toggle" data-toggle="expenses" onclick="handleNotifToggle(this)"></div>
@@ -5377,7 +5379,7 @@
       <button type="button" class="notif-when-chip" data-lead="2880" onclick="handleNotifLead(this)">יומיים לפני</button>
     </div>
 
-    <div class="notif-section-title">🧾 קבלות אוטומטיות (Morning)</div>
+    <div class="notif-section-title">קבלות אוטומטיות (Morning)</div>
     <div style="font-size:11px;color:rgba(244,237,224,0.5);margin-bottom:10px;line-height:1.5">
       כל הכנסה שתסומן "שולם" — קבלה תיווצר אוטומטית ב-Morning בלי שתצטרך לפתוח את האפליקציה שלהם. <span id="morning-conn-dot" style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(220,60,60,0.18);color:#ff8b6b;font-weight:700;font-size:10.5px;margin-right:6px">לא מחובר</span>
     </div>
@@ -5452,7 +5454,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v323</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v324</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5494,7 +5496,7 @@
   <!-- ===== Lobby tasks: visible BEFORE you pick a mode ===== -->
   <div class="lobby-tasks" id="lobby-tasks">
     <div class="lobby-tasks-head">
-      <div class="lobby-tasks-title">📋 היום</div>
+      <div class="lobby-tasks-title"><svg class="icon"><use href="#ic-list"/></svg> היום</div>
       <div class="lobby-tasks-count" id="lobby-tasks-count"></div>
     </div>
     <div id="lobby-tasks-list"></div>
@@ -7224,7 +7226,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','proj_touched_at','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -7291,9 +7293,15 @@ const load = key => {
 
 function save(key, val) {
   const ts = Date.now();
-  // 1. כתוב מקומית מיד — תמיד מצליח
-  localStorage.setItem('s_' + key, JSON.stringify(val));
-  localStorage.setItem('s_' + key + '_ts', String(ts));
+  // 1. כתוב מקומית מיד — שמור בתוך try כדי לתפוס QuotaExceededError
+  try {
+    localStorage.setItem('s_' + key, JSON.stringify(val));
+    localStorage.setItem('s_' + key + '_ts', String(ts));
+  } catch (e) {
+    console.warn('localStorage write failed for', key, e);
+    if (typeof toast === 'function') toast('⚠️ אחסון מקומי מלא — שמור גיבוי ונקה');
+    return;
+  }
   // 2. הוסף לתור ושמור בdisk — שורד סגירת אפליקציה
   _pending[key] = { data: val, ts };
   _savePending();
@@ -7613,10 +7621,20 @@ document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('cli
 function populateClientSel(selId, keepValue) {
   const clients = load('clients');
   const sel = document.getElementById(selId);
+  if (!sel) return;
   const prev = keepValue || sel.value;
-  sel.innerHTML = '<option value="">— ללא לקוח —</option>';
-  clients.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.name}</option>`);
-  sel.innerHTML += `<option value="__new__" style="color:var(--accent);font-weight:800">+ הוסף לקוח חדש</option>`;
+  // Build options via DOM (not innerHTML) so client names with </>
+  // characters can't inject HTML.
+  sel.innerHTML = '';
+  const _opt = (val, text, style) => {
+    const o = document.createElement('option');
+    o.value = val; o.textContent = text;
+    if (style) o.setAttribute('style', style);
+    sel.appendChild(o);
+  };
+  _opt('', '— ללא לקוח —');
+  clients.forEach(c => _opt(c.id, c.name || '—'));
+  _opt('__new__', '+ הוסף לקוח חדש', 'color:var(--accent);font-weight:800');
   sel.onchange = () => handleClientSelChange(selId);
   if (prev && prev !== '__new__') sel.value = prev;
 }
@@ -8139,8 +8157,10 @@ function saveIncome() {
   save('income', income);
   closeModal('income');
   const cp = document.getElementById('congrats-popup');
-  cp.classList.add('show');
-  setTimeout(() => cp.classList.remove('show'), 2000);
+  if (cp) {
+    cp.classList.add('show');
+    setTimeout(() => cp.classList.remove('show'), 2000);
+  }
   refreshAll();
 }
 
@@ -8182,8 +8202,10 @@ function setIncomeStatus(id, status) {
 
   if (status === 'paid') {
     const cp = document.getElementById('congrats-popup');
-    cp.classList.add('show');
-    setTimeout(() => cp.classList.remove('show'), 2000);
+    if (cp) {
+      cp.classList.add('show');
+      setTimeout(() => cp.classList.remove('show'), 2000);
+    }
     // Auto-issue a receipt in Morning if the user has connected
     // their API creds. Fire-and-forget — UI updates when done.
     if (typeof window.morningIssueReceiptForIncome === 'function' &&
@@ -8290,8 +8312,10 @@ function renderIncome() {
   // תשלומים מתוכניות לחודש — מידע בלבד לתצוגה בתחתית הטבלה
   const planInstDisplay = [];
   plans.forEach(plan => {
-    plan.payments.forEach(p => {
+    (plan.payments || []).forEach(p => {
+      if (!p || !p.dueDate) return;
       const d = new Date(p.dueDate);
+      if (isNaN(d.getTime())) return;
       if (d.getFullYear() !== curYear || d.getMonth() !== curMonth) return;
       planInstDisplay.push({
         dueDate: p.dueDate, clientName: plan.clientName,
@@ -8330,10 +8354,11 @@ function renderIncome() {
   const futureSub = document.getElementById('i-future-profit-sub');
   if (futureSub) futureSub.textContent = `${fmtMoney(totalAllExpected)} צפוי פחות ${fmtMoney(monthExpensesTotal)} הוצאות`;
 
-  document.getElementById('i-total').textContent          = fmtMoney(totalPaid);
-  document.getElementById('i-count').textContent          = paid.length + ' עסקאות שולמו';
-  document.getElementById('i-expected').textContent       = fmtMoney(totalAllExpected);
-  document.getElementById('i-expected-count').textContent = `${monthEntries.length} פריטים החודש`;
+  const _setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  _setText('i-total',          fmtMoney(totalPaid));
+  _setText('i-count',          paid.length + ' עסקאות שולמו');
+  _setText('i-expected',       fmtMoney(totalAllExpected));
+  _setText('i-expected-count', `${monthEntries.length} פריטים החודש`);
 
   // New compact layout — income / expenses / net profit cards.
   // "הכנסות החודש" / "הוצאות החודש" reflect the CURRENT actual
@@ -9019,6 +9044,9 @@ window.txQuickConfirm = function(id) {
   if (typeof renderExpenses === 'function') renderExpenses();
 };
 window.txQuickReject = function(id) {
+  const t = txList().find(x => x.id === id);
+  const label = t ? (t.merchant + ' · ' + fmtMoney(t.amount || 0)) : 'התנועה';
+  if (!confirm('לדחות את ' + label + '?')) return;
   _txRemoveFromQueue(id);
   if (window.haptic) window.haptic.tap();
   if (typeof renderExpenses === 'function') renderExpenses();
@@ -9056,7 +9084,10 @@ window.txOpenWalletGuide = function() {
   document.getElementById('modal-tx-wallet-guide').classList.add('open');
 };
 window.txCopyShortcutURL = async function() {
-  const url = 'ravidstudio://wallet?text=[Shortcut Input]';
+  // Matches the current Shortcut spec: amount + merchant as separate
+  // sub-properties of the Transaction variable. User pastes this then
+  // taps each blue token a second time to pick the field.
+  const url = 'ravidstudio://wallet?amount=[Amount]&merchant=[Merchant]';
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(url);
@@ -12075,8 +12106,6 @@ const _PROD_STAGE_MIGRATION = {
   delivered: 'sent'
 };
 
-let _prodSort = 'urgency';
-let _prodFilter = null; // stage key or null
 let _prodExpanded = new Set();
 let _prodShowDelivered = false;
 
@@ -12115,8 +12144,10 @@ function _prodDaysBetween(a, b) {
 }
 function _prodDaysUntil(deadlineStr) {
   if (!deadlineStr) return null;
+  const d = new Date(deadlineStr);
+  if (isNaN(d.getTime())) return null;
+  d.setHours(0,0,0,0);
   const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(deadlineStr); d.setHours(0,0,0,0);
   return Math.floor((d.getTime() - today.getTime()) / 86400000);
 }
 function prodUrgencyScore(p) {
@@ -12223,56 +12254,6 @@ function renderProductions() {
 }
 
 
-function _renderProdFocus(focus, totalActive) {
-  const el = document.getElementById('prod-focus-section');
-  if (!el) return;
-  if (totalActive === 0) { el.innerHTML = ''; return; }
-  if (focus.length === 0) {
-    el.innerHTML = `
-      <div class="prod-focus-clear">
-        <svg><use href="#ic-check-circle"/></svg>
-        <span>הכל תחת שליטה — אין הפקה דחופה כרגע</span>
-      </div>`;
-    return;
-  }
-  el.innerHTML = `
-    <div class="prod-focus-wrap">
-      <div class="prod-focus-header">
-        <svg><use href="#ic-target"/></svg>
-        <span>תתחיל מפה היום</span>
-      </div>
-      ${focus.map(p => `
-        <div class="prod-focus-card" onclick="prodScrollTo('${p.id}')">
-          <div class="prod-focus-icon"><svg><use href="#ic-alert-circle"/></svg></div>
-          <div style="flex:1;min-width:0">
-            <div class="prod-focus-title">${_escape(p.title)} · <span style="color:var(--text-muted);font-weight:700">${_escape(p.artist || 'ללא אמן')}</span></div>
-            <div class="prod-focus-reason">${_escape(prodUrgencyReason(p))}</div>
-          </div>
-        </div>`).join('')}
-    </div>`;
-}
-
-function _renderProdStageStrip(active) {
-  const el = document.getElementById('prod-stage-strip');
-  if (!el) return;
-  const counts = {};
-  PROD_STAGES.forEach(s => counts[s.k] = 0);
-  active.forEach(p => { counts[p.stage] = (counts[p.stage] || 0) + 1; });
-  el.innerHTML = PROD_STAGES.filter(s => s.k !== 'delivered').map(s => {
-    const cnt = counts[s.k] || 0;
-    const isFilter = _prodFilter === s.k;
-    const isMuted = _prodFilter && !isFilter;
-    return `
-      <div class="prod-stage-tally ${isMuted ? 'muted' : ''}"
-           style="background:${s.color}1f;color:${s.color};border-color:${isFilter ? s.color : 'transparent'}"
-           onclick="prodSetFilter('${s.k}')">
-        <span class="tally-dot" style="background:${s.color}"></span>
-        ${cnt} ${s.label}
-      </div>`;
-  }).join('') + (_prodFilter
-    ? `<button class="prod-chip" onclick="prodSetFilter(null)" style="margin-right:auto">בטל סינון ✕</button>`
-    : '');
-}
 
 function _prodCardHtml(p) {
   const stage = prodStageMeta(p.stage);
@@ -12436,28 +12417,9 @@ function _prodCardHtml(p) {
     </div>`;
 }
 
-window.prodSetSort = function(mode) {
-  _prodSort = mode;
-  document.querySelectorAll('#prod-controls .prod-chip').forEach(c => {
-    c.classList.toggle('active', c.dataset.sort === mode);
-  });
-  renderProductions();
-};
-window.prodSetFilter = function(k) {
-  _prodFilter = (_prodFilter === k) ? null : k;
-  renderProductions();
-};
 window.prodExpand = function(id) {
   if (_prodExpanded.has(id)) _prodExpanded.delete(id); else _prodExpanded.add(id);
   renderProductions();
-};
-window.prodScrollTo = function(id) {
-  _prodExpanded.add(id);
-  renderProductions();
-  setTimeout(() => {
-    const el = document.getElementById('prod-card-' + id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 60);
 };
 window.prodToggleDelivered = function() { _prodShowDelivered = !_prodShowDelivered; renderProductions(); };
 
@@ -12624,6 +12586,12 @@ window.prodConfirmDelete = function(id) {
   const p = prodById(id); if (!p) return;
   if (!confirm('למחוק את ההפקה "' + p.title + '"?')) return;
   prodDelete(id);
+  // Clean up any in-memory state holding this id so deleting + re-
+  // adding a production with the same id (rare but possible) doesn't
+  // inherit the old expanded state.
+  _prodExpanded.delete(id);
+  if (window._prodPayTarget === id) window._prodPayTarget = null;
+  if (window._prodWaitingTarget === id) window._prodWaitingTarget = null;
   if (window.haptic) window.haptic.success();
   toast('ההפקה נמחקה');
   renderProductions();
@@ -15836,8 +15804,9 @@ function buildAIContext() {
   const released = load('released_songs');
   const sketches = load('sketch_songs');
   const plans = load('plans');
-  const bank = JSON.parse(localStorage.getItem('s_bankDeposit') || 'null');
-  const monthlyGoal = JSON.parse(localStorage.getItem('s_monthlyGoal') || 'null');
+  const _safeParse = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } };
+  const bank = _safeParse('s_bankDeposit');
+  const monthlyGoal = _safeParse('s_monthlyGoal');
 
   const now = new Date();
   const tDay = 86400000;
