@@ -5452,7 +5452,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v315</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v316</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8962,16 +8962,26 @@ window.txCopyShortcutURL = async function() {
 // via the ravidstudio:// URL scheme (set up via iOS Shortcuts).
 (function _txAttachUrlListener() {
   function handleUrl(url) {
-    if (!url) return;
+    // Verbose debug mode — every step surfaces a toast so we can see
+    // exactly where the chain breaks on a real device.
+    if (!url) { toast('🔴 URL ריק'); return; }
+    toast('📥 URL: ' + String(url).slice(0, 80));
     try {
       const u = new URL(url);
-      // Accept ravidstudio://wallet?text=... or ravidstudio://expense?text=...
       const host = (u.host || u.hostname || '').toLowerCase();
-      if (host !== 'wallet' && host !== 'expense' && host !== 'tx') return;
+      if (host !== 'wallet' && host !== 'expense' && host !== 'tx') {
+        toast('⚠️ host לא מוכר: ' + host);
+        return;
+      }
       const text = u.searchParams.get('text') || u.searchParams.get('body') || '';
-      if (!text) return;
-      txIngest(decodeURIComponent(text));
+      if (!text) { toast('⚠️ אין פרמטר text'); return; }
+      toast('📝 text: ' + text.slice(0, 60));
+      let decoded = text;
+      try { decoded = decodeURIComponent(text); } catch (_) { /* already decoded */ }
+      const ok = txIngest(decoded);
+      if (!ok) toast('❌ הפרסר לא חילץ סכום');
     } catch (e) {
+      toast('💥 שגיאה: ' + (e && e.message ? e.message.slice(0, 60) : 'לא ידוע'));
       console.warn('tx URL parse failed', url, e);
     }
   }
@@ -8980,14 +8990,20 @@ window.txCopyShortcutURL = async function() {
       const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
       if (!App || !App.addListener) return false;
       App.addListener('appUrlOpen', data => handleUrl(data && data.url));
-      // Also check the initial URL the app launched with
+      App.addListener('appStateChange', state => {
+        // When app becomes active, re-check the launch URL in case the
+        // appUrlOpen event fired before our listener was ready.
+        if (state && state.isActive && App.getLaunchUrl) {
+          App.getLaunchUrl().then(r => { if (r && r.url) handleUrl(r.url); }).catch(() => {});
+        }
+      });
       if (App.getLaunchUrl) {
         App.getLaunchUrl().then(r => { if (r && r.url) handleUrl(r.url); }).catch(() => {});
       }
+      window.__txListenerAttached = true;
       return true;
     } catch (_) { return false; }
   }
-  // Capacitor may not be ready at first script evaluation
   if (!attach()) { window.addEventListener('load', () => setTimeout(attach, 300)); }
 })();
 
