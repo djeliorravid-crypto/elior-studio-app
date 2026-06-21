@@ -53,6 +53,22 @@ jobs:
             's|return ApplicationDelegateProxy\.shared\.application(application, continue: userActivity, restorationHandler: restorationHandler)|return false|' \
             ios/App/App/AppDelegate.swift
 
+      - name: Patch Info.plist — URL scheme for Shortcuts integration
+        # Registers the custom URL scheme `ravidstudio://` so iOS
+        # Shortcuts (and any other app) can deep-link into the app
+        # with structured payloads, e.g.:
+        #   ravidstudio://wallet?text=<encoded notification body>
+        # The JS side listens via Capacitor's App plugin appUrlOpen
+        # event and parses the payload into a pending expense.
+        run: |
+          PLIST=ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string 'com.ravidstudio.app'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'ravidstudio'" "$PLIST"
+
       - name: Sync web assets into iOS
         run: npx cap sync ios
 

@@ -1308,6 +1308,58 @@
     .table-header h3 { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; font-family: 'Frank Ruhl Libre', 'Heebo', serif; display: flex; align-items: center; gap: 10px; }
     .table-header h3 svg.icon-lg { width: 22px; height: 22px; opacity: 0.85; flex-shrink: 0; }
 
+    /* ===== Apple Wallet pending-transactions inbox ===== */
+    .tx-inbox-wrap {
+      background: linear-gradient(135deg, rgba(180,140,90,0.10), rgba(124,92,255,0.06));
+      border: 1px solid rgba(180,140,90,0.28);
+      border-radius: 14px; padding: 14px 16px;
+    }
+    .tx-inbox-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .tx-inbox-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12.5px; font-weight: 900; color: var(--orange);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .tx-inbox-title svg { width: 14px; height: 14px; }
+    .tx-confirm-all {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 8px; padding: 5px 12px; font-size: 11.5px; font-weight: 800;
+      cursor: pointer; font-family: 'Heebo', sans-serif;
+    }
+    .tx-row {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px; margin-bottom: 6px;
+      cursor: pointer; transition: border-color .15s;
+    }
+    .tx-row:last-child { margin-bottom: 0; }
+    .tx-row:hover { border-color: var(--accent); }
+    .tx-row-cat {
+      flex-shrink: 0; width: 36px; height: 36px;
+      border-radius: 9px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(180,140,90,0.16); color: var(--orange);
+      font-size: 16px;
+    }
+    .tx-row-body { flex: 1; min-width: 0; }
+    .tx-row-merchant { font-size: 14px; font-weight: 800; color: var(--text); line-height: 1.2; }
+    .tx-row-meta { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+    .tx-row-amt { font-size: 15px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+    .tx-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .tx-mini-btn {
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 7px; width: 28px; height: 28px;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-family: 'Heebo', sans-serif;
+    }
+    .tx-mini-btn.confirm { color: var(--green); border-color: rgba(122,168,127,0.4); }
+    .tx-mini-btn.confirm:hover { background: rgba(122,168,127,0.12); }
+    .tx-mini-btn.reject { color: #dc2626; border-color: rgba(220,60,60,0.4); }
+    .tx-mini-btn.reject:hover { background: rgba(220,60,60,0.12); }
+
     /* ===== Active Productions — Apple Reminders / Things-style ===== */
 
     /* Card — flat, breathable, no nested boxes */
@@ -5400,7 +5452,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v312</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v313</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5893,9 +5945,15 @@
           <button onclick="changeMonth(1)">‹</button>
         </div>
         <button class="btn btn-ghost" onclick="openGmailReceipts()">קבלות מהמייל</button>
+        <button class="btn btn-ghost" onclick="txOpenWalletGuide()" title="חיבור Apple Wallet אוטומטי">📲 Wallet</button>
         <button class="btn btn-primary" onclick="openModal('expense')">+ הוצאה חדשה</button>
       </div>
     </div>
+
+    <!-- Pending Apple Wallet transactions inbox — populated when iOS
+         Shortcut sends new transactions via ravidstudio:// URL scheme.
+         Hidden until at least one pending item exists. -->
+    <div id="tx-inbox" style="margin-bottom:18px"></div>
 
     <div style="display:none"><span id="e-total-inc"></span><span id="e-total"></span><span id="e-net"></span></div>
 
@@ -6045,6 +6103,75 @@
         <button class="btn btn-ghost" onclick="prodClearWaiting()" style="color:#dc2626">נקה</button>
         <button class="btn btn-ghost" onclick="closeModal('prod-waiting')">ביטול</button>
         <button class="btn btn-primary" onclick="prodSaveWaiting()">שמור</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TX: Apple Wallet → Expense capture system ===== -->
+
+  <!-- Edit a single pending transaction before confirming as expense -->
+  <div class="modal-overlay" id="modal-tx-edit">
+    <div class="modal">
+      <h3>אישור תנועה מ-Apple Wallet</h3>
+      <div class="form-row">
+        <div class="form-group"><label>סכום (₪)</label><input type="number" id="tx-edit-amt" min="0" step="0.01"/></div>
+        <div class="form-group"><label>תאריך</label><input type="date" id="tx-edit-date"/></div>
+      </div>
+      <div class="form-group"><label>בית עסק / תיאור</label><input type="text" id="tx-edit-desc"/></div>
+      <div class="form-group"><label>קטגוריה</label>
+        <select id="tx-edit-cat">
+          <option>ציוד</option>
+          <option>תוכנות</option>
+          <option>שיווק</option>
+          <option>תחבורה</option>
+          <option>שכירות</option>
+          <option>חשמל/מים</option>
+          <option>מזון</option>
+          <option>בגדים</option>
+          <option>מנויים</option>
+          <option>משלוחים</option>
+          <option>בילוי</option>
+          <option>בריאות</option>
+          <option>רשויות</option>
+          <option>אחר</option>
+        </select>
+      </div>
+      <div id="tx-edit-raw" style="font-size:11px;color:var(--text-muted);background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.5;direction:ltr;text-align:right;display:none"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="txRejectPending()" style="color:#dc2626">דחה תנועה</button>
+        <button class="btn btn-ghost" onclick="closeModal('tx-edit')">בטל</button>
+        <button class="btn btn-primary" onclick="txConfirmPending()">שמור כהוצאה</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- One-time Apple Wallet setup guide — explains how to configure
+       the iOS Shortcut automation so wallet notifications auto-feed
+       the app's pending inbox. -->
+  <div class="modal-overlay" id="modal-tx-wallet-guide">
+    <div class="modal" style="max-width:520px">
+      <h3>חיבור Apple Wallet → אוטומציה</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
+        כל תשלום שתעשה ב-Apple Pay יעבור אוטומטית לתור ההוצאות, עם זיהוי חכם של הקטגוריה.
+        הגדרה חד-פעמית של 3 דקות באייפון שלך.
+      </p>
+      <div id="tx-guide-steps" style="font-size:13.5px;line-height:1.75;color:var(--text)">
+        <div style="margin-bottom:14px"><strong>1.</strong> פתח את אפליקציית <strong>Shortcuts</strong> באייפון</div>
+        <div style="margin-bottom:14px"><strong>2.</strong> תחתית המסך → <strong>Automation</strong> → <strong>+</strong> חדש</div>
+        <div style="margin-bottom:14px"><strong>3.</strong> טריגר: <strong>"Notification"</strong> → בחר אפליקציה: <strong>"Wallet"</strong> (אם רוצה גם מהאפליקציה של דיסקונט / Max / Cal — אפשר להוסיף כמה גם יחד)</div>
+        <div style="margin-bottom:14px"><strong>4.</strong> Run Immediately = <strong>On</strong> (ירוץ ברקע בלי לשאול)</div>
+        <div style="margin-bottom:14px"><strong>5.</strong> כפעולה — <strong>"Open URLs"</strong> → הדבק את הכתובת הזו (לחץ להעתקה):</div>
+        <div style="background:var(--surface2);border-radius:10px;padding:12px 14px;font-family:'Menlo','Courier',monospace;font-size:12px;direction:ltr;text-align:left;cursor:pointer;color:var(--accent);user-select:all;word-break:break-all" onclick="txCopyShortcutURL()">
+          ravidstudio://wallet?text=[Shortcut Input]
+        </div>
+        <div style="margin:6px 0 14px;font-size:11.5px;color:var(--text-muted)">החליפו את <code style="background:var(--surface2);padding:1px 4px;border-radius:4px">[Shortcut Input]</code> במשתנה <strong>"Notification"</strong> (לחץ Add Variable למעלה במקלדת)</div>
+        <div style="margin-bottom:14px"><strong>6.</strong> שמור. סיימת.</div>
+        <div style="background:rgba(122,168,127,0.12);border:1px solid rgba(122,168,127,0.35);border-radius:10px;padding:10px 12px;font-size:12.5px;font-weight:700;color:var(--green)">
+          ✓ בדיקה: שלם משהו ב-Apple Pay. תוך 2 שניות תראה את ההוצאה בתור ההוצאות באפליקציה — מוכנה לאישור.
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="closeModal('tx-wallet-guide')">סגור</button>
       </div>
     </div>
   </div>
@@ -7086,7 +7213,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','proj_touched_at','projects','productions','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','proj_touched_at','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','released_songs','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -8506,7 +8633,301 @@ function toggleExpensePaid(id) {
 }
 
 // ===== RENDER EXPENSES =====
+// ===== TX: Apple Wallet → Expense capture =====
+//
+// When iOS Shortcuts catches a Wallet/bank-app notification, it opens
+// our URL scheme: ravidstudio://wallet?text=<encoded notification body>
+// Capacitor's App plugin fires the `appUrlOpen` event, we parse the
+// payload, extract amount + merchant + date, guess a category from
+// the merchant dictionary below, and push to a pending queue. The
+// user sees the queue in a small inbox at the top of the expenses
+// tab and confirms each (or batch-confirms) before it lands in the
+// real expenses list.
+
+// Hebrew/English merchant patterns → expense category. Pattern
+// matching is case-insensitive + substring. First match wins so
+// more specific patterns should come first within a category.
+const TX_MERCHANT_DICT = [
+  // מזון — supermarkets, restaurants, cafes
+  { cat: 'מזון', icon: '🛒', re: /שופרסל|רמי לוי|טיב טעם|מגה|יוחננוף|ויקטורי|אושר עד|אקדמיה|am pm|ampm|tiv ?taam|shufersal|rami|victory|fresh market|carrefour|coop|פרש|סופר|מינימרקט|בשרים|פירות|ירקות/i },
+  { cat: 'מזון', icon: '🍔', re: /מקדונלד|burger|בורגר|פיצה|pizza|דומינוס|רולדין|ארומה|cofix|cofizz|נוטרינו|רולדין|לנדוור|caf[eé]|קפה|הול דנפ|ג'אפניקה|japanika|מסעדה|אסיא|asia|פתרון|wolt|10bis|cibus|tenbis|פלאפל|חומוס|שווארמה|סושי|sushi|מקדונלדס|מיט|מיטסביסקי|biscotti/i },
+
+  // תוכנות / מנויים דיגיטליים
+  { cat: 'תוכנות', icon: '💾', re: /splice|plugin ?boutique|plugin ?alliance|izotope|native ?instruments|waves|cherryaudio|spitfire|orchestral|kontakt|antares|fabfilter|softube|melodyne|slate|cubase|logic|ableton|protools|pro tools|figma|adobe|notion|chatgpt|openai|claude|anthropic|google ?one|dropbox|github|gumroad|paddle|stripe|patreon|substack|gemini|midjourney|cursor|jetbrains|coda|airtable|monday|zoom|slack|asana|trello|linear|spotify|apple ?music|netflix|disney|hbo|youtube ?premium|hulu|paramount|amazon ?prime|icloud/i },
+
+  // ציוד מוזיקה / אלקטרוניקה
+  { cat: 'ציוד', icon: '🎚️', re: /thomann|sweetwater|guitar ?center|reverb|kabbalat|קבלת|kli ?zemer|musicbox|כלי ?נגינה|halilit|חליליט|moog|korg|roland|yamaha|fender|gibson|martin|taylor|focusrite|universal ?audio|apogee|presonus|behringer|shure|neumann|sennheiser|akg|rode|audio.?technica|adam ?audio|genelec|kii|barefoot|jbl|krk|mackie|allen ?heath|midas|soundcraft|microsoft|אפל|apple ?store|מחשבים|מחשב|computer|לפטופ|laptop|ipad|אייפד|אייפון|iphone/i },
+
+  // תחבורה / דלק / חניה
+  { cat: 'תחבורה', icon: '⛽', re: /פז|paz|דלק|delek|sonol|סונול|דור ?אלון|ten|טן|alon|אלון|רב.?קו|moovit|gett|uber|פיירפי|fuelfly|חניון|חניה|parking|pango|cellopark|רכבת ?ישראל|israel ?railways|אגד|egged|דן|מטרופולין|kavim|קווים/i },
+
+  // שכירות
+  { cat: 'שכירות', icon: '🏠', re: /שכירות|rent ?payment|אמנון|השכרה|דירה/i },
+
+  // חשמל / מים / תקשורת תשתית
+  { cat: 'חשמל/מים', icon: '💡', re: /חברת ?החשמל|חברת ?חשמל|electric ?company|תאגיד ?מים|הגיחון|מי ?אביבים|פלגי ?מוצקין|מי ?רעננה|מי ?נתניה|בזק ?בינלאומי|בזק|partner|פרטנר|hot|הוט|cellcom|סלקום|018|019|טריפל ?פליי|triple ?play/i },
+
+  // בגדים
+  { cat: 'בגדים', icon: '👕', re: /castro|קסטרו|fox|פוקס|zara|זארה|h&m|hm|hennes|מנגו|mango|pull&bear|pull ?and ?bear|bershka|terminal ?x|טרמינל|אדידס|adidas|nike|נייקי|asics|new ?balance|אונדר|under ?armour|פומה|puma|reebok|levi|ליווייס|ranwear|רנואר|american ?eagle|gap|forever ?21/i },
+
+  // משלוחים מיוחדים (כבר נתפס חלקית במזון אבל ליתר ביטחון)
+  { cat: 'משלוחים', icon: '🛵', re: /wolt|10 ?bis|tenbis|cibus|gett ?delivery/i },
+
+  // בריאות / פארמה
+  { cat: 'בריאות', icon: '💊', re: /סופר.?פארם|super.?pharm|בי ?פארם|be ?pharm|פארמה|פארם|דוקטור|רופא|טיפול|פסיכולוג|פיזיותרפיה|דיאטנית|כללית|מכבי|מאוחדת|לאומית/i },
+
+  // בילוי
+  { cat: 'בילוי', icon: '🎬', re: /סינמה|cinema|רב.?חן|yes ?planet|בית.?זולא|הבימה|cameri|hangar|תיאטרון|מועדון|פאב|בר ?[a-z]|נואר|coliseum|אולם/i },
+
+  // רשויות / ארנונה
+  { cat: 'רשויות', icon: '🏛️', re: /עיריית|ארנונה|רשות ?המסים|מס ?הכנסה|ביטוח ?לאומי|רישוי|משרד ?הרישוי|דואר ?ישראל|israel ?post/i },
+
+  // שיווק / פרסום
+  { cat: 'שיווק', icon: '📣', re: /facebook|meta|google ?ads|tiktok ?ads|linkedin ?ads|youtube ?ads|spotify ?ads|distrokid|cd ?baby|tunecore|amuse|landr|symphonic/i }
+];
+
+function _txGuessCategory(merchant) {
+  if (!merchant) return { cat: 'אחר', icon: '💳' };
+  const m = String(merchant).trim();
+  for (const r of TX_MERCHANT_DICT) {
+    if (r.re.test(m)) return { cat: r.cat, icon: r.icon };
+  }
+  return { cat: 'אחר', icon: '💳' };
+}
+
+// Parses a Wallet / bank-app notification body. Handles common
+// Apple Wallet formats in Hebrew + English. Returns
+// { amount, merchant, date } or null if we couldn't extract a number.
+function _txParseNotification(text) {
+  if (!text) return null;
+  const t = String(text).replace(/\s+/g, ' ').trim();
+
+  // Amount — prefer the explicit ₪ / ש"ח prefixed number, fall back
+  // to the first decimal number in the text.
+  let amount = null;
+  let m = t.match(/(?:₪|ש"?ח|NIS|ILS)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i);
+  if (!m) m = t.match(/([0-9][0-9,]*(?:\.[0-9]{1,2})?)\s*(?:₪|ש"?ח|NIS|ILS)/i);
+  if (!m) m = t.match(/([0-9][0-9,]*\.[0-9]{2})/);
+  if (m) amount = parseFloat(m[1].replace(/,/g, ''));
+  if (!(amount > 0)) return null;
+
+  // Merchant — anything after "ב-" / "at" / "from" / "ל-" / "אצל"
+  // up to end of line or a date / punctuation.
+  let merchant = '';
+  const merchantPatterns = [
+    /(?:ב\-|אצל|בעסק|ב\s)\s*([^.,\n0-9₪]+?)(?=\s*(?:מתאריך|תאריך|בתאריך|בעת|ב\-|בכרטיס|ב\s\d|[.,\n]|$))/i,
+    /(?:at|from|to)\s+([A-Za-z][A-Za-z0-9 &'\-.]+?)(?=\s*(?:on|at|via|using|today|\d|[.,\n]|$))/i,
+    /paid\s+(?:to\s+)?([A-Za-z][A-Za-z0-9 &'\-.]+?)(?=\s*(?:via|using|today|on|\d|[.,\n]|$))/i
+  ];
+  for (const p of merchantPatterns) {
+    const mm = t.match(p);
+    if (mm && mm[1]) { merchant = mm[1].trim(); break; }
+  }
+  // Trim trailing garbage
+  merchant = merchant.replace(/[\-•·–—.,]+$/, '').trim();
+  if (!merchant) merchant = 'תנועה לא מזוהה';
+
+  return {
+    amount,
+    merchant,
+    date: new Date().toISOString().slice(0, 10),
+    raw: t
+  };
+}
+
+// ===== Pending TX inbox =====
+function txList()        { try { return load('pending_tx') || []; } catch (_) { return []; } }
+function txSaveAll(arr)  { save('pending_tx', arr); }
+
+function txIngest(raw) {
+  const parsed = _txParseNotification(raw);
+  if (!parsed) {
+    toast('לא הצלחתי לקרוא את הסכום מההודעה');
+    if (window.haptic) window.haptic.error();
+    return false;
+  }
+  const guess = _txGuessCategory(parsed.merchant);
+  const item = {
+    id: 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    ts: new Date().toISOString(),
+    amount:   parsed.amount,
+    merchant: parsed.merchant,
+    date:     parsed.date,
+    category: guess.cat,
+    icon:     guess.icon,
+    raw:      parsed.raw
+  };
+  const arr = txList();
+  arr.push(item);
+  txSaveAll(arr);
+  if (window.haptic) window.haptic.success();
+  toast('+ ' + fmtMoney(item.amount) + ' מ-' + item.merchant);
+  if (typeof renderExpenses === 'function') renderExpenses();
+  return true;
+}
+
+function _txRenderInbox() {
+  const wrap = document.getElementById('tx-inbox');
+  if (!wrap) return;
+  const arr = txList();
+  if (arr.length === 0) { wrap.innerHTML = ''; return; }
+  const rows = arr.slice().reverse().map(t => {
+    const idEsc = String(t.id).replace(/'/g, "\\'");
+    return `
+      <div class="tx-row" onclick="txOpenEdit('${idEsc}')">
+        <div class="tx-row-cat">${t.icon || '💳'}</div>
+        <div class="tx-row-body">
+          <div class="tx-row-merchant">${(t.merchant || '').replace(/[<>&]/g, '')}</div>
+          <div class="tx-row-meta">${t.category} · ${t.date.split('-').reverse().slice(0,2).join('.')}</div>
+        </div>
+        <div class="tx-row-amt">${fmtMoney(t.amount)}</div>
+        <div class="tx-row-actions" onclick="event.stopPropagation()">
+          <button class="tx-mini-btn confirm" onclick="txQuickConfirm('${idEsc}')" title="אשר כהוצאה">✓</button>
+          <button class="tx-mini-btn reject" onclick="txQuickReject('${idEsc}')" title="דחה">×</button>
+        </div>
+      </div>`;
+  }).join('');
+  wrap.innerHTML = `
+    <div class="tx-inbox-wrap">
+      <div class="tx-inbox-head">
+        <div class="tx-inbox-title"><svg><use href="#ic-coin-bag"/></svg>${arr.length} תנועות ממתינות לאישור</div>
+        ${arr.length > 1 ? `<button class="tx-confirm-all" onclick="txConfirmAll()">אשר הכל</button>` : ''}
+      </div>
+      ${rows}
+    </div>`;
+}
+
+window.txOpenEdit = function(id) {
+  const t = txList().find(x => x.id === id);
+  if (!t) return;
+  window._txEditTarget = id;
+  document.getElementById('tx-edit-amt').value  = t.amount;
+  document.getElementById('tx-edit-date').value = t.date;
+  document.getElementById('tx-edit-desc').value = t.merchant;
+  document.getElementById('tx-edit-cat').value  = t.category;
+  const rawEl = document.getElementById('tx-edit-raw');
+  if (rawEl) {
+    if (t.raw) { rawEl.style.display = 'block'; rawEl.textContent = t.raw; }
+    else       { rawEl.style.display = 'none'; }
+  }
+  document.getElementById('modal-tx-edit').classList.add('open');
+};
+
+window.txConfirmPending = function() {
+  const id = window._txEditTarget; if (!id) return;
+  const amount   = parseFloat(document.getElementById('tx-edit-amt').value);
+  const date     = document.getElementById('tx-edit-date').value;
+  const desc     = document.getElementById('tx-edit-desc').value.trim();
+  const category = document.getElementById('tx-edit-cat').value;
+  if (!(amount > 0)) { toast('סכום לא תקין'); return; }
+  if (!desc) { toast('צריך תיאור'); return; }
+  _txCommitExpense({ amount, date, desc, category });
+  _txRemoveFromQueue(id);
+  closeModal('tx-edit');
+  window._txEditTarget = null;
+  if (window.haptic) window.haptic.success();
+  toast('✓ נוסף להוצאות');
+  if (typeof renderExpenses === 'function') renderExpenses();
+};
+window.txRejectPending = function() {
+  const id = window._txEditTarget; if (!id) return;
+  _txRemoveFromQueue(id);
+  closeModal('tx-edit');
+  window._txEditTarget = null;
+  if (typeof renderExpenses === 'function') renderExpenses();
+};
+
+window.txQuickConfirm = function(id) {
+  const t = txList().find(x => x.id === id); if (!t) return;
+  _txCommitExpense({ amount: t.amount, date: t.date, desc: t.merchant, category: t.category });
+  _txRemoveFromQueue(id);
+  if (window.haptic) window.haptic.success();
+  toast('✓ נוסף להוצאות');
+  if (typeof renderExpenses === 'function') renderExpenses();
+};
+window.txQuickReject = function(id) {
+  _txRemoveFromQueue(id);
+  if (window.haptic) window.haptic.tap();
+  if (typeof renderExpenses === 'function') renderExpenses();
+};
+window.txConfirmAll = function() {
+  const arr = txList();
+  if (arr.length === 0) return;
+  if (!confirm('לאשר את כל ' + arr.length + ' התנועות כהוצאות?')) return;
+  arr.forEach(t => _txCommitExpense({ amount: t.amount, date: t.date, desc: t.merchant, category: t.category }));
+  txSaveAll([]);
+  if (window.haptic) window.haptic.success();
+  toast('✓ ' + arr.length + ' הוצאות נשמרו');
+  if (typeof renderExpenses === 'function') renderExpenses();
+};
+
+function _txCommitExpense({ amount, date, desc, category }) {
+  const expenses = load('expenses') || [];
+  expenses.push({
+    id: genId(),
+    amount,
+    date,
+    description: desc,
+    category,
+    notes: 'מ-Apple Wallet',
+    paid: true,
+    paidAt: new Date().toISOString()
+  });
+  save('expenses', expenses);
+}
+function _txRemoveFromQueue(id) {
+  txSaveAll(txList().filter(t => t.id !== id));
+}
+
+window.txOpenWalletGuide = function() {
+  document.getElementById('modal-tx-wallet-guide').classList.add('open');
+};
+window.txCopyShortcutURL = async function() {
+  const url = 'ravidstudio://wallet?text=[Shortcut Input]';
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+      toast('הקישור הועתק');
+    }
+  } catch (_) { toast('לא הצלחתי להעתיק'); }
+};
+
+// Capacitor App.appUrlOpen — fires when the app is opened/foregrounded
+// via the ravidstudio:// URL scheme (set up via iOS Shortcuts).
+(function _txAttachUrlListener() {
+  function handleUrl(url) {
+    if (!url) return;
+    try {
+      const u = new URL(url);
+      // Accept ravidstudio://wallet?text=... or ravidstudio://expense?text=...
+      const host = (u.host || u.hostname || '').toLowerCase();
+      if (host !== 'wallet' && host !== 'expense' && host !== 'tx') return;
+      const text = u.searchParams.get('text') || u.searchParams.get('body') || '';
+      if (!text) return;
+      txIngest(decodeURIComponent(text));
+    } catch (e) {
+      console.warn('tx URL parse failed', url, e);
+    }
+  }
+  function attach() {
+    try {
+      const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+      if (!App || !App.addListener) return false;
+      App.addListener('appUrlOpen', data => handleUrl(data && data.url));
+      // Also check the initial URL the app launched with
+      if (App.getLaunchUrl) {
+        App.getLaunchUrl().then(r => { if (r && r.url) handleUrl(r.url); }).catch(() => {});
+      }
+      return true;
+    } catch (_) { return false; }
+  }
+  // Capacitor may not be ready at first script evaluation
+  if (!attach()) { window.addEventListener('load', () => setTimeout(attach, 300)); }
+})();
+
 function renderExpenses() {
+  // Update the pending-TX inbox above the expense list
+  _txRenderInbox();
   const expenses   = load('expenses');
   const income     = load('income');
   const plans      = load('plans');
