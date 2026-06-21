@@ -5452,7 +5452,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v319</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v320</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8808,8 +8808,26 @@ function txSaveAll(arr)  { save('pending_tx', arr); }
 function txIngest(raw) {
   const parsed = _txParseNotification(raw);
   if (!parsed) {
-    toast('לא הצלחתי לקרוא את הסכום מההודעה');
+    // Parsing failed — still queue as 'needs manual review' so we
+    // (a) don't lose the transaction, and (b) can see the raw text
+    // by tapping the row in the inbox. Helps refine the parser.
+    const rawStr = String(raw || '').slice(0, 500);
+    const item = {
+      id: 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      ts: new Date().toISOString(),
+      amount:   0,
+      merchant: '⚠️ לא זוהה — לחץ לעריכה',
+      date:     new Date().toISOString().slice(0, 10),
+      category: 'אחר',
+      icon:     '⚠️',
+      raw:      rawStr
+    };
+    const arr = txList();
+    arr.push(item);
+    txSaveAll(arr);
     if (window.haptic) window.haptic.error();
+    toast('⚠️ תנועה לא זוהתה — בדוק בתור');
+    if (typeof renderExpenses === 'function') renderExpenses();
     return false;
   }
   const guess = _txGuessCategory(parsed.merchant);
