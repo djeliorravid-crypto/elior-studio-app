@@ -5454,7 +5454,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v324</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v325</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8684,51 +8684,106 @@ function toggleExpensePaid(id) {
 // matching is case-insensitive + substring. First match wins so
 // more specific patterns should come first within a category.
 const TX_MERCHANT_DICT = [
-  // מזון — supermarkets, restaurants, cafes, makolot
-  { cat: 'מזון', icon: '🛒', re: /שופרסל|רמי לוי|טיב טעם|מגה|יוחננוף|ויקטורי|אושר עד|אקדמיה|am pm|ampm|tiv ?taam|shufersal|supersal|rami|victory|fresh market|carrefour|coop|פרש|סופר|מינימרקט|מכולת|makolet|grocery|בשרים|פירות|ירקות|eden ?lev|אדן לוי|אדן ?לבי/i },
-  { cat: 'מזון', icon: '🍔', re: /מקדונלד|burger|בורגר|פיצה|pizza|דומינוס|רולדין|ארומה|cofix|cofizz|נוטרינו|רולדין|לנדוור|caf[eé]|קפה|הול דנפ|ג'אפניקה|japanika|מסעדה|אסיא|asia|פתרון|wolt|10bis|cibus|tenbis|פלאפל|חומוס|שווארמה|סושי|sushi|מקדונלדס|מיט|מיטסביסקי|biscotti/i },
+  // מזון — סופרים, מכולות
+  { cat: 'מזון', icon: '🛒', re: /שופרסל|רמי לוי|טיב טעם|מגה|יוחננוף|ויקטורי|אושר עד|אקדמיה|am ?pm|ampm|tiv ?taam|shufersal|supersal|rami|victory|fresh ?market|carrefour|coop|הקואופ|פרש|סופר|מינימרקט|מכולת|makolet|grocery|בשרים|פירות|ירקות|eden ?lev|אדן ?לבי|מחסני ?השוק|hatzi ?hinam|חצי ?חינם|stoff|סטוף|נתיב ?החסד|טיב|מעדנייה|דלי|deli|gourmet|גורמה|זול|זול ?ובגדול/i },
+  // מזון — קפה ומסעדנות
+  { cat: 'מזון', icon: '🍔', re: /מקדונלד|burger|בורגר|פיצה|pizza|דומינוס|רולדין|ארומה|cofix|cofizz|לנדוור|caf[eé]|קפה|ג'אפניקה|japanika|מסעדה|אסיא|asia|wolt|10 ?bis|tenbis|cibus|פלאפל|חומוס|שווארמה|סושי|sushi|מיטסביסקי|biscotti|moon|פאשה|פדרו|פדרו'|אבו ?חסן|ביבה|טאקו|taco|kfc|pop|פופ|noodles|נודלס|גרג|greg|cup ?o|מימי|רמן|ramen|הקצביה|catit|תאי|thai|מקס ?ברנר|max ?brenner|נחת|nahat|הצריף|פירדמן|פירדמן|אנגלוקה|gozluka|גוז'?לוקה|nono|נונו|cofizz|kapulsky|כפולסקי|רולדין|פטאר|הפינה|הג?פן|gefen|barbeque|מנגל/i },
 
   // תוכנות / מנויים דיגיטליים
-  { cat: 'תוכנות', icon: '💾', re: /splice|plugin ?boutique|plugin ?alliance|izotope|native ?instruments|waves|cherryaudio|spitfire|orchestral|kontakt|antares|fabfilter|softube|melodyne|slate|cubase|logic|ableton|protools|pro tools|figma|adobe|notion|chatgpt|openai|claude|anthropic|google ?one|dropbox|github|gumroad|paddle|stripe|patreon|substack|gemini|midjourney|cursor|jetbrains|coda|airtable|monday|zoom|slack|asana|trello|linear|spotify|apple ?music|netflix|disney|hbo|youtube ?premium|hulu|paramount|amazon ?prime|icloud/i },
+  { cat: 'תוכנות', icon: '💾', re: /splice|plugin ?boutique|plugin ?alliance|izotope|native ?instruments|waves|cherryaudio|spitfire|orchestral|kontakt|antares|fabfilter|softube|melodyne|slate|cubase|logic|ableton|protools|pro ?tools|figma|adobe|notion|chatgpt|openai|claude|anthropic|google ?one|dropbox|github|gumroad|paddle|stripe|patreon|substack|gemini|midjourney|cursor|jetbrains|coda|airtable|monday|zoom|slack|asana|trello|linear|spotify|apple ?music|apple\.com|netflix|disney|hbo|youtube ?premium|hulu|paramount|amazon ?prime|icloud|google ?cloud|aws|cloudflare|fastly|vercel|render|heroku|namecheap|godaddy|squarespace|wix|webflow|shopify|loopcloud|loopmasters/i },
 
   // ציוד מוזיקה / אלקטרוניקה
-  { cat: 'ציוד', icon: '🎚️', re: /thomann|sweetwater|guitar ?center|reverb|kabbalat|קבלת|kli ?zemer|musicbox|כלי ?נגינה|halilit|חליליט|moog|korg|roland|yamaha|fender|gibson|martin|taylor|focusrite|universal ?audio|apogee|presonus|behringer|shure|neumann|sennheiser|akg|rode|audio.?technica|adam ?audio|genelec|kii|barefoot|jbl|krk|mackie|allen ?heath|midas|soundcraft|microsoft|אפל|apple ?store|מחשבים|מחשב|computer|לפטופ|laptop|ipad|אייפד|אייפון|iphone/i },
+  { cat: 'ציוד', icon: '🎚️', re: /thomann|sweetwater|guitar ?center|reverb|kabbalat|קבלת|kli ?zemer|musicbox|כלי ?נגינה|halilit|חליליט|moog|korg|roland|yamaha|fender|gibson|martin|taylor|focusrite|universal ?audio|apogee|presonus|behringer|shure|neumann|sennheiser|akg|rode|audio.?technica|adam ?audio|genelec|kii|barefoot|jbl|krk|mackie|allen ?heath|midas|soundcraft|microsoft|אפל|apple ?store|מחשבים|מחשב|computer|לפטופ|laptop|ipad|אייפד|אייפון|iphone|בסט ?באי|best ?buy|איקאה|ikea|הום ?סנטר|home ?center|אייס|ace|אנגלית|english|בוטיק ?המוזיקה|בית ?המוזיקה|jb|trash|sound|reasonable ?sound/i },
 
   // תחבורה / דלק / חניה
-  { cat: 'תחבורה', icon: '⛽', re: /פז|paz|דלק|delek|sonol|סונול|דור ?אלון|ten|טן|alon|אלון|רב.?קו|moovit|gett|uber|פיירפי|fuelfly|חניון|חניה|parking|pango|cellopark|אזרי?אלי? ?(parking|חניון)|azrieli ?parking|רכבת ?ישראל|israel ?railways|אגד|egged|דן|מטרופולין|kavim|קווים/i },
+  { cat: 'תחבורה', icon: '⛽', re: /פז|paz|דלק|delek|sonol|סונול|דור ?אלון|ten|טן|alon|אלון|רב.?קו|moovit|gett|uber|פיירפי|fuelfly|חניון|חניה|parking|pango|cellopark|אזרי?אלי? ?(parking|חניון)|azrieli ?parking|רכבת ?ישראל|israel ?railways|אגד|egged|דן|מטרופולין|kavim|קווים|שינוע|delivery ?fee|תחבורה ?ציבורית|נסיעות|toll|כביש ?6|israeli ?rail|טסלה|tesla|fastcar|פאסטקאר|car2go|אוטו ?תל ?אביב/i },
 
   // שכירות
-  { cat: 'שכירות', icon: '🏠', re: /שכירות|rent ?payment|אמנון|השכרה|דירה/i },
+  { cat: 'שכירות', icon: '🏠', re: /שכירות|rent ?payment|אמנון|השכרה|דירה|airbnb|booking\.com|בוקינג|מלון|hotel|נופש|vacation|מארחים|hosts|נדל"?ן|real ?estate|טאוורס|towers/i },
 
   // חשמל / מים / תקשורת תשתית
-  { cat: 'חשמל/מים', icon: '💡', re: /חברת ?החשמל|חברת ?חשמל|electric ?company|תאגיד ?מים|הגיחון|מי ?אביבים|פלגי ?מוצקין|מי ?רעננה|מי ?נתניה|בזק ?בינלאומי|בזק|partner|פרטנר|hot|הוט|cellcom|סלקום|018|019|טריפל ?פליי|triple ?play/i },
+  { cat: 'חשמל/מים', icon: '💡', re: /חברת ?החשמל|חברת ?חשמל|electric ?company|תאגיד ?מים|הגיחון|מי ?אביבים|פלגי ?מוצקין|מי ?רעננה|מי ?נתניה|בזק ?בינלאומי|בזק|partner|פרטנר|hot|הוט|cellcom|סלקום|018|019|טריפל ?פליי|triple ?play|פלאפון|pelephone|cellact|סלקאקט|רמי ?לוי ?תקשורת|012|013|אורנג'|orange|גולן|hot ?mobile|וויי?פיי|wifi|אינטרנט|internet/i },
 
   // בגדים
-  { cat: 'בגדים', icon: '👕', re: /castro|קסטרו|fox|פוקס|zara|זארה|h&m|hm|hennes|מנגו|mango|pull&bear|pull ?and ?bear|bershka|terminal ?x|טרמינל|אדידס|adidas|nike|נייקי|asics|new ?balance|אונדר|under ?armour|פומה|puma|reebok|levi|ליווייס|ranwear|רנואר|american ?eagle|gap|forever ?21/i },
+  { cat: 'בגדים', icon: '👕', re: /castro|קסטרו|fox|פוקס|zara|זארה|h&m|hm|hennes|מנגו|mango|pull&bear|pull ?and ?bear|bershka|terminal ?x|טרמינל|אדידס|adidas|nike|נייקי|asics|new ?balance|אונדר|under ?armour|פומה|puma|reebok|levi|ליווייס|ranwear|רנואר|american ?eagle|gap|forever ?21|פוטליין|footline|הרצברג|hexa|הקסה|נעלי|shoes|תיק|bag|מותג|אופנה|fashion|טוויסט|twist|דקטלון|decathlon|מגנום|magnum|אמריקן ?ויטמין|ניין ?וסט|nine ?west|crocs|קרוקס|דישו|disho/i },
 
-  // משלוחים מיוחדים (כבר נתפס חלקית במזון אבל ליתר ביטחון)
-  { cat: 'משלוחים', icon: '🛵', re: /wolt|10 ?bis|tenbis|cibus|gett ?delivery/i },
+  // משלוחים
+  { cat: 'משלוחים', icon: '🛵', re: /wolt|10 ?bis|tenbis|cibus|gett ?delivery|gett ?delivery|המשלוח|delivery ?hero/i },
 
   // בריאות / פארמה
-  { cat: 'בריאות', icon: '💊', re: /סופר.?פארם|super.?pharm|בי ?פארם|be ?pharm|פארמה|פארם|דוקטור|רופא|טיפול|פסיכולוג|פיזיותרפיה|דיאטנית|כללית|מכבי|מאוחדת|לאומית/i },
+  { cat: 'בריאות', icon: '💊', re: /סופר.?פארם|super.?pharm|בי ?פארם|be ?pharm|פארמה|פארם|דוקטור|רופא|טיפול|פסיכולוג|פיזיותרפיה|דיאטנית|כללית|מכבי|מאוחדת|לאומית|אסותא|assuta|תל ?השומר|איכילוב|רמב"?ם|רמבם|בית ?חולים|hospital|לבורטוריה|laboratory|בדיקות ?דם|אופטיקה|optics|optic|optical|כושר|gym|פיטנס|fitness|אנליטיקה|נחל|holmes ?place|הולמס ?פלייס|crossfit|קרוספיט/i },
 
   // בילוי
-  { cat: 'בילוי', icon: '🎬', re: /סינמה|cinema|רב.?חן|yes ?planet|בית.?זולא|הבימה|cameri|hangar|תיאטרון|מועדון|פאב|בר ?[a-z]|נואר|coliseum|אולם/i },
+  { cat: 'בילוי', icon: '🎬', re: /סינמה|cinema|רב.?חן|yes ?planet|בית.?זולא|הבימה|cameri|hangar|תיאטרון|מועדון|פאב|בר ?[a-zא-ת]|נואר|coliseum|אולם|הופעה|concert|פסטיבל|festival|ticketmaster|leaan|לאן|israel ?ticket|smart ?ticket|hopon|הופ ?און|בית ?מנגן|אקדמיה|conservatory|מפעל ?ייקבים|winery|distill|דיסטיל|cocktail|קוקטייל|bowling|באולינג|זפלין|zappa|barby|בארבי|סוזנה ?דלל|suzanne ?dellal|חיפה ?תיאטרון|דיזנגוף ?סנטר/i },
 
   // רשויות / ארנונה
-  { cat: 'רשויות', icon: '🏛️', re: /עיריית|ארנונה|רשות ?המסים|מס ?הכנסה|ביטוח ?לאומי|רישוי|משרד ?הרישוי|דואר ?ישראל|israel ?post/i },
+  { cat: 'רשויות', icon: '🏛️', re: /עיריית|ארנונה|רשות ?המסים|מס ?הכנסה|ביטוח ?לאומי|רישוי|משרד ?הרישוי|דואר ?ישראל|israel ?post|רשות ?האוכלוסין|וועד ?בית|תכנון ?ובנייה|מכון ?התקנים|בית ?משפט|אגרה|אגרת/i },
 
   // שיווק / פרסום
-  { cat: 'שיווק', icon: '📣', re: /facebook|meta|google ?ads|tiktok ?ads|linkedin ?ads|youtube ?ads|spotify ?ads|distrokid|cd ?baby|tunecore|amuse|landr|symphonic/i }
+  { cat: 'שיווק', icon: '📣', re: /facebook ?ads|meta ?ads|google ?ads|tiktok ?ads|linkedin ?ads|youtube ?ads|spotify ?ads|distrokid|cd ?baby|tunecore|amuse|landr|symphonic|onerpm|one ?rpm|repostnetwork|repost ?network|believe|orchard|backstage|backstage ?pass|press ?kit|publicity|פרסום|קמפיין|campaign/i }
 ];
+
+// Category icon hints used when we have a category but no merchant
+// dictionary hit (e.g. for user-learned overrides).
+const _TX_CAT_ICONS = {
+  'מזון': '🛒', 'תוכנות': '💾', 'ציוד': '🎚️', 'תחבורה': '⛽',
+  'שכירות': '🏠', 'חשמל/מים': '💡', 'בגדים': '👕', 'תקשורת': '📡',
+  'משלוחים': '🛵', 'בריאות': '💊', 'בילוי': '🎬', 'רשויות': '🏛️',
+  'שיווק': '📣', 'מנויים': '💾', 'אחר': '💳'
+};
+
+// User-trained category memory. Persisted to localStorage.
+// Each entry: merchantNameLowercased -> { cat, icon, count, lastUsed }
+function _txLearnedLoad() {
+  try { return JSON.parse(localStorage.getItem('tx_learned_cats') || '{}'); }
+  catch (_) { return {}; }
+}
+function _txLearnedSave(map) {
+  try { localStorage.setItem('tx_learned_cats', JSON.stringify(map)); } catch (_) {}
+}
+function _txLearnMerchantCategory(merchant, category) {
+  if (!merchant || !category) return;
+  const key = String(merchant).trim().toLowerCase();
+  if (!key) return;
+  const map = _txLearnedLoad();
+  const prev = map[key];
+  map[key] = {
+    cat: category,
+    icon: (prev && prev.cat === category) ? prev.icon : (_TX_CAT_ICONS[category] || '💳'),
+    count: ((prev && prev.count) || 0) + 1,
+    lastUsed: new Date().toISOString()
+  };
+  _txLearnedSave(map);
+}
 
 function _txGuessCategory(merchant) {
   if (!merchant) return { cat: 'אחר', icon: '💳' };
   const m = String(merchant).trim();
+  const key = m.toLowerCase();
+  // 1) User-learned overrides win — anything they've corrected before
+  //    short-circuits the regex dictionary.
+  const learned = _txLearnedLoad();
+  if (learned[key]) return { cat: learned[key].cat, icon: learned[key].icon || '💳' };
+  // 2) Fall through to the static merchant dictionary
   for (const r of TX_MERCHANT_DICT) {
     if (r.re.test(m)) return { cat: r.cat, icon: r.icon };
   }
   return { cat: 'אחר', icon: '💳' };
+}
+
+// Pull the most-recent or most-used merchants the user has confirmed,
+// so the inbox edit modal can offer them as one-tap suggestions when
+// iOS came in with an empty merchant.
+function _txRecentMerchants(limit) {
+  const map = _txLearnedLoad();
+  return Object.entries(map)
+    .map(([k, v]) => ({ name: k, cat: v.cat, count: v.count || 1, lastUsed: v.lastUsed || '' }))
+    .sort((a, b) => {
+      // Prefer most-used; break ties by most-recent
+      if (b.count !== a.count) return b.count - a.count;
+      return (b.lastUsed || '').localeCompare(a.lastUsed || '');
+    })
+    .slice(0, limit || 8);
 }
 
 // Parses a Wallet / bank-app notification body. Handles common
@@ -9019,6 +9074,10 @@ window.txConfirmPending = function() {
   const category = document.getElementById('tx-edit-cat').value;
   if (!(amount > 0)) { toast('סכום לא תקין'); return; }
   if (!desc) { toast('צריך תיאור'); return; }
+  // Teach the categoriser: the user just told us "this merchant
+  // belongs in this category". Next time we see the same merchant
+  // we'll classify it automatically without asking.
+  _txLearnMerchantCategory(desc, category);
   _txCommitExpense({ amount, date, desc, category });
   _txRemoveFromQueue(id);
   closeModal('tx-edit');
