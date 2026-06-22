@@ -5454,7 +5454,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v325</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v326</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5947,6 +5947,7 @@
           <button onclick="changeMonth(1)">‹</button>
         </div>
         <button class="btn btn-ghost" onclick="openGmailReceipts()">קבלות מהמייל</button>
+        <button class="btn btn-ghost" onclick="txReclassifyAll()" title="סווג מחדש לפי המילון הנוכחי">🔄 סווג מחדש</button>
         <button class="btn btn-ghost" onclick="txOpenWalletGuide()" title="חיבור Apple Wallet אוטומטי">📲 Wallet</button>
         <button class="btn btn-primary" onclick="openModal('expense')">+ הוצאה חדשה</button>
       </div>
@@ -9022,7 +9023,18 @@ function txIngest(raw) {
 function _txRenderInbox() {
   const wrap = document.getElementById('tx-inbox');
   if (!wrap) return;
+  // Retroactively re-categorize any pending tx still on 'אחר' —
+  // covers items that landed in the queue before the user trained
+  // the categoriser or before a dictionary expansion shipped.
   const arr = txList();
+  let _reclassed = false;
+  arr.forEach(t => {
+    if (t.category === 'אחר' && t.merchant && t.merchant !== 'תנועה ללא שם') {
+      const g = _txGuessCategory(t.merchant);
+      if (g.cat !== 'אחר') { t.category = g.cat; t.icon = g.icon; _reclassed = true; }
+    }
+  });
+  if (_reclassed) txSaveAll(arr);
   if (arr.length === 0) { wrap.innerHTML = ''; return; }
   const rows = arr.slice().reverse().map(t => {
     const idEsc = String(t.id).replace(/'/g, "\\'");
@@ -9141,6 +9153,40 @@ function _txRemoveFromQueue(id) {
 
 window.txOpenWalletGuide = function() {
   document.getElementById('modal-tx-wallet-guide').classList.add('open');
+};
+
+// Re-categorize every pending TX + every confirmed expense currently
+// sitting on 'אחר' (or with no category) using the latest dictionary
+// + user-trained map. Doesn't touch entries the user already moved
+// to a real category — that's a deliberate choice they made.
+window.txReclassifyAll = function() {
+  let pendCount = 0, expCount = 0;
+
+  // Pending queue
+  const pending = txList();
+  pending.forEach(t => {
+    if ((!t.category || t.category === 'אחר') && t.merchant && t.merchant !== 'תנועה ללא שם') {
+      const g = _txGuessCategory(t.merchant);
+      if (g.cat !== 'אחר') { t.category = g.cat; t.icon = g.icon; pendCount++; }
+    }
+  });
+  if (pendCount) txSaveAll(pending);
+
+  // Confirmed expenses
+  const expenses = load('expenses');
+  expenses.forEach(e => {
+    if ((!e.category || e.category === 'אחר') && e.description) {
+      const g = _txGuessCategory(e.description);
+      if (g.cat !== 'אחר') { e.category = g.cat; expCount++; }
+    }
+  });
+  if (expCount) save('expenses', expenses);
+
+  if (window.haptic) window.haptic[(pendCount + expCount) ? 'success' : 'tap']();
+  const total = pendCount + expCount;
+  if (total === 0) toast('הכל כבר מסווג');
+  else toast('✓ סווגו ' + total + ' פריטים (' + pendCount + ' ממתינים, ' + expCount + ' הוצאות)');
+  if (typeof renderExpenses === 'function') renderExpenses();
 };
 window.txCopyShortcutURL = async function() {
   // Matches the current Shortcut spec: amount + merchant as separate
