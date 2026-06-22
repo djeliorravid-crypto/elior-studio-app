@@ -1379,7 +1379,13 @@
       padding: 14px 16px; background: transparent; border: none;
       cursor: pointer; font-family: 'Heebo', sans-serif; text-align: right;
     }
-    .exp-cat-icon { font-size: 22px; line-height: 1; flex-shrink: 0; }
+    .exp-cat-icon {
+      flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: rgba(180,140,90,0.14); color: var(--orange);
+    }
+    .exp-cat-icon svg { width: 20px; height: 20px; }
+    .exp-cat-icon svg * { stroke-width: 1.8; }
     .exp-cat-name { font-size: 15.5px; font-weight: 800; color: var(--text); flex: 1; min-width: 0; }
     .exp-cat-count {
       background: var(--surface2); color: var(--text-muted);
@@ -5073,6 +5079,24 @@
   <symbol id="ic-settings"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
   <symbol id="ic-clipboard"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></symbol>
   <symbol id="ic-alert-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="13"/><circle cx="12" cy="17" r="0.9" fill="currentColor"/></symbol>
+  <!-- Category icons (Apple SF-style, 1.8 stroke) — paired with TX_CAT_ICONS -->
+  <symbol id="ic-cat-food"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h14l-1.5 12.5a2 2 0 0 1-2 1.5h-7a2 2 0 0 1-2-1.5z"/><path d="M8 7V5a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="ic-cat-software"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></symbol>
+  <symbol id="ic-cat-gear"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="4" x2="6" y2="20"/><circle cx="6" cy="9" r="2"/><line x1="12" y1="4" x2="12" y2="20"/><circle cx="12" cy="15" r="2"/><line x1="18" y1="4" x2="18" y2="20"/><circle cx="18" cy="12" r="2"/></symbol>
+  <symbol id="ic-cat-transport" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17V8a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v9"/><circle cx="7.5" cy="17" r="1.7"/><circle cx="13.5" cy="17" r="1.7"/><path d="M15 10h3l2 3v4h-2"/></symbol>
+  <symbol id="ic-cat-rent"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><line x1="10" y1="20" x2="10" y2="14"/><line x1="14" y1="20" x2="14" y2="14"/></symbol>
+  <symbol id="ic-cat-utility"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c1 .9 1.5 2 1.5 3.5h5c0-1.5.5-2.6 1.5-3.5A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="ic-cat-clothing"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7l4-3 3 2 3-2 4 3-2 3h-2v10H9V10H7z"/></symbol>
+  <symbol id="ic-cat-telecom"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></symbol>
+  <symbol id="ic-cat-delivery"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h11v9H4z"/><path d="M15 12h4l2 3v3h-6"/><circle cx="7" cy="19" r="1.7"/><circle cx="17.5" cy="19" r="1.7"/></symbol>
+  <symbol id="ic-cat-health"    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c-1.5 4-7 7-7 7s-5.5-3-7-7c-2-5.5 4-9 7-5 3-4 9-.5 7 5z"/></symbol>
+  <symbol id="ic-cat-fun"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="3" y1="9" x2="7" y2="9"/><line x1="17" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="7" y2="15"/><line x1="17" y1="15" x2="21" y2="15"/></symbol>
+  <symbol id="ic-cat-authority" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="20" x2="21" y2="20"/><path d="M3 8l9-5 9 5"/><line x1="3" y1="8" x2="21" y2="8"/><line x1="6" y1="8" x2="6" y2="20"/><line x1="10" y1="8" x2="10" y2="20"/><line x1="14" y1="8" x2="14" y2="20"/><line x1="18" y1="8" x2="18" y2="20"/></symbol>
+  <symbol id="ic-cat-marketing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11v3l13 5V6L4 11z"/><path d="M18 9a3 3 0 0 1 0 7"/></symbol>
+  <symbol id="ic-cat-mic"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/></symbol>
+  <symbol id="ic-cat-mix"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="9" y2="12"/><circle cx="11" cy="12" r="2.3"/><line x1="13.3" y1="12" x2="21" y2="12"/></symbol>
+  <symbol id="ic-cat-edit"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12c2-4 5-4 7 0s5 4 7 0"/></symbol>
+  <symbol id="ic-cat-other"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><line x1="3" y1="11" x2="21" y2="11"/></symbol>
 </svg>
 
 <!-- PWA install banner (appears once on mobile if not installed) -->
@@ -5507,7 +5531,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v328</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v329</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5952,9 +5976,9 @@
       </div>
     </div>
 
-    <div class="table-card">
-      <div class="table-header">
-        <h3>רשימת הכנסות</h3>
+    <div>
+      <div class="table-header" style="background:transparent;border:0;padding:0 4px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <h3 style="font-size:20px;font-weight:900">רשימת הכנסות</h3>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <div class="search-bar"><span class="si">🔍</span><input type="text" placeholder="חיפוש..." id="i-search" oninput="renderIncome()"/></div>
           <select style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:7px 12px;font-size:13px;color:var(--text);outline:none;" id="i-client-filter" onchange="renderIncome()">
@@ -5962,10 +5986,9 @@
           </select>
         </div>
       </div>
-      <table>
-        <thead><tr><th>תאריך</th><th>לקוח</th><th>תיאור</th><th>קטגוריה</th><th>סכום</th><th>סטטוס</th><th></th></tr></thead>
-        <tbody id="i-tbody"></tbody>
-      </table>
+      <div id="i-cat-grid" class="exp-cat-grid"></div>
+      <!-- legacy tbody — kept so renderIncome's tbody.innerHTML calls don't crash -->
+      <table style="display:none"><tbody id="i-tbody"></tbody></table>
     </div>
 
     <!-- ===== INSIGHTS CARD ===== -->
@@ -7651,11 +7674,13 @@ function openModal(type) {
     if (sBtn) sBtn.textContent = 'שמירה';
   }
   if (type === 'expense') {
+    _editingExpenseId = null;  // fresh insert — not editing
     document.getElementById('exp-date').value = today;
     ['exp-amount','exp-desc','exp-notes'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('exp-end-month').value = '';
     document.getElementById('exp-recurring').checked = false;
     document.getElementById('exp-recurring-opts').style.display = 'none';
+    document.getElementById('exp-cat').value = 'אחר';
     populateProjectDropdown('exp-project', '');
     document.getElementById('exp-modal-title').textContent = 'הוצאה חדשה';
   }
@@ -8567,7 +8592,120 @@ function renderIncome() {
     </td></tr>
     ${planRows}
   ` : '');
+
+  // ── Income grouped by category (the visible view) ──
+  _renderIncomeCatGrid(monthEntries, planInstDisplay);
 }
+
+function _renderIncomeCatGrid(entries, planRows) {
+  const grid = document.getElementById('i-cat-grid');
+  if (!grid) return;
+  if (entries.length === 0 && planRows.length === 0) {
+    grid.innerHTML = '<div class="prod-empty"><div class="prod-empty-title">אין הכנסות לחודש זה</div></div>';
+    return;
+  }
+  // Group entries by category. Plan rows live under a special bucket
+  // so the user still sees them grouped but knows they're projections.
+  const byCat = {};
+  entries.forEach(i => {
+    const cat = i.category || 'אחר';
+    if (!byCat[cat]) byCat[cat] = { items: [], total: 0, paid: 0, pending: 0 };
+    byCat[cat].items.push(i);
+    byCat[cat].total += Number(i.amount) || 0;
+    if ((i.status || 'pending') === 'paid') byCat[cat].paid += Number(i.amount) || 0;
+    else byCat[cat].pending += Number(i.amount) || 0;
+  });
+  Object.values(byCat).forEach(b => b.items.sort((a, b) => {
+    const ap = (a.status || 'pending') === 'paid' ? 1 : 0;
+    const bp = (b.status || 'pending') === 'paid' ? 1 : 0;
+    if (ap !== bp) return ap - bp;
+    return new Date(a.date) - new Date(b.date);
+  }));
+  const sortedCats = Object.entries(byCat).sort((a, b) => b[1].total - a[1].total);
+  const expandedSet = (function () {
+    try { return new Set(JSON.parse(localStorage.getItem('_inc_cat_open') || '[]')); }
+    catch (_) { return new Set(); }
+  })();
+  const _icon = c => (typeof _txCatSvg === 'function' ? _txCatSvg(c) : '💳');
+
+  let html = sortedCats.map(([cat, data]) => {
+    const open = expandedSet.has(cat);
+    const catEsc = String(cat).replace(/'/g, "\\'");
+    const rowsHtml = data.items.map(i => {
+      const isPaid = (i.status || 'pending') === 'paid';
+      const idEsc = String(i.id).replace(/'/g, "\\'");
+      return `
+        <div class="exp-cat-row ${isPaid ? 'paid' : ''}">
+          <div class="exp-cat-row-main">
+            <div class="exp-cat-row-desc">${i.description || '—'}</div>
+            <div class="exp-cat-row-meta">${fmtDate(i.date)}${i.clientName ? ' · ' + i.clientName : ''}</div>
+          </div>
+          <div class="exp-cat-row-amt" style="color:${isPaid ? 'var(--green)' : 'var(--accent)'}">${fmtMoney(i.amount)}</div>
+          <div class="exp-cat-row-actions">
+            ${isPaid
+              ? `<span class="status-pill paid" onclick="setIncomeStatus('${idEsc}','pending')"><span class="status-dot"></span>שולם</span>`
+              : `<button class="status-action" onclick="setIncomeStatus('${idEsc}','paid')">סמן כשולם</button>`}
+            ${i.fromPlan ? '' : `
+              <button class="row-icon-btn" onclick="openIncomeEdit('${idEsc}')" aria-label="ערוך" title="ערוך הכנסה — שינוי קטגוריה ילמד את האפליקציה">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-edit"/></svg>
+              </button>
+              <button class="row-icon-btn" onclick="deleteIncome('${idEsc}')" aria-label="מחק">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+              </button>
+            `}
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="exp-cat-box ${open ? 'open' : ''}">
+        <button class="exp-cat-head" onclick="toggleIncomeCatBox('${catEsc}')">
+          <span class="exp-cat-icon" style="background:rgba(122,168,127,0.16);color:var(--green)">${_icon(cat)}</span>
+          <span class="exp-cat-name">${cat}</span>
+          <span class="exp-cat-count">${data.items.length}</span>
+          <span class="exp-cat-total" style="color:var(--green)">${fmtMoney(data.total)}</span>
+          <span class="exp-cat-arrow">${open ? '▴' : '▾'}</span>
+        </button>
+        <div class="exp-cat-body" style="${open ? '' : 'display:none'}">${rowsHtml}</div>
+      </div>`;
+  }).join('');
+
+  // Plan installments — projection, shown as a single muted card below
+  if (planRows.length) {
+    const total = planRows.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+    const rowsHtml = planRows.map(p => `
+      <div class="exp-cat-row" style="opacity:0.7">
+        <div class="exp-cat-row-main">
+          <div class="exp-cat-row-desc">${p.description}</div>
+          <div class="exp-cat-row-meta">${fmtDate(p.dueDate)}${p.clientName ? ' · ' + p.clientName : ''}${p.overdue ? ' · באיחור' : ''}</div>
+        </div>
+        <div class="exp-cat-row-amt" style="color:var(--text-muted)">${fmtMoney(p.amount)}</div>
+      </div>`).join('');
+    const openPlan = expandedSet.has('__plan__');
+    html += `
+      <div class="exp-cat-box ${openPlan ? 'open' : ''}">
+        <button class="exp-cat-head" onclick="toggleIncomeCatBox('__plan__')">
+          <span class="exp-cat-icon" style="background:rgba(180,140,90,0.16);color:var(--orange)"><svg viewBox="0 0 24 24"><use href="#ic-clock"/></svg></span>
+          <span class="exp-cat-name">תשלומים מתוכניות (צפי)</span>
+          <span class="exp-cat-count">${planRows.length}</span>
+          <span class="exp-cat-total" style="color:var(--text-muted)">${fmtMoney(total)}</span>
+          <span class="exp-cat-arrow">${openPlan ? '▴' : '▾'}</span>
+        </button>
+        <div class="exp-cat-body" style="${openPlan ? '' : 'display:none'}">${rowsHtml}</div>
+      </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+window.toggleIncomeCatBox = function(cat) {
+  let open = [];
+  try { open = JSON.parse(localStorage.getItem('_inc_cat_open') || '[]'); }
+  catch (_) {}
+  const set = new Set(open);
+  if (set.has(cat)) set.delete(cat); else set.add(cat);
+  try { localStorage.setItem('_inc_cat_open', JSON.stringify([...set])); } catch (_) {}
+  if (typeof renderIncome === 'function') renderIncome();
+};
 
 // ===== SAVE EXPENSE =====
 function populateProjectDropdown(selId, preselect) {
@@ -8600,6 +8738,30 @@ function toggleRecurringUI() {
   document.getElementById('exp-recurring-opts').style.display = on ? 'block' : 'none';
 }
 
+let _editingExpenseId = null;
+
+// Open the expense modal pre-filled with an existing expense's data
+// so the user can edit (category, description, amount, etc.).
+window.editExpense = function(id) {
+  const expenses = load('expenses');
+  const e = expenses.find(x => x.id === id);
+  if (!e) return;
+  _editingExpenseId = id;
+  document.getElementById('exp-date').value   = e.date || '';
+  document.getElementById('exp-amount').value = e.amount || '';
+  document.getElementById('exp-desc').value   = e.description || '';
+  document.getElementById('exp-notes').value  = e.notes || '';
+  document.getElementById('exp-cat').value    = e.category || 'אחר';
+  populateProjectDropdown('exp-project', e.projectId || '');
+  const recEl = document.getElementById('exp-recurring');
+  if (recEl) recEl.checked = false;
+  const recOpts = document.getElementById('exp-recurring-opts');
+  if (recOpts) recOpts.style.display = 'none';
+  const title = document.getElementById('exp-modal-title');
+  if (title) title.textContent = '✏️ עריכת הוצאה';
+  document.getElementById('modal-expense').classList.add('open');
+};
+
 function saveExpense() {
   const date   = document.getElementById('exp-date').value;
   const amount = parseFloat(document.getElementById('exp-amount').value);
@@ -8610,32 +8772,49 @@ function saveExpense() {
   const income    = load('income');
   const proj      = income.find(i => i.id === projectId);
   const isRecurring = document.getElementById('exp-recurring').checked;
+  const category = document.getElementById('exp-cat').value;
+  const notes    = document.getElementById('exp-notes').value.trim();
+
+  // Train the categoriser on every manual save — next time we see the
+  // same merchant/description we'll auto-classify it.
+  if (typeof _txLearnMerchantCategory === 'function') {
+    _txLearnMerchantCategory(desc, category);
+  }
 
   if (isRecurring) {
-    // שמור כהוצאה חוזרת
-    const endMonth = document.getElementById('exp-end-month').value; // "YYYY-MM" or ""
+    const endMonth = document.getElementById('exp-end-month').value;
     const recurring = load('recurring_expenses');
     recurring.push({
-      id: genId(),
-      description: desc,
-      amount,
-      category: document.getElementById('exp-cat').value,
-      notes: document.getElementById('exp-notes').value.trim(),
+      id: genId(), description: desc, amount, category, notes,
       projectId: projectId || '',
       projectName: proj ? proj.description : '',
-      startMonth: date.slice(0, 7), // "YYYY-MM"
+      startMonth: date.slice(0, 7),
       endMonth: endMonth || null,
       paidMonths: {}
     });
     save('recurring_expenses', recurring);
     closeModal('expense');
+    _editingExpenseId = null;
     toast('🔁 הוצאה חוזרת נוספה');
+  } else if (_editingExpenseId) {
+    // EDIT mode — update the existing record in place.
+    const expenses = load('expenses');
+    const ix = expenses.findIndex(e => e.id === _editingExpenseId);
+    if (ix >= 0) {
+      expenses[ix] = Object.assign({}, expenses[ix], {
+        date, amount, description: desc, category, notes,
+        projectId: projectId || '', projectName: proj ? proj.description : ''
+      });
+      expenses.sort((a,b) => new Date(b.date) - new Date(a.date));
+      save('expenses', expenses);
+    }
+    closeModal('expense');
+    _editingExpenseId = null;
+    toast('✓ ההוצאה עודכנה');
   } else {
     const expenses = load('expenses');
     expenses.push({
-      id: genId(), date, amount, description: desc,
-      category: document.getElementById('exp-cat').value,
-      notes: document.getElementById('exp-notes').value.trim(),
+      id: genId(), date, amount, description: desc, category, notes,
       projectId: projectId || '',
       projectName: proj ? proj.description : ''
     });
@@ -8738,8 +8917,8 @@ function toggleExpensePaid(id) {
 // matching is case-insensitive + substring. First match wins so
 // more specific patterns should come first within a category.
 const TX_MERCHANT_DICT = [
-  // מזון — סופרים, מכולות
-  { cat: 'מזון', icon: '🛒', re: /שופרסל|רמי לוי|טיב טעם|מגה|יוחננוף|ויקטורי|אושר עד|אקדמיה|am ?pm|ampm|tiv ?taam|shufersal|supersal|rami|victory|fresh ?market|carrefour|coop|הקואופ|פרש|סופר|מינימרקט|מכולת|makolet|grocery|בשרים|פירות|ירקות|eden ?lev|אדן ?לבי|מחסני ?השוק|hatzi ?hinam|חצי ?חינם|stoff|סטוף|נתיב ?החסד|טיב|מעדנייה|דלי|deli|gourmet|גורמה|זול|זול ?ובגדול/i },
+  // מזון — סופרים, מכולות, חנויות נוחות
+  { cat: 'מזון', icon: '🛒', re: /שופרסל|רמי לוי|טיב טעם|מגה|יוחננוף|ויקטורי|אושר עד|אקדמיה|am ?pm|ampm|tiv ?taam|shufersal|supersal|rami|victory|fresh ?market|carrefour|coop|הקואופ|פרש|סופר|מינימרקט|מכולת|makolet|grocery|בשרים|פירות|ירקות|eden ?lev|אדן ?לבי|מחסני ?השוק|hatzi ?hinam|חצי ?חינם|stoff|סטוף|נתיב ?החסד|טיב|מעדנייה|דלי|deli|gourmet|גורמה|זול|זול ?ובגדול|קיוסק|kiosk|מכולת|מאפיה|מאפייה|bakery|לחם|מאפים|חנות ?נוחה|convenience|מינ ?מרקט|mini ?market|מרקט|market(?!\sing)|פיצוצייה|פיצוצי|דוכן|booth/i },
   // מזון — קפה ומסעדנות
   { cat: 'מזון', icon: '🍔', re: /מקדונלד|burger|בורגר|פיצה|pizza|דומינוס|רולדין|ארומה|cofix|cofizz|לנדוור|caf[eé]|קפה|ג'אפניקה|japanika|מסעדה|אסיא|asia|wolt|10 ?bis|tenbis|cibus|פלאפל|חומוס|שווארמה|סושי|sushi|מיטסביסקי|biscotti|moon|פאשה|פדרו|פדרו'|אבו ?חסן|ביבה|טאקו|taco|kfc|pop|פופ|noodles|נודלס|גרג|greg|cup ?o|מימי|רמן|ramen|הקצביה|catit|תאי|thai|מקס ?ברנר|max ?brenner|נחת|nahat|הצריף|פירדמן|פירדמן|אנגלוקה|gozluka|גוז'?לוקה|nono|נונו|cofizz|kapulsky|כפולסקי|רולדין|פטאר|הפינה|הג?פן|gefen|barbeque|מנגל/i },
 
@@ -8749,8 +8928,8 @@ const TX_MERCHANT_DICT = [
   // ציוד מוזיקה / אלקטרוניקה
   { cat: 'ציוד', icon: '🎚️', re: /thomann|sweetwater|guitar ?center|reverb|kabbalat|קבלת|kli ?zemer|musicbox|כלי ?נגינה|halilit|חליליט|moog|korg|roland|yamaha|fender|gibson|martin|taylor|focusrite|universal ?audio|apogee|presonus|behringer|shure|neumann|sennheiser|akg|rode|audio.?technica|adam ?audio|genelec|kii|barefoot|jbl|krk|mackie|allen ?heath|midas|soundcraft|microsoft|אפל|apple ?store|מחשבים|מחשב|computer|לפטופ|laptop|ipad|אייפד|אייפון|iphone|בסט ?באי|best ?buy|איקאה|ikea|הום ?סנטר|home ?center|אייס|ace|אנגלית|english|בוטיק ?המוזיקה|בית ?המוזיקה|jb|trash|sound|reasonable ?sound/i },
 
-  // תחבורה / דלק / חניה
-  { cat: 'תחבורה', icon: '⛽', re: /פז|paz|דלק|delek|sonol|סונול|דור ?אלון|ten|טן|alon|אלון|רב.?קו|moovit|gett|uber|פיירפי|fuelfly|חניון|חניה|parking|pango|cellopark|אזרי?אלי? ?(parking|חניון)|azrieli ?parking|רכבת ?ישראל|israel ?railways|אגד|egged|דן|מטרופולין|kavim|קווים|שינוע|delivery ?fee|תחבורה ?ציבורית|נסיעות|toll|כביש ?6|israeli ?rail|טסלה|tesla|fastcar|פאסטקאר|car2go|אוטו ?תל ?אביב/i },
+  // תחבורה / דלק / חניה / שירותי רכב
+  { cat: 'תחבורה', icon: '⛽', re: /פז|paz|דלק|delek|sonol|סונול|דור ?אלון|ten|טן|alon|אלון|רב.?קו|moovit|gett|uber|פיירפי|fuelfly|חניון|חניה|henyon|parking|pango|cellopark|אזרי?אלי? ?(parking|חניון)|azrieli ?parking|רכבת ?ישראל|israel ?railways|אגד|egged|דן|מטרופולין|kavim|קווים|שינוע|delivery ?fee|תחבורה ?ציבורית|נסיעות|toll|כביש ?6|israeli ?rail|טסלה|tesla|fastcar|פאסטקאר|car2go|אוטו ?תל ?אביב|מוסך|garage(?!\sband)|טסט|test ?(רכב|רכבי)|פאנצ'?ר|puncher|צמיגי?|tires|רחיצת ?רכב|car ?wash|השכרת ?רכב|car ?rental|hertz|בודג'?ט|budget|sixt|אקיו?ופלוס|eco/i },
 
   // שכירות
   { cat: 'שכירות', icon: '🏠', re: /שכירות|rent ?payment|אמנון|השכרה|דירה|airbnb|booking\.com|בוקינג|מלון|hotel|נופש|vacation|מארחים|hosts|נדל"?ן|real ?estate|טאוורס|towers/i },
@@ -8777,8 +8956,38 @@ const TX_MERCHANT_DICT = [
   { cat: 'שיווק', icon: '📣', re: /facebook ?ads|meta ?ads|google ?ads|tiktok ?ads|linkedin ?ads|youtube ?ads|spotify ?ads|distrokid|cd ?baby|tunecore|amuse|landr|symphonic|onerpm|one ?rpm|repostnetwork|repost ?network|believe|orchard|backstage|backstage ?pass|press ?kit|publicity|פרסום|קמפיין|campaign/i }
 ];
 
-// Category icon hints used when we have a category but no merchant
-// dictionary hit (e.g. for user-learned overrides).
+// Category → SF-Symbol-style SVG sprite id (paired with the symbols
+// added near the top of the file). Used everywhere a category icon
+// is rendered — replaces the older emoji-based icons.
+const _TX_CAT_SVG = {
+  'מזון':       'ic-cat-food',
+  'תוכנות':     'ic-cat-software',
+  'מנויים':     'ic-cat-software',
+  'ציוד':       'ic-cat-gear',
+  'תחבורה':     'ic-cat-transport',
+  'שכירות':     'ic-cat-rent',
+  'חשמל/מים':   'ic-cat-utility',
+  'בגדים':      'ic-cat-clothing',
+  'תקשורת':     'ic-cat-telecom',
+  'משלוחים':    'ic-cat-delivery',
+  'בריאות':     'ic-cat-health',
+  'בילוי':      'ic-cat-fun',
+  'רשויות':     'ic-cat-authority',
+  'שיווק':      'ic-cat-marketing',
+  // Income categories — music-specific
+  'הקלטה':              'ic-cat-mic',
+  'מיקס ומאסטרינג':   'ic-cat-mix',
+  'הפקה מוזיקלית':    'ic-cat-gear',
+  'עריכה':              'ic-cat-edit',
+  'אחר':                'ic-cat-other'
+};
+function _txCatSvg(cat) {
+  const id = _TX_CAT_SVG[cat] || 'ic-cat-other';
+  return '<svg viewBox="0 0 24 24"><use href="#' + id + '"/></svg>';
+}
+// Legacy emoji map kept for backward-compat (some old TX rows store
+// an `icon` emoji directly in the record). Render path now prefers
+// _txCatSvg for visual consistency.
 const _TX_CAT_ICONS = {
   'מזון': '🛒', 'תוכנות': '💾', 'ציוד': '🎚️', 'תחבורה': '⛽',
   'שכירות': '🏠', 'חשמל/מים': '💡', 'בגדים': '👕', 'תקשורת': '📡',
@@ -9481,7 +9690,7 @@ function renderExpenses() {
     }));
     // Sort categories by total amount desc (biggest spending first)
     const sortedCats = Object.entries(byCat).sort((a, b) => b[1].total - a[1].total);
-    const _icon = c => (typeof _TX_CAT_ICONS !== 'undefined' && _TX_CAT_ICONS[c]) || '💳';
+    const _icon = c => (typeof _txCatSvg === 'function' ? _txCatSvg(c) : '💳');
     const expandedSet = (function () {
       try { return new Set(JSON.parse(localStorage.getItem('_exp_cat_open') || '[]')); }
       catch (_) { return new Set(); }
@@ -9512,6 +9721,9 @@ function renderExpenses() {
                       ${e.paid
                         ? `<span class="status-pill paid" onclick="toggleExpensePaid('${e.id}')"><span class="status-dot"></span>שולם</span>`
                         : `<button class="status-action" onclick="toggleExpensePaid('${e.id}')">סמן כשולם</button>`}
+                      <button class="row-icon-btn" onclick="editExpense('${e.id}')" aria-label="ערוך" title="ערוך — שינוי קטגוריה ילמד את האפליקציה">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-edit"/></svg>
+                      </button>
                       <button class="row-icon-btn" onclick="deleteExpense('${e.id}')" aria-label="מחק">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
                       </button>
