@@ -5531,7 +5531,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v329</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v330</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6903,6 +6903,26 @@
   </div>
 </div>
 
+<!-- ===== NEW-CATEGORY MODAL (shared by income + expense) ===== -->
+<div class="modal-overlay" id="modal-new-cat">
+  <div class="modal">
+    <h3 id="new-cat-title">קטגוריה חדשה</h3>
+    <div class="form-group">
+      <label>שם הקטגוריה</label>
+      <input type="text" id="new-cat-name" placeholder="למשל: ניירת, לימודים, חיות מחמד…" maxlength="40"/>
+    </div>
+    <div class="form-group">
+      <label>בחר אייקון</label>
+      <div id="new-cat-icon-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:6px"></div>
+      <input type="hidden" id="new-cat-icon" value="ic-cat-other"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveNewCategory()">שמור קטגוריה</button>
+      <button class="btn btn-ghost" onclick="closeModal('new-cat')">ביטול</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== EXPENSE MODAL ===== -->
 <div class="modal-overlay" id="modal-expense">
   <div class="modal">
@@ -7303,7 +7323,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -7667,7 +7687,7 @@ function openModal(type) {
     document.getElementById('inc-date').value = today;
     ['inc-amount','inc-desc','inc-notes'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('inc-client').value = '';
-    document.getElementById('inc-cat').value = 'הקלטה';
+    populateCatSelect('inc-cat', 'income', 'הקלטה');
     populateClientSel('inc-client');
     document.querySelector('#modal-income h3').textContent = 'הכנסה חדשה';
     const sBtn = document.querySelector('#modal-income .btn-primary');
@@ -7680,7 +7700,7 @@ function openModal(type) {
     document.getElementById('exp-end-month').value = '';
     document.getElementById('exp-recurring').checked = false;
     document.getElementById('exp-recurring-opts').style.display = 'none';
-    document.getElementById('exp-cat').value = 'אחר';
+    populateCatSelect('exp-cat', 'expense', 'אחר');
     populateProjectDropdown('exp-project', '');
     document.getElementById('exp-modal-title').textContent = 'הוצאה חדשה';
   }
@@ -8191,7 +8211,7 @@ function openIncomeEdit(id) {
   document.getElementById('inc-amount').value = i.amount || '';
   document.getElementById('inc-desc').value = i.description || '';
   document.getElementById('inc-client').value = i.clientId || '';
-  document.getElementById('inc-cat').value = i.category || 'הקלטה';
+  populateCatSelect('inc-cat', 'income', i.category || 'הקלטה');
   document.getElementById('inc-notes').value = i.notes || '';
   document.querySelector('#modal-income h3').textContent = 'עריכת הכנסה';
   const sBtn = document.querySelector('#modal-income .btn-primary');
@@ -8751,7 +8771,7 @@ window.editExpense = function(id) {
   document.getElementById('exp-amount').value = e.amount || '';
   document.getElementById('exp-desc').value   = e.description || '';
   document.getElementById('exp-notes').value  = e.notes || '';
-  document.getElementById('exp-cat').value    = e.category || 'אחר';
+  populateCatSelect('exp-cat', 'expense', e.category || 'אחר');
   populateProjectDropdown('exp-project', e.projectId || '');
   const recEl = document.getElementById('exp-recurring');
   if (recEl) recEl.checked = false;
@@ -8982,9 +9002,146 @@ const _TX_CAT_SVG = {
   'אחר':                'ic-cat-other'
 };
 function _txCatSvg(cat) {
-  const id = _TX_CAT_SVG[cat] || 'ic-cat-other';
+  let id = _TX_CAT_SVG[cat];
+  if (!id) {
+    // Check user-defined custom categories (income + expense buckets)
+    const customAll = _customCatsLoad('expense').concat(_customCatsLoad('income'));
+    const hit = customAll.find(c => c.name === cat);
+    if (hit) id = hit.icon;
+  }
+  if (!id) id = 'ic-cat-other';
   return '<svg viewBox="0 0 24 24"><use href="#' + id + '"/></svg>';
 }
+
+// ───────── Custom categories (user-created, per kind) ─────────
+// Stored in localStorage as JSON array of {name, icon}. Kind = 'expense' | 'income'.
+const _DEFAULT_EXP_CATS = ['ציוד','שכירות','חשמל/מים','תוכנות','מנויים','שיווק','תחבורה','מזון','בגדים','משלוחים','בילוי','בריאות','רשויות','תקשורת','אחר'];
+const _DEFAULT_INC_CATS = ['הקלטה','מיקס ומאסטרינג','הפקה מוזיקלית','עריכה','פרויקט מיוחד','אחר'];
+const _CAT_ICON_CHOICES = [
+  'ic-cat-mic','ic-cat-mix','ic-cat-gear','ic-cat-edit',
+  'ic-cat-software','ic-cat-marketing','ic-cat-food','ic-cat-transport',
+  'ic-cat-rent','ic-cat-utility','ic-cat-clothing','ic-cat-telecom',
+  'ic-cat-delivery','ic-cat-health','ic-cat-fun','ic-cat-authority',
+  'ic-cat-other'
+];
+function _customCatsKey(kind) { return kind === 'income' ? 's_custom_inc_cats' : 's_custom_exp_cats'; }
+function _customCatsLoad(kind) {
+  try { return JSON.parse(localStorage.getItem(_customCatsKey(kind)) || '[]') || []; }
+  catch (_) { return []; }
+}
+function _customCatsSave(kind, arr) {
+  try { localStorage.setItem(_customCatsKey(kind), JSON.stringify(arr)); } catch (_) {}
+}
+function _allCatsFor(kind) {
+  const def = kind === 'income' ? _DEFAULT_INC_CATS : _DEFAULT_EXP_CATS;
+  const custom = _customCatsLoad(kind).map(c => c.name);
+  // Deduplicate, keep "אחר" last
+  const seen = new Set();
+  const merged = [];
+  def.concat(custom).forEach(n => {
+    if (!n) return;
+    if (seen.has(n)) return;
+    if (n === 'אחר') return;
+    seen.add(n); merged.push(n);
+  });
+  merged.push('אחר');
+  return merged;
+}
+
+// Populate any <select> with the right cats + a "+ קטגוריה חדשה" sentinel.
+// `kind` is 'income' or 'expense'. Wires onchange once.
+window.populateCatSelect = function(selectId, kind, currentValue) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const cats = _allCatsFor(kind);
+  // If currentValue is a custom not in defaults (e.g. an old expense
+  // tagged with a category that was since removed), keep it visible.
+  if (currentValue && !cats.includes(currentValue)) cats.unshift(currentValue);
+  sel.innerHTML = cats.map(c => '<option>' + c.replace(/</g,'&lt;') + '</option>').join('')
+    + '<option disabled>──────────</option>'
+    + '<option value="__new_cat__">+ קטגוריה חדשה</option>';
+  if (currentValue) sel.value = currentValue;
+  if (!sel.dataset.catKind) {
+    sel.dataset.catKind = kind;
+    sel.addEventListener('change', function () {
+      if (sel.value === '__new_cat__') {
+        openNewCategoryModal(sel.dataset.catKind, sel.id, sel.dataset.lastValid || '');
+        sel.value = sel.dataset.lastValid || cats[0];
+      } else {
+        sel.dataset.lastValid = sel.value;
+      }
+    });
+  }
+  sel.dataset.catKind = kind;
+  sel.dataset.lastValid = sel.value;
+};
+
+// Open the create-category modal. After save, the targetSelect will be
+// refreshed and the new name selected.
+let _newCatTargetSelect = null;
+let _newCatKind = null;
+window.openNewCategoryModal = function(kind, targetSelectId, fallbackValue) {
+  _newCatKind = kind;
+  _newCatTargetSelect = targetSelectId;
+  const titleEl = document.getElementById('new-cat-title');
+  if (titleEl) titleEl.textContent = kind === 'income' ? 'קטגוריית הכנסה חדשה' : 'קטגוריית הוצאה חדשה';
+  document.getElementById('new-cat-name').value = '';
+  document.getElementById('new-cat-icon').value = 'ic-cat-other';
+  const grid = document.getElementById('new-cat-icon-grid');
+  if (grid) {
+    grid.innerHTML = _CAT_ICON_CHOICES.map(id => `
+      <button type="button" class="cat-icon-pick" data-icon="${id}"
+        style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text)"
+        onclick="_pickNewCatIcon('${id}', this)">
+        <svg viewBox="0 0 24 24" style="width:22px;height:22px"><use href="#${id}"/></svg>
+      </button>
+    `).join('');
+    // Default-select 'other'
+    const def = grid.querySelector('[data-icon="ic-cat-other"]');
+    if (def) _pickNewCatIcon('ic-cat-other', def);
+  }
+  document.getElementById('modal-new-cat').classList.add('open');
+  setTimeout(() => { try { document.getElementById('new-cat-name').focus(); } catch(_) {} }, 50);
+};
+window._pickNewCatIcon = function(iconId, btn) {
+  document.getElementById('new-cat-icon').value = iconId;
+  const grid = document.getElementById('new-cat-icon-grid');
+  if (grid) {
+    grid.querySelectorAll('.cat-icon-pick').forEach(b => {
+      b.style.borderColor = 'var(--border)';
+      b.style.background = 'var(--surface2)';
+    });
+  }
+  if (btn) {
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.background = 'rgba(122,168,127,0.15)';
+  }
+};
+window.saveNewCategory = function() {
+  const name = (document.getElementById('new-cat-name').value || '').trim();
+  const icon = document.getElementById('new-cat-icon').value || 'ic-cat-other';
+  if (!name) { toast('שם הקטגוריה ריק'); return; }
+  if (name === 'אחר' || name === '__new_cat__') { toast('בחר שם אחר'); return; }
+  const kind = _newCatKind || 'expense';
+  const arr = _customCatsLoad(kind);
+  // Don't duplicate
+  if (!arr.find(c => c.name === name) && !_DEFAULT_EXP_CATS.includes(name) && !_DEFAULT_INC_CATS.includes(name)) {
+    arr.push({ name, icon });
+    _customCatsSave(kind, arr);
+  } else {
+    // If name exists, just refresh icon
+    const existing = arr.find(c => c.name === name);
+    if (existing) { existing.icon = icon; _customCatsSave(kind, arr); }
+  }
+  closeModal('new-cat');
+  // Repopulate the target select and select the new value
+  if (_newCatTargetSelect) {
+    populateCatSelect(_newCatTargetSelect, kind, name);
+  }
+  toast('✓ קטגוריה נוספה');
+  _newCatTargetSelect = null;
+  _newCatKind = null;
+};
 // Legacy emoji map kept for backward-compat (some old TX rows store
 // an `icon` emoji directly in the record). Render path now prefers
 // _txCatSvg for visual consistency.
@@ -9331,7 +9488,7 @@ window.txOpenEdit = function(id) {
   document.getElementById('tx-edit-amt').value  = t.amount;
   document.getElementById('tx-edit-date').value = t.date;
   document.getElementById('tx-edit-desc').value = t.merchant;
-  document.getElementById('tx-edit-cat').value  = t.category;
+  populateCatSelect('tx-edit-cat', 'expense', t.category);
   const rawEl = document.getElementById('tx-edit-raw');
   if (rawEl) {
     if (t.raw) { rawEl.style.display = 'block'; rawEl.textContent = t.raw; }
