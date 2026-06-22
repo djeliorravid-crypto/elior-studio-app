@@ -5531,7 +5531,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v330</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v331</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6903,6 +6903,21 @@
   </div>
 </div>
 
+<!-- ===== MANAGE-CATEGORIES MODAL ===== -->
+<div class="modal-overlay" id="modal-manage-cats">
+  <div class="modal">
+    <h3 id="manage-cats-title">ערוך קטגוריות</h3>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.5">
+      שנה שם בכל שורה ולחץ "שמור". שינוי השם יעדכן גם את כל הרשומות הקיימות.
+    </div>
+    <div id="manage-cats-list" style="display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow-y:auto;padding:2px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveManageCategories()">שמור שינויים</button>
+      <button class="btn btn-ghost" onclick="closeModal('manage-cats')">סגור</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== NEW-CATEGORY MODAL (shared by income + expense) ===== -->
 <div class="modal-overlay" id="modal-new-cat">
   <div class="modal">
@@ -7323,7 +7338,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -9004,13 +9019,64 @@ const _TX_CAT_SVG = {
 function _txCatSvg(cat) {
   let id = _TX_CAT_SVG[cat];
   if (!id) {
-    // Check user-defined custom categories (income + expense buckets)
-    const customAll = _customCatsLoad('expense').concat(_customCatsLoad('income'));
-    const hit = customAll.find(c => c.name === cat);
-    if (hit) id = hit.icon;
+    // Reverse-lookup renamed defaults — if "מזון" was renamed to
+    // "מצרכים", _TX_CAT_SVG['מצרכים'] is empty but the food icon
+    // still applies.
+    const renE = _catRenameLoad('expense');
+    for (const orig in renE) if (renE[orig] === cat) { id = _TX_CAT_SVG[orig]; break; }
+    if (!id) {
+      const renI = _catRenameLoad('income');
+      for (const orig in renI) if (renI[orig] === cat) { id = _TX_CAT_SVG[orig]; break; }
+    }
+    if (!id) {
+      const customAll = _customCatsLoad('expense').concat(_customCatsLoad('income'));
+      const hit = customAll.find(c => c.name === cat);
+      if (hit) id = hit.icon;
+    }
   }
   if (!id) id = 'ic-cat-other';
   return '<svg viewBox="0 0 24 24"><use href="#' + id + '"/></svg>';
+}
+
+// ───────── Default-category rename map ─────────
+// Lets the user rename built-in categories like "מזון" → "מצרכים"
+// without losing the icon or breaking auto-categorisation.
+function _catRenameMapKey(kind) { return kind === 'income' ? 's_cat_rename_inc' : 's_cat_rename_exp'; }
+function _catRenameLoad(kind) {
+  try { return JSON.parse(localStorage.getItem(_catRenameMapKey(kind)) || '{}') || {}; }
+  catch (_) { return {}; }
+}
+function _catRenameSave(kind, map) {
+  try { localStorage.setItem(_catRenameMapKey(kind), JSON.stringify(map)); } catch (_) {}
+}
+function _catApplyRename(kind, name) {
+  const m = _catRenameLoad(kind);
+  return m[name] || name;
+}
+// Walk every store holding a category field and rewrite old → new in place.
+function _renameCategoryInRecords(kind, oldName, newName) {
+  if (!oldName || !newName || oldName === newName) return;
+  const buckets = kind === 'income'
+    ? ['income']
+    : ['expenses', 'recurring_expenses', 'pending_tx'];
+  buckets.forEach(k => {
+    const arr = load(k);
+    if (!Array.isArray(arr)) return;
+    let touched = false;
+    arr.forEach(r => {
+      if (r && r.category === oldName) { r.category = newName; touched = true; }
+    });
+    if (touched) save(k, arr);
+  });
+  // Migrate collapsed-box state so the box stays open if it was open
+  const openKey = kind === 'income' ? '_inc_cat_open' : '_exp_cat_open';
+  try {
+    const set = new Set(JSON.parse(localStorage.getItem(openKey) || '[]'));
+    if (set.has(oldName)) {
+      set.delete(oldName); set.add(newName);
+      localStorage.setItem(openKey, JSON.stringify([...set]));
+    }
+  } catch (_) {}
 }
 
 // ───────── Custom categories (user-created, per kind) ─────────
@@ -9034,17 +9100,21 @@ function _customCatsSave(kind, arr) {
 }
 function _allCatsFor(kind) {
   const def = kind === 'income' ? _DEFAULT_INC_CATS : _DEFAULT_EXP_CATS;
+  const rename = _catRenameLoad(kind);
+  const renamedDef = def.map(c => rename[c] || c);
   const custom = _customCatsLoad(kind).map(c => c.name);
-  // Deduplicate, keep "אחר" last
+  // Deduplicate, keep "אחר" last (even if renamed, but rename of "אחר"
+  // is allowed and lands at the end too)
   const seen = new Set();
   const merged = [];
-  def.concat(custom).forEach(n => {
+  const otherDisplay = rename['אחר'] || 'אחר';
+  renamedDef.concat(custom).forEach(n => {
     if (!n) return;
     if (seen.has(n)) return;
-    if (n === 'אחר') return;
+    if (n === otherDisplay) return;
     seen.add(n); merged.push(n);
   });
-  merged.push('אחר');
+  merged.push(otherDisplay);
   return merged;
 }
 
@@ -9059,13 +9129,17 @@ window.populateCatSelect = function(selectId, kind, currentValue) {
   if (currentValue && !cats.includes(currentValue)) cats.unshift(currentValue);
   sel.innerHTML = cats.map(c => '<option>' + c.replace(/</g,'&lt;') + '</option>').join('')
     + '<option disabled>──────────</option>'
-    + '<option value="__new_cat__">+ קטגוריה חדשה</option>';
+    + '<option value="__new_cat__">+ קטגוריה חדשה</option>'
+    + '<option value="__edit_cats__">✎ ערוך קטגוריות</option>';
   if (currentValue) sel.value = currentValue;
   if (!sel.dataset.catKind) {
     sel.dataset.catKind = kind;
     sel.addEventListener('change', function () {
       if (sel.value === '__new_cat__') {
         openNewCategoryModal(sel.dataset.catKind, sel.id, sel.dataset.lastValid || '');
+        sel.value = sel.dataset.lastValid || cats[0];
+      } else if (sel.value === '__edit_cats__') {
+        openManageCategories(sel.dataset.catKind, sel.id, sel.dataset.lastValid || '');
         sel.value = sel.dataset.lastValid || cats[0];
       } else {
         sel.dataset.lastValid = sel.value;
@@ -9142,6 +9216,128 @@ window.saveNewCategory = function() {
   _newCatTargetSelect = null;
   _newCatKind = null;
 };
+
+// ───────── Manage categories (rename / delete) ─────────
+let _manageCatsKind = null;
+let _manageCatsTargetSelect = null;
+let _manageCatsCurrentValue = null;
+window.openManageCategories = function(kind, targetSelectId, currentValue) {
+  _manageCatsKind = kind;
+  _manageCatsTargetSelect = targetSelectId;
+  _manageCatsCurrentValue = currentValue;
+  const t = document.getElementById('manage-cats-title');
+  if (t) t.textContent = kind === 'income' ? 'ערוך קטגוריות הכנסה' : 'ערוך קטגוריות הוצאה';
+  _renderManageCatsList();
+  document.getElementById('modal-manage-cats').classList.add('open');
+};
+function _renderManageCatsList() {
+  const wrap = document.getElementById('manage-cats-list');
+  if (!wrap) return;
+  const kind = _manageCatsKind;
+  const def = kind === 'income' ? _DEFAULT_INC_CATS : _DEFAULT_EXP_CATS;
+  const rename = _catRenameLoad(kind);
+  const custom = _customCatsLoad(kind);
+  // Build a unified row list. Each row knows its origin (default|custom)
+  // and the current displayed name + the original (for default) / the
+  // canonical key (for custom).
+  const rows = [];
+  def.forEach(orig => {
+    rows.push({
+      kind: 'default',
+      original: orig,
+      displayed: rename[orig] || orig,
+      icon: _TX_CAT_SVG[orig] || 'ic-cat-other'
+    });
+  });
+  custom.forEach(c => {
+    rows.push({
+      kind: 'custom',
+      original: c.name,        // for custom, original IS the current name
+      displayed: c.name,
+      icon: c.icon || 'ic-cat-other'
+    });
+  });
+  wrap.innerHTML = rows.map((r, idx) => `
+    <div class="manage-cat-row" data-row-idx="${idx}" data-row-kind="${r.kind}" data-orig="${(r.original || '').replace(/"/g,'&quot;')}"
+      style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px">
+      <span style="display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;background:rgba(122,168,127,0.15);border-radius:8px;color:var(--accent);flex-shrink:0">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px"><use href="#${r.icon}"/></svg>
+      </span>
+      <input type="text" class="manage-cat-name" value="${(r.displayed || '').replace(/"/g,'&quot;')}"
+        style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:14px"/>
+      ${r.kind === 'custom'
+        ? `<button class="row-icon-btn" onclick="_deleteCustomCat('${(r.original || '').replace(/'/g,"\\'")}')" aria-label="מחק" title="מחק קטגוריה">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>`
+        : `<span style="font-size:10px;color:var(--text-muted);padding:0 4px">ברירת מחדל</span>`}
+    </div>
+  `).join('');
+}
+window._deleteCustomCat = function(name) {
+  if (!confirm('למחוק את הקטגוריה "' + name + '"? כל הרשומות הקשורות יעברו ל"אחר".')) return;
+  const kind = _manageCatsKind;
+  const arr = _customCatsLoad(kind).filter(c => c.name !== name);
+  _customCatsSave(kind, arr);
+  // Migrate records belonging to this custom cat → "אחר"
+  _renameCategoryInRecords(kind, name, _catApplyRename(kind, 'אחר'));
+  _renderManageCatsList();
+  toast('🗑 נמחק');
+};
+window.saveManageCategories = function() {
+  const wrap = document.getElementById('manage-cats-list');
+  if (!wrap) { closeModal('manage-cats'); return; }
+  const kind = _manageCatsKind;
+  const rename = _catRenameLoad(kind);
+  const custom = _customCatsLoad(kind);
+  let changed = 0;
+  let lastSelectedDisplay = _manageCatsCurrentValue;
+  Array.from(wrap.querySelectorAll('.manage-cat-row')).forEach(rowEl => {
+    const rowKind = rowEl.dataset.rowKind;
+    const original = rowEl.dataset.orig || '';
+    const inputEl = rowEl.querySelector('.manage-cat-name');
+    const newName = (inputEl ? inputEl.value : '').trim();
+    if (!newName) return;
+    if (newName === '__new_cat__' || newName === '__edit_cats__') return;
+    if (rowKind === 'default') {
+      const currentDisplayed = rename[original] || original;
+      if (newName !== currentDisplayed) {
+        rename[original] = newName;
+        _renameCategoryInRecords(kind, currentDisplayed, newName);
+        if (lastSelectedDisplay === currentDisplayed) lastSelectedDisplay = newName;
+        changed++;
+      } else if (newName === original && rename[original]) {
+        // Reverting to original name — clear the rename entry
+        const old = rename[original];
+        delete rename[original];
+        _renameCategoryInRecords(kind, old, original);
+        if (lastSelectedDisplay === old) lastSelectedDisplay = original;
+        changed++;
+      }
+    } else { // custom
+      if (newName !== original) {
+        const target = custom.find(c => c.name === original);
+        if (target) target.name = newName;
+        _renameCategoryInRecords(kind, original, newName);
+        if (lastSelectedDisplay === original) lastSelectedDisplay = newName;
+        changed++;
+      }
+    }
+  });
+  _catRenameSave(kind, rename);
+  _customCatsSave(kind, custom);
+  closeModal('manage-cats');
+  if (_manageCatsTargetSelect) {
+    populateCatSelect(_manageCatsTargetSelect, kind, lastSelectedDisplay || '');
+  }
+  // Refresh the visible expense / income views so renamed boxes show up
+  try { if (kind === 'expense' && typeof renderExpenses === 'function') renderExpenses(); } catch (_) {}
+  try { if (kind === 'income'  && typeof renderIncome   === 'function') renderIncome();   } catch (_) {}
+  toast(changed ? ('✓ ' + changed + ' שינויים נשמרו') : 'אין שינויים');
+  _manageCatsKind = null;
+  _manageCatsTargetSelect = null;
+  _manageCatsCurrentValue = null;
+};
+
 // Legacy emoji map kept for backward-compat (some old TX rows store
 // an `icon` emoji directly in the record). Render path now prefers
 // _txCatSvg for visual consistency.
@@ -9177,18 +9373,21 @@ function _txLearnMerchantCategory(merchant, category) {
 }
 
 function _txGuessCategory(merchant) {
-  if (!merchant) return { cat: 'אחר', icon: '💳' };
-  const m = String(merchant).trim();
-  const key = m.toLowerCase();
-  // 1) User-learned overrides win — anything they've corrected before
-  //    short-circuits the regex dictionary.
-  const learned = _txLearnedLoad();
-  if (learned[key]) return { cat: learned[key].cat, icon: learned[key].icon || '💳' };
-  // 2) Fall through to the static merchant dictionary
-  for (const r of TX_MERCHANT_DICT) {
-    if (r.re.test(m)) return { cat: r.cat, icon: r.icon };
-  }
-  return { cat: 'אחר', icon: '💳' };
+  const raw = (function () {
+    if (!merchant) return { cat: 'אחר', icon: '💳' };
+    const m = String(merchant).trim();
+    const key = m.toLowerCase();
+    const learned = _txLearnedLoad();
+    if (learned[key]) return { cat: learned[key].cat, icon: learned[key].icon || '💳' };
+    for (const r of TX_MERCHANT_DICT) {
+      if (r.re.test(m)) return { cat: r.cat, icon: r.icon };
+    }
+    return { cat: 'אחר', icon: '💳' };
+  })();
+  // Honor the user's renaming — if "מזון" was renamed to "מצרכים",
+  // new auto-categorised txs should land directly in the renamed bucket.
+  raw.cat = _catApplyRename('expense', raw.cat);
+  return raw;
 }
 
 // Pull the most-recent or most-used merchants the user has confirmed,
