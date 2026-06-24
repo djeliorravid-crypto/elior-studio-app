@@ -181,20 +181,51 @@ workflows:
       # reliable way to keep Codemagic green.
       - name: Revoke existing distribution certs to free a slot
         script: |
-          # List all IOS_DISTRIBUTION certs, pull their IDs out of the
-          # JSON, delete each. `|| true` keeps the build alive when
-          # there are no certs to delete (fresh team / first build).
-          IDS=$(app-store-connect certificates list --type IOS_DISTRIBUTION --json 2>/dev/null \
-                  | python3 -c "import sys,json; [print(c['id']) for c in json.load(sys.stdin)]" 2>/dev/null || true)
+          # Verbose, no-silent-fail revoke. The previous version piped
+          # `--json` through python3 with 2>/dev/null on both stages,
+          # so a wrong JSON shape or missing python3 looked like "no
+          # certs to revoke" — which is exactly what the v333+ build
+          # logs showed (cap still full, --create still 409s).
+          #
+          # New approach: ask app-store-connect itself to emit JSON
+          # with `--json`, then grep the IDs out with a portable regex
+          # — no python, no jq dependency. If list itself fails we
+          # surface the error instead of swallowing it.
+          set +e   # we want to inspect failures, not exit on the first
+          echo "=== certs list (human-readable, for log) ==="
+          app-store-connect certificates list --type IOS_DISTRIBUTION 2>&1 \
+            | tee /tmp/_certs_human.txt
+          echo ""
+          echo "=== certs list (JSON, for parsing) ==="
+          app-store-connect certificates list --type IOS_DISTRIBUTION --json 2>&1 \
+            | tee /tmp/_certs.json
+          # IDs in App Store Connect API are 10-char alphanumeric.
+          # Extract every "id":"XXXXXXXXXX" pair from the JSON dump
+          # (works regardless of whether the JSON is a bare array or
+          # wrapped in {"data":[...]}, which is the failure mode the
+          # python parser hit).
+          IDS=$(grep -oE '"id"[[:space:]]*:[[:space:]]*"[A-Za-z0-9]{10}"' /tmp/_certs.json \
+                  | grep -oE '"[A-Za-z0-9]{10}"$' \
+                  | tr -d '"' \
+                  | sort -u)
           if [ -z "$IDS" ]; then
-            echo "No existing distribution certs to revoke — nothing to do"
+            echo ">>> No existing distribution certs found — nothing to revoke."
           else
+            echo ">>> Found certs to revoke:"
+            echo "$IDS"
             for CID in $IDS; do
-              echo "Revoking cert $CID …"
-              app-store-connect certificates delete "$CID" --yes 2>&1 || true
+              echo ">>> Revoking $CID …"
+              app-store-connect certificates delete "$CID" --yes 2>&1
+              RC=$?
+              echo ">>> delete exit code for $CID: $RC"
             done
-            echo "All existing distribution certs revoked"
+            echo ""
+            echo "=== certs list after revoke ==="
+            app-store-connect certificates list --type IOS_DISTRIBUTION 2>&1 | head -40
           fi
+          # Always succeed — the create step below will surface any
+          # remaining capacity problem with its own error.
+          exit 0
 
       - name: Generate a private key for the new Distribution cert
         # fetch-signing-files --create needs a private key to upload
