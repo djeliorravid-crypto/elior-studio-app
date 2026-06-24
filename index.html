@@ -5531,7 +5531,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v336</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v337</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -10238,30 +10238,14 @@ window._txScanClipboard = async function(opts) {
   return r;
 };
 
-// Auto-scan whenever the app comes back to the foreground.
-(function _txAttachClipboardAutoScan() {
-  const trigger = () => { try { _txScanClipboard({}); } catch (_) {} };
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      // tiny delay so iOS pasteboard is ready
-      setTimeout(trigger, 250);
-    }
-  });
-  // Capacitor's appStateChange — more reliable than visibilitychange on iOS
-  function wireAppState() {
-    try {
-      const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-      if (!App || !App.addListener) return false;
-      App.addListener('appStateChange', s => { if (s && s.isActive) setTimeout(trigger, 250); });
-      App.addListener('resume', () => setTimeout(trigger, 250));
-      return true;
-    } catch (_) { return false; }
-  }
-  if (!wireAppState()) window.addEventListener('load', () => setTimeout(wireAppState, 400));
-  // Also scan once shortly after first load — covers the cold-launch
-  // case where the user opened the app right after a Wallet payment.
-  window.addEventListener('load', () => setTimeout(trigger, 800));
-})();
+// NOTE: There used to be an auto-scan IIFE here that read the
+// clipboard on every visibilitychange / appStateChange / resume / load.
+// On iOS that triggers the "Paste from …" privacy pill EVERY time the
+// app comes to the foreground — even when opening the app cold — which
+// made the app feel hijacked. Removed in v337. Clipboard scanning is
+// still available on demand via the "סרוק קליפבורד" button inside the
+// Wallet Diagnostics modal — same pill, but only when the user asks
+// for it.
 
 function renderExpenses() {
   // Update the pending-TX inbox above the expense list
