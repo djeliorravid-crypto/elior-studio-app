@@ -171,13 +171,30 @@ workflows:
       - name: Initialize keychain
         script: keychain initialize
 
-      # NOTE: We used to revoke all distribution certs at the start of
-      # every build. That worked, but Apple emails the account holder
-      # ("Your Certificate Has Been Revoked") on every single revoke,
-      # which is annoying when builds run frequently. Skip the routine
-      # revoke — Codemagic will reuse the cert when it can, and only if
-      # the per-team cap is hit do we revoke (manually below). This
-      # trades silent CI for a once-in-a-while manual cleanup.
+      # Apple caps Distribution certs at 3 per team. Once we hit the
+      # cap, fetch-signing-files --create fails with a 409 and the
+      # whole build dies (the failure mode that brought the v332
+      # build down). Pre-emptively revoke any existing iOS
+      # distribution certs so --create always has room. Trade-off:
+      # Apple emails "Your Certificate Has Been Revoked" per cert,
+      # per build — annoying but not destructive, and the only
+      # reliable way to keep Codemagic green.
+      - name: Revoke existing distribution certs to free a slot
+        script: |
+          # List all IOS_DISTRIBUTION certs, pull their IDs out of the
+          # JSON, delete each. `|| true` keeps the build alive when
+          # there are no certs to delete (fresh team / first build).
+          IDS=$(app-store-connect certificates list --type IOS_DISTRIBUTION --json 2>/dev/null \
+                  | python3 -c "import sys,json; [print(c['id']) for c in json.load(sys.stdin)]" 2>/dev/null || true)
+          if [ -z "$IDS" ]; then
+            echo "No existing distribution certs to revoke — nothing to do"
+          else
+            for CID in $IDS; do
+              echo "Revoking cert $CID …"
+              app-store-connect certificates delete "$CID" --yes 2>&1 || true
+            done
+            echo "All existing distribution certs revoked"
+          fi
 
       - name: Generate a private key for the new Distribution cert
         # fetch-signing-files --create needs a private key to upload
