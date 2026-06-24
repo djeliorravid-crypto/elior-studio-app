@@ -5531,7 +5531,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v331</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v332</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6025,6 +6025,7 @@
         <button class="btn btn-ghost" onclick="openGmailReceipts()">קבלות מהמייל</button>
         <button class="btn btn-ghost" onclick="txReclassifyAll()" title="סווג מחדש לפי המילון הנוכחי">🔄 סווג מחדש</button>
         <button class="btn btn-ghost" onclick="txOpenWalletGuide()" title="חיבור Apple Wallet אוטומטי">📲 Wallet</button>
+        <button class="btn btn-ghost" onclick="txOpenDiagnostics()" title="בדיקת חיבור הארנק + הדבקת קבלה ידנית">🩺 בדיקה</button>
         <button class="btn btn-primary" onclick="openModal('expense')">+ הוצאה חדשה</button>
       </div>
     </div>
@@ -6224,44 +6225,82 @@
     </div>
   </div>
 
-  <!-- One-time Apple Wallet setup guide — explains how to configure
-       the iOS Shortcut automation so wallet notifications auto-feed
-       the app's pending inbox. -->
+  <!-- One-time Apple Wallet setup guide — dual-path Shortcut: Copy
+       to Clipboard + Open URLs. The clipboard path is the rescue:
+       when iOS runs the automation silently (Run Without Asking on),
+       Open URLs may NOT bring the app to the foreground, but the
+       clipboard write always succeeds. The app sniffs the clipboard
+       on every resume and ingests anything that looks wallet-shaped. -->
   <div class="modal-overlay" id="modal-tx-wallet-guide">
-    <div class="modal" style="max-width:560px">
-      <h3>הגדרת Apple Wallet — צעד-אחר-צעד</h3>
+    <div class="modal" style="max-width:580px">
+      <h3>הגדרת Apple Wallet — מסלול כפול</h3>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
-        אחרי הגדרה זו, כל תשלום ב-Apple Pay ייכנס אוטומטית להוצאות עם <strong>סכום</strong> + <strong>שם בית עסק</strong> + <strong>קטגוריה</strong>. אפס לחיצות פר תשלום.
+        אנחנו בונים את הקיצור עם <strong>שתי פעולות</strong> במקום אחת: גם Copy to Clipboard וגם Open URLs. אם אחד נכשל — השני תופס. כך כל תשלום מגיע לאפליקציה גם אם iOS לא פותח אותה.
       </p>
       <div style="font-size:13.5px;line-height:1.7;color:var(--text)">
         <div style="margin-bottom:12px"><strong>1.</strong> פתח <strong>"קיצורי דרך"</strong> (Shortcuts) → לשונית <strong>אוטומציה</strong> → <strong>+</strong> חדש</div>
-        <div style="margin-bottom:12px"><strong>2.</strong> טריגר: <strong>"ארנק"</strong> (Wallet) → סמן את כל הכרטיסים → <strong>"הפעלה מיידית"</strong></div>
-        <div style="margin-bottom:12px"><strong>3.</strong> חפש פעולה: <strong>"פתיחת כתובות אינטרנט"</strong> (Open URLs)</div>
-        <div style="margin-bottom:8px"><strong>4.</strong> בשדה ה-URL הקלד:</div>
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-family:'Menlo','Courier',monospace;font-size:11.5px;direction:ltr;text-align:left;color:var(--accent);user-select:all;word-break:break-all;margin-bottom:8px">
-          ravidstudio://wallet?amount=
-        </div>
-        <div style="margin-bottom:12px;color:var(--text-muted);font-size:12px">→ לחץ <strong>"בחירת משתנה"</strong> → בחר <strong>"קלט של קיצור"</strong> (יופיע בלוק כחול) → <strong>לחץ פעם נוספת על הבלוק הכחול</strong> → תופיע אפשרות לבחור שדה → בחר <strong>"Amount"</strong></div>
+        <div style="margin-bottom:12px"><strong>2.</strong> טריגר: <strong>"ארנק"</strong> (Wallet) → סמן את כל הכרטיסים → <strong>"הפעלה מיידית"</strong> (Run Without Asking)</div>
 
-        <div style="margin-bottom:8px"><strong>5.</strong> המשך להקליד באותו שדה URL:</div>
+        <div style="margin-bottom:8px;padding-top:6px;border-top:1px dashed var(--border)"><strong>3.</strong> פעולה ראשונה: <strong>"העתקה ללוח"</strong> (Copy to Clipboard)</div>
+        <div style="margin-bottom:8px;color:var(--text-muted);font-size:12px">בתוך השדה של הפעולה הזו הזן:</div>
         <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-family:'Menlo','Courier',monospace;font-size:11.5px;direction:ltr;text-align:left;color:var(--accent);user-select:all;word-break:break-all;margin-bottom:8px">
-          &amp;merchant=
+          #wallet:<span style="background:rgba(0,122,255,0.2);padding:1px 6px;border-radius:4px;color:#4a90e2">Amount</span>,<span style="background:rgba(0,122,255,0.2);padding:1px 6px;border-radius:4px;color:#4a90e2">Merchant</span>
         </div>
-        <div style="margin-bottom:12px;color:var(--text-muted);font-size:12px">→ לחץ שוב <strong>"בחירת משתנה"</strong> → <strong>"קלט של קיצור"</strong> → <strong>לחץ על הבלוק הכחול</strong> → בחר <strong>"Merchant"</strong></div>
+        <div style="margin-bottom:12px;color:var(--text-muted);font-size:12px">→ <strong>בחירת משתנה</strong> → <strong>קלט של קיצור</strong> → לחיצה נוספת על הבלוק הכחול → בחר <strong>Amount</strong>. אחרי הפסיק אותו דבר אבל <strong>Merchant</strong>.</div>
 
-        <div style="margin-bottom:12px"><strong>6.</strong> סיום. ה-URL הסופי צריך להראות כך:</div>
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-family:'Menlo','Courier',monospace;font-size:11.5px;direction:ltr;text-align:left;color:var(--accent);word-break:break-all;margin-bottom:14px">
+        <div style="margin-bottom:8px;padding-top:6px;border-top:1px dashed var(--border)"><strong>4.</strong> פעולה שניה: <strong>"פתיחת כתובות אינטרנט"</strong> (Open URLs)</div>
+        <div style="margin-bottom:8px;color:var(--text-muted);font-size:12px">בשדה ה-URL הזן בדיוק זאת (גם פה Amount + Merchant כבלוקים כחולים):</div>
+        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;font-family:'Menlo','Courier',monospace;font-size:11.5px;direction:ltr;text-align:left;color:var(--accent);user-select:all;word-break:break-all;margin-bottom:14px">
           ravidstudio://wallet?amount=<span style="background:rgba(0,122,255,0.2);padding:1px 6px;border-radius:4px;color:#4a90e2">Amount</span>&amp;merchant=<span style="background:rgba(0,122,255,0.2);padding:1px 6px;border-radius:4px;color:#4a90e2">Merchant</span>
         </div>
-        <div style="background:rgba(255,180,0,0.10);border:1px solid rgba(255,180,0,0.3);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text);margin-bottom:14px">
-          <strong>הטריק הקריטי:</strong> ה"בלוק הכחול" צריך להציג "Amount" או "Merchant" בתוכו — לא "Shortcut Input". אם הוא מציג "Shortcut Input" עדיין — לא לחצת פעמיים. <strong>לחיצה ראשונה</strong> מוסיפה את הבלוק, <strong>לחיצה שנייה</strong> פותחת תפריט לבחירת השדה.
+
+        <div style="background:rgba(255,180,0,0.10);border:1px solid rgba(255,180,0,0.3);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text);margin-bottom:10px">
+          <strong>הטריק הקריטי:</strong> הבלוק הכחול צריך להציג <strong>Amount</strong> / <strong>Merchant</strong> — לא "Shortcut Input". <strong>לחיצה ראשונה</strong> מוסיפה את הבלוק. <strong>לחיצה שנייה עליו</strong> פותחת תפריט לבחירת השדה הספציפי.
         </div>
-        <div style="background:rgba(122,168,127,0.12);border:1px solid rgba(122,168,127,0.35);border-radius:10px;padding:10px 12px;font-size:12.5px;font-weight:700;color:var(--green)">
-          ✓ בדיקה: שלם ב-Apple Pay בקופה פיזית (תשלום באתרים אונליין לא מפעיל את הטריגר). תוך 2 שניות תראה הוצאה אוטומטית בתור — עם הסכום והקטגוריה הנכונים.
+        <div style="background:rgba(122,168,127,0.12);border:1px solid rgba(122,168,127,0.35);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--text);margin-bottom:10px;line-height:1.6">
+          <strong style="color:var(--green)">✓ בדיקה:</strong> שלם 1 ₪ ב-Apple Pay בקופה פיזית. תוך שניות תראה הוצאה בתור. אם לא קרה כלום — פתח את האפליקציה, לחץ על <strong>🩺 בדיקה</strong> ליד "+ הוצאה חדשה", ראה ביומן אם ה-URL הגיע. אם לא הגיע אבל הקליפבורד יוצג שם → לחץ "סרוק קליפבורד".
+        </div>
+        <div style="background:rgba(80,80,80,0.08);border-radius:10px;padding:10px 12px;font-size:11.5px;color:var(--text-muted);line-height:1.6">
+          תשלומים באתרים / וולט / אונליין לא מפעילים את טריגר Wallet (זאת מגבלת iOS, לא של האפליקציה). לאלה תוסיף בנפרד דרך + הוצאה חדשה.
         </div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="closeModal('tx-wallet-guide')">סגור</button>
+        <button class="btn btn-ghost" onclick="closeModal('tx-wallet-guide');txOpenDiagnostics()">🩺 בדיקת חיבור</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WALLET DIAGNOSTICS MODAL ===== -->
+  <div class="modal-overlay" id="modal-tx-diag">
+    <div class="modal" style="max-width:600px">
+      <h3>🩺 בדיקת חיבור Apple Wallet</h3>
+      <div id="tx-diag-status" style="background:var(--surface2);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.8;margin-bottom:12px;direction:ltr;text-align:right;font-family:'Menlo','Courier',monospace"></div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px">הדבק עסקה ידנית</div>
+        <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">
+          העתק טקסט מהודעת ארנק / קופי שיצא מהקיצור והדבק כאן. גם URL מלא, גם טקסט חופשי בעברית/אנגלית, גם הפורמט הקצר <code>#wallet:5,Aroma</code>.
+        </div>
+        <textarea id="tx-diag-paste" rows="3" placeholder="ravidstudio://wallet?amount=12&merchant=Aroma  או:  שולם 25 ₪ ב-Wolt"
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;font-family:'Menlo','Courier',monospace;direction:ltr;text-align:right"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-primary" onclick="txDiagIngestPaste()" style="flex:1">ייבא לתור</button>
+          <button class="btn btn-ghost" onclick="txDiagScanClipboard()" title="קרא את הקליפבורד עכשיו">סרוק קליפבורד</button>
+          <button class="btn btn-ghost" onclick="txDiagSelfTest()" title="הזרק עסקת דמה לבדיקה">🧪 בדיקה</button>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+          <span>יומן פעילות (אחרונים)</span>
+          <button class="btn btn-ghost btn-sm" onclick="txDiagClearLog()" style="font-size:11px">נקה</button>
+        </div>
+        <div id="tx-diag-log" style="background:var(--surface2);border-radius:10px;padding:8px;font-size:11px;line-height:1.6;max-height:35vh;overflow-y:auto;direction:ltr;text-align:right;font-family:'Menlo','Courier',monospace"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="closeModal('tx-diag')">סגור</button>
       </div>
     </div>
   </div>
@@ -9773,6 +9812,101 @@ window.txOpenWalletGuide = function() {
   document.getElementById('modal-tx-wallet-guide').classList.add('open');
 };
 
+// ───────── Wallet Diagnostics modal ─────────
+window.txOpenDiagnostics = function() {
+  _txRenderDiag();
+  document.getElementById('modal-tx-diag').classList.add('open');
+};
+function _txRenderDiag() {
+  const statusEl = document.getElementById('tx-diag-status');
+  if (statusEl) {
+    const Cap = window.Capacitor;
+    const Plug = (Cap && Cap.Plugins) || {};
+    const ok = b => b ? '<span style="color:var(--green)">✓</span>' : '<span style="color:#e84545">✗</span>';
+    const isNative = !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform());
+    const platform = (Cap && Cap.getPlatform && Cap.getPlatform()) || 'web';
+    const lastUrl  = (function () {
+      try {
+        const arr = JSON.parse(localStorage.getItem('_tx_processed_urls') || '[]');
+        if (!arr.length) return '—';
+        const last = arr[arr.length - 1];
+        return last.u + ' (' + new Date(last.t).toLocaleTimeString('he-IL') + ')';
+      } catch (_) { return '—'; }
+    })();
+    statusEl.innerHTML = [
+      ok(!!Cap) + ' Capacitor: ' + platform + (isNative ? ' (native)' : ' (web)'),
+      ok(!!Plug.App)       + ' App plugin (URL listener)',
+      ok(!!Plug.Clipboard) + ' Clipboard plugin',
+      'תור ממתין: <strong>' + (txList().length) + '</strong>',
+      'URL אחרון שנקלט: <span style="font-size:10px;word-break:break-all">' + lastUrl + '</span>'
+    ].join('<br>');
+  }
+  _txRenderDiagLog();
+}
+function _txRenderDiagLog() {
+  const wrap = document.getElementById('tx-diag-log');
+  if (!wrap) return;
+  const log = window._txDiagLog || [];
+  if (!log.length) { wrap.innerHTML = '<div style="color:var(--text-muted)">אין פעילות עדיין</div>'; return; }
+  wrap.innerHTML = log.map(row => {
+    const t = (row.ts || '').slice(11, 19);
+    const colors = {
+      'url-received': 'var(--accent)', 'url-ignored': '#888', 'url-dupe': '#888',
+      'clipboard-url': 'var(--green)', 'clipboard-short': 'var(--green)', 'clipboard-text': 'var(--green)',
+      'clipboard-skip': '#888', 'clipboard-read': '#e84545',
+      'self-test': '#4a90e2', 'manual-paste': 'var(--green)'
+    };
+    const c = colors[row.kind] || 'var(--text)';
+    return `<div style="border-bottom:1px solid var(--border);padding:5px 2px">
+      <div><span style="color:var(--text-muted)">${t}</span> <span style="color:${c};font-weight:700">${row.kind}</span></div>
+      <div style="word-break:break-all;font-size:10.5px;color:var(--text-muted)">${(row.raw || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>
+      ${row.result ? `<div style="font-size:10.5px;color:var(--text)">${row.result.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+window.txDiagIngestPaste = function() {
+  const text = (document.getElementById('tx-diag-paste').value || '').trim();
+  if (!text) { toast('הדבק טקסט קודם'); return; }
+  const r = _txIngestFromClipboardText(text);
+  if (r && r.ok) {
+    _txDiagPush('manual-paste', text, '✓ נכנס לתור (' + (r.via || '?') + ')');
+    document.getElementById('tx-diag-paste').value = '';
+    toast('✓ נכנס לתור');
+  } else {
+    _txDiagPush('manual-paste', text, '✗ ' + (r && r.reason || 'unknown'));
+    toast('לא זוהתה עסקה — בדוק יומן');
+  }
+  _txRenderDiag();
+};
+window.txDiagScanClipboard = async function() {
+  const r = await _txScanClipboard({ verbose: true });
+  if (r && r.ok) toast('✓ נכנס לתור');
+  _txRenderDiag();
+};
+window.txDiagSelfTest = function() {
+  // Inject a fake structured payload through the same pipeline a real
+  // URL would take. If this works but real Wallet doesn't — the issue
+  // is on the iOS Shortcut side, not in the app.
+  const fakeUrl = 'ravidstudio://wallet?amount=' + (Math.floor(Math.random()*40)+5)
+    + '&merchant=' + encodeURIComponent('בדיקה ' + new Date().toLocaleTimeString('he-IL').slice(0,5));
+  _txDiagPush('self-test', fakeUrl, 'הוזרק לפייפליין');
+  try {
+    const u = new URL(fakeUrl);
+    txIngestStructured({
+      amount:   u.searchParams.get('amount'),
+      merchant: u.searchParams.get('merchant'),
+      raw:      fakeUrl
+    });
+    toast('🧪 עסקת דמה נוספה לתור');
+  } catch (e) { toast('בדיקה נכשלה: ' + e.message); }
+  _txRenderDiag();
+};
+window.txDiagClearLog = function() {
+  window._txDiagLog = [];
+  try { localStorage.removeItem('_tx_diag_log'); } catch (_) {}
+  _txRenderDiagLog();
+};
+
 // Toggle expand/collapse of an expense-category box. Persists which
 // categories the user prefers open across refreshes via localStorage.
 window.toggleExpCatBox = function(cat) {
@@ -9858,13 +9992,20 @@ window.txCopyShortcutURL = async function() {
 
   function handleUrl(url) {
     if (!url) return;
-    if (_wasProcessed(url)) return;
+    if (_wasProcessed(url)) {
+      try { if (typeof _txDiagPush === 'function') _txDiagPush('url-dupe', url, 'skipped — already processed'); } catch (_) {}
+      return;
+    }
     _markProcessed(url);
+    try { if (typeof _txDiagPush === 'function') _txDiagPush('url-received', url, ''); } catch (_) {}
 
     try {
       const u = new URL(url);
       const host = (u.host || u.hostname || '').toLowerCase();
-      if (host !== 'wallet' && host !== 'expense' && host !== 'tx') return;
+      if (host !== 'wallet' && host !== 'expense' && host !== 'tx') {
+        try { if (typeof _txDiagPush === 'function') _txDiagPush('url-ignored', url, 'host=' + host); } catch (_) {}
+        return;
+      }
 
       // Accept multiple URL shapes (we don't know yet what iOS Shortcuts
       // exposes; build for any of them):
@@ -9937,6 +10078,189 @@ window.txCopyShortcutURL = async function() {
     } catch (_) { return false; }
   }
   if (!attach()) { window.addEventListener('load', () => setTimeout(attach, 300)); }
+})();
+
+// ───────── Clipboard fallback (the silent-Shortcut rescue) ─────────
+// When iOS runs a Wallet Automation with "Run Without Asking" enabled,
+// the "Open URLs" action does NOT bring the app to the foreground —
+// the URL is dispatched but if the app is suspended, appUrlOpen never
+// fires and getLaunchUrl on next launch returns nothing.
+// Workaround: have the Shortcut ALSO Copy-to-Clipboard. Then every
+// time the user opens the app, we sniff the clipboard for a wallet-
+// shaped payload and ingest it. Clipboard is cleared on success so
+// the same payment never gets queued twice.
+//
+// Recognized clipboard formats:
+//   ravidstudio://wallet?amount=5&merchant=Aroma     (the URL itself)
+//   #wallet:5,Aroma                                  (short form)
+//   #wallet:5|Aroma|2026-06-24                       (short with date)
+//   any plain Hebrew/English Wallet notification text — _txParseNotification handles it
+window._txDiagLog = window._txDiagLog || [];
+function _txDiagPush(kind, raw, result) {
+  try {
+    window._txDiagLog.unshift({
+      ts: new Date().toISOString(),
+      kind: kind,
+      raw: String(raw || '').slice(0, 240),
+      result: result || ''
+    });
+    if (window._txDiagLog.length > 30) window._txDiagLog.length = 30;
+    localStorage.setItem('_tx_diag_log', JSON.stringify(window._txDiagLog));
+  } catch (_) {}
+}
+try {
+  const cached = JSON.parse(localStorage.getItem('_tx_diag_log') || '[]');
+  if (Array.isArray(cached)) window._txDiagLog = cached;
+} catch (_) {}
+
+window._txIngestFromClipboardText = function(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return { ok: false, reason: 'empty' };
+  // 1) Our own URL scheme
+  if (/^ravidstudio:\/\/(wallet|expense|tx)/i.test(raw)) {
+    try {
+      const u = new URL(raw);
+      const amount   = u.searchParams.get('amount') || '';
+      const merchant = u.searchParams.get('merchant') || u.searchParams.get('store') || u.searchParams.get('name') || '';
+      const date     = u.searchParams.get('date') || '';
+      const category = u.searchParams.get('category') || u.searchParams.get('cat') || '';
+      if (amount || merchant) {
+        txIngestStructured({ amount, merchant, date, category, raw: raw });
+        _txDiagPush('clipboard-url', raw, '✓ ingested');
+        return { ok: true, via: 'url' };
+      }
+    } catch (e) { /* fall through to freetext */ }
+  }
+  // 2) Short pipe / comma form: #wallet:5,Aroma or #wallet:5|Aroma|2026-06-24
+  const shortM = raw.match(/^#?wallet[:\s]+(.+)$/i);
+  if (shortM) {
+    const parts = shortM[1].split(/[,|]/).map(s => s.trim());
+    if (parts.length >= 1) {
+      const amount = parts[0];
+      const merchant = parts[1] || '';
+      const date = parts[2] || '';
+      txIngestStructured({ amount, merchant, date, raw: raw });
+      _txDiagPush('clipboard-short', raw, '✓ ingested');
+      return { ok: true, via: 'short' };
+    }
+  }
+  // 3) Free-text Wallet notification (Hebrew/English)
+  const parsed = _txParseNotification(raw);
+  if (parsed && (parsed.amount > 0 || parsed.merchant)) {
+    txIngest(raw);
+    _txDiagPush('clipboard-text', raw, '✓ parsed: ' + (parsed.merchant || '') + ' / ' + (parsed.amount || ''));
+    return { ok: true, via: 'text' };
+  }
+  _txDiagPush('clipboard-skip', raw, '✗ no wallet pattern matched');
+  return { ok: false, reason: 'no-match' };
+};
+
+// Read the clipboard. Returns Promise<string|null>. Uses Capacitor's
+// Clipboard plugin in the native app, falls back to the browser's
+// navigator.clipboard.readText() for web/dev.
+async function _txReadClipboard() {
+  try {
+    const Cap = window.Capacitor && window.Capacitor.Plugins;
+    if (Cap && Cap.Clipboard && Cap.Clipboard.read) {
+      const r = await Cap.Clipboard.read();
+      return r && (r.value || r.text || '') || '';
+    }
+  } catch (_) {}
+  try {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      return await navigator.clipboard.readText();
+    }
+  } catch (_) {}
+  return null;
+}
+async function _txWriteClipboard(value) {
+  try {
+    const Cap = window.Capacitor && window.Capacitor.Plugins;
+    if (Cap && Cap.Clipboard && Cap.Clipboard.write) {
+      await Cap.Clipboard.write({ string: String(value || '') });
+      return true;
+    }
+  } catch (_) {}
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(String(value || ''));
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+// Dedupe clipboard ingests across the 5-min window
+function _txClipboardSeen(raw) {
+  try {
+    const arr = JSON.parse(localStorage.getItem('_tx_clip_seen') || '[]');
+    const now = Date.now();
+    const live = arr.filter(x => (now - x.t) < 5 * 60 * 1000);
+    if (live.some(x => x.r === raw)) return true;
+    live.push({ r: raw, t: now });
+    while (live.length > 30) live.shift();
+    localStorage.setItem('_tx_clip_seen', JSON.stringify(live));
+    return false;
+  } catch (_) { return false; }
+}
+
+window._txScanClipboard = async function(opts) {
+  opts = opts || {};
+  const text = await _txReadClipboard();
+  if (text == null) {
+    _txDiagPush('clipboard-read', '', '✗ clipboard API unavailable');
+    return { ok: false, reason: 'no-api' };
+  }
+  if (!text.trim()) {
+    if (opts.verbose) toast('הקליפבורד ריק');
+    return { ok: false, reason: 'empty' };
+  }
+  // Only treat as wallet-shaped if it CLEARLY looks like one — otherwise
+  // we'd ingest random copied text. The URL prefix / #wallet form is
+  // unambiguous; for freetext we require ₪ / ש"ח / NIS / Apple Pay anchor.
+  const t = text.trim();
+  const looksWalletShaped = /^ravidstudio:\/\/(wallet|expense|tx)/i.test(t)
+    || /^#?wallet[:\s]/i.test(t)
+    || /(?:₪|ש"?ח|NIS|ILS|Apple ?Pay)/i.test(t);
+  if (!looksWalletShaped) {
+    if (opts.verbose) toast('הטקסט בקליפבורד לא נראה כמו תשלום');
+    return { ok: false, reason: 'not-wallet' };
+  }
+  if (_txClipboardSeen(t)) {
+    if (opts.verbose) toast('עסקה זו כבר נקלטה');
+    return { ok: false, reason: 'dupe' };
+  }
+  const r = _txIngestFromClipboardText(t);
+  if (r && r.ok) {
+    // Clear clipboard so the next paste isn't this stale payload
+    try { await _txWriteClipboard(''); } catch (_) {}
+  }
+  return r;
+};
+
+// Auto-scan whenever the app comes back to the foreground.
+(function _txAttachClipboardAutoScan() {
+  const trigger = () => { try { _txScanClipboard({}); } catch (_) {} };
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      // tiny delay so iOS pasteboard is ready
+      setTimeout(trigger, 250);
+    }
+  });
+  // Capacitor's appStateChange — more reliable than visibilitychange on iOS
+  function wireAppState() {
+    try {
+      const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+      if (!App || !App.addListener) return false;
+      App.addListener('appStateChange', s => { if (s && s.isActive) setTimeout(trigger, 250); });
+      App.addListener('resume', () => setTimeout(trigger, 250));
+      return true;
+    } catch (_) { return false; }
+  }
+  if (!wireAppState()) window.addEventListener('load', () => setTimeout(wireAppState, 400));
+  // Also scan once shortly after first load — covers the cold-launch
+  // case where the user opened the app right after a Wallet payment.
+  window.addEventListener('load', () => setTimeout(trigger, 800));
 })();
 
 function renderExpenses() {
