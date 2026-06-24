@@ -3179,6 +3179,151 @@
       animation: cardsIn 1s cubic-bezier(.4,0,.2,1) 0.2s both;
     }
 
+    /* ============================================================
+       LOBBY v2 — three-pillar dashboard. By default v2 is shown and
+       the old lobby parts (mode-cards-row + lobby-tasks) are hidden.
+       When body.lobby-old is set (toggle), it flips: v2 hides and the
+       old lobby returns. Old markup is fully preserved either way.
+       ============================================================ */
+    .lobby-v2 {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 760px;
+      display: flex; flex-direction: column; gap: 14px;
+      animation: cardsIn 1s cubic-bezier(.4,0,.2,1) 0.2s both;
+    }
+    body.lobby-old .lobby-v2 { display: none; }
+    body:not(.lobby-old) .mode-cards-row,
+    body:not(.lobby-old) #lobby-tasks { display: none !important; }
+
+    .lobby-v2-pillars {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+    @media (max-width: 540px) {
+      .lobby-v2-pillars { grid-template-columns: 1fr; }
+    }
+    .lobby-v2-card {
+      text-align: right; cursor: pointer;
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(255,255,255,0.18);
+      border-radius: 18px;
+      padding: 14px 16px 16px;
+      color: #fff;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.12);
+      transition: transform .15s, border-color .2s, background .2s;
+      font-family: inherit;
+      direction: rtl;
+      min-height: 130px;
+      display: flex; flex-direction: column;
+    }
+    .lobby-v2-card:active { transform: scale(0.98); }
+    .lobby-v2-card:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.28); }
+    .lobby-v2-card-head {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; font-weight: 700; opacity: 0.85; margin-bottom: 8px;
+    }
+    .lobby-v2-card-head svg { opacity: 0.85; }
+    .lobby-v2-card-num {
+      font-size: 28px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.05;
+    }
+    .lobby-v2-card-sub {
+      font-size: 12px; opacity: 0.70; margin-top: 3px;
+    }
+    .lobby-v2-card-alert {
+      margin-top: auto; padding-top: 10px;
+      font-size: 11.5px; font-weight: 600; opacity: 0.95; min-height: 16px;
+    }
+    .lobby-v2-card-alert.is-red    { color: #ff8a8a; }
+    .lobby-v2-card-alert.is-amber  { color: #ffcc66; }
+    .lobby-v2-card-alert.is-green  { color: #a8e6a8; }
+
+    .lobby-v2-todo {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(255,255,255,0.18);
+      border-radius: 18px;
+      padding: 14px 16px; color: #fff;
+      direction: rtl;
+    }
+    .lobby-v2-todo-head {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 13px; font-weight: 700; opacity: 0.85; margin-bottom: 10px;
+    }
+    .lobby-v2-todo-row {
+      display: flex; align-items: center; gap: 10px; padding: 10px 4px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+    }
+    .lobby-v2-todo-row:first-child { border-top: none; }
+    .lobby-v2-todo-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .lobby-v2-todo-dot.red    { background: #ff6b6b; }
+    .lobby-v2-todo-dot.amber  { background: #ffcc66; }
+    .lobby-v2-todo-dot.blue   { background: #6ab7ff; }
+    .lobby-v2-todo-dot.green  { background: #8aa888; }
+    .lobby-v2-todo-text {
+      flex: 1; font-size: 13.5px; line-height: 1.35;
+    }
+    .lobby-v2-todo-text small {
+      display: block; font-size: 11px; opacity: 0.65; margin-top: 2px;
+    }
+    .lobby-v2-todo-btn {
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff; border-radius: 9px;
+      padding: 6px 10px; font-size: 12px; font-weight: 700;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .lobby-v2-todo-btn:hover { background: rgba(255,255,255,0.24); }
+    .lobby-v2-todo-empty {
+      text-align: center; font-size: 13px; opacity: 0.65; padding: 16px 0;
+    }
+
+    .lobby-v2-quick {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .lobby-v2-quick button {
+      background: rgba(255,255,255,0.10);
+      border: 1.5px solid rgba(255,255,255,0.22);
+      color: #fff; border-radius: 14px;
+      padding: 13px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; direction: rtl;
+      transition: background .15s;
+    }
+    .lobby-v2-quick button:hover { background: rgba(255,255,255,0.16); }
+    .lobby-v2-quick button:active { transform: scale(0.97); }
+
+    .lobby-v2-more { margin-top: 4px; }
+    .lobby-v2-more-toggle {
+      width: 100%; background: transparent; border: none;
+      color: rgba(255,255,255,0.65); font-size: 12.5px; padding: 8px;
+      cursor: pointer; font-family: inherit;
+    }
+    .lobby-v2-more-list {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
+      padding: 8px 0;
+    }
+    .lobby-v2-more-list button {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.85); border-radius: 10px;
+      padding: 9px 10px; font-size: 12.5px; font-weight: 600;
+      cursor: pointer; font-family: inherit; direction: rtl;
+    }
+    .lobby-v2-more-list button:hover { background: rgba(255,255,255,0.10); }
+
+    .lobby-v2-revert {
+      text-align: center; padding-top: 6px;
+    }
+    .lobby-v2-revert button {
+      background: transparent; border: 1px dashed rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.55); font-size: 11px; padding: 5px 12px;
+      border-radius: 14px; cursor: pointer; font-family: inherit;
+    }
+    .lobby-v2-revert button:hover { color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,0.45); }
+
     /* ===== LOBBY TASKS (visible before picking a mode) ===== */
     .lobby-tasks {
       position: relative; z-index: 1;
@@ -5531,8 +5676,78 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v332</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v333</small>
   </div>
+
+  <!-- ===== Lobby v2 — three-pillar dashboard. Hidden when
+       s_lobby_use_old=1 (the toggle at the bottom flips it). All data
+       reads are wrapped in try/catch in renderLobbyV2 so a missing
+       store NEVER blanks the lobby. The old mode-cards-row + lobby-tasks
+       remain in the DOM untouched, hidden via CSS when v2 is on. ===== -->
+  <div id="lobby-v2" class="lobby-v2">
+    <div class="lobby-v2-pillars">
+      <button class="lobby-v2-card pillar-money" onclick="chooseMode('business');showPage('expenses')" aria-label="כסף">
+        <div class="lobby-v2-card-head">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14 9.5a2.5 2.5 0 1 0 0 5"/><path d="M12 7v2M12 15v2"/></svg>
+          <span>השקל</span>
+        </div>
+        <div class="lobby-v2-card-num" id="lv2-money-net">—</div>
+        <div class="lobby-v2-card-sub" id="lv2-money-sub">החודש נטו</div>
+        <div class="lobby-v2-card-alert" id="lv2-money-alert"></div>
+      </button>
+
+      <button class="lobby-v2-card pillar-prods" onclick="chooseMode('business');showPage('projects')" aria-label="הפקות">
+        <div class="lobby-v2-card-head">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="4" x2="6" y2="20"/><circle cx="6" cy="9" r="2"/><line x1="12" y1="4" x2="12" y2="20"/><circle cx="12" cy="15" r="2"/><line x1="18" y1="4" x2="18" y2="20"/><circle cx="18" cy="12" r="2"/></svg>
+          <span>הפקות</span>
+        </div>
+        <div class="lobby-v2-card-num" id="lv2-prods-active">—</div>
+        <div class="lobby-v2-card-sub" id="lv2-prods-sub">פעילות</div>
+        <div class="lobby-v2-card-alert" id="lv2-prods-alert"></div>
+      </button>
+
+      <button class="lobby-v2-card pillar-cash" onclick="chooseMode('business');showPage('income')" aria-label="תזרים">
+        <div class="lobby-v2-card-head">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-8"/><polyline points="14 8 20 8 20 14"/></svg>
+          <span>תזרים</span>
+        </div>
+        <div class="lobby-v2-card-num" id="lv2-cash-owed">—</div>
+        <div class="lobby-v2-card-sub" id="lv2-cash-sub">חייבים לך</div>
+        <div class="lobby-v2-card-alert" id="lv2-cash-alert"></div>
+      </button>
+    </div>
+
+    <div class="lobby-v2-todo">
+      <div class="lobby-v2-todo-head">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+        לעשות עכשיו
+      </div>
+      <div id="lv2-todo-list"></div>
+    </div>
+
+    <div class="lobby-v2-quick">
+      <button onclick="chooseMode('business');openModal('income')">+ הכנסה</button>
+      <button onclick="chooseMode('business');openModal('expense')">+ הוצאה</button>
+      <button onclick="chooseMode('business');showPage('daily')">+ משימה</button>
+    </div>
+
+    <div class="lobby-v2-more">
+      <button class="lobby-v2-more-toggle" onclick="lobbyV2ToggleMore()">⌄ עוד עמודים</button>
+      <div class="lobby-v2-more-list" id="lv2-more-list" style="display:none">
+        <button onclick="chooseMode('music')">שירים · סקיצות · מיקסים</button>
+        <button onclick="chooseMode('business');showPage('schedule')">לוז יומי</button>
+        <button onclick="chooseMode('business');showPage('clients')">לקוחות</button>
+        <button onclick="chooseMode('business');showPage('workshops')">סדנאות</button>
+        <button onclick="chooseMode('business');showPage('contracts')">הסכמים</button>
+        <button onclick="chooseMode('business');showPage('proposals')">הצעות מחיר</button>
+      </div>
+    </div>
+
+    <div class="lobby-v2-revert">
+      <button onclick="lobbyV2Revert()" title="חזרה ללובי הישן">↺ ללובי הישן</button>
+    </div>
+  </div>
+
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
       <div class="mode-card business" onclick="chooseMode('business')">
@@ -12780,7 +12995,263 @@ function refreshLobbyGreeting() {
     const date  = now.toLocaleDateString('he-IL', { day:'numeric', month:'long' });
     subEl.textContent = 'יום ' + day + ' · ' + date;
   }
+  // Refresh the v2 dashboard cards alongside the greeting
+  try { renderLobbyV2(); } catch (e) { console.warn('lobby v2 render failed', e); }
+  try { applyLobbyV2Toggle(); } catch (e) {}
 }
+
+// ─────────────────────────────────────────────────────────────
+// Lobby v2 — three-pillar dashboard
+// All data reads are wrapped in try/catch so a missing store
+// NEVER blanks the lobby. The old markup (mode-cards-row +
+// lobby-tasks) stays in the DOM, hidden via body class.
+// ─────────────────────────────────────────────────────────────
+function applyLobbyV2Toggle() {
+  let useOld = false;
+  try { useOld = localStorage.getItem('s_lobby_use_old') === '1'; } catch (_) {}
+  if (useOld) document.body.classList.add('lobby-old');
+  else        document.body.classList.remove('lobby-old');
+}
+window.lobbyV2Revert = function() {
+  try { localStorage.setItem('s_lobby_use_old', '1'); } catch (_) {}
+  applyLobbyV2Toggle();
+  if (typeof toast === 'function') toast('חזרת ללובי הישן — לחץ על "↺ ללובי החדש" כדי להחזיר');
+  // After reverting, the user still needs a way back. Inject a small
+  // toggle inside the mode-cards-row so they're never stuck.
+  _ensureLobbyV1ReturnButton();
+};
+window.lobbyV2Restore = function() {
+  try { localStorage.setItem('s_lobby_use_old', '0'); } catch (_) {}
+  applyLobbyV2Toggle();
+  try { renderLobbyV2(); } catch (_) {}
+};
+function _ensureLobbyV1ReturnButton() {
+  if (document.getElementById('lobby-v1-return-btn')) return;
+  const host = document.getElementById('mode-screen');
+  if (!host) return;
+  const btn = document.createElement('button');
+  btn.id = 'lobby-v1-return-btn';
+  btn.textContent = '↺ ללובי החדש';
+  btn.style.cssText = 'margin-top:18px;background:transparent;border:1px dashed rgba(255,255,255,0.25);color:rgba(255,255,255,0.65);font-size:11px;padding:5px 12px;border-radius:14px;cursor:pointer;font-family:inherit;align-self:center';
+  btn.onclick = () => { lobbyV2Restore(); btn.remove(); };
+  host.appendChild(btn);
+}
+
+function _lv2Today() { return new Date().toISOString().slice(0, 10); }
+function _lv2DaysAgo(iso) {
+  if (!iso) return 0;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return 0;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+function _lv2SafeLoad(key) {
+  try { const v = load(key); return Array.isArray(v) ? v : []; } catch (_) { return []; }
+}
+function _lv2InThisMonth(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return false;
+  const now = new Date();
+  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+}
+
+window.renderLobbyV2 = function() {
+  if (!document.getElementById('lobby-v2')) return;
+  let useOld = false;
+  try { useOld = localStorage.getItem('s_lobby_use_old') === '1'; } catch (_) {}
+  if (useOld) return; // nothing to do, the old lobby is showing
+
+  const income   = _lv2SafeLoad('income');
+  const expenses = _lv2SafeLoad('expenses');
+  const pending  = _lv2SafeLoad('pending_tx');
+  const sched    = _lv2SafeLoad('schedule');
+  const today    = _lv2Today();
+
+  // ── 🪙 שקל ──
+  let incomePaidThisMonth = 0, expensesThisMonth = 0;
+  income.forEach(i => {
+    if (_lv2InThisMonth(i.date) && (i.status || 'pending') === 'paid') {
+      incomePaidThisMonth += Number(i.amount) || 0;
+    }
+  });
+  expenses.forEach(e => {
+    if (_lv2InThisMonth(e.date)) expensesThisMonth += Number(e.amount) || 0;
+  });
+  const net = incomePaidThisMonth - expensesThisMonth;
+  const moneyNumEl = document.getElementById('lv2-money-net');
+  const moneySubEl = document.getElementById('lv2-money-sub');
+  const moneyAltEl = document.getElementById('lv2-money-alert');
+  if (moneyNumEl) {
+    moneyNumEl.textContent = (net >= 0 ? '+' : '−') + (typeof fmtMoney === 'function'
+      ? fmtMoney(net).replace('₪', '₪ ')
+      : (Math.abs(net).toLocaleString('he-IL') + ' ₪'));
+    moneyNumEl.style.color = net >= 0 ? '#a8e6a8' : '#ff8a8a';
+  }
+  if (moneySubEl) moneySubEl.textContent = 'נכנס ' + (typeof fmtMoney === 'function' ? fmtMoney(incomePaidThisMonth) : incomePaidThisMonth)
+    + ' · יצא ' + (typeof fmtMoney === 'function' ? fmtMoney(expensesThisMonth) : expensesThisMonth);
+  if (moneyAltEl) {
+    if (pending.length > 0) {
+      moneyAltEl.className = 'lobby-v2-card-alert is-amber';
+      moneyAltEl.textContent = '⚠ ' + pending.length + ' ' + (pending.length === 1 ? 'הוצאה' : 'הוצאות') + ' בתור Wallet';
+    } else {
+      moneyAltEl.className = 'lobby-v2-card-alert is-green';
+      moneyAltEl.textContent = '✓ הכל בקטגוריות';
+    }
+  }
+
+  // ── 🎚️ הפקות ──
+  // Active productions: non-archived items from `productions` store,
+  // plus income entries with status != paid (treating each income line
+  // as a project-in-progress is consistent with how the rest of the app
+  // groups things). Stuck = no activity timestamp updated in 7+ days.
+  const productions = _lv2SafeLoad('productions');
+  const activeProds = productions.filter(p => p && !p.archived);
+  const stuck = activeProds.filter(p => {
+    const last = p.lastTouched || p.updatedAt || p.createdAt || p.date;
+    return _lv2DaysAgo(last) >= 7;
+  });
+  const worstStuck = stuck.slice().sort((a, b) => {
+    const al = a.lastTouched || a.updatedAt || a.createdAt || a.date || '';
+    const bl = b.lastTouched || b.updatedAt || b.createdAt || b.date || '';
+    return new Date(al) - new Date(bl);
+  })[0];
+  const prodsNumEl = document.getElementById('lv2-prods-active');
+  const prodsSubEl = document.getElementById('lv2-prods-sub');
+  const prodsAltEl = document.getElementById('lv2-prods-alert');
+  if (prodsNumEl) prodsNumEl.textContent = String(activeProds.length);
+  if (prodsSubEl) prodsSubEl.textContent = activeProds.length === 1 ? 'פעילה' : 'פעילות';
+  if (prodsAltEl) {
+    if (stuck.length > 0 && worstStuck) {
+      const days = _lv2DaysAgo(worstStuck.lastTouched || worstStuck.updatedAt || worstStuck.createdAt || worstStuck.date);
+      const name = worstStuck.title || worstStuck.name || worstStuck.description || worstStuck.clientName || 'הפקה';
+      prodsAltEl.className = 'lobby-v2-card-alert is-red';
+      prodsAltEl.textContent = '⏳ ' + name + ' — ' + days + ' ימים בלי תזוזה';
+    } else if (activeProds.length === 0) {
+      prodsAltEl.className = 'lobby-v2-card-alert';
+      prodsAltEl.textContent = 'אין הפקות פעילות';
+    } else {
+      prodsAltEl.className = 'lobby-v2-card-alert is-green';
+      prodsAltEl.textContent = '✓ הכל בתנועה';
+    }
+  }
+
+  // ── 💰 תזרים ──
+  let owed = 0, overdueCount = 0, longestOverdueDays = 0;
+  income.forEach(i => {
+    if ((i.status || 'pending') !== 'paid' && !i.fromPlan) {
+      const amt = Number(i.amount) || 0;
+      if (amt > 0) {
+        owed += amt;
+        const days = _lv2DaysAgo(i.date);
+        if (days > 0) { overdueCount++; if (days > longestOverdueDays) longestOverdueDays = days; }
+      }
+    }
+  });
+  const cashNumEl = document.getElementById('lv2-cash-owed');
+  const cashSubEl = document.getElementById('lv2-cash-sub');
+  const cashAltEl = document.getElementById('lv2-cash-alert');
+  if (cashNumEl) cashNumEl.textContent = typeof fmtMoney === 'function' ? fmtMoney(owed) : (owed + ' ₪');
+  if (cashSubEl) cashSubEl.textContent = owed > 0 ? 'חייבים לך' : 'הכל שולם';
+  if (cashAltEl) {
+    if (overdueCount > 0) {
+      cashAltEl.className = 'lobby-v2-card-alert is-red';
+      cashAltEl.textContent = '⏰ ' + overdueCount + ' באיחור · עד ' + longestOverdueDays + ' ימים';
+    } else if (owed > 0) {
+      cashAltEl.className = 'lobby-v2-card-alert is-amber';
+      cashAltEl.textContent = 'ממתינים — אף אחד לא עבר תאריך';
+    } else {
+      cashAltEl.className = 'lobby-v2-card-alert is-green';
+      cashAltEl.textContent = '✓ הכל שולם';
+    }
+  }
+
+  // ── 🎯 לעשות עכשיו ──
+  _renderLobbyV2Todo({ pending, income, schedule: sched, activeProds, stuck, today });
+};
+
+function _renderLobbyV2Todo(ctx) {
+  const wrap = document.getElementById('lv2-todo-list');
+  if (!wrap) return;
+  const items = [];
+
+  // 1) Pending Wallet transactions — confirm ASAP
+  if (ctx.pending.length > 0) {
+    items.push({
+      dot: 'amber',
+      title: ctx.pending.length === 1
+        ? 'אשר 1 הוצאה בתור Wallet'
+        : 'אשר ' + ctx.pending.length + ' הוצאות בתור Wallet',
+      sub: 'תור ארנק — עוד לא נכנסו להוצאות',
+      btn: 'אשר',
+      onclick: "chooseMode('business');showPage('expenses')"
+    });
+  }
+
+  // 2) Today's schedule items
+  const todayItems = (ctx.schedule || []).filter(s => s && s.date === ctx.today)
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  todayItems.slice(0, 3).forEach(s => {
+    items.push({
+      dot: 'blue',
+      title: (s.time ? s.time + ' · ' : '') + (s.title || 'אירוע'),
+      sub: 'לוז יומי',
+      btn: 'פתח',
+      onclick: "chooseMode('business');showPage('schedule')"
+    });
+  });
+
+  // 3) Overdue income — chase
+  const overdue = (ctx.income || []).filter(i => {
+    if ((i.status || 'pending') === 'paid' || i.fromPlan) return false;
+    return _lv2DaysAgo(i.date) > 0 && (Number(i.amount) || 0) > 0;
+  }).sort((a, b) => _lv2DaysAgo(b.date) - _lv2DaysAgo(a.date));
+  overdue.slice(0, 3).forEach(i => {
+    const days = _lv2DaysAgo(i.date);
+    items.push({
+      dot: 'red',
+      title: (i.clientName || 'לקוח') + ' באיחור ' + days + ' ימים',
+      sub: (typeof fmtMoney === 'function' ? fmtMoney(i.amount) : (i.amount + ' ₪')) + ' · ' + (i.description || ''),
+      btn: 'הצג',
+      onclick: "chooseMode('business');showPage('income')"
+    });
+  });
+
+  // 4) Stuck productions
+  (ctx.stuck || []).slice(0, 2).forEach(p => {
+    const days = _lv2DaysAgo(p.lastTouched || p.updatedAt || p.createdAt || p.date);
+    const name = p.title || p.name || p.description || p.clientName || 'הפקה';
+    items.push({
+      dot: 'red',
+      title: name + ' — ' + days + ' ימים בלי תזוזה',
+      sub: 'הפקה תקועה — צריך פעולה הבאה',
+      btn: 'פתח',
+      onclick: "chooseMode('business');showPage('projects')"
+    });
+  });
+
+  if (items.length === 0) {
+    wrap.innerHTML = '<div class="lobby-v2-todo-empty">✓ אין משהו דחוף עכשיו</div>';
+    return;
+  }
+  // Cap to 6 rows for readability
+  const view = items.slice(0, 6);
+  wrap.innerHTML = view.map(it => `
+    <div class="lobby-v2-todo-row">
+      <span class="lobby-v2-todo-dot ${it.dot}"></span>
+      <div class="lobby-v2-todo-text">
+        ${(it.title || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}
+        ${it.sub ? '<small>' + (it.sub || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) + '</small>' : ''}
+      </div>
+      <button class="lobby-v2-todo-btn" onclick="${it.onclick}">${it.btn || 'פתח'}</button>
+    </div>
+  `).join('');
+}
+
+window.lobbyV2ToggleMore = function() {
+  const el = document.getElementById('lv2-more-list');
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'grid' : 'none';
+};
 
 function doLogin() {
   const val = document.getElementById('login-pass').value;
