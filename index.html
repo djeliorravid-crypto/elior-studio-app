@@ -1738,6 +1738,11 @@
       direction: rtl; max-height: 90vh; overflow-y: auto;
       animation: mdIn .35s cubic-bezier(.34,1.4,.64,1);
     }
+    /* Standardized modal widths — use these instead of inline max-width
+       so the app stays on a tight 3-tier scale. */
+    .modal.modal-narrow { max-width: 380px; }
+    .modal.modal-wide   { max-width: 600px; }
+    .modal.modal-xl     { max-width: 720px; }
     @keyframes mdIn {
       from { opacity: 0; transform: translateY(16px) scale(.97); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -5173,7 +5178,7 @@
 
 <!-- iOS install instructions modal -->
 <div class="modal-overlay" id="modal-ios-install">
-  <div class="modal" style="max-width:420px">
+  <div class="modal modal-narrow">
     <h3>התקן כאפליקציה</h3>
     <div style="display:flex;flex-direction:column;gap:12px">
       <div style="background:var(--surface2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px">
@@ -5592,7 +5597,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v342</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v343</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6301,7 +6306,7 @@
        clipboard write always succeeds. The app sniffs the clipboard
        on every resume and ingests anything that looks wallet-shaped. -->
   <div class="modal-overlay" id="modal-tx-wallet-guide">
-    <div class="modal" style="max-width:580px">
+    <div class="modal modal-wide">
       <h3>הגדרת Apple Wallet — מסלול כפול</h3>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
         אנחנו בונים את הקיצור עם <strong>שתי פעולות</strong> במקום אחת: גם Copy to Clipboard וגם Open URLs. אם אחד נכשל — השני תופס. כך כל תשלום מגיע לאפליקציה גם אם iOS לא פותח אותה.
@@ -6342,7 +6347,7 @@
 
   <!-- ===== WALLET DIAGNOSTICS MODAL ===== -->
   <div class="modal-overlay" id="modal-tx-diag">
-    <div class="modal" style="max-width:600px">
+    <div class="modal modal-wide">
       <h3>🩺 בדיקת חיבור Apple Wallet</h3>
       <div id="tx-diag-status" style="background:var(--surface2);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.8;margin-bottom:12px;direction:ltr;text-align:right;font-family:'Menlo','Courier',monospace"></div>
 
@@ -6467,7 +6472,7 @@
 
   <!-- ===== WORKSHOP EDITOR MODAL ===== -->
   <div class="modal-overlay" id="modal-workshop">
-    <div class="modal" style="max-width:560px">
+    <div class="modal modal-wide">
       <h3 id="wk-modal-title">סדנא חדשה</h3>
       <div class="form-group"><label>כותרת הסדנא *</label><input type="text" id="wk-title" placeholder="סדנת כתיבת שירים — אליאור רביד"></div>
       <div class="form-row">
@@ -6506,7 +6511,7 @@
   </div>
 
   <div class="modal-overlay" id="modal-contract">
-    <div class="modal" style="max-width:580px">
+    <div class="modal modal-wide">
       <h3 id="ctr-modal-title">סיכום הפקה חדש</h3>
 
       <div class="form-row">
@@ -6581,7 +6586,7 @@
 
   <!-- ===== PROPOSAL EDITOR MODAL ===== -->
   <div class="modal-overlay" id="modal-proposal">
-    <div class="modal" style="max-width:580px">
+    <div class="modal modal-wide">
       <h3 id="prp-modal-title">הצעת מחיר חדשה</h3>
       <div class="form-row">
         <div class="form-group"><label>שם הלקוח *</label><input type="text" id="prp-client-name" placeholder="ירון כהן"></div>
@@ -6643,7 +6648,7 @@
 
   <!-- ===== STUDENT EDITOR MODAL (add / edit basic info) ===== -->
   <div class="modal-overlay" id="modal-student">
-    <div class="modal" style="max-width:560px">
+    <div class="modal modal-wide">
       <h3 id="stu-modal-title">תלמיד חדש</h3>
       <div class="form-row">
         <div class="form-group"><label>שם מלא *</label><input type="text" id="stu-name" placeholder="ישראל ישראלי"></div>
@@ -6693,7 +6698,7 @@
 
   <!-- ===== STUDENT DETAIL MODAL (lessons / payments / notes) ===== -->
   <div class="modal-overlay" id="modal-student-detail">
-    <div class="modal" style="max-width:640px">
+    <div class="modal modal-wide">
       <div id="stu-detail-body"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal('student-detail')">סגור</button>
@@ -6774,7 +6779,7 @@
 
 <!-- ===== PRODUCER SIGNATURE PAD ===== -->
 <div class="modal-overlay" id="modal-prod-sig">
-  <div class="modal" style="max-width:520px">
+  <div class="modal modal-wide">
     <h3>החתימה שלי</h3>
     <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;line-height:1.6">
       צייר את החתימה שלך פעם אחת. היא תוטבע אוטומטית על כל סיכום הפקה שתשלח. כשמישהו מאשר —
@@ -6795,7 +6800,7 @@
 
 <!-- ===== SIGNED CONTRACT VIEWER ===== -->
 <div class="modal-overlay" id="modal-ctr-viewer">
-  <div class="modal" style="max-width:640px;padding:0;overflow:hidden">
+  <div class="modal modal-wide" style="padding:0;overflow:hidden">
     <div id="ctr-viewer-body" style="padding:24px 24px 8px;max-height:75vh;overflow-y:auto;background:linear-gradient(180deg,#fdf8f0 0%,#fff 100%);color:#2a1810;border-radius:20px 20px 0 0"></div>
     <div style="padding:14px 18px calc(14px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px">
       <button class="btn btn-primary" style="flex:1" onclick="ctrShareCopy()">📤 שלח עותק ללקוח</button>
@@ -7090,7 +7095,7 @@
 
 <!-- ===== GMAIL RECEIPTS MODAL ===== -->
 <div class="modal-overlay" id="modal-gmail">
-  <div class="modal" style="max-width:720px">
+  <div class="modal modal-xl">
     <h3>קבלות מהמייל</h3>
 
     <!-- מצב חיבור -->
@@ -7241,7 +7246,7 @@
 
 <!-- ===== MODAL — QUICK ADD CLIENT ===== -->
 <div class="modal-overlay" id="modal-quick-client" style="z-index:1100">
-  <div class="modal" style="max-width:360px">
+  <div class="modal modal-narrow">
     <h3>לקוח חדש</h3>
     <input type="hidden" id="qc-return-sel" />
     <div class="form-group"><label>שם *</label><input type="text" id="qc-name" placeholder="שם הלקוח..." autofocus/></div>
