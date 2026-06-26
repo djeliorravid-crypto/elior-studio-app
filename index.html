@@ -5531,7 +5531,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v339</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v340</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8735,7 +8735,7 @@ function _renderIncomeCatGrid(entries, planRows) {
         <button class="exp-cat-head" onclick="toggleIncomeCatBox('${catEsc}')">
           <span class="exp-cat-icon" style="background:rgba(122,168,127,0.16);color:var(--green)">${_icon(cat)}</span>
           <span class="exp-cat-name">${cat}</span>
-          <span class="exp-cat-count">${data.items.length}</span>
+          <span class="exp-cat-count" title="שולמו / סה״כ"><span style="color:var(--green)">${data.items.filter(i => (i.status || 'pending') === 'paid').length}</span>/${data.items.length}</span>
           <span class="exp-cat-total" style="color:var(--green)">${fmtMoney(data.total)}</span>
           <span class="exp-cat-arrow">${open ? '▴' : '▾'}</span>
         </button>
@@ -10369,7 +10369,7 @@ function renderExpenses() {
               <button class="exp-cat-head" onclick="toggleExpCatBox('${catEsc}')">
                 <span class="exp-cat-icon">${_icon(cat)}</span>
                 <span class="exp-cat-name">${cat}</span>
-                <span class="exp-cat-count">${data.items.length}</span>
+                <span class="exp-cat-count" title="שולמו / סה״כ"><span style="color:var(--green)">${data.items.filter(e => e.paid).length}</span>/${data.items.length}</span>
                 <span class="exp-cat-total">${fmtMoney(data.total)}</span>
                 <span class="exp-cat-arrow">${open ? '▴' : '▾'}</span>
               </button>
