@@ -1465,14 +1465,61 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 18px;
-      padding: 20px 22px;
+      padding: 0;
+      overflow: hidden;
       transition: transform .15s, border-color .15s;
     }
-    .prod-card.priority-high::before {
+    .prod-card.is-open { border-color: var(--accent2); }
+
+    /* ── Collapsed header (always visible) — song · artist | paid ── */
+    .prod-card-head {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%; padding: 15px 18px;
+      background: transparent; border: none; cursor: pointer;
+      font-family: inherit; text-align: right; direction: rtl;
+      position: relative;
+    }
+    .prod-card-head:hover { background: var(--surface2); }
+    .prod-stage-bar {
+      width: 4px; align-self: stretch; border-radius: 999px;
+      flex-shrink: 0; opacity: 0.9;
+    }
+    .prod-head-main {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .prod-head-main .prod-card-title {
+      font-size: 16px; font-weight: 800; color: var(--text);
+      letter-spacing: -0.01em; line-height: 1.25;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .prod-head-main .prod-card-artist {
+      margin-top: 0; font-size: 12.5px; color: var(--text-muted);
+      font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .prod-head-pay {
+      flex-shrink: 0; display: flex; align-items: baseline; gap: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .prod-mini-paid { font-size: 15px; font-weight: 900; }
+    .prod-mini-paid.full    { color: var(--green); }
+    .prod-mini-paid.partial { color: var(--orange); }
+    .prod-mini-paid.none    { color: var(--text-muted); }
+    .prod-mini-sep   { color: var(--text-muted); opacity: 0.5; font-size: 12px; font-weight: 600; }
+    .prod-mini-price { color: var(--text-muted); font-size: 12.5px; font-weight: 700; }
+    .prod-mini-noprice { color: var(--text-muted); font-size: 12px; font-style: italic; opacity: 0.7; }
+    .prod-mini-deadline {
+      flex-shrink: 0; font-size: 11px; font-weight: 800;
+      color: #dc2626; background: rgba(220,38,38,0.10);
+      padding: 2px 7px; border-radius: 999px;
+    }
+    .prod-head-chevron { flex-shrink: 0; color: var(--text-muted); font-size: 12px; opacity: 0.7; }
+
+    .prod-card.priority-high .prod-card-head::after {
       content: '';
-      display: inline-block; width: 6px; height: 6px;
+      position: absolute; top: 14px; left: 14px;
+      width: 6px; height: 6px;
       border-radius: 50%; background: var(--orange);
-      margin-left: 8px; vertical-align: middle;
     }
 
     /* Top row — title + artist on right, deadline on left */
@@ -1619,8 +1666,9 @@
     }
     .prod-details:hover { color: var(--accent); }
 
-    /* Expanded — quiet section */
-    .prod-card-expand { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    /* Expanded — quiet section. Card padding is 0, so the expand body
+       carries its own horizontal padding and a divider from the header. */
+    .prod-card-expand { display: none; padding: 14px 18px 18px; border-top: 1px solid var(--border); }
     .prod-card-expand.open { display: block; }
     .prod-expand-h { font-size: 11px; font-weight: 800; letter-spacing: .04em; color: var(--text-muted); text-transform: uppercase; margin: 16px 0 8px; }
     .prod-expand-h:first-child { margin-top: 0; }
@@ -5597,7 +5645,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v343</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v344</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -13506,34 +13554,56 @@ function _prodCardHtml(p) {
       </div>`;
   }
 
+  // ── Collapsed-header payment summary (compact) ──
+  let payMini;
+  if (price > 0) {
+    payMini = paidTotal > 0
+      ? `<span class="prod-mini-paid ${payState}">${fmtMoney(paidTotal)}</span><span class="prod-mini-sep">/</span><span class="prod-mini-price">${fmtMoney(price)}</span>`
+      : `<span class="prod-mini-price">${fmtMoney(price)}</span>`;
+  } else {
+    payMini = `<span class="prod-mini-noprice">ללא מחיר</span>`;
+  }
+  // Tiny deadline flag in the collapsed header — only when it actually
+  // matters (today / overdue / ≤3 days), so the row stays clean.
+  let miniDeadline = '';
+  if (du !== null && du <= 3) {
+    const dlTxt = du < 0 ? `איחור ${-du}י׳` : (du === 0 ? 'היום' : `${du}י׳`);
+    miniDeadline = `<span class="prod-mini-deadline">${dlTxt}</span>`;
+  }
+
   return `
-    <div class="prod-card ${p.priority === 'high' ? 'priority-high' : ''}" id="prod-card-${id}">
-      <div class="prod-card-top">
-        <div style="flex:1;min-width:0">
-          <div class="prod-card-title">${_escape(p.title)}</div>
-          <div class="prod-card-artist">
-            <span>${_escape(p.artist || 'ללא אמן')}</span>
-            <span style="opacity:0.4">·</span>
-            <span class="prod-stage-dot" style="color:${stage.color}">${stage.label}</span>
-          </div>
-        </div>
-        ${deadlineBoxHtml}
-      </div>
-
-      ${payHtml}
-
-      ${waitingHtml || `<button class="prod-waiting-empty" onclick="prodOpenWaitingModal('${id}')"><svg><use href="#ic-hourglass"/></svg>+ מחכים למישהו/משהו</button>`}
-
-      ${stuck > 5 ? `<div class="prod-stuck-line">נתקע ${stuck} ימים</div>` : ''}
-
-      <div class="prod-actions">
-        ${canAdvance
-          ? `<button class="prod-advance" onclick="prodAdvanceStage('${id}')">→ ${nextStage.label}</button>`
-          : ''}
-        <button class="prod-details" onclick="prodExpand('${id}')">${expanded ? 'סגור פרטים' : 'פרטים ›'}</button>
-      </div>
+    <div class="prod-card ${p.priority === 'high' ? 'priority-high' : ''} ${expanded ? 'is-open' : ''}" id="prod-card-${id}">
+      <button class="prod-card-head" onclick="prodExpand('${id}')" aria-expanded="${expanded}">
+        <span class="prod-stage-bar" style="background:${stage.color}"></span>
+        <span class="prod-head-main">
+          <span class="prod-card-title">${_escape(p.title)}</span>
+          <span class="prod-card-artist">${_escape(p.artist || 'ללא אמן')}</span>
+        </span>
+        <span class="prod-head-pay">${payMini}</span>
+        ${miniDeadline}
+        <span class="prod-head-chevron">${expanded ? '▴' : '▾'}</span>
+      </button>
 
       <div class="prod-card-expand ${expanded ? 'open' : ''}">
+        <div class="prod-card-top" style="margin-top:4px">
+          <div style="flex:1;min-width:0">
+            <div class="prod-card-artist">
+              <span class="prod-stage-dot" style="color:${stage.color}">${stage.label}</span>
+            </div>
+          </div>
+          ${deadlineBoxHtml}
+        </div>
+
+        ${payHtml}
+
+        ${waitingHtml || `<button class="prod-waiting-empty" onclick="prodOpenWaitingModal('${id}')"><svg><use href="#ic-hourglass"/></svg>+ מחכים למישהו/משהו</button>`}
+
+        ${stuck > 5 ? `<div class="prod-stuck-line">נתקע ${stuck} ימים</div>` : ''}
+
+        ${canAdvance
+          ? `<div class="prod-actions"><button class="prod-advance" onclick="prodAdvanceStage('${id}')">→ ${nextStage.label}</button></div>`
+          : ''}
+
         <div class="prod-expand-h">שלב</div>
         <div class="prod-stage-row">${stagePills}</div>
 
