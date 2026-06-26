@@ -1802,7 +1802,12 @@
 
     .search-bar .si {
       position: absolute; left: 11px; top: 50%;
-      transform: translateY(-50%); color: var(--text-muted); font-size: 13px;
+      transform: translateY(-50%);
+      width: 15px; height: 15px;
+      color: var(--text-muted);
+      fill: none; stroke: currentColor;
+      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+      pointer-events: none;
     }
 
     /* ===== CHART ===== */
@@ -2140,6 +2145,13 @@
 
     .ftab:hover { color: var(--accent); border-color: var(--accent2); }
     .ftab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .ftab .ftab-dot {
+      display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; vertical-align: middle;
+      margin-left: 6px; margin-bottom: 1px;
+    }
+    .ftab .ftab-dot.green { background: var(--green); }
+    .ftab .ftab-dot.gray  { background: var(--text-muted); opacity: 0.6; }
 
     /* Amounts */
     .amt-pos { color: var(--green); font-weight: 800; }
@@ -5580,7 +5592,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v341</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v342</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6037,7 +6049,7 @@
       <div class="table-header" style="background:transparent;border:0;padding:0 4px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
         <h3 style="font-size:20px;font-weight:900">רשימת הכנסות</h3>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <div class="search-bar"><span class="si">🔍</span><input type="text" placeholder="חיפוש..." id="i-search" oninput="renderIncome()"/></div>
+          <div class="search-bar"><svg class="si" viewBox="0 0 24 24"><use href="#ic-search"/></svg><input type="text" placeholder="חיפוש..." id="i-search" oninput="renderIncome()"/></div>
           <select style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:7px 12px;font-size:13px;color:var(--text);outline:none;" id="i-client-filter" onchange="renderIncome()">
             <option value="">כל הלקוחות</option>
           </select>
@@ -6103,7 +6115,7 @@
     <div class="page-header">
       <div><h2><svg class="icon-lg"><use href="#ic-users"/></svg>פרופילים</h2><p>כל הלקוחות שלך במקום אחד</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <div class="search-bar"><span class="si">🔍</span><input type="text" placeholder="חיפוש לקוח..." id="pr-search" oninput="renderProfiles()"/></div>
+        <div class="search-bar"><svg class="si" viewBox="0 0 24 24"><use href="#ic-search"/></svg><input type="text" placeholder="חיפוש לקוח..." id="pr-search" oninput="renderProfiles()"/></div>
         <button class="btn btn-primary" onclick="openModal('client')">+ לקוח חדש</button>
       </div>
     </div>
@@ -6111,8 +6123,8 @@
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:22px;flex-wrap:wrap">
       <div class="filter-tabs">
         <button class="ftab active" onclick="setPrFilter(this,'all')">הכל</button>
-        <button class="ftab" onclick="setPrFilter(this,'active')">🟢 פעילים</button>
-        <button class="ftab" onclick="setPrFilter(this,'inactive')">⚫ לא פעילים</button>
+        <button class="ftab" onclick="setPrFilter(this,'active')"><span class="ftab-dot green"></span>פעילים</button>
+        <button class="ftab" onclick="setPrFilter(this,'inactive')"><span class="ftab-dot gray"></span>לא פעילים</button>
       </div>
     </div>
 
@@ -8147,7 +8159,7 @@ function showProfileDetail(id) {
         <div class="detail-info">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap">
             <div class="detail-name">${c.name}</div>
-            <span class="badge ${c.active ? 'badge-green' : 'badge-gray'}">${c.active ? '🟢 פעיל' : '⚫ לא פעיל'}</span>
+            <span class="badge ${c.active ? 'badge-green' : 'badge-gray'}"><span class="ftab-dot ${c.active ? 'green' : 'gray'}" style="margin-left:5px"></span>${c.active ? 'פעיל' : 'לא פעיל'}</span>
           </div>
           <div class="detail-type">${c.type}</div>
           <div class="detail-meta">
