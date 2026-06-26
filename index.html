@@ -721,6 +721,28 @@
       padding: 14px 18px; border-top: 1px solid var(--border);
       font-size: 11px; color: var(--text-muted);
     }
+    /* Unified styling for the 4 footer utility buttons. Replaces the
+       inline-styled emoji buttons that lived here before. */
+    .sidebar-footer-btn {
+      width: 100%;
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 11.5px; font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit; text-align: right;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .sidebar-footer-btn:hover { background: var(--surface); border-color: var(--accent); color: var(--text); }
+    .sidebar-footer-svg {
+      width: 14px; height: 14px; flex-shrink: 0;
+      fill: none; stroke: currentColor; stroke-width: 1.8;
+      stroke-linecap: round; stroke-linejoin: round;
+      opacity: 0.85;
+    }
 
     /* כפתור עריכת תמונת לקוח */
     .photo-edit-wrap {
@@ -914,6 +936,18 @@
     .btn-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid var(--border); }
     .btn-ghost:hover { background: var(--surface2); color: var(--text); }
 
+    /* Icon-prefixed button — used on page-header utility buttons that
+       used to start with an emoji (🔄 / 📲 / 🩺 / 📧 etc.). Replaces
+       the emoji with a 16px stroke SVG matching the rest of the icon
+       system. Works with both .btn-ghost and .btn-primary. */
+    .btn-icon { gap: 7px; }
+    .btn-icon .btn-svg {
+      width: 16px; height: 16px; flex-shrink: 0;
+      fill: none; stroke: currentColor;
+      stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+      opacity: 0.95;
+    }
+
     .btn-danger { background: var(--red-light); color: var(--red); }
     .btn-danger:hover { filter: brightness(0.95); }
 
@@ -1051,6 +1085,11 @@
       width: 30px; height: 30px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 15px;
+    }
+    .fab-item-svg {
+      width: 16px; height: 16px;
+      fill: none; stroke: #fff;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
     }
 
     /* ===== AI CHAT ASSISTANT ===== */
@@ -5097,6 +5136,16 @@
   <symbol id="ic-cat-mix"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="9" y2="12"/><circle cx="11" cy="12" r="2.3"/><line x1="13.3" y1="12" x2="21" y2="12"/></symbol>
   <symbol id="ic-cat-edit"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12c2-4 5-4 7 0s5 4 7 0"/></symbol>
   <symbol id="ic-cat-other"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><line x1="3" y1="11" x2="21" y2="11"/></symbol>
+  <!-- Utility icons added in the Phase-1 design pass — replacements for inline emoji in buttons. -->
+  <symbol id="ic-search"        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.5" y2="16.5"/></symbol>
+  <symbol id="ic-refresh"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 4 21 10 15 10"/><path d="M20.5 10A9 9 0 0 0 4 6.4"/><polyline points="3 20 3 14 9 14"/><path d="M3.5 14A9 9 0 0 0 20 17.6"/></symbol>
+  <symbol id="ic-download"      viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M5 19h14"/></symbol>
+  <symbol id="ic-upload"        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><polyline points="7 13 12 8 17 13"/><path d="M5 5h14"/></symbol>
+  <symbol id="ic-phone-pay"     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><line x1="10" y1="18" x2="14" y2="18"/><path d="M9 7h6M9 10h4"/></symbol>
+  <symbol id="ic-stethoscope"   viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v6a4 4 0 0 0 8 0V3"/><path d="M5 3h2M11 3h2"/><path d="M9 13v3a4 4 0 0 0 4 4h1a4 4 0 0 0 4-4v-1"/><circle cx="18" cy="11" r="2"/></symbol>
+  <symbol id="ic-mail"          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></symbol>
+  <symbol id="ic-x"             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></symbol>
+  <symbol id="ic-flask"         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6L4 19a2 2 0 0 0 1.7 3h12.6A2 2 0 0 0 20 19l-6-10V3"/><line x1="7" y1="14" x2="17" y2="14"/></symbol>
 </svg>
 
 <!-- PWA install banner (appears once on mobile if not installed) -->
@@ -5146,10 +5195,10 @@
 <!-- Floating Quick Add FAB -->
 <div class="fab-container" id="fab-container">
   <div class="fab-menu" id="fab-menu">
-    <button class="fab-item" onclick="fabAction('income')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#5a7a2e,#7a9e3e)">💵</span> הכנסה</button>
-    <button class="fab-item" onclick="fabAction('expense')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#b8442e,#d4644a)">💸</span> הוצאה</button>
-    <button class="fab-item" onclick="fabAction('task')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#a06c48,#c89465)">✅</span> משימה</button>
-    <button class="fab-item" onclick="fabAction('client')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#6b5538,#8a7048)">👤</span> לקוח</button>
+    <button class="fab-item" onclick="fabAction('income')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#5a7a2e,#7a9e3e)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-up"/></svg></span> הכנסה</button>
+    <button class="fab-item" onclick="fabAction('expense')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#b8442e,#d4644a)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-down"/></svg></span> הוצאה</button>
+    <button class="fab-item" onclick="fabAction('task')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#a06c48,#c89465)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-check-circle"/></svg></span> משימה</button>
+    <button class="fab-item" onclick="fabAction('client')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#6b5538,#8a7048)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-student"/></svg></span> לקוח</button>
   </div>
   <button class="fab-main" id="fab-main" onclick="toggleFab()" aria-label="פעולה מהירה">+</button>
 </div>
@@ -5229,7 +5278,7 @@
       3. שמור. תקבל Client ID ו-Client Secret באותו דף — תדביק שניהם כאן.
     </div>
     <div class="notif-actions">
-      <button type="button" class="notif-close" onclick="_closeWriteSetupModal()">בטל</button>
+      <button type="button" class="notif-close" onclick="_closeWriteSetupModal()">ביטול</button>
       <button type="button" class="btn btn-primary" onclick="_saveWriteSetup()" style="font-size:14px">המשך לאישור</button>
     </div>
   </div>
@@ -5261,7 +5310,7 @@
       ⏳ ממתין לאישור…
     </div>
     <div class="notif-actions">
-      <button type="button" class="notif-close" onclick="_closeDeviceCodeModal()">בטל</button>
+      <button type="button" class="notif-close" onclick="_closeDeviceCodeModal()">ביטול</button>
     </div>
   </div>
 </div>
@@ -5339,7 +5388,7 @@
       </div>
     </div>
     <div class="notif-actions">
-      <button type="button" class="notif-close" onclick="_closeMorningReceiptModal()">בטל</button>
+      <button type="button" class="notif-close" onclick="_closeMorningReceiptModal()">ביטול</button>
       <button type="button" class="btn btn-primary" onclick="_confirmMorningReceiptModal()" style="font-size:14px">צור קבלה</button>
     </div>
   </div>
@@ -5385,7 +5434,7 @@
       </div>
     </div>
     <div class="notif-actions">
-      <button type="button" class="notif-close" onclick="_closeMorningPaymentRequestModal()">בטל</button>
+      <button type="button" class="notif-close" onclick="_closeMorningPaymentRequestModal()">ביטול</button>
       <button type="button" class="btn btn-primary" onclick="_confirmMorningPaymentRequestModal()" style="font-size:14px">צור דרישת תשלום</button>
     </div>
   </div>
@@ -5411,7 +5460,7 @@
     </div>
     <div class="notif-actions">
       <button type="button" class="notif-test" onclick="deleteFromScheduleEdit()" style="color:#dc2626">מחק</button>
-      <button type="button" class="notif-close" onclick="closeScheduleEdit()">בטל</button>
+      <button type="button" class="notif-close" onclick="closeScheduleEdit()">ביטול</button>
       <button type="button" class="btn btn-primary" onclick="saveScheduleEdit()" style="font-size:14px">שמור</button>
     </div>
   </div>
@@ -5531,7 +5580,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v340</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v341</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5664,13 +5713,21 @@
   <div class="sidebar-footer">
     <div style="display:flex;flex-direction:column;gap:6px">
       <!-- Dark mode toggle -->
-      <button id="theme-toggle-btn" onclick="toggleTheme()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:flex;align-items:center;gap:6px">
-        <span id="theme-icon">🌙</span><span id="theme-label">מצב לילה</span>
+      <button id="theme-toggle-btn" class="sidebar-footer-btn" onclick="toggleTheme()">
+        <svg id="theme-icon" class="sidebar-footer-svg" viewBox="0 0 24 24"><use href="#ic-moon"/></svg>
+        <span id="theme-label">מצב לילה</span>
       </button>
-      <button onclick="switchMode()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:flex;align-items:center;gap:6px">🎵<span>מצב סטודיו</span></button>
-      <button onclick="exportBackup()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right">📤 יצוא גיבוי</button>
-      <label style="background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text);width:100%;text-align:right;display:block">
-        📥 ייבוא גיבוי
+      <button class="sidebar-footer-btn" onclick="switchMode()">
+        <svg class="sidebar-footer-svg" viewBox="0 0 24 24"><use href="#ic-music-note"/></svg>
+        <span>מצב סטודיו</span>
+      </button>
+      <button class="sidebar-footer-btn" onclick="exportBackup()">
+        <svg class="sidebar-footer-svg" viewBox="0 0 24 24"><use href="#ic-download"/></svg>
+        <span>יצוא גיבוי</span>
+      </button>
+      <label class="sidebar-footer-btn">
+        <svg class="sidebar-footer-svg" viewBox="0 0 24 24"><use href="#ic-upload"/></svg>
+        <span>ייבוא גיבוי</span>
         <input type="file" accept=".json" onchange="importBackup(event)" style="display:none"/>
       </label>
     </div>
@@ -6022,10 +6079,10 @@
           <span class="month-label" id="lbl-expenses"></span>
           <button onclick="changeMonth(1)">‹</button>
         </div>
-        <button class="btn btn-ghost" onclick="openGmailReceipts()">קבלות מהמייל</button>
-        <button class="btn btn-ghost" onclick="txReclassifyAll()" title="סווג מחדש לפי המילון הנוכחי">🔄 סווג מחדש</button>
-        <button class="btn btn-ghost" onclick="txOpenWalletGuide()" title="חיבור Apple Wallet אוטומטי">📲 Wallet</button>
-        <button class="btn btn-ghost" onclick="txOpenDiagnostics()" title="בדיקת חיבור הארנק + הדבקת קבלה ידנית">🩺 בדיקה</button>
+        <button class="btn btn-ghost btn-icon" onclick="openGmailReceipts()" title="קבלות מהמייל"><svg class="btn-svg"><use href="#ic-mail"/></svg><span>קבלות מהמייל</span></button>
+        <button class="btn btn-ghost btn-icon" onclick="txReclassifyAll()" title="סווג מחדש לפי המילון הנוכחי"><svg class="btn-svg"><use href="#ic-refresh"/></svg><span>סווג מחדש</span></button>
+        <button class="btn btn-ghost btn-icon" onclick="txOpenWalletGuide()" title="חיבור Apple Wallet אוטומטי"><svg class="btn-svg"><use href="#ic-phone-pay"/></svg><span>Wallet</span></button>
+        <button class="btn btn-ghost btn-icon" onclick="txOpenDiagnostics()" title="בדיקת חיבור הארנק + הדבקת קבלה ידנית"><svg class="btn-svg"><use href="#ic-stethoscope"/></svg><span>בדיקה</span></button>
         <button class="btn btn-primary" onclick="openModal('expense')">+ הוצאה חדשה</button>
       </div>
     </div>
@@ -6153,8 +6210,8 @@
       </div>
       <div class="form-group"><label>הערות (אופציונלי)</label><textarea id="prod-notes" placeholder="כל מה שצריך לזכור..." style="min-height:60px;resize:vertical;font-family:inherit"></textarea></div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeModal('production')">ביטול</button>
         <button class="btn btn-primary" onclick="prodSaveFromModal()">שמור</button>
+        <button class="btn btn-ghost" onclick="closeModal('production')">ביטול</button>
       </div>
     </div>
   </div>
@@ -6167,8 +6224,8 @@
       <div class="form-group"><label>תאריך</label><input type="date" id="prod-pay-date"/></div>
       <div class="form-group"><label>הערה (אופציונלי)</label><input type="text" id="prod-pay-note" placeholder="למשל: מקדמה / חצי / סיום"/></div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeModal('prod-payment')">ביטול</button>
         <button class="btn btn-primary" onclick="prodSavePayment()">הוסף תשלום</button>
+        <button class="btn btn-ghost" onclick="closeModal('prod-payment')">ביטול</button>
       </div>
     </div>
   </div>
@@ -6180,9 +6237,9 @@
       <div class="form-group"><label>מה / מי</label><input type="text" id="prod-wait-what" placeholder="למשל: נגן גיטרה / ווקאל מהאמן / מילים סופיות"/></div>
       <div class="form-group"><label>מתי צפוי להגיע (אופציונלי)</label><input type="date" id="prod-wait-date"/></div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="prodClearWaiting()" style="color:#dc2626">נקה</button>
-        <button class="btn btn-ghost" onclick="closeModal('prod-waiting')">ביטול</button>
         <button class="btn btn-primary" onclick="prodSaveWaiting()">שמור</button>
+        <button class="btn btn-ghost" onclick="closeModal('prod-waiting')">ביטול</button>
+        <button class="btn btn-ghost" onclick="prodClearWaiting()" style="color:#dc2626">נקה</button>
       </div>
     </div>
   </div>
@@ -6218,9 +6275,9 @@
       </div>
       <div id="tx-edit-raw" style="font-size:11px;color:var(--text-muted);background:var(--surface2);border-radius:8px;padding:8px 10px;margin-bottom:12px;line-height:1.5;direction:ltr;text-align:right;display:none"></div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="txRejectPending()" style="color:#dc2626">דחה תנועה</button>
-        <button class="btn btn-ghost" onclick="closeModal('tx-edit')">בטל</button>
         <button class="btn btn-primary" onclick="txConfirmPending()">שמור כהוצאה</button>
+        <button class="btn btn-ghost" onclick="closeModal('tx-edit')">ביטול</button>
+        <button class="btn btn-ghost" onclick="txRejectPending()" style="color:#dc2626">דחה תנועה</button>
       </div>
     </div>
   </div>
@@ -17646,13 +17703,19 @@ function removeMusicAudio(type, id) {
 // ===== DARK MODE =====
 function applyTheme(dark) {
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-  const icon  = document.getElementById('theme-icon');
+  // Swap the icon by repointing the <use href> so the SVG stays intact.
+  // (Old version used textContent and silently obliterated the SVG.)
+  const iconHref = dark ? '#ic-sun-max' : '#ic-moon';
+  const swap = (svgEl) => {
+    if (!svgEl) return;
+    const use = svgEl.querySelector('use');
+    if (use) use.setAttribute('href', iconHref);
+  };
+  swap(document.getElementById('theme-icon'));
+  swap(document.getElementById('mobile-theme-icon'));
   const label = document.getElementById('theme-label');
-  if (icon)  icon.textContent  = dark ? '☀️' : '🌙';
   if (label) label.textContent = dark ? 'מצב יום' : 'מצב לילה';
-  const mIcon  = document.getElementById('mobile-theme-icon');
   const mLabel = document.getElementById('mobile-theme-label');
-  if (mIcon)  mIcon.textContent  = dark ? '☀️' : '🌙';
   if (mLabel) mLabel.textContent = dark ? 'יום' : 'לילה';
 }
 function toggleTheme() {
