@@ -5645,7 +5645,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v345</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v346</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -10037,6 +10037,14 @@ window.toggleExpCatBox = function(cat) {
   if (typeof renderExpenses === 'function') renderExpenses();
 };
 
+// Collapsible "הוצאות קבועות" box — single boolean, persisted.
+window.toggleRecurringBox = function() {
+  let open = false;
+  try { open = localStorage.getItem('_recurring_box_open') === '1'; } catch (_) {}
+  try { localStorage.setItem('_recurring_box_open', open ? '0' : '1'); } catch (_) {}
+  if (typeof renderExpenses === 'function') renderExpenses();
+};
+
 // Re-categorize every pending TX + every confirmed expense currently
 // sitting on 'אחר' (or with no category) using the latest dictionary
 // + user-trained map. Doesn't touch entries the user already moved
@@ -10517,15 +10525,33 @@ function renderExpenses() {
       </div>`;
   }
 
-  // ── 🔁 הוצאות קבועות ──
+  // ── 🔁 הוצאות קבועות (collapsible box, matches category boxes) ──
   const allRecurring = load('recurring_expenses');
   if (allRecurring.length > 0) {
+    const recOpen = (function () {
+      try { return localStorage.getItem('_recurring_box_open') === '1'; }
+      catch (_) { return false; }
+    })();
+    // Sum of this month's active recurring expenses, and a paid/total count.
+    let recMonthlyTotal = 0, recPaidCount = 0, recActiveCount = 0;
+    allRecurring.forEach(r => {
+      const isActive = r.startMonth <= curMonthKey && (!r.endMonth || r.endMonth >= curMonthKey);
+      if (isActive) {
+        recActiveCount++;
+        recMonthlyTotal += _recAmt(r, curMonthKey);
+        if (r.paidMonths && r.paidMonths[curMonthKey]) recPaidCount++;
+      }
+    });
     html += `
-      <div class="table-card" style="margin-top:8px">
-        <div class="table-header">
-          <h3><svg class="icon-lg"><use href="#ic-repeat"/></svg>הוצאות קבועות</h3>
-          <div style="font-size:13px;color:var(--text-muted)">נכנסות לחישוב הסכומים</div>
-        </div>
+      <div class="exp-cat-box ${recOpen ? 'open' : ''}" style="margin-top:8px">
+        <button class="exp-cat-head" onclick="toggleRecurringBox()">
+          <span class="exp-cat-icon"><svg viewBox="0 0 24 24"><use href="#ic-repeat"/></svg></span>
+          <span class="exp-cat-name">הוצאות קבועות</span>
+          <span class="exp-cat-count" title="שולמו / פעילות החודש"><span style="color:var(--green)">${recPaidCount}</span>/${recActiveCount}</span>
+          <span class="exp-cat-total">${fmtMoney(recMonthlyTotal)}</span>
+          <span class="exp-cat-arrow">${recOpen ? '▴' : '▾'}</span>
+        </button>
+        <div class="exp-cat-body" style="${recOpen ? '' : 'display:none'};padding:6px 14px 12px;overflow-x:auto">
         <table style="width:100%;border-collapse:collapse">
           <thead><tr>
             <th>תיאור</th>
@@ -10562,6 +10588,7 @@ function renderExpenses() {
             }).join('')}
           </tbody>
         </table>
+        </div>
       </div>`;
   }
 
