@@ -1444,6 +1444,22 @@
       border-top: 1px solid var(--border);
       padding: 4px 0;
     }
+    /* Income page — "extra data" toggle. Hidden secondary sections
+       (bank deposit, goal, expense stats, net profit, insights) get
+       this class; removing it restores their original inline/CSS
+       display, so grids/flex layouts come back intact. */
+    .inc-hidden { display: none !important; }
+    .income-extra-toggle {
+      width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 11px;
+      font-size: 13px; font-weight: 700; color: var(--text-muted);
+      cursor: pointer; font-family: inherit;
+      margin: 18px 0 4px;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .income-extra-toggle:hover { background: var(--surface); color: var(--text); border-color: var(--accent); }
     .exp-cat-row {
       display: flex; align-items: center; gap: 10px;
       padding: 10px 16px;
@@ -5645,7 +5661,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v346</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v347</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5998,7 +6014,7 @@
     </div>
 
     <!-- 1. ===== BANK DEPOSIT (manual) ===== -->
-    <div id="bank-deposit-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;margin-bottom:14px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;transition:box-shadow .3s">
+    <div id="bank-deposit-card" class="income-extra inc-hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;margin-bottom:14px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;transition:box-shadow .3s">
       <div style="position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-glow) 0%,transparent 60%);pointer-events:none"></div>
       <div style="position:relative;display:flex;align-items:center;gap:14px;flex:1;min-width:200px">
         <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 6px 18px var(--accent-glow)"><svg style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-bank"/></svg></div>
@@ -6015,7 +6031,7 @@
     </div>
 
     <!-- 2. ===== MONTHLY GOAL ===== -->
-    <div class="goal-bar-wrap" id="goal-bar-section">
+    <div class="goal-bar-wrap income-extra inc-hidden" id="goal-bar-section">
       <div class="goal-bar-top">
         <div>
           <div class="goal-bar-title"><svg class="icon"><use href="#ic-target"/></svg> יעד חודשי</div>
@@ -6047,7 +6063,7 @@
       </div>
 
       <!-- הוצאות החודש (סה"כ — שולם + ממתין) -->
-      <div class="stat-card stat-red" style="background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden">
+      <div class="stat-card stat-red income-extra inc-hidden" style="background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden">
         <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(184,68,46,0.10) 0%,transparent 60%);pointer-events:none"></div>
         <div style="position:relative">
           <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--red);letter-spacing:0.04em;margin-bottom:6px"><svg class="icon" style="width:14px;height:14px"><use href="#ic-trend-down"/></svg> הוצאות החודש</div>
@@ -6068,7 +6084,7 @@
       </div>
 
       <!-- נשאר להוציא -->
-      <div class="stat-card" style="background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)">
+      <div class="stat-card income-extra inc-hidden" style="background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)">
         <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:0.04em;margin-bottom:6px"><svg class="icon" style="width:14px;height:14px"><use href="#ic-hourglass"/></svg> נשאר להוציא</div>
         <div id="pending-expenses-amt" style="font-size:24px;font-weight:900;color:var(--red);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1">₪0</div>
         <div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;margin-top:8px">
@@ -6079,7 +6095,7 @@
       </div>
 
       <!-- רווח נקי החודש (עכשווי — שולם פחות יצא) — spans both columns -->
-      <div class="stat-card" style="grid-column:span 2;background:linear-gradient(135deg,var(--surface),var(--surface2));border:1.5px solid var(--accent);border-radius:16px;padding:18px 20px;box-shadow:0 6px 18px var(--accent-glow);position:relative;overflow:hidden">
+      <div class="stat-card income-extra inc-hidden" style="grid-column:span 2;background:linear-gradient(135deg,var(--surface),var(--surface2));border:1.5px solid var(--accent);border-radius:16px;padding:18px 20px;box-shadow:0 6px 18px var(--accent-glow);position:relative;overflow:hidden">
         <div style="position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-glow) 0%,transparent 70%);pointer-events:none"></div>
         <div style="position:relative;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
           <div>
@@ -6098,6 +6114,13 @@
       </div>
     </div>
 
+    <!-- Toggle for the secondary data (bank deposit, goal, expense
+         stats, net profit, insights). Collapsed by default. -->
+    <button class="income-extra-toggle" id="income-extra-btn" onclick="toggleIncomeExtra()">
+      <span id="income-extra-label">עוד נתונים</span>
+      <span id="income-extra-arrow">▾</span>
+    </button>
+
     <div>
       <div class="table-header" style="background:transparent;border:0;padding:0 4px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
         <h3 style="font-size:20px;font-weight:900">רשימת הכנסות</h3>
@@ -6114,7 +6137,7 @@
     </div>
 
     <!-- ===== INSIGHTS CARD ===== -->
-    <div class="insights-grid" style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:20px">
+    <div class="insights-grid income-extra inc-hidden" style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-top:20px">
 
       <!-- Top Clients -->
       <div class="table-card" id="top-clients-card" style="padding:0">
@@ -8787,6 +8810,9 @@ function renderIncome() {
 
   // ── Income grouped by category (the visible view) ──
   _renderIncomeCatGrid(monthEntries, planInstDisplay);
+
+  // Re-apply the "extra data" collapsed/expanded state after render.
+  try { _applyIncomeExtra(); } catch (_) {}
 }
 
 function _renderIncomeCatGrid(entries, planRows) {
@@ -10043,6 +10069,26 @@ window.toggleRecurringBox = function() {
   try { open = localStorage.getItem('_recurring_box_open') === '1'; } catch (_) {}
   try { localStorage.setItem('_recurring_box_open', open ? '0' : '1'); } catch (_) {}
   if (typeof renderExpenses === 'function') renderExpenses();
+};
+
+// Income page — show/hide the "extra data" sections (bank deposit,
+// goal, expense stats, net profit, insights). Collapsed by default.
+function _applyIncomeExtra() {
+  let show = false;
+  try { show = localStorage.getItem('_income_extra_open') === '1'; } catch (_) {}
+  document.querySelectorAll('.income-extra').forEach(el => {
+    el.classList.toggle('inc-hidden', !show);
+  });
+  const lbl = document.getElementById('income-extra-label');
+  const arr = document.getElementById('income-extra-arrow');
+  if (lbl) lbl.textContent = show ? 'פחות' : 'עוד נתונים';
+  if (arr) arr.textContent = show ? '▴' : '▾';
+}
+window.toggleIncomeExtra = function() {
+  let show = false;
+  try { show = localStorage.getItem('_income_extra_open') === '1'; } catch (_) {}
+  try { localStorage.setItem('_income_extra_open', show ? '0' : '1'); } catch (_) {}
+  _applyIncomeExtra();
 };
 
 // Re-categorize every pending TX + every confirmed expense currently
