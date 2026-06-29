@@ -1461,7 +1461,7 @@
     }
     .income-extra-toggle:hover { background: var(--surface); color: var(--text); border-color: var(--accent); }
     .exp-cat-row {
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
       padding: 10px 16px;
       border-bottom: 1px solid var(--border);
     }
@@ -1473,6 +1473,30 @@
     .exp-cat-row-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
     .exp-cat-row-amt { font-size: 14px; font-weight: 900; color: var(--red); flex-shrink: 0; font-variant-numeric: tabular-nums; }
     .exp-cat-row-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+
+    /* Morning receipt / payment-request buttons under an income row */
+    .exp-cat-row-morning {
+      flex-basis: 100%;
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-top: 8px; padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+    .row-morning-btn {
+      background: var(--surface2); border: 1px dashed var(--border);
+      border-radius: 8px; color: var(--text-muted);
+      font-weight: 700; padding: 4px 10px; font-size: 11.5px;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+      transition: background .15s, border-color .15s;
+    }
+    .row-morning-btn:hover { background: var(--surface); border-color: var(--accent); }
+    .row-morning-btn.ok     { background: rgba(45,140,75,0.16); border:1px solid rgba(122,168,127,0.45); color:#3f7a4a; border-style: solid; }
+    .row-morning-btn.warn   { background: rgba(220,60,60,0.14); border:1px dashed rgba(220,60,60,0.5); color: var(--red); }
+    .row-morning-btn.danger { background: rgba(220,60,60,0.14); border:1px solid rgba(220,60,60,0.4); color: var(--red); font-weight: 800; border-style: solid; }
+    .row-morning-btn.pr     { background: rgba(124,92,255,0.14); border:1px solid rgba(124,92,255,0.4); color:#6b5bd6; border-style: solid; }
+    [data-theme="dark"] .row-morning-btn.ok { color:#9adf9c; }
+    [data-theme="dark"] .row-morning-btn.warn,
+    [data-theme="dark"] .row-morning-btn.danger { color:#ff8b6b; }
+    [data-theme="dark"] .row-morning-btn.pr { color:#c9b8ff; }
 
     /* ===== Active Productions — Apple Reminders / Things-style ===== */
 
@@ -5588,7 +5612,7 @@
 
     <div class="notif-section-title">קבלות אוטומטיות (Morning)</div>
     <div style="font-size:11px;color:rgba(244,237,224,0.5);margin-bottom:10px;line-height:1.5">
-      כל הכנסה שתסומן "שולם" — קבלה תיווצר אוטומטית ב-Morning בלי שתצטרך לפתוח את האפליקציה שלהם. <span id="morning-conn-dot" style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(220,60,60,0.18);color:#ff8b6b;font-weight:700;font-size:10.5px;margin-right:6px">לא מחובר</span>
+      אחרי חיבור Morning — בכל הכנסה ששולמה יופיע כפתור <strong>"🧾 צור קבלה"</strong>. הקבלה נוצרת רק כשאתה לוחץ עליו (לא אוטומטית). <span id="morning-conn-dot" style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(220,60,60,0.18);color:#ff8b6b;font-weight:700;font-size:10.5px;margin-right:6px">לא מחובר</span>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
       <input id="morning-id" type="text" placeholder="Morning API ID" autocomplete="off" autocapitalize="off" spellcheck="false"
@@ -5661,7 +5685,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v347</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v348</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8500,12 +8524,10 @@ function setIncomeStatus(id, status) {
       cp.classList.add('show');
       setTimeout(() => cp.classList.remove('show'), 2000);
     }
-    // Auto-issue a receipt in Morning if the user has connected
-    // their API creds. Fire-and-forget — UI updates when done.
-    if (typeof window.morningIssueReceiptForIncome === 'function' &&
-        window.morningConnected && window.morningConnected()) {
-      window.morningIssueReceiptForIncome(id);
-    }
+    // NOTE: receipts are NOT auto-issued anymore. Marking an income as
+    // paid used to fire a Morning receipt automatically, which issued
+    // unwanted documents. The user now creates a receipt explicitly via
+    // the "🧾 צור קבלה" button on the paid row (morningRetryReceipt).
   }
   refreshAll();
 }
@@ -8815,6 +8837,42 @@ function renderIncome() {
   try { _applyIncomeExtra(); } catch (_) {}
 }
 
+// Morning receipt / payment-request buttons for an income row in the
+// CATEGORY GRID view. Mirrors the old-table _receiptCell/_payReqCell so
+// the buttons that "disappeared" when income moved to the grid are back.
+// Returns '' when Morning isn't connected (keeps rows clean).
+function _incomeMorningBtns(i) {
+  if (!window.morningConnected || !window.morningConnected()) return '';
+  const idEsc = String(i.id).replace(/'/g, "\\'");
+  const isPaid = (i.status || 'pending') === 'paid';
+  let out = '';
+
+  // ── Receipt (paid rows only) ──
+  if (isPaid) {
+    if (i.morningDocId) {
+      const url = (i.morningDocUrl || '').replace(/'/g, "\\'");
+      const num = i.morningDocNumber || '';
+      out += '<button class="row-morning-btn ok" onclick="morningOpenReceipt(\'' + url + '\')" title="פתח קבלה">🧾 ' + (num ? '#' + num : 'קבלה') + '</button>'
+           + '<button class="row-morning-btn danger" onclick="morningCancelReceipt(\'' + idEsc + '\')" title="בטל קבלה (זיכוי ב-Morning)">✕</button>';
+    } else if (i.morningError) {
+      out += '<button class="row-morning-btn warn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="נסה שוב ליצור קבלה">⚠️ נסה קבלה</button>';
+    } else {
+      out += '<button class="row-morning-btn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="צור קבלה ב-Morning">🧾 צור קבלה</button>';
+    }
+  }
+
+  // ── Payment request ──
+  if (i.morningPrId) {
+    const url = (i.morningPrUrl || '').replace(/'/g, "\\'");
+    const num = i.morningPrNumber || '';
+    out += '<button class="row-morning-btn pr" onclick="morningOpenPaymentRequest(\'' + url + '\')" title="פתח דרישת תשלום">דרישה' + (num ? ' #' + num : '') + '</button>'
+         + '<button class="row-morning-btn danger" onclick="morningCancelPaymentRequest(\'' + idEsc + '\')" title="בטל דרישת תשלום">✕</button>';
+  } else if (!isPaid) {
+    out += '<button class="row-morning-btn" onclick="morningRequestPayment(\'' + idEsc + '\')" title="צור דרישת תשלום ב-Morning">דרישת תשלום</button>';
+  }
+  return out;
+}
+
 function _renderIncomeCatGrid(entries, planRows) {
   const grid = document.getElementById('i-cat-grid');
   if (!grid) return;
@@ -8872,6 +8930,7 @@ function _renderIncomeCatGrid(entries, planRows) {
               </button>
             `}
           </div>
+          ${(() => { const mb = _incomeMorningBtns(i); return mb ? `<div class="exp-cat-row-morning">${mb}</div>` : ''; })()}
         </div>`;
     }).join('');
     return `
