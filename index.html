@@ -5406,7 +5406,7 @@
       <li>הכנס את הקוד הזה:
         <div style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:8px">
           <div id="dc-user-code" style="font-family:'Rubik','Heebo',sans-serif;font-size:30px;font-weight:900;letter-spacing:0.1em;color:#d4a574;background:rgba(212,165,116,0.12);border:1px solid rgba(212,165,116,0.35);border-radius:12px;padding:10px 18px">—</div>
-          <button onclick="_copyDcCode()" style="background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:9px 13px;color:#f4ede0;font-weight:700;font-family:'Heebo',sans-serif;cursor:pointer;font-size:12px">📋 העתק</button>
+          <button onclick="_copyDcCode()" style="background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:10px;padding:9px 13px;color:#f4ede0;font-weight:700;font-family:'Heebo',sans-serif;cursor:pointer;font-size:12px"><svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-clipboard"/></svg> העתק</button>
         </div>
       </li>
       <li>אשר את חשבון Google שלך — האפליקציה תתחבר אוטומטית.</li>
@@ -5438,12 +5438,12 @@
       <strong style="color:#f4ede0">אם אתה רואה Error 400 redirect_uri_mismatch:</strong><br>
       ה-URI שצריך להיות רשום ב-<strong>Authorized redirect URIs</strong> שלך:<br>
       <code id="mp-redirect-uri" style="display:block;background:rgba(0,0,0,0.3);padding:6px 8px;border-radius:6px;margin:4px 0;font-size:10px;word-break:break-all">…</code>
-      <button onclick="_copyRedirectUri()" style="background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:6px;padding:4px 8px;color:#d4a574;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">📋 העתק כתובת</button>
+      <button onclick="_copyRedirectUri()" style="background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:6px;padding:4px 8px;color:#d4a574;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">העתק כתובת</button>
     </div>
     <details style="margin-top:10px;font-size:11px;color:rgba(244,237,224,0.55)">
       <summary style="cursor:pointer;color:#d4a574">לחץ אם הסאפארי לא נפתח</summary>
       <input id="mp-auth-url" type="text" readonly style="width:100%;border:1px solid rgba(255,255,255,0.10);border-radius:8px;padding:8px 10px;font-size:10px;background:rgba(0,0,0,0.3);color:#f4ede0;margin-top:6px;font-family:monospace"/>
-      <button onclick="_copyAuthUrl()" style="background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:6px;padding:4px 8px;color:#d4a574;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">📋 העתק את כתובת ההתחברות</button>
+      <button onclick="_copyAuthUrl()" style="background:transparent;border:1px solid rgba(255,255,255,0.18);border-radius:6px;padding:4px 8px;color:#d4a574;font-size:11px;font-weight:700;cursor:pointer;margin-top:4px">העתק את כתובת ההתחברות</button>
     </details>
     <div class="notif-actions">
       <button type="button" class="notif-close" onclick="_closeManualPasteModal()">סגור</button>
@@ -5612,7 +5612,7 @@
 
     <div class="notif-section-title">קבלות אוטומטיות (Morning)</div>
     <div style="font-size:11px;color:rgba(244,237,224,0.5);margin-bottom:10px;line-height:1.5">
-      אחרי חיבור Morning — בכל הכנסה ששולמה יופיע כפתור <strong>"🧾 צור קבלה"</strong>. הקבלה נוצרת רק כשאתה לוחץ עליו (לא אוטומטית). <span id="morning-conn-dot" style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(220,60,60,0.18);color:#ff8b6b;font-weight:700;font-size:10.5px;margin-right:6px">לא מחובר</span>
+      אחרי חיבור Morning — בכל הכנסה ששולמה יופיע כפתור <strong>"צור קבלה"</strong>. הקבלה נוצרת רק כשאתה לוחץ עליו (לא אוטומטית). <span id="morning-conn-dot" style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(220,60,60,0.18);color:#ff8b6b;font-weight:700;font-size:10.5px;margin-right:6px">לא מחובר</span>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
       <input id="morning-id" type="text" placeholder="Morning API ID" autocomplete="off" autocapitalize="off" spellcheck="false"
@@ -5685,7 +5685,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v348</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v349</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5858,7 +5858,7 @@
     <!-- Google Connection Bar -->
     <div id="gcal-bar-disconnected" style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:16px;box-shadow:var(--shadow)">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div style="width:36px;height:36px;background:linear-gradient(135deg,#4285f4,#0f9d58);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📅</div>
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,#4285f4,#0f9d58);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-calendar"/></svg></div>
         <div style="flex:1;min-width:120px">
           <div style="font-size:14px;font-weight:800;color:var(--text)">סנכרון עם גוגל קלנדר</div>
           <div style="font-size:12px;color:var(--text-muted);margin-top:1px" id="gcal-bar-sub">חבר כדי שסשנים ייווצרו גם ביומן גוגל</div>
@@ -5868,7 +5868,7 @@
           style="flex:2;min-width:180px;border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-size:12px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface2);outline:none"
           onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
           oninput="localStorage.setItem('gcal_client_id',this.value)" />
-        <button onclick="connectGoogle()" id="gcal-connect-btn" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;white-space:nowrap">🔗 התחבר עם גוגל</button>
+        <button onclick="connectGoogle()" id="gcal-connect-btn" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;white-space:nowrap">התחבר עם גוגל</button>
       </div>
     </div>
 
@@ -6006,7 +6006,7 @@
     <div class="table-card">
       <div class="table-header"><h3>פעולות אחרונות</h3></div>
       <div id="recent-list">
-        <div class="empty-state"><div class="ei">📭</div><p>אין פעולות עדיין</p></div>
+        <div class="empty-state"><div class="ei"><svg><use href="#ic-list"/></svg></div><p>אין פעולות עדיין</p></div>
       </div>
     </div>
 
@@ -6803,7 +6803,7 @@
     <div class="detail-wrap">
       <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
         <button class="btn btn-back" onclick="showPage('profiles')">← חזרה לפרופילים</button>
-        <button class="btn btn-danger btn-sm" id="detail-delete-btn">🗑 מחיקת לקוח</button>
+        <button class="btn btn-danger btn-sm" id="detail-delete-btn"><svg class="icon" style="width:13px;height:13px"><use href="#ic-trash"/></svg> מחיקת לקוח</button>
       </div>
       <div id="detail-content"></div>
     </div>
@@ -6858,7 +6858,7 @@
   <div class="page" id="page-music-detail">
     <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <button class="btn btn-back" id="music-detail-back">← חזרה</button>
-      <button class="btn btn-danger btn-sm" id="music-detail-delete">🗑 מחיקה</button>
+      <button class="btn btn-danger btn-sm" id="music-detail-delete"><svg class="icon" style="width:13px;height:13px"><use href="#ic-trash"/></svg> מחיקה</button>
     </div>
     <div id="music-detail-content"></div>
   </div>
@@ -6894,7 +6894,7 @@
   <div class="modal modal-wide" style="padding:0;overflow:hidden">
     <div id="ctr-viewer-body" style="padding:24px 24px 8px;max-height:75vh;overflow-y:auto;background:linear-gradient(180deg,#fdf8f0 0%,#fff 100%);color:#2a1810;border-radius:20px 20px 0 0"></div>
     <div style="padding:14px 18px calc(14px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px">
-      <button class="btn btn-primary" style="flex:1" onclick="ctrShareCopy()">📤 שלח עותק ללקוח</button>
+      <button class="btn btn-primary btn-icon" style="flex:1" onclick="ctrShareCopy()"><svg class="btn-svg"><use href="#ic-upload"/></svg><span>שלח עותק ללקוח</span></button>
       <button class="btn btn-ghost" onclick="closeModal('ctr-viewer')">סגור</button>
     </div>
   </div>
@@ -7168,7 +7168,7 @@
     <div style="border-top:1px solid var(--border);margin-top:8px;padding-top:12px">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:600;font-size:14px">
         <input type="checkbox" id="exp-recurring" onchange="toggleRecurringUI()" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer">
-        🔁 הוצאה קבועה — חוזרת כל חודש
+        <svg class="icon" style="width:14px;height:14px"><use href="#ic-repeat"/></svg> הוצאה קבועה — חוזרת כל חודש
       </label>
       <div id="exp-recurring-opts" style="display:none;margin-top:10px">
         <div class="form-group" style="margin-bottom:0">
@@ -7213,7 +7213,7 @@
     <div id="gmail-results" style="max-height:46vh;overflow:auto;margin-top:4px"></div>
 
     <div class="modal-actions" id="gmail-footer" style="display:none">
-      <button class="btn btn-primary" onclick="gmailImportSelected()">➕ הוסף נבחרים כהוצאות</button>
+      <button class="btn btn-primary" onclick="gmailImportSelected()">+ הוסף נבחרים כהוצאות</button>
       <button class="btn btn-ghost" onclick="gmailExportCSV()">⬇️ ייצוא CSV</button>
       <button class="btn btn-ghost" onclick="closeModal('gmail')">סגירה</button>
     </div>
@@ -7312,18 +7312,18 @@
     <div class="form-group">
       <label>סוג סשן *</label>
       <select id="ses-type">
-        <option value="הקלטה">🎙️ הקלטה</option>
-        <option value="מיקס ומאסטרינג">🎚️ מיקס ומאסטרינג</option>
-        <option value="הפקה מוזיקלית">🎵 הפקה מוזיקלית</option>
-        <option value="עריכה">✂️ עריכה</option>
-        <option value="פגישה">🤝 פגישה</option>
-        <option value="אחר">📌 אחר</option>
+        <option value="הקלטה">הקלטה</option>
+        <option value="מיקס ומאסטרינג">מיקס ומאסטרינג</option>
+        <option value="הפקה מוזיקלית">הפקה מוזיקלית</option>
+        <option value="עריכה">עריכה</option>
+        <option value="פגישה">פגישה</option>
+        <option value="אחר">אחר</option>
       </select>
     </div>
     <div class="form-group"><label>סטטוס</label>
       <select id="ses-status">
-        <option value="scheduled">📅 מתוכנן</option>
-        <option value="completed">✅ הושלם</option>
+        <option value="scheduled">מתוכנן</option>
+        <option value="completed">הושלם</option>
         <option value="cancelled">❌ בוטל</option>
       </select>
     </div>
@@ -7344,11 +7344,11 @@
     <div class="form-group"><label>טלפון</label><input type="tel" id="qc-phone" placeholder="050-0000000"/></div>
     <div class="form-group"><label>סוג</label>
       <select id="qc-type">
-        <option value="זמר/ת">🎤 זמר/ת</option>
-        <option value="מפיק">🎹 מפיק</option>
-        <option value="להקה">🎸 להקה</option>
-        <option value="פודקאסט">🎙️ פודקאסט</option>
-        <option value="אחר">📌 אחר</option>
+        <option value="זמר/ת">זמר/ת</option>
+        <option value="מפיק">מפיק</option>
+        <option value="להקה">להקה</option>
+        <option value="פודקאסט">פודקאסט</option>
+        <option value="אחר">אחר</option>
       </select>
     </div>
     <div class="modal-actions">
@@ -8135,11 +8135,11 @@ function renderProfiles() {
   }
 
   document.getElementById('pr-active-grid').innerHTML = active.length === 0 && prFilter !== 'inactive'
-    ? `<div class="empty-state" style="grid-column:1/-1"><div class="ei">🎵</div><p>אין לקוחות פעילים</p></div>`
+    ? `<div class="empty-state" style="grid-column:1/-1"><div class="ei"><svg><use href="#ic-users"/></svg></div><p>אין לקוחות פעילים</p></div>`
     : active.map((c, i) => cardHtml(c, i)).join('');
 
   document.getElementById('pr-inactive-grid').innerHTML = inactive.length === 0 && prFilter !== 'active'
-    ? `<div class="empty-state" style="grid-column:1/-1"><div class="ei">💤</div><p>אין לקוחות לא פעילים</p></div>`
+    ? `<div class="empty-state" style="grid-column:1/-1"><div class="ei"><svg><use href="#ic-moon"/></svg></div><p>אין לקוחות לא פעילים</p></div>`
     : inactive.map((c, i) => cardHtml(c, i)).join('');
 }
 
@@ -8289,7 +8289,7 @@ function showProfileDetail(id) {
 
     <!-- editable fields -->
     <div class="detail-section">
-      <h3>✏️ פרטי לקוח</h3>
+      <h3>פרטי לקוח</h3>
       <div class="contact-list">
         ${editRow('👤', c.name,     id, 'name')}
         ${editRow('🎵', c.type,     id, 'type')}
@@ -8816,16 +8816,16 @@ function renderIncome() {
       <td style="color:var(--text-muted)">${fmtDate(p.dueDate)}</td>
       <td>${p.clientName || '—'}</td>
       <td style="color:var(--text-muted)">${p.description}</td>
-      <td><span class="badge badge-purple">⏳ תשלומים</span></td>
+      <td><span class="badge badge-purple">תשלומים</span></td>
       <td style="font-weight:800;color:var(--green)">${fmtMoney(p.amount)}</td>
-      <td><span class="badge ${p.paid ? 'badge-green' : p.overdue ? 'badge-red' : 'badge-gray'}">${p.paid ? '✅ שולם' : p.overdue ? '🔴 באיחור' : 'טרם שולם'}</span></td>
+      <td><span class="badge ${p.paid ? 'badge-green' : p.overdue ? 'badge-red' : 'badge-gray'}">${p.paid ? 'שולם' : p.overdue ? 'באיחור' : 'טרם שולם'}</span></td>
       <td style="display:none"></td>
     </tr>
   `).join('');
 
   tbody.innerHTML = incomeRows + (planInstDisplay.length ? `
     <tr><td colspan="7" style="padding:8px 16px;background:var(--surface2);font-size:13px;font-weight:700;color:var(--text-muted);letter-spacing:.05em">
-      🔁 תשלומים מתוכניות — מידע בלבד
+      <svg class="icon" style="width:13px;height:13px;vertical-align:-2px"><use href="#ic-repeat"/></svg> תשלומים מתוכניות — מידע בלבד
     </td></tr>
     ${planRows}
   ` : '');
@@ -8852,12 +8852,13 @@ function _incomeMorningBtns(i) {
     if (i.morningDocId) {
       const url = (i.morningDocUrl || '').replace(/'/g, "\\'");
       const num = i.morningDocNumber || '';
-      out += '<button class="row-morning-btn ok" onclick="morningOpenReceipt(\'' + url + '\')" title="פתח קבלה">🧾 ' + (num ? '#' + num : 'קבלה') + '</button>'
+      const rcptIcon = '<svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-doc-signed"/></svg> ';
+      out += '<button class="row-morning-btn ok" onclick="morningOpenReceipt(\'' + url + '\')" title="פתח קבלה">' + rcptIcon + (num ? '#' + num : 'קבלה') + '</button>'
            + '<button class="row-morning-btn danger" onclick="morningCancelReceipt(\'' + idEsc + '\')" title="בטל קבלה (זיכוי ב-Morning)">✕</button>';
     } else if (i.morningError) {
-      out += '<button class="row-morning-btn warn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="נסה שוב ליצור קבלה">⚠️ נסה קבלה</button>';
+      out += '<button class="row-morning-btn warn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="נסה שוב ליצור קבלה"><svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-alert-circle"/></svg> נסה קבלה</button>';
     } else {
-      out += '<button class="row-morning-btn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="צור קבלה ב-Morning">🧾 צור קבלה</button>';
+      out += '<button class="row-morning-btn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="צור קבלה ב-Morning"><svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-doc-signed"/></svg> צור קבלה</button>';
     }
   }
 
@@ -9035,7 +9036,7 @@ window.editExpense = function(id) {
   const recOpts = document.getElementById('exp-recurring-opts');
   if (recOpts) recOpts.style.display = 'none';
   const title = document.getElementById('exp-modal-title');
-  if (title) title.textContent = '✏️ עריכת הוצאה';
+  if (title) title.textContent = 'עריכת הוצאה';
   document.getElementById('modal-expense').classList.add('open');
 };
 
@@ -10685,8 +10686,8 @@ function renderExpenses() {
                 <td>${isActive ? `<button onclick="toggleRecurringPaid('${r.id}')" style="border:none;border-radius:8px;padding:5px 12px;font-size:13px;font-weight:700;cursor:pointer;${isPaidThisMonth?'background:var(--pill-green-bg);color:var(--pill-green-text)':'background:var(--red-light);color:var(--red)'}">${isPaidThisMonth?'✓ שולם':'שולם'}</button>` : '<span style="color:var(--text-muted);font-size:14px">לא פעיל</span>'}</td>
                 <td>
                   <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
-                    <button class="btn btn-sm" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:700;padding:4px 10px" onclick="editRecurringForMonth('${r.id}')" title="סכום שונה לחודש זה">✏️</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteRecurring('${r.id}')" title="מחק לחלוטין">🗑</button>
+                    <button class="row-icon-btn" onclick="editRecurringForMonth('${r.id}')" title="סכום שונה לחודש זה"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-edit"/></svg></button>
+                    <button class="row-icon-btn" onclick="deleteRecurring('${r.id}')" title="מחק לחלוטין"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-trash"/></svg></button>
                   </div>
                 </td>
               </tr>`;
@@ -10909,7 +10910,7 @@ function renderDashboard() {
   ].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,10);
 
   document.getElementById('recent-list').innerHTML = allTx.length === 0
-    ? `<div class="empty-state"><div class="ei">📭</div><p>אין פעולות עדיין</p></div>`
+    ? `<div class="empty-state"><div class="ei"><svg><use href="#ic-list"/></svg></div><p>אין פעולות עדיין</p></div>`
     : allTx.map(tx => `
       <div class="recent-item">
         <div class="recent-item-r">
@@ -11422,7 +11423,7 @@ function renderProjects() {
   if (!grid) return;
 
   if (projects.length === 0) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="ei">🎵</div><p>אין פרויקטים עדיין. הוסף הכנסות מסוג הפקה מוזיקלית, מיקס ומאסטרינג או הקלטה.</p></div>`;
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="ei"><svg><use href="#ic-music-note"/></svg></div><p>אין פרויקטים עדיין. הוסף הכנסות מסוג הפקה מוזיקלית, מיקס ומאסטרינג או הקלטה.</p></div>`;
     return;
   }
 
@@ -12105,7 +12106,7 @@ function renderWeeklyView() {
   });
 
   if (!finalHtml) {
-    finalHtml = `<div class="empty-state"><div class="ei">🗓️</div><p>אין אירועים — לחץ "+ סשן חדש" כדי להתחיל</p></div>`;
+    finalHtml = `<div class="empty-state"><div class="ei"><svg><use href="#ic-calendar"/></svg></div><p>אין אירועים — לחץ "+ סשן חדש" כדי להתחיל</p></div>`;
   }
 
   container.innerHTML = finalHtml;
@@ -12152,7 +12153,7 @@ function selectCalDay(dateStr, noToggle) {
       const info = SES_TYPES[s.type] || SES_TYPES['אחר'];
       const dur  = sesDurationLabel(s.startTime, s.endTime);
       const statusBadge = s.status === 'completed'
-        ? `<span class="badge badge-green">✅ הושלם</span>`
+        ? `<span class="badge badge-green">הושלם</span>`
         : s.status === 'cancelled'
         ? `<span class="badge badge-gray">❌ בוטל</span>`
         : `<span style="display:flex;gap:6px">
@@ -12911,7 +12912,7 @@ function renderGcalEvents(events) {
   countEl.textContent = events.length + ' אירועים';
 
   if (!events.length) {
-    container.innerHTML = '<div class="empty-state"><div class="ei">📅</div><p>אין אירועים החודש ביומן גוגל</p></div>';
+    container.innerHTML = '<div class="empty-state"><div class="ei"><svg><use href="#ic-calendar"/></svg></div><p>אין אירועים החודש ביומן גוגל</p></div>';
     return;
   }
 
@@ -14892,7 +14893,7 @@ function _stuRenderDetail(s){
         '<div style="font-weight:800">' + fmtMoney(p.amount) + '</div>' +
         '<div style="font-size:11.5px;color:var(--text-muted)">' + (p.date ? new Date(p.date).toLocaleDateString('he-IL') : '') + (p.note ? ' · ' + escapeHtml(p.note) : '') + '</div>' +
       '</div>' +
-      '<button class="btn btn-ghost btn-sm" onclick="stuDeletePayment(\'' + s.id + '\',' + i + ')" style="color:#dc2626">🗑</button>' +
+      '<button class="row-icon-btn" onclick="stuDeletePayment(\'' + s.id + '\',' + i + ')" aria-label="מחק" style="color:#dc2626"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-trash"/></svg></button>' +
     '</div>'
   ).join('');
 
@@ -14999,10 +15000,11 @@ function _ctrCardHtml(c){
   const signedAtLabel = signed && c.signature && c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '';
   // Signed: primary = one-tap share, secondary = preview.
   // Draft/sent: primary = send link to client.
+  const _ctrIco = (id) => '<svg viewBox="0 0 24 24" style="width:13px;height:13px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#' + id + '"/></svg> ';
   const primaryAction = signed
-    ? '<button class="btn btn-primary btn-sm" onclick="shareSignedCopy(\'' + c.id + '\', this)">📤 שלח עותק</button>' +
-      '<button class="btn btn-ghost btn-sm" onclick="openContractViewer(\'' + c.id + '\')">👁 צפה</button>'
-    : '<button class="btn btn-ghost btn-sm" onclick="shareContract(\'' + c.id + '\')">🔗 שלח לחתימה</button>';
+    ? '<button class="btn btn-primary btn-sm" onclick="shareSignedCopy(\'' + c.id + '\', this)">' + _ctrIco('ic-upload') + 'שלח עותק</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openContractViewer(\'' + c.id + '\')">' + _ctrIco('ic-eye') + 'צפה</button>'
+    : '<button class="btn btn-ghost btn-sm" onclick="shareContract(\'' + c.id + '\')">' + _ctrIco('ic-link') + 'שלח לחתימה</button>';
   return '<div class="ctr-card' + (signed ? ' signed' : '') + '">' +
     '<div class="ctr-card-head">' +
       '<div class="ctr-card-title">' + escapeHtml(c.songTitle || 'ללא שם') + '</div>' +
@@ -15770,7 +15772,7 @@ function _renderMusicList(type) {
     items = items.filter(s => [s.title, s.singer, s.cowriters, s.producer, s.notes].filter(Boolean).join(' ').toLowerCase().includes(searchQ));
   }
   if (items.length === 0) {
-    listEl.innerHTML = `<div class="empty-state"><div class="ei">${type==='released'?'🎵':'🎙'}</div><p>אין ${type==='released'?'שירים':'סקיצות'} עדיין</p></div>`;
+    listEl.innerHTML = `<div class="empty-state"><div class="ei"><svg><use href="#${type==='released'?'ic-music-note':'ic-cat-mic'}"/></svg></div><p>אין ${type==='released'?'שירים':'סקיצות'} עדיין</p></div>`;
     return;
   }
   listEl.innerHTML = items.map(s => `
@@ -15814,7 +15816,7 @@ async function openMusicDetail(type, id) {
   if (!content) return;
   content.innerHTML = `
     <div class="table-card" style="margin-bottom:20px">
-      <div class="table-header"><h3>${type==='released'?'🎵':'🎙'} ${s.title}</h3></div>
+      <div class="table-header"><h3><svg class="icon-lg"><use href="#${type==='released'?'ic-music-note':'ic-cat-mic'}"/></svg>${s.title}</h3></div>
       <div style="padding:16px 20px;display:grid;gap:14px">
         <div class="form-group" style="margin:0">
           <label>שם</label>
@@ -15855,7 +15857,7 @@ async function openMusicDetail(type, id) {
       </div>
     </div>
     <div class="table-card">
-      <div class="table-header"><h3>🎧 קובץ אודיו</h3></div>
+      <div class="table-header"><h3><svg class="icon-lg"><use href="#ic-music-note"/></svg>קובץ אודיו</h3></div>
       <div style="padding:16px 20px">
         ${audioSrc ? `
           <div style="margin-bottom:12px">
@@ -16215,11 +16217,11 @@ function dxItemMenu(path, name){
       '<div class="dx-share-title">' + display.replace(/</g,'&lt;') + '</div>' +
       '<button class="dx-share-opt" data-mode="play" data-path="' + safeP + '" data-name="' + safeN + '">▶ נגן</button>' +
       '<button class="dx-share-opt" data-mode="version" data-path="' + safeP + '" data-name="' + safeN + '">' +
-        '🔀 הפוך לגרסה של…' +
+        'הפוך לגרסה של…' +
         '<span>לקבץ עם שיר אחר כ-V2/V3. אפשר להחליף ביניהם מיד תוך כדי נגינה.</span>' +
       '</button>' +
-      '<button class="dx-share-opt" data-mode="share" data-path="' + safeP + '" data-name="' + safeN + '">📤 שתף ב-WhatsApp / יישומים</button>' +
-      (inGroup ? '<button class="dx-share-opt" data-mode="split" data-path="' + safeP + '" data-name="' + safeN + '" style="color:#e08a8a">🚪 הפרד מהקבוצה</button>' : '') +
+      '<button class="dx-share-opt" data-mode="share" data-path="' + safeP + '" data-name="' + safeN + '"><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-upload"/></svg> שתף ב-WhatsApp / יישומים</button>' +
+      (inGroup ? '<button class="dx-share-opt" data-mode="split" data-path="' + safeP + '" data-name="' + safeN + '" style="color:#e08a8a">הפרד מהקבוצה</button>' : '') +
       '<button class="dx-share-opt" data-mode="hide" data-path="' + safeP + '" data-name="' + safeN + '" style="color:#e08a8a"><svg class="icon"><use href="#ic-trash"/></svg> מחק מהאפליקציה' +
         '<span>הקובץ נשאר ב-Dropbox. אפשר לשחזר מההגדרות (⚙).</span>' +
       '</button>' +
@@ -16273,11 +16275,11 @@ function shareDropboxFile(path, name){
     '<div class="dx-share-sheet">' +
       '<div class="dx-share-title">' + name + '</div>' +
       '<button class="dx-share-opt" data-mode="audio" data-path="' + safeP + '" data-name="' + safeN + '">' +
-        '🎵 שיתוף כקובץ אודיו' +
+        'שיתוף כקובץ אודיו' +
         '<span>נראה כאודיו בצ׳אט, יש סיכוי לדחיסת איכות ע״י WhatsApp</span>' +
       '</button>' +
       '<button class="dx-share-opt" data-mode="doc" data-path="' + safeP + '" data-name="' + safeN + '">' +
-        '📄 שיתוף כמסמך — איכות מלאה' +
+        'שיתוף כמסמך — איכות מלאה' +
         '<span>בדיוק כמו "קבצים → מסמך" ב-WhatsApp. נראה כקובץ מצורף, איכות מלאה.</span>' +
       '</button>' +
       '<button class="dx-share-cancel">ביטול</button>' +
@@ -16346,7 +16348,7 @@ async function dxMergeAsVersion(path, name){
   const m = document.createElement('div');
   m.className = 'dx-share-overlay';
   let inner = '<div class="dx-share-sheet">' +
-    '<div class="dx-share-title">🔀 הפוך לגרסה של…</div>' +
+    '<div class="dx-share-title">הפוך לגרסה של…</div>' +
     '<div style="font-size:12px;color:#b3a690;text-align:center;margin:-2px 0 8px">בחר את השיר הראשי — "' + _dxDisplay(path, name).replace(/</g,'&lt;') + '" יהפוך לגרסה נוספת שלו</div>';
   if (!all.length) {
     inner += '<div class="dx-target-empty">אין שירים אחרים ברשימה לקבץ אליהם.</div>';
@@ -17363,7 +17365,7 @@ function gmailRenderConn() {
         </div>
       </div>
       ${hasCid ? '' : `<input id="gmail-client-id" type="text" placeholder="Client ID מגוגל קלאוד..." style="width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface2);outline:none;margin-bottom:10px"/>`}
-      <button class="btn btn-primary" style="width:100%" onclick="gmailConnect()">🔗 התחבר עם גוגל</button>
+      <button class="btn btn-primary" style="width:100%" onclick="gmailConnect()">התחבר עם גוגל</button>
       ${hasCid ? '' : `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5">צריך OAuth Client ID מ‑<a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent)">Google Cloud</a>, ולהפעיל את <b>Gmail API</b> בפרויקט. אותו Client ID משמש גם ליומן.</div>`}
     </div>`;
 }
@@ -17497,7 +17499,7 @@ async function gmailScan() {
     } while (pageToken && ids.length < 300);
 
     if (!ids.length) {
-      results.innerHTML = '<div class="empty-state"><div class="ei">📭</div><p>לא נמצאו מיילים תואמים בטווח שבחרת</p></div>';
+      results.innerHTML = '<div class="empty-state"><div class="ei"><svg><use href="#ic-mail"/></svg></div><p>לא נמצאו מיילים תואמים בטווח שבחרת</p></div>';
       status.textContent = '';
       return;
     }
@@ -18395,7 +18397,7 @@ function renderTasks() {
     const doneTasks = tasks.filter(t => t.done)
       .sort((a,b) => new Date(b.dueDate || b.createdAt || 0) - new Date(a.dueDate || a.createdAt || 0));
     if (doneTasks.length === 0) {
-      container.innerHTML = `<div class="empty-state"><div class="ei">✅</div><p>אין משימות שבוצעו עדיין</p></div>`;
+      container.innerHTML = `<div class="empty-state"><div class="ei"><svg><use href="#ic-check-circle"/></svg></div><p>אין משימות שבוצעו עדיין</p></div>`;
       return;
     }
     container.innerHTML = renderTaskSection({ kind:'done', icon:'✅', title:'משימות שבוצעו', tasks: doneTasks, prioColor, prioLabel });
@@ -18405,7 +18407,7 @@ function renderTasks() {
   // Pending tasks — smart grouping
   const pendingTasks = tasks.filter(t => !t.done);
   if (pendingTasks.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="ei">🎯</div><p>אין משימות פתוחות — אתה אלוף, ביג׳ונדון</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="ei"><svg><use href="#ic-target"/></svg></div><p>אין משימות פתוחות — אתה אלוף, ביג׳ונדון</p></div>`;
     return;
   }
 
@@ -20431,7 +20433,7 @@ function renderLobbyTasks() {
       '<div class="lobby-task-check"></div>' +
       '<div class="lobby-task-text">' + _escHtml(t.text) + '</div>' +
       dateChip +
-      '<button class="lobby-task-edit-btn" onclick="editLobbyTask(event,\'' + safeId + '\')" aria-label="ערוך">✏️</button>' +
+      '<button class="lobby-task-edit-btn" onclick="editLobbyTask(event,\'' + safeId + '\')" aria-label="ערוך"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-edit"/></svg></button>' +
     '</div>';
   }).join('') + (overflow > 0 ? '<div class="lobby-task-more">ועוד ' + overflow + ' משימות</div>' : '');
   _initLobbySortable();
@@ -20985,7 +20987,7 @@ function renderDaily() {
   const done = items.filter(t => t.done).length;
 
   if (total === 0) {
-    listEl.innerHTML = `<div class="empty-state"><div class="ei">${isToday ? '☀️' : '🌙'}</div><p>${isToday ? 'בוקר טוב! מה על הסדר היום?' : 'אין משימות ליום הזה'}</p></div>`;
+    listEl.innerHTML = `<div class="empty-state"><div class="ei"><svg><use href="#${isToday ? 'ic-sun-max' : 'ic-moon'}"/></svg></div><p>${isToday ? 'בוקר טוב! מה על הסדר היום?' : 'אין משימות ליום הזה'}</p></div>`;
     return;
   }
 
