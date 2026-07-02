@@ -5685,7 +5685,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v349</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v350</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8615,6 +8615,21 @@ function renderIncome() {
     return true;
   });
 
+  // ── גרירת חובות: הכנסה שלא שולמה בחודש קודם ממשיכה להופיע ──
+  // בכל חודש עוקב עד שתסומן "שולם". לוגיקת תצוגה בלבד — התאריך
+  // המקורי לא משתנה, ולכן זה חל אוטומטית גם על כל הנתונים הקיימים.
+  // הפריטים הנגררים נספרים ב"נשאר להכניס" של החודש המוצג.
+  const _monthStart = new Date(curYear, curMonth, 1);
+  const carryEntries = income.filter(i => {
+    if ((i.status || 'pending') === 'paid') return false;
+    const d = new Date(i.date);
+    if (isNaN(d.getTime()) || d >= _monthStart) return false;
+    if (cf && i.clientId !== cf) return false;
+    if (search && !(i.description.toLowerCase().includes(search) || (i.clientName||'').toLowerCase().includes(search))) return false;
+    return true;
+  }).map(i => Object.assign({}, i, { _carried: true }));
+  if (carryEntries.length) monthEntries.unshift(...carryEntries);
+
   // התקבל בפועל = רק status:'paid' (או ישנות בלי status נחשבות כשולמו)
   const paid    = monthEntries.filter(i => (i.status || 'pending') === 'paid');
   const notPaid = monthEntries.filter(i => (i.status || 'pending') !== 'paid');
@@ -8915,7 +8930,7 @@ function _renderIncomeCatGrid(entries, planRows) {
         <div class="exp-cat-row ${isPaid ? 'paid' : ''}">
           <div class="exp-cat-row-main">
             <div class="exp-cat-row-desc">${i.description || '—'}</div>
-            <div class="exp-cat-row-meta">${fmtDate(i.date)}${i.clientName ? ' · ' + i.clientName : ''}</div>
+            <div class="exp-cat-row-meta">${fmtDate(i.date)}${i.clientName ? ' · ' + i.clientName : ''}${i._carried ? ' · <span style="color:var(--orange);font-weight:800">נגרר מחודש קודם</span>' : ''}</div>
           </div>
           <div class="exp-cat-row-amt" style="color:${isPaid ? 'var(--green)' : 'var(--accent)'}">${fmtMoney(i.amount)}</div>
           <div class="exp-cat-row-actions">
