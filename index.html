@@ -1460,6 +1460,145 @@
       transition: background .15s, color .15s, border-color .15s;
     }
     .income-extra-toggle:hover { background: var(--surface); color: var(--text); border-color: var(--accent); }
+
+    /* ===== MY PATH (הדרך שלי) ===== */
+    .mp-star-card {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 20px; padding: 22px 24px; margin-bottom: 16px;
+      box-shadow: 0 10px 30px var(--accent-glow);
+    }
+    .mp-star-label {
+      font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.75); text-transform: uppercase; margin-bottom: 8px;
+    }
+    .mp-star-input {
+      width: 100%; background: transparent; border: none; outline: none; resize: none;
+      color: #fff; font-size: 21px; font-weight: 800; line-height: 1.45;
+      font-family: 'Frank Ruhl Libre', 'Heebo', serif;
+      letter-spacing: -0.01em; direction: rtl;
+    }
+    .mp-star-input::placeholder { color: rgba(255,255,255,0.55); font-weight: 600; }
+
+    .mp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    @media (max-width: 720px) { .mp-grid2 { grid-template-columns: 1fr; } }
+    .mp-card { padding: 18px 20px; margin-bottom: 16px; }
+    .mp-grid2 .mp-card { margin-bottom: 0; }
+    .mp-label {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 800; color: var(--text-muted);
+      letter-spacing: 0.05em; margin-bottom: 10px;
+    }
+    .mp-section-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 17px; font-weight: 900; color: var(--text);
+      letter-spacing: -0.01em; margin-bottom: 6px;
+    }
+    .mp-sub { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px; }
+    .mp-textarea {
+      width: 100%; background: var(--surface2);
+      border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 12px 14px; font-size: 14.5px; line-height: 1.65;
+      color: var(--text); font-family: inherit; direction: rtl;
+      outline: none; resize: vertical; min-height: 110px;
+      transition: border-color .15s;
+    }
+    .mp-textarea:focus { border-color: var(--accent); }
+
+    .mp-target-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+    @media (max-width: 720px) { .mp-target-row { grid-template-columns: 1fr; } }
+
+    .mp-bar-wrap { margin-top: 14px; }
+    .mp-bar-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .mp-bar-name { font-size: 12.5px; font-weight: 800; color: var(--text); }
+    .mp-bar-nums { font-size: 12px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .mp-bar-track { height: 8px; background: var(--surface3); border-radius: 5px; overflow: hidden; }
+    .mp-bar-fill { height: 100%; border-radius: 5px; background: var(--accent); transition: width .5s; }
+    .mp-pace {
+      margin-top: 14px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px;
+      font-size: 13px; line-height: 1.6; color: var(--text); font-weight: 600;
+    }
+
+    .mp-block-row {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 10px 4px; border-bottom: 1px solid var(--border);
+    }
+    .mp-block-row:last-of-type { border-bottom: none; }
+    .mp-block-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; color: var(--text); }
+    .mp-block-price { font-size: 12px; color: var(--text-muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .mp-stepper { display: flex; align-items: center; gap: 2px; }
+    .mp-stepper button {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      color: var(--text); font-size: 15px; font-weight: 800;
+      cursor: pointer; font-family: inherit; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .mp-stepper button:hover { border-color: var(--accent); }
+    .mp-stepper .mp-qty {
+      min-width: 30px; text-align: center;
+      font-size: 15px; font-weight: 900; color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .mp-block-total { min-width: 76px; text-align: left; font-size: 14px; font-weight: 900; color: var(--green); font-variant-numeric: tabular-nums; }
+    .mp-add-block { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .mp-add-block input {
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 9px 12px; font-size: 13.5px;
+      color: var(--text); outline: none; font-family: inherit;
+    }
+    .mp-add-block input[type="text"] { flex: 2; min-width: 150px; }
+    .mp-add-block input[type="number"] { flex: 1; min-width: 90px; }
+    .mp-plan-total {
+      margin-top: 14px; border-top: 1.5px solid var(--border); padding-top: 14px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .mp-plan-line { display: flex; justify-content: space-between; font-size: 13.5px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .mp-plan-line strong { color: var(--text); font-size: 15px; }
+    .mp-plan-line.big strong { font-size: 19px; font-weight: 900; }
+    .mp-plan-note {
+      margin-top: 6px; border-radius: 10px; padding: 10px 12px;
+      font-size: 12.5px; font-weight: 700; line-height: 1.55;
+    }
+    .mp-plan-note.good { background: rgba(90,122,46,0.10); border: 1px solid rgba(90,122,46,0.30); color: var(--green); }
+    .mp-plan-note.gap  { background: rgba(196,122,42,0.10); border: 1px solid rgba(196,122,42,0.32); color: var(--orange); }
+    .mp-plan-note.warn { background: rgba(184,68,46,0.08); border: 1px solid rgba(184,68,46,0.28); color: var(--red); }
+
+    .mp-goal-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 4px; border-bottom: 1px solid var(--border);
+    }
+    .mp-goal-row:last-of-type { border-bottom: none; }
+    .mp-goal-check {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border); cursor: pointer; flex-shrink: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: transparent; transition: background .15s, border-color .15s, color .15s;
+      background: transparent; padding: 0;
+    }
+    .mp-goal-check.done { background: var(--green); border-color: var(--green); color: #fff; }
+    .mp-goal-title { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 700; color: var(--text); }
+    .mp-goal-row.done .mp-goal-title { text-decoration: line-through; color: var(--text-muted); }
+    .mp-goal-date {
+      flex-shrink: 0; font-size: 11px; font-weight: 800;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); padding: 3px 9px; border-radius: 999px;
+    }
+    .mp-goal-date.late { color: var(--red); border-color: rgba(184,68,46,0.35); background: rgba(184,68,46,0.07); }
+    .mp-add-goal { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .mp-add-goal input[type="text"] {
+      flex: 2; min-width: 160px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 9px 12px; font-size: 13.5px;
+      color: var(--text); outline: none; font-family: inherit;
+    }
+    .mp-add-goal input[type="month"] {
+      flex: 1; min-width: 120px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 9px 12px; font-size: 13px;
+      color: var(--text); outline: none; font-family: inherit;
+    }
+    .mp-empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: 14px 0; }
     .exp-cat-row {
       display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
       padding: 10px 16px;
@@ -5251,6 +5390,8 @@
   <symbol id="ic-mail"          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></symbol>
   <symbol id="ic-x"             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></symbol>
   <symbol id="ic-flask"         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6L4 19a2 2 0 0 0 1.7 3h12.6A2 2 0 0 0 20 19l-6-10V3"/><line x1="7" y1="14" x2="17" y2="14"/></symbol>
+  <symbol id="ic-compass"       viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5 15.5 8.5"/></symbol>
+  <symbol id="ic-flag"          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="21" x2="5" y2="4"/><path d="M5 4h12l-2.5 4L17 12H5"/></symbol>
 </svg>
 
 <!-- PWA install banner (appears once on mobile if not installed) -->
@@ -5685,7 +5826,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v350</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v351</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5802,6 +5943,7 @@
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg></span> הוצאות</a>
     <a onclick="showPage('schedule')" data-page="schedule"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><circle cx="8" cy="14" r="0.8" fill="currentColor"/><circle cx="12" cy="14" r="0.8" fill="currentColor"/><circle cx="16" cy="14" r="0.8" fill="currentColor"/></svg></span> לוז יומי</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span> תשלומים</a>
+    <a onclick="showPage('mypath')" data-page="mypath"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5 15.5 8.5"/></svg></span> הדרך שלי</a>
     <!-- כרטיסיית לקוחות מוסתרת לפי בקשה — להחזרה: מחק את style="display:none" -->
     <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="8" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> לקוחות</a>
     <!-- "משימות יומיות" tab hidden — the user manages tasks from the
@@ -6470,6 +6612,82 @@
     </div>
   </div>
 
+
+  <!-- ===== MY PATH (הדרך שלי) ===== -->
+  <div class="page" id="page-mypath">
+    <div class="page-header">
+      <div><h2><svg class="icon-lg"><use href="#ic-compass"/></svg>הדרך שלי</h2><p>מי אני רוצה להיות — ואיך אני מגיע לשם</p></div>
+    </div>
+
+    <!-- North star — the one sentence that steers everything -->
+    <div class="mp-star-card">
+      <div class="mp-star-label">הכוכב הצפוני שלי</div>
+      <textarea id="mp-northstar" class="mp-star-input" rows="2"
+        placeholder="משפט אחד שמזכיר לי לאן אני הולך…"
+        oninput="mpSaveText('northStar', this.value)"></textarea>
+    </div>
+
+    <!-- Vision — two guided free-text panels -->
+    <div class="mp-grid2">
+      <div class="table-card mp-card">
+        <div class="mp-label"><svg class="icon"><use href="#ic-eye"/></svg> מי אני בעוד 5 שנים</div>
+        <textarea id="mp-identity" class="mp-textarea" rows="6"
+          placeholder="איפה אני גר, על מה אני עובד, עם מי אני עובד, מה כבר בניתי, איך אני מרגיש כשאני קם בבוקר…"
+          oninput="mpSaveText('identity', this.value)"></textarea>
+      </div>
+      <div class="table-card mp-card">
+        <div class="mp-label"><svg class="icon"><use href="#ic-sun-max"/></svg> איך נראה שבוע בחיים שאני רוצה</div>
+        <textarea id="mp-week" class="mp-textarea" rows="6"
+          placeholder="כמה שעות באולפן, כמה זמן למוזיקה שלי, כמה זמן חופשי, מה אני לא מוכן להתפשר עליו…"
+          oninput="mpSaveText('week', this.value)"></textarea>
+      </div>
+    </div>
+
+    <!-- Financial target -->
+    <div class="table-card mp-card">
+      <div class="mp-section-title"><svg class="icon"><use href="#ic-target"/></svg> היעד — לאן אני מכוון</div>
+      <div class="mp-target-row">
+        <div class="form-group">
+          <label>מחזור חודשי (₪)</label>
+          <input type="number" id="mp-target-rev" min="0" placeholder="25000" oninput="mpSaveTarget('targetRevenue', this.value)"/>
+        </div>
+        <div class="form-group">
+          <label>רווח נקי חודשי (₪)</label>
+          <input type="number" id="mp-target-profit" min="0" placeholder="18000" oninput="mpSaveTarget('targetProfit', this.value)"/>
+        </div>
+        <div class="form-group">
+          <label>עד מתי</label>
+          <input type="month" id="mp-target-date" onchange="mpSaveTarget('targetDate', this.value)"/>
+        </div>
+      </div>
+      <div id="mp-progress"></div>
+    </div>
+
+    <!-- The planner — building blocks -->
+    <div class="table-card mp-card">
+      <div class="mp-section-title"><svg class="icon"><use href="#ic-chart-bars"/></svg> המתכנן — איך אני בונה את זה</div>
+      <div class="mp-sub">המחירים שלך × כמה בחודש = המחזור המתוכנן. שחק עם הכמויות ותראה מתי התוכנית פוגשת את היעד.</div>
+      <div id="mp-blocks"></div>
+      <div class="mp-add-block">
+        <input type="text" id="mp-new-name" placeholder="שירות (למשל: הפקת שיר)"/>
+        <input type="number" id="mp-new-price" min="0" placeholder="מחיר ₪"/>
+        <button class="btn btn-primary btn-sm" onclick="mpAddBlock()">+ הוסף</button>
+      </div>
+      <div id="mp-plan-summary"></div>
+    </div>
+
+    <!-- Personal goals -->
+    <div class="table-card mp-card">
+      <div class="mp-section-title"><svg class="icon"><use href="#ic-flag"/></svg> היעדים שלי בדרך</div>
+      <div id="mp-goals"></div>
+      <div class="mp-add-goal">
+        <input type="text" id="mp-goal-text" placeholder="יעד חדש… (למשל: אלבום ראשון, אולפן משלי)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();mpAddGoal();}"/>
+        <input type="month" id="mp-goal-date" title="עד מתי (לא חובה)"/>
+        <button class="btn btn-primary btn-sm" onclick="mpAddGoal()">+ הוסף</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ===== DAILY BOARD (לוח יומי) ===== -->
   <div class="page" id="page-daily">
@@ -7542,7 +7760,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -7768,7 +7986,7 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {productions:0, income:1, expenses:2, schedule:3, installments:4, profiles:5, daily:6, workshops:7, proposals:8, contracts:9, students:10, dashboard:11};
+  const map = {productions:0, income:1, expenses:2, schedule:3, installments:4, mypath:5, profiles:6, daily:7, workshops:8, proposals:9, contracts:10, students:11, dashboard:12};
   if (name === 'daily') _dailyDate = dailyDateStr();
   if (name === 'schedule') {
     _scheduleDate = dailyDateStr();
@@ -7796,6 +8014,7 @@ function showPage(name) {
   if (idx !== undefined) navLinks[idx]?.classList.add('active');
   if (name === 'gcal') { setTimeout(() => { gcalInitPage(); }, 50); }
   if (name === 'productions') { try { renderProductions(); } catch(_) {} }
+  if (name === 'mypath') { try { renderMyPath(); } catch(_) {} }
   refreshAll();
 }
 
@@ -7803,7 +8022,7 @@ function showPage(name) {
 // Horizontal finger swipe on the page area switches between tabs.
 // RTL: swipe-left = next tab, swipe-right = previous tab.
 (function setupSwipeNav() {
-  const BIZ_TABS   = ['productions','income','expenses','schedule','installments','workshops','proposals','contracts','students','dashboard'];
+  const BIZ_TABS   = ['productions','income','expenses','schedule','installments','mypath','workshops','proposals','contracts','students','dashboard'];
   const MUSIC_TABS = ['released','sketches'];
   const MIN_DX = 70;        // min horizontal distance (px)
   const MAX_DT = 600;       // max swipe duration (ms)
@@ -10164,6 +10383,306 @@ window.toggleIncomeExtra = function() {
   try { show = localStorage.getItem('_income_extra_open') === '1'; } catch (_) {}
   try { localStorage.setItem('_income_extra_open', show ? '0' : '1'); } catch (_) {}
   _applyIncomeExtra();
+};
+
+// ═════════════════════════════════════════════════════════════════
+//  MY PATH (הדרך שלי) — life vision + financial planning grounded
+//  in the user's real numbers. State lives in one object store
+//  ('my_path', synced via ALL_KEYS): vision texts, a financial
+//  target (monthly revenue / net / by-when), building blocks
+//  (service × price × qty-per-month), and personal goals.
+// ═════════════════════════════════════════════════════════════════
+
+function mpState() {
+  const st = loadObj('my_path');
+  if (!Array.isArray(st.blocks)) st.blocks = [];
+  if (!Array.isArray(st.goals))  st.goals  = [];
+  // First-run seed: three typical services so the planner mechanics
+  // are visible immediately. All editable/deletable.
+  if (!st.seededV1) {
+    st.seededV1 = true;
+    if (!st.blocks.length) {
+      st.blocks = [
+        { id: genId(), name: 'הפקת שיר',       price: 5000, qty: 0 },
+        { id: genId(), name: 'מיקס ומאסטרינג', price: 2500, qty: 0 },
+        { id: genId(), name: 'סדנה',            price: 1500, qty: 0 }
+      ];
+    }
+    save('my_path', st);
+  }
+  return st;
+}
+function mpSave(st) { save('my_path', st); }
+
+// Debounced text save — one timer per field so parallel edits don't
+// clobber each other, and the cloud-sync queue isn't hit per keystroke.
+const _mpTimers = {};
+window.mpSaveText = function(field, val) {
+  clearTimeout(_mpTimers[field]);
+  _mpTimers[field] = setTimeout(() => {
+    const st = mpState(); st[field] = val; mpSave(st);
+  }, 600);
+};
+window.mpSaveTarget = function(field, val) {
+  clearTimeout(_mpTimers[field]);
+  _mpTimers[field] = setTimeout(() => {
+    const st = mpState();
+    st[field] = field === 'targetDate' ? (val || '') : (parseFloat(val) || 0);
+    mpSave(st);
+    _mpRenderProgress();
+    _mpRenderPlanSummary();
+  }, 400);
+};
+
+// ── Real numbers: average of the last 3 full months (fallback:
+//    current month) — paid income and paid expenses only. ──
+function _mpMonthKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function _mpRealNumbers() {
+  const income = load('income'), expenses = load('expenses');
+  const now = new Date();
+  const paidIn  = k => income.filter(i => (i.status || 'pending') === 'paid' && (i.date || '').slice(0, 7) === k)
+                             .reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const paidOut = k => expenses.filter(e => e.paid && (e.date || '').slice(0, 7) === k)
+                               .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const keys = [];
+  for (let k = 1; k <= 3; k++) keys.push(_mpMonthKey(new Date(now.getFullYear(), now.getMonth() - k, 1)));
+  const withData = keys.filter(k => paidIn(k) > 0 || paidOut(k) > 0);
+  const use = withData.length ? withData : [_mpMonthKey(now)];
+  const avgRev = use.reduce((s, k) => s + paidIn(k), 0) / use.length;
+  const avgNet = use.reduce((s, k) => s + paidIn(k) - paidOut(k), 0) / use.length;
+  return { avgRev: Math.round(avgRev), avgNet: Math.round(avgNet), months: use.length, current: !withData.length };
+}
+// Active recurring expenses for the real current month
+function _mpFixedMonthly() {
+  const rec = load('recurring_expenses');
+  const nowKey = _mpMonthKey(new Date());
+  return rec.filter(r => r.startMonth <= nowKey && (!r.endMonth || r.endMonth >= nowKey))
+            .reduce((s, r) => s + (typeof _recAmt === 'function' ? _recAmt(r, nowKey) : (Number(r.amount) || 0)), 0);
+}
+
+const MP_PATUR_CAP_2026 = 107692; // תקרת עוסק פטור 2026
+
+function renderMyPath() {
+  const st = mpState();
+  // Fill texts/targets only when the field isn't focused, so a render
+  // triggered elsewhere never eats keystrokes.
+  const fill = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && document.activeElement !== el) el.value = val || '';
+  };
+  fill('mp-northstar',     st.northStar);
+  fill('mp-identity',      st.identity);
+  fill('mp-week',          st.week);
+  fill('mp-target-rev',    st.targetRevenue || '');
+  fill('mp-target-profit', st.targetProfit || '');
+  fill('mp-target-date',   st.targetDate);
+  _mpRenderProgress();
+  _mpRenderBlocks();
+  _mpRenderPlanSummary();
+  _mpRenderGoals();
+}
+
+// ── Target vs reality ──
+function _mpRenderProgress() {
+  const wrap = document.getElementById('mp-progress');
+  if (!wrap) return;
+  const st = mpState();
+  const real = _mpRealNumbers();
+  if (!st.targetRevenue && !st.targetProfit) {
+    wrap.innerHTML = `<div class="mp-pace" style="color:var(--text-muted)">הגדר יעד למעלה — ואני אראה לך בדיוק איפה אתה עומד מולו, לפי ההכנסות האמיתיות שלך.</div>`;
+    return;
+  }
+  const srcLabel = real.current ? 'החודש הנוכחי' : `ממוצע ${real.months} החודשים האחרונים`;
+  const bar = (name, cur, target, color) => {
+    if (!target) return '';
+    const pct = Math.max(0, Math.min(100, Math.round((cur / target) * 100)));
+    return `
+      <div class="mp-bar-wrap">
+        <div class="mp-bar-head">
+          <span class="mp-bar-name">${name}</span>
+          <span class="mp-bar-nums">${fmtMoney(cur)} / ${fmtMoney(target)} · ${pct}%</span>
+        </div>
+        <div class="mp-bar-track"><div class="mp-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      </div>`;
+  };
+  let html = bar('מחזור חודשי', real.avgRev, st.targetRevenue, 'var(--accent)')
+           + bar('רווח נקי חודשי', Math.max(0, real.avgNet), st.targetProfit, 'var(--green)');
+
+  // Pace — how much monthly growth gets you there by the target date
+  let pace = `<div class="mp-pace">המצב היום (${srcLabel}): מחזור <strong>${fmtMoney(real.avgRev)}</strong> · רווח נקי <strong>${fmtMoney(real.avgNet)}</strong>`;
+  if (st.targetDate && st.targetRevenue) {
+    const [ty, tm] = st.targetDate.split('-').map(Number);
+    const now = new Date();
+    const monthsLeft = (ty - now.getFullYear()) * 12 + (tm - 1 - now.getMonth());
+    if (monthsLeft > 0) {
+      const gap = st.targetRevenue - real.avgRev;
+      if (gap <= 0) {
+        pace += `<br>אתה כבר ביעד המחזור — נשאר להחזיק את זה עד ${tm}/${ty}. 💪`;
+      } else {
+        const perMonth = Math.ceil(gap / monthsLeft);
+        pace += `<br>נשארו <strong>${monthsLeft} חודשים</strong> עד היעד — צריך לגדול בקצב של <strong>${fmtMoney(perMonth)}</strong> לחודש כדי להגיע בזמן.`;
+      }
+    } else {
+      pace += `<br>תאריך היעד הגיע — זה הזמן לעדכן אותו או לחגוג.`;
+    }
+  }
+  pace += '</div>';
+  wrap.innerHTML = html + pace;
+}
+
+// ── Building blocks ──
+function _mpRenderBlocks() {
+  const wrap = document.getElementById('mp-blocks');
+  if (!wrap) return;
+  const st = mpState();
+  if (!st.blocks.length) {
+    wrap.innerHTML = '<div class="mp-empty">הוסף את השירותים שלך למטה — שם + מחיר</div>';
+    return;
+  }
+  wrap.innerHTML = st.blocks.map(b => {
+    const idEsc = String(b.id).replace(/'/g, "\\'");
+    const total = (Number(b.price) || 0) * (Number(b.qty) || 0);
+    return `
+      <div class="mp-block-row">
+        <div style="flex:1;min-width:0">
+          <div class="mp-block-name">${_escape(b.name)}</div>
+          <div class="mp-block-price">${fmtMoney(b.price)} ליחידה</div>
+        </div>
+        <div class="mp-stepper">
+          <button onclick="mpBlockQty('${idEsc}',-1)" aria-label="פחות">−</button>
+          <span class="mp-qty">${b.qty || 0}</span>
+          <button onclick="mpBlockQty('${idEsc}',1)" aria-label="יותר">+</button>
+        </div>
+        <div class="mp-block-total">${total > 0 ? fmtMoney(total) : '—'}</div>
+        <button class="row-icon-btn" onclick="mpBlockDel('${idEsc}')" aria-label="מחק">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-trash"/></svg>
+        </button>
+      </div>`;
+  }).join('');
+}
+window.mpAddBlock = function() {
+  const nameEl = document.getElementById('mp-new-name');
+  const priceEl = document.getElementById('mp-new-price');
+  const name = (nameEl?.value || '').trim();
+  const price = parseFloat(priceEl?.value) || 0;
+  if (!name) { toast('תן שם לשירות'); return; }
+  if (!price) { toast('כמה זה עולה?'); return; }
+  const st = mpState();
+  st.blocks.push({ id: genId(), name, price, qty: 1 });
+  mpSave(st);
+  if (nameEl) nameEl.value = ''; if (priceEl) priceEl.value = '';
+  _mpRenderBlocks(); _mpRenderPlanSummary();
+  if (window.haptic) window.haptic.tap();
+};
+window.mpBlockQty = function(id, delta) {
+  const st = mpState();
+  const b = st.blocks.find(x => x.id === id); if (!b) return;
+  b.qty = Math.max(0, (Number(b.qty) || 0) + delta);
+  mpSave(st);
+  _mpRenderBlocks(); _mpRenderPlanSummary();
+  if (window.haptic) window.haptic.tap();
+};
+window.mpBlockDel = function(id) {
+  const st = mpState();
+  st.blocks = st.blocks.filter(x => x.id !== id);
+  mpSave(st);
+  _mpRenderBlocks(); _mpRenderPlanSummary();
+};
+
+function _mpRenderPlanSummary() {
+  const wrap = document.getElementById('mp-plan-summary');
+  if (!wrap) return;
+  const st = mpState();
+  const planRev = st.blocks.reduce((s, b) => s + (Number(b.price) || 0) * (Number(b.qty) || 0), 0);
+  const fixed   = _mpFixedMonthly();
+  const planNet = planRev - fixed;
+  if (!planRev) { wrap.innerHTML = ''; return; }
+
+  let html = `
+    <div class="mp-plan-total">
+      <div class="mp-plan-line"><span>מחזור מהתוכנית</span><strong>${fmtMoney(planRev)}</strong></div>
+      <div class="mp-plan-line"><span>הוצאות קבועות (מהאפליקציה)</span><strong style="color:var(--red)">−${fmtMoney(fixed)}</strong></div>
+      <div class="mp-plan-line big"><span>רווח נקי מתוכנן לחודש</span><strong style="color:${planNet >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtMoney(planNet)}</strong></div>
+    </div>`;
+
+  // Plan vs target
+  if (st.targetRevenue) {
+    const gap = st.targetRevenue - planRev;
+    if (gap <= 0) {
+      html += `<div class="mp-plan-note good">התוכנית הזאת מכסה את יעד המחזור — עודף של ${fmtMoney(-gap)} בחודש.</div>`;
+    } else {
+      // How many more units of each (priciest first, up to 2) close the gap
+      const opts = st.blocks.filter(b => (Number(b.price) || 0) > 0)
+        .sort((a, b) => b.price - a.price).slice(0, 2)
+        .map(b => `${Math.ceil(gap / b.price)} × ${_escape(b.name)}`);
+      html += `<div class="mp-plan-note gap">חסרים ${fmtMoney(gap)} בחודש ליעד${opts.length ? ' — למשל עוד ' + opts.join(' או ') : ''}.</div>`;
+    }
+  }
+
+  // עוסק פטור awareness — annualized plan vs the 2026 cap
+  const annual = planRev * 12;
+  if (annual > MP_PATUR_CAP_2026) {
+    html += `<div class="mp-plan-note warn">שים לב: התוכנית = ${fmtMoney(annual)} בשנה — מעל תקרת עוסק פטור (${fmtMoney(MP_PATUR_CAP_2026)}). זה לא רע, זה אומר שהחלום דורש מעבר לעוסק מורשה. שווה לדבר עם רו״ח כשמתקרבים.</div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+// ── Personal goals ──
+function _mpRenderGoals() {
+  const wrap = document.getElementById('mp-goals');
+  if (!wrap) return;
+  const st = mpState();
+  if (!st.goals.length) {
+    wrap.innerHTML = '<div class="mp-empty">עוד אין יעדים — תכתוב את הראשון למטה</div>';
+    return;
+  }
+  const nowKey = _mpMonthKey(new Date());
+  const sorted = st.goals.slice().sort((a, b) => {
+    if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+    return (a.date || '9999').localeCompare(b.date || '9999');
+  });
+  wrap.innerHTML = sorted.map(g => {
+    const idEsc = String(g.id).replace(/'/g, "\\'");
+    const late = g.date && !g.done && g.date < nowKey;
+    const dateLbl = g.date ? g.date.split('-').reverse().join('/') : '';
+    return `
+      <div class="mp-goal-row ${g.done ? 'done' : ''}">
+        <button class="mp-goal-check ${g.done ? 'done' : ''}" onclick="mpToggleGoal('${idEsc}')" aria-label="סמן">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg>
+        </button>
+        <div class="mp-goal-title">${_escape(g.title)}</div>
+        ${dateLbl ? `<span class="mp-goal-date ${late ? 'late' : ''}">${late ? 'עבר · ' : 'עד '}${dateLbl}</span>` : ''}
+        <button class="row-icon-btn" onclick="mpDelGoal('${idEsc}')" aria-label="מחק">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-trash"/></svg>
+        </button>
+      </div>`;
+  }).join('');
+}
+window.mpAddGoal = function() {
+  const textEl = document.getElementById('mp-goal-text');
+  const dateEl = document.getElementById('mp-goal-date');
+  const title = (textEl?.value || '').trim();
+  if (!title) { toast('כתוב יעד קודם'); return; }
+  const st = mpState();
+  st.goals.push({ id: genId(), title, date: dateEl?.value || '', done: false });
+  mpSave(st);
+  if (textEl) textEl.value = ''; if (dateEl) dateEl.value = '';
+  _mpRenderGoals();
+  if (window.haptic) window.haptic.success();
+};
+window.mpToggleGoal = function(id) {
+  const st = mpState();
+  const g = st.goals.find(x => x.id === id); if (!g) return;
+  g.done = !g.done;
+  mpSave(st);
+  _mpRenderGoals();
+  if (window.haptic && g.done) window.haptic.success();
+};
+window.mpDelGoal = function(id) {
+  const st = mpState();
+  st.goals = st.goals.filter(x => x.id !== id);
+  mpSave(st);
+  _mpRenderGoals();
 };
 
 // Re-categorize every pending TX + every confirmed expense currently
