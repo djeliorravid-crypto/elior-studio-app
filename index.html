@@ -1599,6 +1599,52 @@
       color: var(--text); outline: none; font-family: inherit;
     }
     .mp-empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: 14px 0; }
+
+    /* ── Path Decoder ── */
+    .mp-decode-block { margin-top: 14px; }
+    .mp-decode-block:first-child { margin-top: 6px; }
+    .mp-decode-h {
+      font-size: 14px; font-weight: 900; color: var(--text);
+      letter-spacing: -0.01em; margin-bottom: 7px;
+    }
+    .mp-decode-body { font-size: 13.5px; line-height: 1.7; color: var(--text); }
+    .mp-decode-body strong { color: var(--accent); font-weight: 900; }
+    .mp-step-row {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 11px 2px; border-bottom: 1px solid var(--border);
+    }
+    .mp-step-row:last-of-type { border-bottom: none; }
+    .mp-step-num {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent); color: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 900; margin-top: 1px;
+    }
+    .mp-step-body { flex: 1; min-width: 0; }
+    .mp-step-level { font-size: 15px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+    .mp-step-when {
+      font-size: 11px; font-weight: 800; color: var(--text-muted);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 999px; padding: 2px 8px; margin-right: 6px;
+    }
+    .mp-step-recipe { font-size: 12.5px; color: var(--text-muted); font-weight: 700; margin-top: 3px; }
+    .mp-step-flag {
+      margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--orange);
+      background: rgba(196,122,42,0.08); border: 1px solid rgba(196,122,42,0.25);
+      border-radius: 8px; padding: 6px 10px; line-height: 1.5;
+    }
+    .mp-decode-goal {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 11px 13px; margin-bottom: 8px;
+    }
+    .mp-decode-goal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .mp-decode-goal-title { font-size: 13.5px; font-weight: 900; color: var(--text); }
+    .mp-decode-goal-tip { font-size: 12.5px; line-height: 1.65; color: var(--text-muted); margin-top: 5px; font-weight: 600; }
+    .mp-decode-week {
+      background: linear-gradient(135deg, var(--accent-glow), transparent);
+      border: 1.5px solid var(--accent2); border-radius: 14px; padding: 13px 15px;
+    }
+    .mp-decode-week .mp-decode-h { color: var(--accent); }
     .exp-cat-row {
       display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
       padding: 10px 16px;
@@ -5826,7 +5872,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v351</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v352</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6641,6 +6687,13 @@
           placeholder="כמה שעות באולפן, כמה זמן למוזיקה שלי, כמה זמן חופשי, מה אני לא מוכן להתפשר עליו…"
           oninput="mpSaveText('week', this.value)"></textarea>
       </div>
+    </div>
+
+    <!-- Path Decoder — reads the vision, crosses it with real data -->
+    <div class="table-card mp-card" style="border-color:var(--accent2)">
+      <div class="mp-section-title"><svg class="icon"><use href="#ic-compass"/></svg> הפענוח — מהחלום לתוכנית</div>
+      <div class="mp-sub">אני קורא את מה שכתבת למעלה, מצליב עם ההכנסות וההוצאות האמיתיות שלך, ובונה מפה. הפענוח מתעדכן חי בכל שינוי.</div>
+      <div id="mp-decode"></div>
     </div>
 
     <!-- Financial target -->
@@ -10421,6 +10474,8 @@ window.mpSaveText = function(field, val) {
   clearTimeout(_mpTimers[field]);
   _mpTimers[field] = setTimeout(() => {
     const st = mpState(); st[field] = val; mpSave(st);
+    // The decoder reads these texts — refresh it live as he writes.
+    try { _mpRenderDecode(); } catch (_) {}
   }, 600);
 };
 window.mpSaveTarget = function(field, val) {
@@ -10431,6 +10486,7 @@ window.mpSaveTarget = function(field, val) {
     mpSave(st);
     _mpRenderProgress();
     _mpRenderPlanSummary();
+    try { _mpRenderDecode(); } catch (_) {}
   }, 400);
 };
 
@@ -10480,6 +10536,7 @@ function renderMyPath() {
   _mpRenderBlocks();
   _mpRenderPlanSummary();
   _mpRenderGoals();
+  _mpRenderDecode();
 }
 
 // ── Target vs reality ──
@@ -10571,7 +10628,7 @@ window.mpAddBlock = function() {
   st.blocks.push({ id: genId(), name, price, qty: 1 });
   mpSave(st);
   if (nameEl) nameEl.value = ''; if (priceEl) priceEl.value = '';
-  _mpRenderBlocks(); _mpRenderPlanSummary();
+  _mpRenderBlocks(); _mpRenderPlanSummary(); try { _mpRenderDecode(); } catch (_) {}
   if (window.haptic) window.haptic.tap();
 };
 window.mpBlockQty = function(id, delta) {
@@ -10579,14 +10636,14 @@ window.mpBlockQty = function(id, delta) {
   const b = st.blocks.find(x => x.id === id); if (!b) return;
   b.qty = Math.max(0, (Number(b.qty) || 0) + delta);
   mpSave(st);
-  _mpRenderBlocks(); _mpRenderPlanSummary();
+  _mpRenderBlocks(); _mpRenderPlanSummary(); try { _mpRenderDecode(); } catch (_) {}
   if (window.haptic) window.haptic.tap();
 };
 window.mpBlockDel = function(id) {
   const st = mpState();
   st.blocks = st.blocks.filter(x => x.id !== id);
   mpSave(st);
-  _mpRenderBlocks(); _mpRenderPlanSummary();
+  _mpRenderBlocks(); _mpRenderPlanSummary(); try { _mpRenderDecode(); } catch (_) {}
 };
 
 function _mpRenderPlanSummary() {
@@ -10683,6 +10740,206 @@ window.mpDelGoal = function(id) {
   st.goals = st.goals.filter(x => x.id !== id);
   mpSave(st);
   _mpRenderGoals();
+};
+
+// ═════════════════════════════════════════════════════════════════
+//  PATH DECODER — reads the user's own vision text, extracts money
+//  figures and life goals, crosses them with the app's REAL numbers
+//  (income, expenses, service prices), and renders a staged roadmap.
+//  Fully local — no API, no setup, always in sync with the data.
+// ═════════════════════════════════════════════════════════════════
+
+// Extract a monthly money figure + life-goal themes from free text.
+function _mpParseVision(st) {
+  const text = [st.northStar, st.identity, st.week].filter(Boolean).join('\n');
+  const out = { money: 0, isNet: /נקי/.test(text), themes: [], hasText: text.trim().length > 10 };
+  if (!out.hasText) return out;
+
+  // "100 אלף" / "100K" → 100,000
+  let m;
+  const reK = /(\d[\d,\.]*)\s*(?:אלף|K)\b/gi;
+  while ((m = reK.exec(text))) {
+    const n = parseFloat(m[1].replace(/,/g, '')) * 1000;
+    if (n > out.money && n <= 2000000) out.money = n;
+  }
+  // Plain "25,000" / "25000 ₪"
+  const rePlain = /([1-9]\d{0,2},?\d{3})(?:\s*(?:₪|שקל|ש"ח))?/g;
+  while ((m = rePlain.exec(text))) {
+    const n = parseFloat(m[1].replace(/,/g, ''));
+    if (n >= 5000 && n <= 2000000 && n > out.money) out.money = n;
+  }
+
+  // Life-goal themes — keyword → structured goal with a concrete lever
+  const THEMES = [
+    { re: /דירה|בית חדש|מרוהט|נדל"?ן|משכנתא/,        key: 'home',    title: 'דירה משלי' },
+    { re: /אקו"?ם|אקום|פרס/,                          key: 'prize',   title: 'פרס אקו"ם' },
+    { re: /בריא|כושר|חטוב|גוף|ספורט|אימון/,           key: 'health',  title: 'גוף בריא וחזק' },
+    { re: /מטייל|טיול|לטוס|חו"?ל|בעולם/,              key: 'travel',  title: 'לטייל בעולם' },
+    { re: /אולפן/,                                     key: 'studio',  title: 'האולפן הכי איכותי' },
+    { re: /אומנים|אמנים|לעבוד עם|שחלמתי/,             key: 'artists', title: 'לעבוד עם האומנים שחלמתי עליהם' },
+    { re: /משפחה|ילדים|זוגיות|חתונה/,                 key: 'family',  title: 'משפחה וזוגיות' },
+    { re: /זמן חופשי|מוזיקה שלי|שקט|איזון/,           key: 'balance', title: 'זמן למוזיקה שלי ולעצמי' }
+  ];
+  THEMES.forEach(t => { if (t.re.test(text)) out.themes.push(t); });
+  return out;
+}
+
+// Build revenue milestones from current → required, with a concrete
+// recipe per milestone assembled from the user's own service blocks.
+function _mpLadder(currentRev, requiredRev, blocks, monthsLeft) {
+  if (requiredRev <= currentRev || requiredRev <= 0) return [];
+  const priced = blocks.filter(b => (Number(b.price) || 0) > 0)
+                       .slice().sort((a, b) => b.price - a.price);
+  const steps = [];
+  const fracs = [1/3, 2/3, 1];
+  const now = new Date();
+  fracs.forEach((f, i) => {
+    const level = Math.round((currentRev + (requiredRev - currentRev) * f) / 500) * 500;
+    // Greedy recipe: fill with priciest service, then the next, etc.
+    let recipe = [], remain = level, units = 0;
+    priced.forEach((b, bi) => {
+      const isLast = bi === priced.length - 1;
+      const q = isLast ? Math.ceil(remain / b.price) : Math.floor(remain / b.price);
+      if (q > 0) { recipe.push(q + ' × ' + _escape(b.name)); remain -= q * b.price; units += q; }
+    });
+    let when = '';
+    if (monthsLeft > 0) {
+      const target = new Date(now.getFullYear(), now.getMonth() + Math.round(monthsLeft * f), 1);
+      when = String(target.getMonth() + 1).padStart(2, '0') + '/' + target.getFullYear();
+    }
+    steps.push({ level, recipe: recipe.join(' + '), units, when });
+  });
+  return steps;
+}
+
+function _mpRenderDecode() {
+  const wrap = document.getElementById('mp-decode');
+  if (!wrap) return;
+  const st = mpState();
+  const vision = _mpParseVision(st);
+  const real = _mpRealNumbers();
+  const fixed = _mpFixedMonthly();
+  const planRev = st.blocks.reduce((s, b) => s + (Number(b.price) || 0) * (Number(b.qty) || 0), 0);
+
+  if (!vision.hasText) {
+    wrap.innerHTML = '<div class="mp-empty">כתוב את החזון למעלה — ברגע שיש מילים, אני מתחיל לפענח.</div>';
+    return;
+  }
+
+  let html = '';
+
+  // ── 1. The dream number, translated to reality ──
+  const dreamNet = vision.money;
+  if (dreamNet > 0) {
+    const requiredRev = vision.isNet ? dreamNet + fixed : dreamNet;
+    const gap = requiredRev - real.avgRev;
+    const topBlock = st.blocks.filter(b => b.price > 0).sort((a, b) => b.price - a.price)[0];
+    html += `<div class="mp-decode-block">
+      <div class="mp-decode-h">המספר שכתבת: ${fmtMoney(dreamNet)} ${vision.isNet ? 'נקי' : ''} בחודש</div>
+      <div class="mp-decode-body">
+        ${vision.isNet ? `נקי אומר שצריך מחזור של בערך <strong>${fmtMoney(requiredRev)}</strong> (אחרי ${fmtMoney(fixed)} הוצאות קבועות). ` : ''}
+        היום אתה ב-<strong>${fmtMoney(real.avgRev)}</strong> — כלומר פי ${real.avgRev > 0 ? (requiredRev / real.avgRev).toFixed(1) : '∞'} מהמצב הנוכחי.
+        ${topBlock ? `במחירים של היום זה <strong>${Math.ceil(requiredRev / topBlock.price)} × ${_escape(topBlock.name)}</strong> כל חודש — וזה בלתי אפשרי לבן אדם אחד. המסקנה של המספר הזה היא לא "לעבוד יותר": היא <strong>להעלות מחירים בהדרגה, להוסיף מוצרים שלא תלויים בשעות שלך</strong> (סדנאות קבוצתיות, קורס מוקלט, תמלוגים) — והמדרגות למטה בנויות בדיוק בשביל זה.` : ''}
+        ${(!st.targetRevenue && !st.targetProfit) ? `<div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="mpApplyVisionTarget(${dreamNet}, ${vision.isNet ? 'true' : 'false'})">קבע את זה כיעד שלי</button></div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ── 2. The ladder — staged milestones with recipes from HIS services ──
+  const targetRev = st.targetRevenue || (dreamNet > 0 ? (vision.isNet ? dreamNet + fixed : dreamNet) : 0);
+  if (targetRev > real.avgRev && st.blocks.some(b => b.price > 0)) {
+    let monthsLeft = 0;
+    if (st.targetDate) {
+      const [ty, tm] = st.targetDate.split('-').map(Number);
+      const now = new Date();
+      monthsLeft = (ty - now.getFullYear()) * 12 + (tm - 1 - now.getMonth());
+    }
+    const steps = _mpLadder(real.avgRev, targetRev, st.blocks, monthsLeft);
+    if (steps.length) {
+      html += `<div class="mp-decode-block">
+        <div class="mp-decode-h">המדרגות — מ-${fmtMoney(real.avgRev)} ל-${fmtMoney(targetRev)}</div>
+        ${steps.map((s, i) => `
+          <div class="mp-step-row">
+            <span class="mp-step-num">${i + 1}</span>
+            <div class="mp-step-body">
+              <div class="mp-step-level">${fmtMoney(s.level)} בחודש${s.when ? ` <span class="mp-step-when">עד ${s.when}</span>` : ''}</div>
+              <div class="mp-step-recipe">${s.recipe || 'הוסף שירותים במתכנן'}</div>
+              ${s.units > 10 ? `<div class="mp-step-flag">${s.units} יחידות בחודש לבד זה הרבה — במדרגה הזאת שווה להעלות מחירים או להכניס מוצר קבוצתי.</div>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>`;
+    }
+    // עוסק פטור breakpoint
+    const firstOver = steps.find(s => s.level * 12 > MP_PATUR_CAP_2026);
+    if (firstOver) {
+      html += `<div class="mp-plan-note warn" style="margin-top:4px">איפשהו סביב מדרגה ${steps.indexOf(firstOver) + 1} (${fmtMoney(firstOver.level)} בחודש) אתה חוצה את תקרת עוסק פטור — משם עוברים לעוסק מורשה. זה שלב טוב, לא בעיה. שים את זה כיעד בדרך.</div>`;
+    }
+  }
+
+  // ── 3. Life goals detected in his words, each with a concrete lever ──
+  if (vision.themes.length) {
+    const surplus = Math.max(0, planRev - fixed);
+    const TIPS = {
+      home:    () => `דירה = הון עצמי, לא מחזור. אם תפריש רבע מהרווח המתוכנן (${fmtMoney(Math.round(surplus * 0.25))} בחודש) — זה ${fmtMoney(Math.round(surplus * 0.25) * 12)} בשנה שנערמים בשקט לכיוון הדירה.`,
+      prize:   () => 'פרסים מגיעים מקטלוג, לא ממזל. יעד ביניים מדיד: מספר שירים משוחררים בשנה. כל שחרור מגדיל גם את התמלוגים וגם את הסיכוי.',
+      health:  () => 'זה היעד היחיד פה שלא עולה שקל — הוא עולה לוז. שים 3 אימונים בשבוע בלוז היומי כאילו הם סשנים עם הלקוח הכי חשוב שלך. כי הם.',
+      travel:  () => surplus > 0 ? `טיול רציני ≈ 15,000 ₪. עם הרווח המתוכנן הנוכחי (${fmtMoney(surplus)} בחודש) — טיול כזה כל ${Math.max(1, Math.ceil(15000 / surplus))} חודשים בלי להרגיש.` : 'תמחר את הטיול הבא (נגיד 15,000 ₪) — וברגע שהמתכנן למטה מראה עודף חודשי, תדע בדיוק כל כמה זמן אתה טס.',
+      studio:  () => planRev > 0 ? `האולפן הכי איכותי נבנה בשדרוגים, לא בקנייה אחת. קח 10% מהמחזור המתוכנן (${fmtMoney(Math.round(planRev * 0.1))} בחודש) כתקציב ציוד קבוע — בשנה זה ${fmtMoney(Math.round(planRev * 0.1) * 12)} של שדרוגים, והכל הוצאה מוכרת.` : 'קבע אחוז קבוע מהמחזור (10%) כתקציב שדרוג ציוד — ככה האולפן גדל יחד עם העסק.',
+      artists: () => 'תכתוב רשימה של 10 שמות. פנייה אחת בשבוע, שיתוף פעולה אחד ברבעון. אחרי שנה — 4 שיתופי פעולה מהרשימה. זה לא חלום, זה קצב.',
+      family:  () => 'היעד הזה לא נבנה מכסף אלא מגבולות: המתכנן למטה קובע כמה יחידות עבודה בחודש — כל מה שמעבר בא על חשבון הבית. תדע את המספר שלך.',
+      balance: () => 'הזמן למוזיקה שלך הוא לא "מה שנשאר" — הוא בלוק בלוז. יום בשבוע בלי לקוחות. המתכנן עוזר: כשאתה יודע כמה יחידות סוגרות את החודש, כל השאר שלך.'
+    };
+    html += `<div class="mp-decode-block">
+      <div class="mp-decode-h">זיהיתי בחזון שלך ${vision.themes.length} יעדי חיים — לכל אחד יש מנוף מעשי</div>
+      ${vision.themes.map(t => {
+        const already = st.goals.some(g => g.title === t.title);
+        return `
+        <div class="mp-decode-goal">
+          <div class="mp-decode-goal-head">
+            <span class="mp-decode-goal-title">${t.title}</span>
+            ${already
+              ? '<span class="mp-goal-date" style="color:var(--green);border-color:rgba(90,122,46,0.35)">✓ ביעדים</span>'
+              : `<button class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 10px" onclick="mpAddGoalFromDecode('${t.title.replace(/'/g, "\\'")}')">+ הוסף ליעדים</button>`}
+          </div>
+          <div class="mp-decode-goal-tip">${TIPS[t.key] ? TIPS[t.key]() : ''}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // ── 4. This week's single step — the smallest thing that moves the map ──
+  let weekStep = '';
+  if (!st.blocks.some(b => b.qty > 0))            weekStep = 'פתח את המתכנן למטה וקבע כמה יחידות מכל שירות אתה רוצה בחודש — בלי זה אין תוכנית, יש רק חלום.';
+  else if (!st.targetDate)                        weekStep = 'קבע תאריך יעד למטה. יעד בלי תאריך הוא משאלה.';
+  else if (planRev < targetRev && targetRev > 0)  weekStep = 'התוכנית עוד לא מכסה את היעד — תבחר: להעלות מחיר לשירות אחד, או להוסיף יחידה אחת בחודש. אחד מהשניים, השבוע.';
+  else if (vision.themes.some(t => !st.goals.some(g => g.title === t.title))) weekStep = 'הוסף את יעדי החיים שזיהיתי לרשימת היעדים — מה שלא כתוב, לא קורה.';
+  else weekStep = 'המפה שלמה. עכשיו זה ביצוע: כל שבוע תסתכל פה פעם אחת ותשאל — האם התקדמתי מדרגה?';
+  html += `<div class="mp-decode-block mp-decode-week">
+    <div class="mp-decode-h">הצעד של השבוע</div>
+    <div class="mp-decode-body">${weekStep}</div>
+  </div>`;
+
+  wrap.innerHTML = html;
+}
+
+window.mpApplyVisionTarget = function(net, isNet) {
+  const st = mpState();
+  const fixed = _mpFixedMonthly();
+  if (isNet) { st.targetProfit = net; st.targetRevenue = net + fixed; }
+  else       { st.targetRevenue = net; }
+  mpSave(st);
+  renderMyPath();
+  toast('✓ היעד נקבע לפי החזון שלך');
+};
+window.mpAddGoalFromDecode = function(title) {
+  const st = mpState();
+  if (st.goals.some(g => g.title === title)) { toast('כבר ביעדים'); return; }
+  st.goals.push({ id: genId(), title, date: '', done: false });
+  mpSave(st);
+  _mpRenderGoals();
+  _mpRenderDecode();
+  toast('✓ נוסף ליעדים');
+  if (window.haptic) window.haptic.success();
 };
 
 // Re-categorize every pending TX + every confirmed expense currently
