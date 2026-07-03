@@ -3482,106 +3482,96 @@
     /* ===== MY PATH — standalone mode container ===== */
     #path-main {
       max-width: 860px; margin: 0 auto;
-      padding: calc(env(safe-area-inset-top, 0px) + 20px) 16px 90px;
+      padding: calc(env(safe-area-inset-top, 0px) + 64px) 16px 140px;
       min-height: 100vh;
     }
 
-    /* ===== MY PATH COMMAND BOARD (top of the page) ===== */
-    .mpb {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 18px; padding: 14px 16px;
-      box-shadow: var(--shadow);
-      color: var(--text); direction: rtl;
-      margin-bottom: 16px;
-      box-sizing: border-box;
+    /* ===== MY PATH — story sections ===== */
+    .mpx-hero-label { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: var(--text-muted); text-transform: uppercase; }
+    .mpx-hero-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .mpx-hero-num { font-size: 34px; font-weight: 900; letter-spacing: -0.03em; color: var(--text); line-height: 1; font-variant-numeric: tabular-nums; }
+    .mpx-delta {
+      font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px;
+      font-variant-numeric: tabular-nums;
     }
-    .mpb-coach {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 14px; padding: 11px 13px;
-      margin-bottom: 10px;
-      font-size: 13px; line-height: 1.55;
+    .mpx-delta.up   { background: rgba(90,122,46,0.12); color: var(--green); }
+    .mpx-delta.down { background: rgba(184,68,46,0.10); color: var(--red); }
+    .mpx-delta.flat { background: var(--surface2); color: var(--text-muted); }
+    .mpx-hero-sub { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 6px; line-height: 1.6; }
+    .mpx-hero-sub strong { color: var(--text); }
+    .mpx-bars {
+      display: flex; align-items: flex-end; gap: 8px;
+      height: 96px; margin-top: 16px;
     }
-    .mpb-coach-line { color: var(--text); font-weight: 700; }
-    .mpb-coach-step {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      margin-top: 8px; padding-top: 8px;
-      border-top: 1px dashed var(--border);
-    }
-    .mpb-coach-step-label {
-      flex-shrink: 0; font-size: 10.5px; font-weight: 900; letter-spacing: 0.08em;
-      color: var(--accent); text-transform: uppercase;
-    }
-    .mpb-coach-step-text { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--text); }
-    .mpb-coach-done-btn {
-      flex-shrink: 0;
-      background: rgba(90,122,46,0.12); border: 1px solid rgba(90,122,46,0.35);
-      color: var(--green); border-radius: 999px;
-      padding: 4px 12px; font-size: 11.5px; font-weight: 800;
-      cursor: pointer; font-family: inherit;
-    }
-    .mpb-coach-done-btn:hover { background: rgba(90,122,46,0.2); }
-    .mpb-coach.all-done .mpb-coach-line { color: var(--green); }
+    .mpx-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px; height: 100%; }
+    .mpx-bar-val { font-size: 9.5px; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .mpx-bar { width: 100%; max-width: 30px; min-height: 4px; border-radius: 5px 5px 2px 2px; background: linear-gradient(180deg, var(--surface3), var(--border)); transition: height .7s cubic-bezier(.4,0,.2,1); }
+    .mpx-bar.cur { background: linear-gradient(180deg, var(--accent), var(--accent2)); box-shadow: 0 4px 12px var(--accent-glow); }
+    .mpx-bar-lbl { font-size: 10.5px; font-weight: 600; color: var(--text-muted); }
+    .mpx-bar-col.cur .mpx-bar-lbl { color: var(--text); font-weight: 800; }
+    .mpx-bar-col.cur .mpx-bar-val { color: var(--accent); }
 
-    .mpb-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    @media (max-width: 540px) { .mpb-tiles { grid-template-columns: 1fr; } }
-    .mpb-tile {
-      position: relative;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 14px; padding: 11px 12px;
-      min-height: 92px;
+    .mpx-ach-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .mpx-ach-chip {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 12px 14px; box-shadow: var(--shadow);
     }
-    .mpb-tile-head {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
-      color: var(--text-muted); margin-bottom: 7px;
+    .mpx-ach-num { font-size: 20px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .mpx-ach-lbl { font-size: 11px; color: var(--text-muted); font-weight: 700; margin-top: 3px; }
+    .mpx-ach-chip.equity { grid-column: span 2; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .mpx-ach-chip.equity .mpx-ach-num { color: var(--accent); }
+
+    .mpx-move {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 2px; border-bottom: 1px solid var(--border);
     }
-    .mpb-tile-head svg {
-      width: 13px; height: 13px;
-      fill: none; stroke: currentColor; stroke-width: 1.8;
-      stroke-linecap: round; stroke-linejoin: round;
+    .mpx-move:last-child { border-bottom: none; }
+    .mpx-move-num {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent); color: #fff;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 900; margin-top: 1px;
     }
-    .mpb-dot {
-      position: absolute; top: 10px; left: 10px;
-      width: 7px; height: 7px; border-radius: 50%;
+    .mpx-move-body { flex: 1; min-width: 0; }
+    .mpx-move-title { font-size: 14px; font-weight: 800; color: var(--text); line-height: 1.4; }
+    .mpx-move-title strong { color: var(--accent); }
+    .mpx-move-why { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 3px; line-height: 1.55; }
+    .mpx-move-go {
+      flex-shrink: 0; align-self: center;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      color: var(--text); border-radius: 10px;
+      padding: 7px 13px; font-size: 12px; font-weight: 800;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
     }
-    .mpb-dot.red { background: var(--red); box-shadow: 0 0 6px rgba(184,68,46,0.6); }
-    .mpb-dot.amber { background: var(--orange); box-shadow: 0 0 6px rgba(196,122,42,0.55); }
-    .mpb-big { font-size: 19px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text); }
-    .mpb-sub { font-size: 10.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
-    .mpb-bar { height: 5px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-top: 7px; }
-    .mpb-bar-fill { height: 100%; border-radius: 3px; transition: width .5s; }
-    .mpb-row {
-      display: flex; align-items: center; justify-content: space-between; gap: 6px;
-      padding: 4px 0; font-size: 12px; font-weight: 700; color: var(--text);
+    .mpx-move-go:hover { border-color: var(--accent); }
+
+    .mpx-engine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 640px) { .mpx-engine-grid { grid-template-columns: 1fr; } }
+    .mpx-engine-h { font-size: 12px; font-weight: 800; color: var(--text-muted); margin-bottom: 8px; }
+    .mpx-eng-row { margin-bottom: 10px; }
+    .mpx-eng-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+    .mpx-eng-name { font-size: 12.5px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mpx-eng-val { font-size: 12px; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+    .mpx-eng-track { height: 7px; background: var(--surface3); border-radius: 4px; overflow: hidden; }
+    .mpx-eng-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width .6s; }
+
+    .mpx-habit-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .mpx-habit {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 999px; padding: 6px 12px;
+      font-size: 12px; font-weight: 700; color: var(--text);
     }
-    .mpb-row-label { color: var(--text-muted); font-weight: 600; flex: 1; min-width: 0; }
-    .mpb-row-val { font-variant-numeric: tabular-nums; font-weight: 900; }
-    .mpb-mini-btn {
+    .mpx-habit .val { font-weight: 900; font-variant-numeric: tabular-nums; }
+    .mpx-habit button {
       background: var(--surface); border: 1.5px solid var(--border);
       color: var(--text); border-radius: 7px;
-      width: 22px; height: 22px; font-size: 13px; font-weight: 900;
+      min-width: 22px; height: 22px; padding: 0 6px;
+      font-size: 11.5px; font-weight: 900;
       cursor: pointer; font-family: inherit; line-height: 1;
       display: inline-flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
     }
-    .mpb-mini-btn:hover { border-color: var(--accent); }
-    .mpb-log-btn {
-      background: transparent; border: 1px dashed var(--border);
-      color: var(--text-muted); border-radius: 8px;
-      padding: 3px 9px; font-size: 11px; font-weight: 700;
-      cursor: pointer; font-family: inherit;
-    }
-    .mpb-log-btn:hover { color: var(--text); border-color: var(--accent); }
-    .mpb-equity {
-      display: flex; align-items: center; justify-content: space-between; gap: 6px;
-      margin-top: 7px; padding-top: 7px;
-      border-top: 1px dashed var(--border);
-      font-size: 11.5px; font-weight: 700; color: var(--text);
-    }
-    .mpb-equity-val { color: var(--accent); font-weight: 900; font-variant-numeric: tabular-nums; }
+    .mpx-habit button:hover { border-color: var(--accent); }
     #lobby-tasks-list {
       display: flex; flex-direction: column;
     }
@@ -5934,7 +5924,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v358</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v359</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6102,21 +6092,10 @@
 </aside>
 
 <main id="path-main" style="display:none">
-  <button class="btn btn-ghost" onclick="switchMode()" style="margin-bottom:16px">→ חזרה ללובי</button>
   <!-- ===== MY PATH (הדרך שלי) ===== -->
   <div class="page active" id="page-mypath">
     <div class="page-header">
       <div><h2><svg class="icon-lg"><use href="#ic-compass"/></svg>הדרך שלי</h2><p>מי אני רוצה להיות — ואיך אני מגיע לשם</p></div>
-    </div>
-
-    <!-- Command board — coach + live tiles, fed by real data -->
-    <div class="mpb" id="mypath-board">
-      <div class="mpb-coach" id="mpb-coach"></div>
-      <div class="mpb-tiles">
-        <div class="mpb-tile" id="mpb-tile-money"></div>
-        <div class="mpb-tile" id="mpb-tile-career"></div>
-        <div class="mpb-tile" id="mpb-tile-health"></div>
-      </div>
     </div>
 
     <!-- North star — the one sentence that steers everything -->
@@ -6126,6 +6105,21 @@
         placeholder="משפט אחד שמזכיר לי לאן אני הולך…"
         oninput="mpSaveText('northStar', this.value)"></textarea>
     </div>
+
+    <!-- ═══ THE STORY — computed from real data, never a wall of zeros ═══ -->
+    <div class="table-card mp-card" id="mpx-hero"></div>
+    <div id="mpx-ach"></div>
+    <div class="table-card mp-card" id="mpx-moves-card" style="display:none">
+      <div class="mp-section-title"><svg class="icon"><use href="#ic-flag"/></svg> המהלכים של השבוע</div>
+      <div class="mp-sub">לא רשימת מטלות — שלושת הדברים מהנתונים שלך שהכי מזיזים את המחט.</div>
+      <div id="mpx-moves"></div>
+    </div>
+    <div class="table-card mp-card" id="mpx-engine-card" style="display:none">
+      <div class="mp-section-title"><svg class="icon"><use href="#ic-chart-bars"/></svg> המנוע — מה מכניס לך כסף</div>
+      <div class="mp-sub">90 הימים האחרונים, לפי מה ששולם בפועל.</div>
+      <div id="mpx-engine"></div>
+    </div>
+    <div class="table-card mp-card" id="mpx-habits"></div>
 
     <!-- Vision — two guided free-text panels -->
     <div class="mp-grid2">
@@ -6164,7 +6158,7 @@
     </div>
 
     <!-- The planner — building blocks -->
-    <div class="table-card mp-card">
+    <div class="table-card mp-card" id="mp-planner-card">
       <div class="mp-section-title"><svg class="icon"><use href="#ic-chart-bars"/></svg> המתכנן — איך אני בונה את זה</div>
       <div class="mp-sub">המחירים שלך × כמה בחודש = המחזור המתוכנן. שחק עם הכמויות ותראה מתי התוכנית פוגשת את היעד.</div>
       <div id="mp-blocks"></div>
@@ -10852,14 +10846,19 @@ window.mpDelGoal = function(id) {
 };
 
 // ═════════════════════════════════════════════════════════════════
-//  MY PATH COMMAND BOARD (lobby) — daily status + pushing coach.
-//  Three tiles (money / career / health) + one daily step chosen by
-//  a deterministic priority engine. Zero setup, zero external calls.
+//  MY PATH — THE STORY ENGINE. Replaces the dead command board that
+//  showed month-to-date zeros. Every section is computed from data
+//  that actually exists (full income/expense/production history), so
+//  the page always summarizes something real:
+//    hero   — this month vs the SAME DAY last month + 6-month bars
+//    ach    — all-time achievements (only ever grow)
+//    moves  — up to 3 data-derived moves (collect / unstick / gap)
+//    engine — top categories + top clients, last 90 days
+//    habits — compact quick-log chips (no alarm dots, no nagging)
 // ═════════════════════════════════════════════════════════════════
 
 function _mpbToday() { return new Date().toISOString().slice(0, 10); }
 function _mpbWeekKey(dIn) {
-  // ISO week key, e.g. "2026-W27"
   const d = dIn ? new Date(dIn) : new Date();
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const dayNum = t.getUTCDay() || 7;
@@ -10868,222 +10867,250 @@ function _mpbWeekKey(dIn) {
   const week = Math.ceil((((t - yearStart) / 86400000) + 1) / 7);
   return t.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
 }
-
-// Gather everything the board needs in one defensive pass.
-function _mpbData() {
-  const st = mpState();
-  const now = new Date();
-  const nowKey = _mpbMonthKeySafe(now);
-  const today = _mpbToday();
-  const weekKey = _mpbWeekKey();
-  const year = String(now.getFullYear());
-
-  let paidThisMonth = 0, paidExpThisMonth = 0;
-  try {
-    paidThisMonth = load('income')
-      .filter(i => (i.status || 'pending') === 'paid' && (i.date || '').slice(0, 7) === nowKey)
-      .reduce((s, i) => s + (Number(i.amount) || 0), 0);
-  } catch (_) {}
-  try {
-    paidExpThisMonth = load('expenses')
-      .filter(e => e.paid && (e.date || '').slice(0, 7) === nowKey)
-      .reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  } catch (_) {}
-
-  let deliveredThisMonth = 0;
-  try {
-    deliveredThisMonth = load('productions')
-      .filter(p => p && p.stage === 'sent' && ((p.touchedAt || p.createdAt || '').slice(0, 7) === nowKey))
-      .length;
-  } catch (_) {}
-
-  const dayOfMonth = now.getDate();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-
-  return {
-    st, now, nowKey, today, weekKey, year,
-    paidThisMonth,
-    netThisMonth: paidThisMonth - paidExpThisMonth,
-    deliveredThisMonth,
-    releasesThisYear: Number(st.releases[year]) || 0,
-    outreachThisWeek: Number(st.outreach[weekKey]) || 0,
-    healthToday: st.health[today] || null,
-    monthPace: dayOfMonth / daysInMonth,
-    dayOfWeek: now.getDay() // 0=Sunday
-  };
-}
 function _mpbMonthKeySafe(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
+function _mpxIsPaid(i) { return (i.status || 'pending') === 'paid'; }
 
-// ── The coach: gap alerts + ONE daily step, priority-ordered ──
-function _mpbCoach(d) {
-  const st = d.st;
-  const target = Number(st.targetRevenue) || 0;
-  const alerts = { money: null, career: null, health: null };
-  const steps = []; // {key, text}
-
-  // 1) No target at all
-  if (!target) {
-    steps.push({ key: 'set-target', text: 'קבע יעד מחזור חודשי בדף המלא — בלי מספר אין משחק.' });
-  } else {
-    // 2) Revenue pace
-    const expectedByNow = target * d.monthPace;
-    if (d.paidThisMonth < expectedByNow * 0.85) {
-      alerts.money = 'red';
-      const gap = Math.round(expectedByNow - d.paidThisMonth);
-      const topBlock = st.blocks.filter(b => (Number(b.price) || 0) > 0).sort((a, b) => b.price - a.price)[0];
-      steps.push({
-        key: 'money-pace',
-        text: 'אתה מאחור בקצב החודש (' + fmtMoney(gap) + ' מתחת לצפי). ' +
-              (topBlock ? 'סגור ' + _escape(topBlock.name) + ' אחת — וזה נסגר.' : 'סגור עסקה אחת השבוע.')
-      });
-    } else if (d.paidThisMonth < expectedByNow) {
-      alerts.money = 'amber';
-    }
-  }
-
-  // 3) Outreach — from Tuesday on, zero outreach = push
-  if (d.outreachThisWeek === 0 && d.dayOfWeek >= 2) {
-    alerts.career = alerts.career || 'amber';
-    steps.push({ key: 'outreach', text: 'אפס פניות השבוע. פנייה אחת לאמן מהרשימה — 10 דקות, עכשיו.' });
-  }
-
-  // 4) Health — nothing logged today
-  const h = d.healthToday;
-  if (!h || (!h.steps && !h.cal)) {
-    alerts.health = alerts.health || 'amber';
-    steps.push({ key: 'health-log', text: 'עוד לא עדכנת צעדים/קלוריות היום. שתי הקשות וזה מעודכן.' });
-  } else if (h.steps && h.steps < (st.healthTargets.steps || 8000) * 0.5 && new Date().getHours() >= 17) {
-    alerts.health = 'amber';
-    steps.push({ key: 'health-steps', text: 'אתה מתחת לחצי מיעד הצעדים והיום נגמר — צא להליכה של 20 דקות.' });
-  }
-
-  // 5) Releases pace
-  const relTarget = Number(st.releasesTarget) || 6;
-  const monthsGone = new Date().getMonth() + 1;
-  const relExpected = Math.floor(relTarget * (monthsGone / 12));
-  if (d.releasesThisYear < relExpected) {
-    alerts.career = alerts.career || 'amber';
-    steps.push({ key: 'release', text: 'לפי הקצב היית אמור להיות על ' + relExpected + ' שחרורים השנה — אתה על ' + d.releasesThisYear + '. תקדם שחרור.' });
-  }
-
-  // Headline: pace vs month
-  let line;
-  if (target) {
-    const pctTarget = Math.round((d.paidThisMonth / target) * 100);
-    const pctMonth = Math.round(d.monthPace * 100);
-    if (pctTarget >= 100)      line = 'סגרת ' + pctTarget + '% מהיעד — חודש חזק. אל תרפה.';
-    else if (pctTarget >= pctMonth) line = 'אתה ב-' + pctTarget + '% מהיעד ו-' + pctMonth + '% מהחודש עבר — בקצב. תחזיק.';
-    else                        line = 'אתה ב-' + pctTarget + '% מהיעד אבל ' + pctMonth + '% מהחודש כבר עבר — צריך להדביק.';
-  } else {
-    line = 'אין יעד מוגדר — המאמן לא יכול לדחוף בלי מספר.';
-  }
-
-  // One step per day: highest-priority pending step; once marked done
-  // the coach acknowledges and waits for tomorrow (per the approved
-  // spec — done ≠ immediately push the next one).
-  const doneKey = st.coachDone[d.today];
-  const step = doneKey ? null : (steps[0] || null);
-
-  return { line, step, alerts, doneToday: !!doneKey, allGreen: steps.length === 0 };
-}
-
-// ── Render ──
 window.renderMyPathBoard = function() {
-  const board = document.getElementById('mypath-board');
-  if (!board) return;
-  let d;
-  try { d = _mpbData(); } catch (e) { return; }
-  const st = d.st;
-  const coach = _mpbCoach(d);
-
-  // Coach card
-  const coachEl = document.getElementById('mpb-coach');
-  if (coachEl) {
-    let inner = '<div class="mpb-coach-line">' + coach.line + '</div>';
-    if (coach.allGreen) {
-      inner += '<div class="mpb-coach-step"><span class="mpb-coach-step-label">היום</span><span class="mpb-coach-step-text" style="color:var(--green)">הכל ירוק. תחזיק את הקצב — ומחר שוב.</span></div>';
-      coachEl.classList.add('all-done');
-    } else if (coach.step) {
-      inner += '<div class="mpb-coach-step">'
-        + '<span class="mpb-coach-step-label">הצעד של היום</span>'
-        + '<span class="mpb-coach-step-text">' + coach.step.text + '</span>'
-        + '<button class="mpb-coach-done-btn" onclick="mpbStepDone(\'' + coach.step.key + '\')">בוצע ✓</button>'
-        + '</div>';
-      coachEl.classList.remove('all-done');
-    } else if (coach.doneToday) {
-      inner += '<div class="mpb-coach-step"><span class="mpb-coach-step-label">היום</span><span class="mpb-coach-step-text" style="color:var(--green)">✓ הצעד של היום בוצע. מחר צעד חדש.</span></div>';
-      coachEl.classList.add('all-done');
-    }
-    coachEl.innerHTML = inner;
-  }
-
-  // Money tile
-  const moneyEl = document.getElementById('mpb-tile-money');
-  if (moneyEl) {
-    const target = Number(st.targetRevenue) || 0;
-    const pct = target ? Math.min(100, Math.round((d.paidThisMonth / target) * 100)) : 0;
-    const barColor = coach.alerts.money === 'red' ? 'var(--red)' : (coach.alerts.money === 'amber' ? 'var(--orange)' : 'var(--green)');
-    moneyEl.innerHTML =
-      (coach.alerts.money ? '<span class="mpb-dot ' + coach.alerts.money + '"></span>' : '') +
-      '<div class="mpb-tile-head"><svg><use href="#ic-coin-bag"/></svg> כסף</div>' +
-      '<div class="mpb-big">' + fmtMoney(d.paidThisMonth) + '</div>' +
-      '<div class="mpb-sub">' + (target ? ('מתוך ' + fmtMoney(target) + ' · ' + pct + '%') : 'אין יעד מוגדר') + '</div>' +
-      (target ? '<div class="mpb-bar"><div class="mpb-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div>' : '') +
-      '<div class="mpb-row" style="margin-top:6px"><span class="mpb-row-label">נטו החודש</span><span class="mpb-row-val" style="color:' + (d.netThisMonth >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmtMoney(d.netThisMonth) + '</span></div>' +
-      '<div class="mpb-equity"><span>הון עצמי</span><span class="mpb-equity-val">' + fmtMoney(st.equity) + '</span><button class="mpb-log-btn" onclick="mpbUpdateEquity()">עדכן</button></div>';
-  }
-
-  // Career tile
-  const careerEl = document.getElementById('mpb-tile-career');
-  if (careerEl) {
-    careerEl.innerHTML =
-      (coach.alerts.career ? '<span class="mpb-dot ' + coach.alerts.career + '"></span>' : '') +
-      '<div class="mpb-tile-head"><svg><use href="#ic-music-note"/></svg> קריירה</div>' +
-      '<div class="mpb-row"><span class="mpb-row-label">נמסרו החודש</span><span class="mpb-row-val">' + d.deliveredThisMonth + '</span></div>' +
-      '<div class="mpb-row"><span class="mpb-row-label">שחרורים השנה</span><span class="mpb-row-val">' + d.releasesThisYear + '/' + (Number(st.releasesTarget) || 6) + '</span><button class="mpb-mini-btn" onclick="mpbBumpRelease()" title="שחרור חדש">+</button></div>' +
-      '<div class="mpb-row"><span class="mpb-row-label">פניות השבוע</span><span class="mpb-row-val">' + d.outreachThisWeek + '</span><button class="mpb-mini-btn" onclick="mpbBumpOutreach()" title="פניתי לאמן">+</button></div>';
-  }
-
-  // Health tile
-  const healthEl = document.getElementById('mpb-tile-health');
-  if (healthEl) {
-    const h = d.healthToday || {};
-    const tSteps = st.healthTargets.steps || 8000;
-    const tCal = st.healthTargets.cal || 2200;
-    // 7-day steps average (logged days only)
-    let avg = 0, n = 0;
-    for (let k = 0; k < 7; k++) {
-      const key = new Date(Date.now() - k * 86400000).toISOString().slice(0, 10);
-      const e = st.health[key];
-      if (e && e.steps) { avg += e.steps; n++; }
-    }
-    avg = n ? Math.round(avg / n) : 0;
-    healthEl.innerHTML =
-      (coach.alerts.health ? '<span class="mpb-dot ' + coach.alerts.health + '"></span>' : '') +
-      '<div class="mpb-tile-head"><svg><use href="#ic-cat-health"/></svg> בריאות</div>' +
-      '<div class="mpb-row"><span class="mpb-row-label">צעדים היום</span><span class="mpb-row-val">' + (h.steps ? h.steps.toLocaleString('he-IL') : '—') + '</span><button class="mpb-log-btn" onclick="mpbLogHealth(\'steps\')">עדכן</button></div>' +
-      '<div class="mpb-row"><span class="mpb-row-label">קלוריות היום</span><span class="mpb-row-val">' + (h.cal ? h.cal.toLocaleString('he-IL') : '—') + '</span><button class="mpb-log-btn" onclick="mpbLogHealth(\'cal\')">עדכן</button></div>' +
-      '<div class="mpb-sub" style="margin-top:5px">יעד: ' + tSteps.toLocaleString('he-IL') + ' צעדים · ' + tCal.toLocaleString('he-IL') + ' קק״ל' + (avg ? ' · ממוצע שבועי: ' + avg.toLocaleString('he-IL') : '') + '</div>';
-  }
-};
-
-// ── Handlers ──
-window.mpbStepDone = function(key) {
+  let income = [], expenses = [], productions = [], clients = [];
+  try { income = load('income'); } catch (_) {}
+  try { expenses = load('expenses'); } catch (_) {}
+  try { productions = load('productions'); } catch (_) {}
+  try { clients = load('clients'); } catch (_) {}
   const st = mpState();
-  st.coachDone[_mpbToday()] = key;
-  // prune old done-marks (keep 30 days)
-  const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
-  Object.keys(st.coachDone).forEach(k => { if (k < cutoff) delete st.coachDone[k]; });
-  mpSave(st);
-  if (window.haptic) window.haptic.success();
-  renderMyPathBoard();
+  const now = new Date();
+  const todayDay = now.getDate();
+  const nowKey = _mpbMonthKeySafe(now);
+
+  // ── shared aggregates ──
+  const paidIn = income.filter(_mpxIsPaid);
+  const monthTotal = k => paidIn.filter(i => (i.date || '').slice(0, 7) === k)
+                                .reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const paidThisMonth = monthTotal(nowKey);
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevKey = _mpbMonthKeySafe(prev);
+  const prevSameDay = paidIn.filter(i => {
+    if ((i.date || '').slice(0, 7) !== prevKey) return false;
+    const dd = parseInt((i.date || '').slice(8, 10), 10);
+    return dd && dd <= todayDay;
+  }).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const prevTotal = monthTotal(prevKey);
+  const expPaidThisMonth = expenses.filter(e => e.paid && (e.date || '').slice(0, 7) === nowKey)
+                                   .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const owedTotal = income.filter(i => !_mpxIsPaid(i) && !i.fromPlan)
+                          .reduce((s, i) => s + (Number(i.amount) || 0), 0);
+
+  // ── HERO ──
+  const heroEl = document.getElementById('mpx-hero');
+  if (heroEl) {
+    if (!income.length) {
+      heroEl.innerHTML = '<div class="mpx-hero-label">התמונה הגדולה</div>'
+        + '<div class="mpx-hero-sub" style="margin-top:8px">עוד אין נתוני הכנסות — ההכנסה הראשונה שתרשום תדליק את הדף הזה.</div>';
+    } else {
+      let deltaHtml = '';
+      if (prevSameDay > 0) {
+        const pct = Math.round(((paidThisMonth - prevSameDay) / prevSameDay) * 100);
+        const cls = pct > 3 ? 'up' : (pct < -3 ? 'down' : 'flat');
+        const sign = pct > 0 ? '+' : '';
+        deltaHtml = '<span class="mpx-delta ' + cls + '">' + sign + pct + '% מול אותו שלב בחודש שעבר</span>';
+      } else if (paidThisMonth > 0) {
+        deltaHtml = '<span class="mpx-delta up">בחודש שעבר באותו שלב עוד לא נכנס כלום</span>';
+      }
+      // 6-month bars
+      const bars = [];
+      for (let k = 5; k >= 0; k--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
+        const key = _mpbMonthKeySafe(d);
+        bars.push({ key, label: d.toLocaleDateString('he-IL', { month: 'short' }), total: monthTotal(key), cur: k === 0 });
+      }
+      const maxBar = Math.max.apply(null, bars.map(b => b.total).concat([1]));
+      const maxIdx = bars.reduce((mi, b, i) => b.total > bars[mi].total ? i : mi, 0);
+      const barsHtml = bars.map((b, i) => {
+        const h = Math.max(4, Math.round((b.total / maxBar) * 100));
+        const showVal = b.cur || (i === maxIdx && b.total > 0);
+        return '<div class="mpx-bar-col ' + (b.cur ? 'cur' : '') + '" title="' + b.label + ': ' + fmtMoney(b.total) + '">'
+          + '<span class="mpx-bar-val">' + (showVal && b.total > 0 ? Math.round(b.total / 1000) + 'k' : '') + '</span>'
+          + '<div class="mpx-bar ' + (b.cur ? 'cur' : '') + '" style="height:' + h + '%"></div>'
+          + '<span class="mpx-bar-lbl">' + b.label + '</span>'
+          + '</div>';
+      }).join('');
+      heroEl.innerHTML =
+        '<div class="mpx-hero-label">נכנס החודש (עד ה-' + todayDay + ')</div>'
+        + '<div class="mpx-hero-row"><span class="mpx-hero-num">' + fmtMoney(paidThisMonth) + '</span>' + deltaHtml + '</div>'
+        + '<div class="mpx-hero-sub">'
+        +   'חודש שעבר בסך הכל: <strong>' + fmtMoney(prevTotal) + '</strong>'
+        +   ' · נטו החודש: <strong>' + fmtMoney(paidThisMonth - expPaidThisMonth) + '</strong>'
+        +   (owedTotal > 0 ? ' · מחכה לגבייה: <strong style="color:var(--orange)">' + fmtMoney(owedTotal) + '</strong>' : '')
+        + '</div>'
+        + '<div class="mpx-bars">' + barsHtml + '</div>';
+    }
+  }
+
+  // ── ACHIEVEMENTS (all-time — only ever grow) ──
+  const achEl = document.getElementById('mpx-ach');
+  if (achEl) {
+    const allTime = paidIn.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const monthsMap = {};
+    paidIn.forEach(i => {
+      const k = (i.date || '').slice(0, 7);
+      if (k) monthsMap[k] = (monthsMap[k] || 0) + (Number(i.amount) || 0);
+    });
+    let bestKey = '', bestVal = 0;
+    Object.entries(monthsMap).forEach(([k, v]) => { if (v > bestVal) { bestVal = v; bestKey = k; } });
+    const bestLbl = bestKey ? (function () {
+      const [y, m] = bestKey.split('-').map(Number);
+      return (typeof MONTHS_HE !== 'undefined' ? MONTHS_HE[m - 1] : m) + ' ' + String(y).slice(2);
+    })() : '—';
+    const delivered = productions.filter(p => p && p.stage === 'sent').length;
+    const clientNames = new Set();
+    clients.forEach(c => { if (c && c.name) clientNames.add(c.name); });
+    income.forEach(i => { if (i.clientName) clientNames.add(i.clientName); });
+    achEl.innerHTML = '<div class="mpx-ach-grid">'
+      + '<div class="mpx-ach-chip"><div class="mpx-ach-num">' + fmtMoney(allTime) + '</div><div class="mpx-ach-lbl">נגבה מאז ומעולם</div></div>'
+      + '<div class="mpx-ach-chip"><div class="mpx-ach-num">' + (bestVal > 0 ? fmtMoney(bestVal) : '—') + '</div><div class="mpx-ach-lbl">החודש הכי חזק' + (bestKey ? ' · ' + bestLbl : '') + '</div></div>'
+      + '<div class="mpx-ach-chip"><div class="mpx-ach-num">' + delivered + '</div><div class="mpx-ach-lbl">הפקות שנמסרו</div></div>'
+      + '<div class="mpx-ach-chip"><div class="mpx-ach-num">' + clientNames.size + '</div><div class="mpx-ach-lbl">לקוחות עבדו איתך</div></div>'
+      + '<div class="mpx-ach-chip equity"><div><div class="mpx-ach-num">' + fmtMoney(st.equity || 0) + '</div><div class="mpx-ach-lbl">הון עצמי (לקראת הדירה)</div></div>'
+      +   '<button class="mpx-move-go" onclick="mpbUpdateEquity()">עדכן</button></div>'
+      + '</div>';
+  }
+
+  // ── MOVES — up to 3, from real data ──
+  const movesCard = document.getElementById('mpx-moves-card');
+  const movesEl = document.getElementById('mpx-moves');
+  if (movesCard && movesEl) {
+    const moves = [];
+    const todayIso = _mpbToday();
+
+    // 1) Biggest overdue collection
+    const overdue = income.filter(i => !_mpxIsPaid(i) && !i.fromPlan && (i.date || '') < todayIso && (Number(i.amount) || 0) > 0)
+                          .sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0));
+    if (overdue.length) {
+      const o = overdue[0];
+      const days = Math.floor((Date.now() - new Date(o.date).getTime()) / 86400000);
+      const rest = overdue.length > 1 ? ' (ועוד ' + (overdue.length - 1) + ' ממתינים)' : '';
+      moves.push({
+        title: 'לגבות מ<strong>' + _escape(o.clientName || o.description || 'לקוח') + '</strong> — ' + fmtMoney(o.amount),
+        why: 'מחכה כבר ' + days + ' ימים' + rest + '. הודעת וואטסאפ אחת — זו ההכנסה הכי מהירה שיש.',
+        go: 'להכנסות', act: "chooseMode('business');showPage('income')"
+      });
+    }
+
+    // 2) Most-stuck production
+    const active = productions.filter(p => p && p.stage !== 'sent');
+    let worst = null, worstDays = 0;
+    active.forEach(p => {
+      const last = p.touchedAt || p.createdAt;
+      if (!last) return;
+      const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+      if (days >= 7 && days > worstDays) { worst = p; worstDays = days; }
+    });
+    if (worst) {
+      let stageLbl = '';
+      try { stageLbl = (typeof prodStageMeta === 'function' && prodStageMeta(worst.stage) || {}).label || ''; } catch (_) {}
+      moves.push({
+        title: '<strong>' + _escape(worst.title || 'הפקה') + '</strong> תקועה ' + worstDays + ' ימים' + (stageLbl ? ' בשלב ' + stageLbl : ''),
+        why: 'הפקה שזזה = תשלום שמתקרב. צעד אחד קטן — טיוטה, הודעה ללקוח, משהו.',
+        go: 'להפקות', act: "chooseMode('business');showPage('productions')"
+      });
+    }
+
+    // 3) Target gap in units of his own services (3-month avg vs target)
+    const target = Number(st.targetRevenue) || 0;
+    if (target > 0) {
+      let sum = 0, cnt = 0;
+      for (let k = 1; k <= 3; k++) {
+        const key = _mpbMonthKeySafe(new Date(now.getFullYear(), now.getMonth() - k, 1));
+        const t = monthTotal(key);
+        if (t > 0) { sum += t; cnt++; }
+      }
+      const avg = cnt ? Math.round(sum / cnt) : paidThisMonth;
+      const gap = target - avg;
+      if (gap > 0) {
+        const topBlock = st.blocks.filter(b => (Number(b.price) || 0) > 0).sort((a, b) => b.price - a.price)[0];
+        moves.push({
+          title: 'לסגור את הפער ליעד: <strong>' + fmtMoney(gap) + '</strong> בחודש',
+          why: topBlock
+            ? 'זה בערך עוד ' + Math.ceil(gap / topBlock.price) + ' × ' + _escape(topBlock.name) + ' בחודש — או העלאת מחיר. המתכנן למטה עוזר להחליט.'
+            : 'תגדיר שירותים במתכנן למטה כדי לתרגם את הפער ליחידות.',
+          go: 'למתכנן', act: "document.getElementById('mp-planner-card')?.scrollIntoView({behavior:'smooth'})"
+        });
+      }
+    }
+
+    if (moves.length) {
+      movesCard.style.display = '';
+      movesEl.innerHTML = moves.slice(0, 3).map((m, i) =>
+        '<div class="mpx-move">'
+        + '<span class="mpx-move-num">' + (i + 1) + '</span>'
+        + '<div class="mpx-move-body"><div class="mpx-move-title">' + m.title + '</div>'
+        + '<div class="mpx-move-why">' + m.why + '</div></div>'
+        + '<button class="mpx-move-go" onclick="' + m.act.replace(/"/g, '&quot;') + '">' + m.go + '</button>'
+        + '</div>').join('');
+    } else {
+      movesCard.style.display = '';
+      movesEl.innerHTML = '<div class="mpx-move"><span class="mpx-move-num" style="background:var(--green)">✓</span>'
+        + '<div class="mpx-move-body"><div class="mpx-move-title">אין שריפות — הכל זורם</div>'
+        + '<div class="mpx-move-why">אף אחד לא באיחור, שום הפקה לא תקועה. זה הזמן לקדם שחרור או פנייה חדשה.</div></div></div>';
+    }
+  }
+
+  // ── ENGINE — top categories + clients, last 90 days ──
+  const engCard = document.getElementById('mpx-engine-card');
+  const engEl = document.getElementById('mpx-engine');
+  if (engCard && engEl) {
+    const cutoff = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+    const recent = paidIn.filter(i => (i.date || '') >= cutoff);
+    const total90 = recent.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    if (total90 > 0) {
+      const byCat = {}, byClient = {};
+      recent.forEach(i => {
+        const c = i.category || 'אחר';
+        byCat[c] = (byCat[c] || 0) + (Number(i.amount) || 0);
+        if (i.clientName) byClient[i.clientName] = (byClient[i.clientName] || 0) + (Number(i.amount) || 0);
+      });
+      const rows = (obj) => {
+        const top = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 3);
+        const maxV = top.length ? top[0][1] : 1;
+        return top.map(([name, v]) =>
+          '<div class="mpx-eng-row">'
+          + '<div class="mpx-eng-top"><span class="mpx-eng-name">' + _escape(name) + '</span>'
+          + '<span class="mpx-eng-val">' + fmtMoney(v) + ' · ' + Math.round((v / total90) * 100) + '%</span></div>'
+          + '<div class="mpx-eng-track"><div class="mpx-eng-fill" style="width:' + Math.max(6, Math.round((v / maxV) * 100)) + '%"></div></div>'
+          + '</div>').join('');
+      };
+      engCard.style.display = '';
+      engEl.innerHTML = '<div class="mpx-engine-grid">'
+        + '<div><div class="mpx-engine-h">שירותים מובילים</div>' + rows(byCat) + '</div>'
+        + '<div><div class="mpx-engine-h">לקוחות מובילים</div>' + (Object.keys(byClient).length ? rows(byClient) : '<div class="mp-empty">אין שיוך לקוחות בתקופה</div>') + '</div>'
+        + '</div>';
+    } else {
+      engCard.style.display = 'none';
+    }
+  }
+
+  // ── HABITS — compact quick-log chips, zero nagging ──
+  const habitsEl = document.getElementById('mpx-habits');
+  if (habitsEl) {
+    const year = String(now.getFullYear());
+    const wk = _mpbWeekKey();
+    const h = st.health[_mpbToday()] || {};
+    habitsEl.innerHTML =
+      '<div class="mp-label"><svg class="icon"><use href="#ic-cat-health"/></svg> מדדים מהירים</div>'
+      + '<div class="mpx-habit-row">'
+      + '<span class="mpx-habit">שחרורים השנה <span class="val">' + (Number(st.releases[year]) || 0) + '/' + (Number(st.releasesTarget) || 6) + '</span><button onclick="mpbBumpRelease()" title="שחרור חדש">+</button></span>'
+      + '<span class="mpx-habit">פניות השבוע <span class="val">' + (Number(st.outreach[wk]) || 0) + '</span><button onclick="mpbBumpOutreach()" title="פניתי לאמן">+</button></span>'
+      + '<span class="mpx-habit">צעדים היום <span class="val">' + (h.steps ? h.steps.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'steps\')">עדכן</button></span>'
+      + '<span class="mpx-habit">קלוריות <span class="val">' + (h.cal ? h.cal.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'cal\')">עדכן</button></span>'
+      + '</div>';
+  }
 };
+
+// ── Handlers (quick logs) ──
 window.mpbUpdateEquity = function() {
   const st = mpState();
-  const cur = st.equity || 0;
-  const val = prompt('כמה הון עצמי יש לך היום? (₪)', cur || '');
+  const val = prompt('כמה הון עצמי יש לך היום? (₪)', st.equity || '');
   if (val === null) return;
   const n = parseFloat(String(val).replace(/[^\d.]/g, ''));
   if (isNaN(n) || n < 0) { toast('מספר לא תקין'); return; }
@@ -11106,7 +11133,6 @@ window.mpbBumpOutreach = function() {
   const st = mpState();
   const wk = _mpbWeekKey();
   st.outreach[wk] = (Number(st.outreach[wk]) || 0) + 1;
-  // prune old weeks (keep ~26)
   const keys = Object.keys(st.outreach).sort();
   while (keys.length > 26) delete st.outreach[keys.shift()];
   mpSave(st);
@@ -11125,15 +11151,12 @@ window.mpbLogHealth = function(field) {
   if (isNaN(n) || n < 0) { toast('מספר לא תקין'); return; }
   entry[field] = Math.round(n);
   st.health[today] = entry;
-  // prune >90 days
   const cutoff = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
   Object.keys(st.health).forEach(k => { if (k < cutoff) delete st.health[k]; });
   mpSave(st);
   if (window.haptic) window.haptic.tap();
   renderMyPathBoard();
 };
-// Metrics targets (edited from the My Path page) — debounced like the
-// other My Path inputs so the cloud queue isn't hit per keystroke.
 window.mpbSaveMetric = function(field, val) {
   clearTimeout(_mpTimers['metric-' + field]);
   _mpTimers['metric-' + field] = setTimeout(() => {
