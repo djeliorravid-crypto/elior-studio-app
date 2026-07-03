@@ -3477,6 +3477,123 @@
       display: flex; flex-direction: column;
       box-sizing: border-box;
     }
+
+    /* ===== MY PATH COMMAND BOARD (lobby) ===== */
+    .mpb {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 580px;
+      margin-top: 18px;
+      padding: 16px 18px 14px;
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid rgba(255,255,255,0.18);
+      border-radius: 22px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+      animation: cardsIn 1s cubic-bezier(.4,0,.2,1) 0.3s both;
+      color: #fff; direction: rtl;
+      box-sizing: border-box;
+    }
+    .mpb-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .mpb-title { display: flex; align-items: center; gap: 7px; font-size: 14.5px; font-weight: 800; }
+    .mpb-title-svg {
+      width: 17px; height: 17px;
+      fill: none; stroke: currentColor; stroke-width: 1.8;
+      stroke-linecap: round; stroke-linejoin: round; opacity: 0.9;
+    }
+    .mpb-full {
+      background: transparent; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 700;
+      font-family: inherit; padding: 4px 6px;
+    }
+    .mpb-full:hover { color: #fff; }
+
+    .mpb-coach {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 14px; padding: 11px 13px;
+      margin-bottom: 10px;
+      font-size: 13px; line-height: 1.55;
+    }
+    .mpb-coach-line { color: rgba(255,255,255,0.92); font-weight: 600; }
+    .mpb-coach-step {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-top: 8px; padding-top: 8px;
+      border-top: 1px dashed rgba(255,255,255,0.16);
+    }
+    .mpb-coach-step-label {
+      flex-shrink: 0; font-size: 10.5px; font-weight: 900; letter-spacing: 0.08em;
+      color: #e8c39f; text-transform: uppercase;
+    }
+    .mpb-coach-step-text { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; }
+    .mpb-coach-done-btn {
+      flex-shrink: 0;
+      background: rgba(122,168,127,0.22); border: 1px solid rgba(168,230,168,0.4);
+      color: #a8e6a8; border-radius: 999px;
+      padding: 4px 12px; font-size: 11.5px; font-weight: 800;
+      cursor: pointer; font-family: inherit;
+    }
+    .mpb-coach-done-btn:hover { background: rgba(122,168,127,0.32); }
+    .mpb-coach.all-done .mpb-coach-line { color: #a8e6a8; }
+
+    .mpb-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    @media (max-width: 540px) { .mpb-tiles { grid-template-columns: 1fr; } }
+    .mpb-tile {
+      position: relative;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 14px; padding: 11px 12px;
+      min-height: 92px;
+    }
+    .mpb-tile-head {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+      color: rgba(255,255,255,0.65); margin-bottom: 7px;
+    }
+    .mpb-tile-head svg {
+      width: 13px; height: 13px;
+      fill: none; stroke: currentColor; stroke-width: 1.8;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+    .mpb-dot {
+      position: absolute; top: 10px; left: 10px;
+      width: 7px; height: 7px; border-radius: 50%;
+    }
+    .mpb-dot.red { background: #ff6b6b; box-shadow: 0 0 6px rgba(255,107,107,0.7); }
+    .mpb-dot.amber { background: #ffcc66; box-shadow: 0 0 6px rgba(255,204,102,0.6); }
+    .mpb-big { font-size: 19px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .mpb-sub { font-size: 10.5px; color: rgba(255,255,255,0.6); font-weight: 600; margin-top: 2px; }
+    .mpb-bar { height: 5px; background: rgba(255,255,255,0.14); border-radius: 3px; overflow: hidden; margin-top: 7px; }
+    .mpb-bar-fill { height: 100%; border-radius: 3px; transition: width .5s; }
+    .mpb-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      padding: 4px 0; font-size: 12px; font-weight: 700;
+    }
+    .mpb-row-label { color: rgba(255,255,255,0.7); font-weight: 600; flex: 1; min-width: 0; }
+    .mpb-row-val { font-variant-numeric: tabular-nums; font-weight: 900; }
+    .mpb-mini-btn {
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
+      color: #fff; border-radius: 7px;
+      width: 22px; height: 22px; font-size: 13px; font-weight: 900;
+      cursor: pointer; font-family: inherit; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .mpb-mini-btn:hover { background: rgba(255,255,255,0.22); }
+    .mpb-log-btn {
+      background: transparent; border: 1px dashed rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.75); border-radius: 8px;
+      padding: 3px 9px; font-size: 11px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    .mpb-log-btn:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+    .mpb-equity {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      margin-top: 7px; padding-top: 7px;
+      border-top: 1px dashed rgba(255,255,255,0.14);
+      font-size: 11.5px; font-weight: 700;
+    }
+    .mpb-equity-val { color: #e8c39f; font-weight: 900; font-variant-numeric: tabular-nums; }
     #lobby-tasks-list {
       display: flex; flex-direction: column;
     }
@@ -5827,7 +5944,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v354</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v355</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -5863,6 +5980,26 @@
         <div class="mode-card-title">שירים</div>
       </div>
       <div class="mode-card-sub">סקיצות · מיקסים · הפקה</div>
+    </div>
+  </div>
+
+  <!-- ===== MY PATH COMMAND BOARD — daily status + pushing coach.
+       Lives between the mode cards and the task list; the rest of
+       the lobby is untouched. Data: my_path store + real income/
+       expenses/productions. Zero external dependencies. ===== -->
+  <div class="mpb" id="mypath-board">
+    <div class="mpb-head">
+      <div class="mpb-title">
+        <svg viewBox="0 0 24 24" class="mpb-title-svg"><use href="#ic-compass"/></svg>
+        הדרך שלי
+      </div>
+      <button class="mpb-full" onclick="chooseMode('business');showPage('mypath')">לדף המלא ›</button>
+    </div>
+    <div class="mpb-coach" id="mpb-coach"></div>
+    <div class="mpb-tiles">
+      <div class="mpb-tile" id="mpb-tile-money"></div>
+      <div class="mpb-tile" id="mpb-tile-career"></div>
+      <div class="mpb-tile" id="mpb-tile-health"></div>
     </div>
   </div>
 
@@ -6675,6 +6812,25 @@
         <button class="btn btn-primary btn-sm" onclick="mpAddBlock()">+ הוסף</button>
       </div>
       <div id="mp-plan-summary"></div>
+
+      <!-- Metrics targets — feed the lobby command board -->
+      <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
+        <div class="mp-label">הגדרות מדדים (ללוח בלובי)</div>
+        <div class="mp-target-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label>יעד צעדים ביום</label>
+            <input type="number" id="mp-metric-steps" min="0" placeholder="8000" oninput="mpbSaveMetric('steps', this.value)"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>יעד קלוריות ביום</label>
+            <input type="number" id="mp-metric-cal" min="0" placeholder="2200" oninput="mpbSaveMetric('cal', this.value)"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>שחרורים בשנה</label>
+            <input type="number" id="mp-metric-releases" min="0" placeholder="6" oninput="mpbSaveMetric('releases', this.value)"/>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Personal goals -->
@@ -10398,6 +10554,17 @@ function mpState() {
   const st = loadObj('my_path');
   if (!Array.isArray(st.blocks)) st.blocks = [];
   if (!Array.isArray(st.goals))  st.goals  = [];
+  // Command-board fields (added v355). In-memory defaults only — no
+  // save here; whoever mutates them persists.
+  if (typeof st.equity !== 'number')                      st.equity = Number(st.equity) || 0;
+  if (!st.releases  || typeof st.releases  !== 'object')  st.releases  = {};
+  if (!st.outreach  || typeof st.outreach  !== 'object')  st.outreach  = {};
+  if (!st.health    || typeof st.health    !== 'object')  st.health    = {};
+  if (!st.coachDone || typeof st.coachDone !== 'object')  st.coachDone = {};
+  if (!st.healthTargets || typeof st.healthTargets !== 'object') st.healthTargets = {};
+  if (!(Number(st.healthTargets.steps) > 0)) st.healthTargets.steps = 8000;
+  if (!(Number(st.healthTargets.cal)   > 0)) st.healthTargets.cal   = 2200;
+  if (!(Number(st.releasesTarget) > 0))      st.releasesTarget = 6;
   // First-run seed: three typical services so the planner mechanics
   // are visible immediately. All editable/deletable.
   if (!st.seededV1) {
@@ -10477,6 +10644,9 @@ function renderMyPath() {
   fill('mp-target-rev',    st.targetRevenue || '');
   fill('mp-target-profit', st.targetProfit || '');
   fill('mp-target-date',   st.targetDate);
+  fill('mp-metric-steps',    st.healthTargets.steps || '');
+  fill('mp-metric-cal',      st.healthTargets.cal || '');
+  fill('mp-metric-releases', st.releasesTarget || '');
   _mpRenderProgress();
   _mpRenderBlocks();
   _mpRenderPlanSummary();
@@ -10684,6 +10854,302 @@ window.mpDelGoal = function(id) {
   st.goals = st.goals.filter(x => x.id !== id);
   mpSave(st);
   _mpRenderGoals();
+};
+
+// ═════════════════════════════════════════════════════════════════
+//  MY PATH COMMAND BOARD (lobby) — daily status + pushing coach.
+//  Three tiles (money / career / health) + one daily step chosen by
+//  a deterministic priority engine. Zero setup, zero external calls.
+// ═════════════════════════════════════════════════════════════════
+
+function _mpbToday() { return new Date().toISOString().slice(0, 10); }
+function _mpbWeekKey(dIn) {
+  // ISO week key, e.g. "2026-W27"
+  const d = dIn ? new Date(dIn) : new Date();
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((t - yearStart) / 86400000) + 1) / 7);
+  return t.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
+}
+
+// Gather everything the board needs in one defensive pass.
+function _mpbData() {
+  const st = mpState();
+  const now = new Date();
+  const nowKey = _mpbMonthKeySafe(now);
+  const today = _mpbToday();
+  const weekKey = _mpbWeekKey();
+  const year = String(now.getFullYear());
+
+  let paidThisMonth = 0, paidExpThisMonth = 0;
+  try {
+    paidThisMonth = load('income')
+      .filter(i => (i.status || 'pending') === 'paid' && (i.date || '').slice(0, 7) === nowKey)
+      .reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  } catch (_) {}
+  try {
+    paidExpThisMonth = load('expenses')
+      .filter(e => e.paid && (e.date || '').slice(0, 7) === nowKey)
+      .reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  } catch (_) {}
+
+  let deliveredThisMonth = 0;
+  try {
+    deliveredThisMonth = load('productions')
+      .filter(p => p && p.stage === 'sent' && ((p.touchedAt || p.createdAt || '').slice(0, 7) === nowKey))
+      .length;
+  } catch (_) {}
+
+  const dayOfMonth = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+  return {
+    st, now, nowKey, today, weekKey, year,
+    paidThisMonth,
+    netThisMonth: paidThisMonth - paidExpThisMonth,
+    deliveredThisMonth,
+    releasesThisYear: Number(st.releases[year]) || 0,
+    outreachThisWeek: Number(st.outreach[weekKey]) || 0,
+    healthToday: st.health[today] || null,
+    monthPace: dayOfMonth / daysInMonth,
+    dayOfWeek: now.getDay() // 0=Sunday
+  };
+}
+function _mpbMonthKeySafe(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+// ── The coach: gap alerts + ONE daily step, priority-ordered ──
+function _mpbCoach(d) {
+  const st = d.st;
+  const target = Number(st.targetRevenue) || 0;
+  const alerts = { money: null, career: null, health: null };
+  const steps = []; // {key, text}
+
+  // 1) No target at all
+  if (!target) {
+    steps.push({ key: 'set-target', text: 'קבע יעד מחזור חודשי בדף המלא — בלי מספר אין משחק.' });
+  } else {
+    // 2) Revenue pace
+    const expectedByNow = target * d.monthPace;
+    if (d.paidThisMonth < expectedByNow * 0.85) {
+      alerts.money = 'red';
+      const gap = Math.round(expectedByNow - d.paidThisMonth);
+      const topBlock = st.blocks.filter(b => (Number(b.price) || 0) > 0).sort((a, b) => b.price - a.price)[0];
+      steps.push({
+        key: 'money-pace',
+        text: 'אתה מאחור בקצב החודש (' + fmtMoney(gap) + ' מתחת לצפי). ' +
+              (topBlock ? 'סגור ' + _escape(topBlock.name) + ' אחת — וזה נסגר.' : 'סגור עסקה אחת השבוע.')
+      });
+    } else if (d.paidThisMonth < expectedByNow) {
+      alerts.money = 'amber';
+    }
+  }
+
+  // 3) Outreach — from Tuesday on, zero outreach = push
+  if (d.outreachThisWeek === 0 && d.dayOfWeek >= 2) {
+    alerts.career = alerts.career || 'amber';
+    steps.push({ key: 'outreach', text: 'אפס פניות השבוע. פנייה אחת לאמן מהרשימה — 10 דקות, עכשיו.' });
+  }
+
+  // 4) Health — nothing logged today
+  const h = d.healthToday;
+  if (!h || (!h.steps && !h.cal)) {
+    alerts.health = alerts.health || 'amber';
+    steps.push({ key: 'health-log', text: 'עוד לא עדכנת צעדים/קלוריות היום. שתי הקשות וזה מעודכן.' });
+  } else if (h.steps && h.steps < (st.healthTargets.steps || 8000) * 0.5 && new Date().getHours() >= 17) {
+    alerts.health = 'amber';
+    steps.push({ key: 'health-steps', text: 'אתה מתחת לחצי מיעד הצעדים והיום נגמר — צא להליכה של 20 דקות.' });
+  }
+
+  // 5) Releases pace
+  const relTarget = Number(st.releasesTarget) || 6;
+  const monthsGone = new Date().getMonth() + 1;
+  const relExpected = Math.floor(relTarget * (monthsGone / 12));
+  if (d.releasesThisYear < relExpected) {
+    alerts.career = alerts.career || 'amber';
+    steps.push({ key: 'release', text: 'לפי הקצב היית אמור להיות על ' + relExpected + ' שחרורים השנה — אתה על ' + d.releasesThisYear + '. תקדם שחרור.' });
+  }
+
+  // Headline: pace vs month
+  let line;
+  if (target) {
+    const pctTarget = Math.round((d.paidThisMonth / target) * 100);
+    const pctMonth = Math.round(d.monthPace * 100);
+    if (pctTarget >= 100)      line = 'סגרת ' + pctTarget + '% מהיעד — חודש חזק. אל תרפה.';
+    else if (pctTarget >= pctMonth) line = 'אתה ב-' + pctTarget + '% מהיעד ו-' + pctMonth + '% מהחודש עבר — בקצב. תחזיק.';
+    else                        line = 'אתה ב-' + pctTarget + '% מהיעד אבל ' + pctMonth + '% מהחודש כבר עבר — צריך להדביק.';
+  } else {
+    line = 'אין יעד מוגדר — המאמן לא יכול לדחוף בלי מספר.';
+  }
+
+  // One step per day: highest-priority pending step; once marked done
+  // the coach acknowledges and waits for tomorrow (per the approved
+  // spec — done ≠ immediately push the next one).
+  const doneKey = st.coachDone[d.today];
+  const step = doneKey ? null : (steps[0] || null);
+
+  return { line, step, alerts, doneToday: !!doneKey, allGreen: steps.length === 0 };
+}
+
+// ── Render ──
+window.renderMyPathBoard = function() {
+  const board = document.getElementById('mypath-board');
+  if (!board) return;
+  let d;
+  try { d = _mpbData(); } catch (e) { return; }
+  const st = d.st;
+  const coach = _mpbCoach(d);
+
+  // Coach card
+  const coachEl = document.getElementById('mpb-coach');
+  if (coachEl) {
+    let inner = '<div class="mpb-coach-line">' + coach.line + '</div>';
+    if (coach.allGreen) {
+      inner += '<div class="mpb-coach-step"><span class="mpb-coach-step-label">היום</span><span class="mpb-coach-step-text" style="color:#a8e6a8">הכל ירוק. תחזיק את הקצב — ומחר שוב.</span></div>';
+      coachEl.classList.add('all-done');
+    } else if (coach.step) {
+      inner += '<div class="mpb-coach-step">'
+        + '<span class="mpb-coach-step-label">הצעד של היום</span>'
+        + '<span class="mpb-coach-step-text">' + coach.step.text + '</span>'
+        + '<button class="mpb-coach-done-btn" onclick="mpbStepDone(\'' + coach.step.key + '\')">בוצע ✓</button>'
+        + '</div>';
+      coachEl.classList.remove('all-done');
+    } else if (coach.doneToday) {
+      inner += '<div class="mpb-coach-step"><span class="mpb-coach-step-label">היום</span><span class="mpb-coach-step-text" style="color:#a8e6a8">✓ הצעד של היום בוצע. מחר צעד חדש.</span></div>';
+      coachEl.classList.add('all-done');
+    }
+    coachEl.innerHTML = inner;
+  }
+
+  // Money tile
+  const moneyEl = document.getElementById('mpb-tile-money');
+  if (moneyEl) {
+    const target = Number(st.targetRevenue) || 0;
+    const pct = target ? Math.min(100, Math.round((d.paidThisMonth / target) * 100)) : 0;
+    const barColor = coach.alerts.money === 'red' ? '#ff6b6b' : (coach.alerts.money === 'amber' ? '#ffcc66' : '#a8e6a8');
+    moneyEl.innerHTML =
+      (coach.alerts.money ? '<span class="mpb-dot ' + coach.alerts.money + '"></span>' : '') +
+      '<div class="mpb-tile-head"><svg><use href="#ic-coin-bag"/></svg> כסף</div>' +
+      '<div class="mpb-big">' + fmtMoney(d.paidThisMonth) + '</div>' +
+      '<div class="mpb-sub">' + (target ? ('מתוך ' + fmtMoney(target) + ' · ' + pct + '%') : 'אין יעד מוגדר') + '</div>' +
+      (target ? '<div class="mpb-bar"><div class="mpb-bar-fill" style="width:' + pct + '%;background:' + barColor + '"></div></div>' : '') +
+      '<div class="mpb-row" style="margin-top:6px"><span class="mpb-row-label">נטו החודש</span><span class="mpb-row-val" style="color:' + (d.netThisMonth >= 0 ? '#a8e6a8' : '#ff6b6b') + '">' + fmtMoney(d.netThisMonth) + '</span></div>' +
+      '<div class="mpb-equity"><span>הון עצמי</span><span class="mpb-equity-val">' + fmtMoney(st.equity) + '</span><button class="mpb-log-btn" onclick="mpbUpdateEquity()">עדכן</button></div>';
+  }
+
+  // Career tile
+  const careerEl = document.getElementById('mpb-tile-career');
+  if (careerEl) {
+    careerEl.innerHTML =
+      (coach.alerts.career ? '<span class="mpb-dot ' + coach.alerts.career + '"></span>' : '') +
+      '<div class="mpb-tile-head"><svg><use href="#ic-music-note"/></svg> קריירה</div>' +
+      '<div class="mpb-row"><span class="mpb-row-label">נמסרו החודש</span><span class="mpb-row-val">' + d.deliveredThisMonth + '</span></div>' +
+      '<div class="mpb-row"><span class="mpb-row-label">שחרורים השנה</span><span class="mpb-row-val">' + d.releasesThisYear + '/' + (Number(st.releasesTarget) || 6) + '</span><button class="mpb-mini-btn" onclick="mpbBumpRelease()" title="שחרור חדש">+</button></div>' +
+      '<div class="mpb-row"><span class="mpb-row-label">פניות השבוע</span><span class="mpb-row-val">' + d.outreachThisWeek + '</span><button class="mpb-mini-btn" onclick="mpbBumpOutreach()" title="פניתי לאמן">+</button></div>';
+  }
+
+  // Health tile
+  const healthEl = document.getElementById('mpb-tile-health');
+  if (healthEl) {
+    const h = d.healthToday || {};
+    const tSteps = st.healthTargets.steps || 8000;
+    const tCal = st.healthTargets.cal || 2200;
+    // 7-day steps average (logged days only)
+    let avg = 0, n = 0;
+    for (let k = 0; k < 7; k++) {
+      const key = new Date(Date.now() - k * 86400000).toISOString().slice(0, 10);
+      const e = st.health[key];
+      if (e && e.steps) { avg += e.steps; n++; }
+    }
+    avg = n ? Math.round(avg / n) : 0;
+    healthEl.innerHTML =
+      (coach.alerts.health ? '<span class="mpb-dot ' + coach.alerts.health + '"></span>' : '') +
+      '<div class="mpb-tile-head"><svg><use href="#ic-cat-health"/></svg> בריאות</div>' +
+      '<div class="mpb-row"><span class="mpb-row-label">צעדים היום</span><span class="mpb-row-val">' + (h.steps ? h.steps.toLocaleString('he-IL') : '—') + '</span><button class="mpb-log-btn" onclick="mpbLogHealth(\'steps\')">עדכן</button></div>' +
+      '<div class="mpb-row"><span class="mpb-row-label">קלוריות היום</span><span class="mpb-row-val">' + (h.cal ? h.cal.toLocaleString('he-IL') : '—') + '</span><button class="mpb-log-btn" onclick="mpbLogHealth(\'cal\')">עדכן</button></div>' +
+      '<div class="mpb-sub" style="margin-top:5px">יעד: ' + tSteps.toLocaleString('he-IL') + ' צעדים · ' + tCal.toLocaleString('he-IL') + ' קק״ל' + (avg ? ' · ממוצע שבועי: ' + avg.toLocaleString('he-IL') : '') + '</div>';
+  }
+};
+
+// ── Handlers ──
+window.mpbStepDone = function(key) {
+  const st = mpState();
+  st.coachDone[_mpbToday()] = key;
+  // prune old done-marks (keep 30 days)
+  const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  Object.keys(st.coachDone).forEach(k => { if (k < cutoff) delete st.coachDone[k]; });
+  mpSave(st);
+  if (window.haptic) window.haptic.success();
+  renderMyPathBoard();
+};
+window.mpbUpdateEquity = function() {
+  const st = mpState();
+  const cur = st.equity || 0;
+  const val = prompt('כמה הון עצמי יש לך היום? (₪)', cur || '');
+  if (val === null) return;
+  const n = parseFloat(String(val).replace(/[^\d.]/g, ''));
+  if (isNaN(n) || n < 0) { toast('מספר לא תקין'); return; }
+  st.equity = Math.round(n);
+  st.equityUpdatedAt = _mpbToday();
+  mpSave(st);
+  toast('✓ הון עצמי עודכן');
+  renderMyPathBoard();
+};
+window.mpbBumpRelease = function() {
+  const st = mpState();
+  const y = String(new Date().getFullYear());
+  st.releases[y] = (Number(st.releases[y]) || 0) + 1;
+  mpSave(st);
+  toast('🎉 שחרור נוסף! ' + st.releases[y] + ' השנה');
+  if (window.haptic) window.haptic.success();
+  renderMyPathBoard();
+};
+window.mpbBumpOutreach = function() {
+  const st = mpState();
+  const wk = _mpbWeekKey();
+  st.outreach[wk] = (Number(st.outreach[wk]) || 0) + 1;
+  // prune old weeks (keep ~26)
+  const keys = Object.keys(st.outreach).sort();
+  while (keys.length > 26) delete st.outreach[keys.shift()];
+  mpSave(st);
+  toast('✓ פנייה נרשמה — ' + st.outreach[wk] + ' השבוע');
+  if (window.haptic) window.haptic.tap();
+  renderMyPathBoard();
+};
+window.mpbLogHealth = function(field) {
+  const st = mpState();
+  const today = _mpbToday();
+  const entry = st.health[today] || { steps: 0, cal: 0 };
+  const label = field === 'steps' ? 'כמה צעדים עשית היום?' : 'כמה קלוריות אכלת היום?';
+  const val = prompt(label, entry[field] || '');
+  if (val === null) return;
+  const n = parseFloat(String(val).replace(/[^\d.]/g, ''));
+  if (isNaN(n) || n < 0) { toast('מספר לא תקין'); return; }
+  entry[field] = Math.round(n);
+  st.health[today] = entry;
+  // prune >90 days
+  const cutoff = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+  Object.keys(st.health).forEach(k => { if (k < cutoff) delete st.health[k]; });
+  mpSave(st);
+  if (window.haptic) window.haptic.tap();
+  renderMyPathBoard();
+};
+// Metrics targets (edited from the My Path page) — debounced like the
+// other My Path inputs so the cloud queue isn't hit per keystroke.
+window.mpbSaveMetric = function(field, val) {
+  clearTimeout(_mpTimers['metric-' + field]);
+  _mpTimers['metric-' + field] = setTimeout(() => {
+    const st = mpState();
+    const n = parseFloat(val) || 0;
+    if (field === 'steps')         st.healthTargets.steps = n > 0 ? Math.round(n) : 8000;
+    else if (field === 'cal')      st.healthTargets.cal   = n > 0 ? Math.round(n) : 2200;
+    else if (field === 'releases') st.releasesTarget      = n > 0 ? Math.round(n) : 6;
+    mpSave(st);
+    try { renderMyPathBoard(); } catch (_) {}
+  }, 500);
 };
 
 // Re-categorize every pending TX + every confirmed expense currently
@@ -13550,6 +14016,8 @@ function refreshLobbyGreeting() {
     const date  = now.toLocaleDateString('he-IL', { day:'numeric', month:'long' });
     subEl.textContent = 'יום ' + day + ' · ' + date;
   }
+  // Command board rides on the same refresh cycle as the greeting.
+  try { renderMyPathBoard(); } catch (e) {}
 }
 
 function doLogin() {
