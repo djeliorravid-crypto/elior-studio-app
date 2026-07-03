@@ -3572,6 +3572,137 @@
       display: inline-flex; align-items: center; justify-content: center;
     }
     .mpx-habit button:hover { border-color: var(--accent); }
+
+    /* ===== LIFE OS — hero, tabs, health, coach ===== */
+    .mpt-hero {
+      background: linear-gradient(140deg, var(--accent) 0%, var(--accent2) 55%, #5c3a28 130%);
+      border-radius: 22px; padding: 26px 24px 22px;
+      margin-bottom: 14px; position: relative; overflow: hidden;
+      box-shadow: 0 14px 40px var(--accent-glow);
+    }
+    .mpt-hero::after {
+      content: ''; position: absolute; top: -60%; left: -20%;
+      width: 70%; height: 220%;
+      background: radial-gradient(circle, rgba(255,255,255,0.14), transparent 60%);
+      pointer-events: none;
+    }
+    .mpt-hero-kicker {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; font-weight: 900; letter-spacing: 0.22em;
+      color: rgba(255,255,255,0.75);
+    }
+    .mpt-hero-kicker svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .mpt-hero-title {
+      font-family: 'Frank Ruhl Libre', 'Heebo', serif;
+      font-size: 40px; font-weight: 900; color: #fff;
+      letter-spacing: -0.02em; line-height: 1.05; margin: 6px 0 8px;
+    }
+    .mpt-hero-line { font-size: 13.5px; color: rgba(255,255,255,0.85); font-weight: 600; line-height: 1.5; }
+
+    .mpt-tabs {
+      display: flex; gap: 7px; overflow-x: auto;
+      padding: 2px 2px 12px; margin-bottom: 4px;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .mpt-tabs::-webkit-scrollbar { display: none; }
+    .mpt-tab {
+      flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      color: var(--text-muted); border-radius: 999px;
+      padding: 9px 16px; font-size: 13px; font-weight: 800;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+      transition: background .15s, color .15s, border-color .15s, transform .15s;
+    }
+    .mpt-tab svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .mpt-tab.on {
+      background: var(--text); color: var(--surface);
+      border-color: var(--text); transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+    }
+    .mpt-tab.add { border-style: dashed; }
+    .mpt-tab:active { transform: scale(0.97); }
+
+    .mpt-accent-card { border-top: 3px solid var(--accent); }
+
+    .mpt-wstats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .mpt-wstat {
+      flex: 1; min-width: 72px; text-align: center;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 8px;
+    }
+    .mpt-wstat .n { font-size: 20px; font-weight: 900; color: var(--text); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .mpt-wstat .l { font-size: 10.5px; color: var(--text-muted); font-weight: 700; margin-top: 2px; }
+    .mpt-wstat.good .n { color: var(--green); }
+    .mpt-proj {
+      margin-top: 10px; background: rgba(90,122,46,0.08);
+      border: 1px solid rgba(90,122,46,0.25); border-radius: 10px;
+      padding: 9px 12px; font-size: 12.5px; font-weight: 700; color: var(--green); line-height: 1.5;
+    }
+    .mpt-wbars {
+      position: relative; display: flex; align-items: flex-end; gap: 6px;
+      height: 110px; margin-top: 16px; padding-top: 12px;
+    }
+    .mpt-wcol { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; }
+    .mpt-wcol .v { font-size: 9.5px; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .mpt-wcol .b { width: 100%; max-width: 26px; min-height: 6px; border-radius: 5px 5px 2px 2px; background: linear-gradient(180deg, var(--surface3), var(--border)); }
+    .mpt-wcol.cur .b { background: linear-gradient(180deg, var(--accent), var(--accent2)); box-shadow: 0 4px 12px var(--accent-glow); }
+    .mpt-wcol.cur .v { color: var(--accent); }
+    .mpt-wcol .d { font-size: 9px; color: var(--text-muted); font-weight: 600; }
+    .mpt-goal-line {
+      position: absolute; right: 0; left: 0; border-top: 1.5px dashed var(--green);
+      pointer-events: none;
+    }
+    .mpt-goal-line span {
+      position: absolute; top: -9px; right: 0;
+      font-size: 9px; font-weight: 800; color: var(--green);
+      background: var(--surface); padding: 0 5px; border-radius: 4px;
+    }
+
+    .mpt-coach-card { border-top: 3px solid var(--green); }
+    .mpt-coach-thread {
+      display: flex; flex-direction: column; gap: 8px;
+      max-height: 300px; overflow-y: auto; padding: 4px 0 8px;
+    }
+    .mpt-msg {
+      max-width: 88%; padding: 9px 13px; border-radius: 14px;
+      font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word;
+    }
+    .mpt-msg.me { align-self: flex-start; background: var(--accent-light); color: var(--text); border-bottom-right-radius: 5px; }
+    .mpt-msg.coach { align-self: flex-end; background: var(--surface2); color: var(--text); border-bottom-left-radius: 5px; }
+    .mpt-msg.thinking { opacity: 0.6; font-style: italic; }
+    .mpt-coach-suggest { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 10px; }
+    .mpt-chip {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 6px 11px; border-radius: 14px;
+      font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .mpt-chip:hover { border-color: var(--green); }
+    .mpt-coach-inputrow { display: flex; gap: 8px; align-items: flex-end; }
+    #mpt-coach-input {
+      flex: 1; resize: none; padding: 10px 13px;
+      border: 1.5px solid var(--border); border-radius: 13px;
+      font-size: 14px; font-family: inherit; direction: rtl;
+      background: var(--surface2); color: var(--text); outline: none; max-height: 100px;
+    }
+    #mpt-coach-input:focus { border-color: var(--green); }
+    #mpt-coach-send {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--green); color: #fff; border: none;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    #mpt-coach-send:disabled { opacity: 0.4; }
+    .mpt-nokey { background: var(--surface2); border: 1.5px dashed var(--border); border-radius: 12px; padding: 14px; }
+
+    .mpt-goal-head { display: flex; align-items: flex-start; gap: 12px; }
+    .mpt-goal-title { font-size: 20px; font-weight: 900; color: var(--text); letter-spacing: -0.01em; line-height: 1.25; }
+    .mpt-goal-title.done { text-decoration: line-through; color: var(--text-muted); }
+
+    .mpt-ov-row { padding: 10px 2px; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .mpt-ov-row:last-child { border-bottom: none; }
+    .mpt-ov-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 5px; }
+    .mpt-ov-name { font-size: 13.5px; font-weight: 800; color: var(--text); }
+    .mpt-ov-name.done { text-decoration: line-through; color: var(--text-muted); }
+    .mpt-ov-meta { font-size: 11.5px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
     #lobby-tasks-list {
       display: flex; flex-direction: column;
     }
@@ -5924,7 +6055,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v359</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v360</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6094,10 +6225,67 @@
 <main id="path-main" style="display:none">
   <!-- ===== MY PATH (הדרך שלי) ===== -->
   <div class="page active" id="page-mypath">
-    <div class="page-header">
-      <div><h2><svg class="icon-lg"><use href="#ic-compass"/></svg>הדרך שלי</h2><p>מי אני רוצה להיות — ואיך אני מגיע לשם</p></div>
+    <div class="mpt-hero">
+      <div class="mpt-hero-inner">
+        <div class="mpt-hero-kicker"><svg viewBox="0 0 24 24"><use href="#ic-compass"/></svg> LIFE OS</div>
+        <h2 class="mpt-hero-title">הדרך שלי</h2>
+        <div class="mpt-hero-line" id="mpt-hero-line">המקום שבו החיים משתנים — בריאות, כסף, חלומות.</div>
+      </div>
     </div>
 
+    <div class="mpt-tabs" id="mpt-tabs"></div>
+
+    <!-- ═══ TAB: בריאות וכושר ═══ -->
+    <div class="mpt-pane" id="mpt-pane-health">
+      <div class="table-card mp-card mpt-accent-card">
+        <div class="mp-section-title"><svg class="icon"><use href="#ic-cat-health"/></svg> הגוף שלי</div>
+        <div class="mp-target-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label>גובה (ס"מ)</label>
+            <input type="number" id="mpt-height" min="0" placeholder="178" oninput="mptSaveBody('height', this.value)"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>משקל יעד (ק"ג)</label>
+            <input type="number" id="mpt-goal-weight" min="0" step="0.1" placeholder="75" oninput="mptSaveBody('goalWeight', this.value)"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>עד מתי</label>
+            <input type="month" id="mpt-goal-wdate" onchange="mptSaveBody('goalDate', this.value)"/>
+          </div>
+        </div>
+        <div id="mpt-weight-stats"></div>
+        <div id="mpt-weight-chart"></div>
+        <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="mptLogWeight()">עדכן משקל היום</button>
+      </div>
+
+      <div class="table-card mp-card">
+        <div class="mp-section-title"><svg class="icon"><use href="#ic-check-circle"/></svg> השבוע שלי</div>
+        <div id="mpt-week-chips"></div>
+      </div>
+
+      <div class="table-card mp-card mpt-coach-card">
+        <div class="mp-section-title"><svg class="icon"><use href="#ic-target"/></svg> המאמן האישי (AI)</div>
+        <div class="mp-sub">מכיר את הגובה, המשקלים, האימונים והיעד שלך — תתייעץ איתו על הכל.</div>
+        <div id="mpt-coach-thread" class="mpt-coach-thread"></div>
+        <div id="mpt-coach-suggest" class="mpt-coach-suggest"></div>
+        <div class="mpt-coach-inputrow" id="mpt-coach-inputrow">
+          <textarea id="mpt-coach-input" rows="1" placeholder="שאל את המאמן…"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();mptCoachSend();}"></textarea>
+          <button id="mpt-coach-send" onclick="mptCoachSend()" aria-label="שלח">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div id="mpt-coach-nokey"></div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: יעד בודד (מתרנדר לפי הבחירה) ═══ -->
+    <div class="mpt-pane" id="mpt-pane-goal" style="display:none">
+      <div id="mpt-goal-body"></div>
+    </div>
+
+    <!-- ═══ TAB: התהליך — תוצאות, נתונים, עתיד ═══ -->
+    <div class="mpt-pane" id="mpt-pane-process" style="display:none">
     <!-- North star — the one sentence that steers everything -->
     <div class="mp-star-card">
       <div class="mp-star-label">הכוכב הצפוני שלי</div>
@@ -6106,21 +6294,13 @@
         oninput="mpSaveText('northStar', this.value)"></textarea>
     </div>
 
-    <!-- ═══ THE STORY — computed from real data, never a wall of zeros ═══ -->
+
     <div class="table-card mp-card" id="mpx-hero"></div>
     <div id="mpx-ach"></div>
-    <div class="table-card mp-card" id="mpx-moves-card" style="display:none">
-      <div class="mp-section-title"><svg class="icon"><use href="#ic-flag"/></svg> המהלכים של השבוע</div>
-      <div class="mp-sub">לא רשימת מטלות — שלושת הדברים מהנתונים שלך שהכי מזיזים את המחט.</div>
-      <div id="mpx-moves"></div>
-    </div>
-    <div class="table-card mp-card" id="mpx-engine-card" style="display:none">
-      <div class="mp-section-title"><svg class="icon"><use href="#ic-chart-bars"/></svg> המנוע — מה מכניס לך כסף</div>
-      <div class="mp-sub">90 הימים האחרונים, לפי מה ששולם בפועל.</div>
-      <div id="mpx-engine"></div>
-    </div>
-    <div class="table-card mp-card" id="mpx-habits"></div>
-
+      <div class="table-card mp-card" id="mpt-goals-overview-card" style="display:none">
+        <div class="mp-section-title"><svg class="icon"><use href="#ic-flag"/></svg> היעדים — איפה כל אחד עומד</div>
+        <div id="mpt-goals-overview"></div>
+      </div>
     <!-- Vision — two guided free-text panels -->
     <div class="mp-grid2">
       <div class="table-card mp-card">
@@ -6189,17 +6369,8 @@
       </div>
     </div>
 
-    <!-- Personal goals -->
-    <div class="table-card mp-card">
-      <div class="mp-section-title"><svg class="icon"><use href="#ic-flag"/></svg> היעדים שלי בדרך</div>
-      <div id="mp-goals"></div>
-      <div class="mp-add-goal">
-        <input type="text" id="mp-goal-text" placeholder="יעד חדש… (למשל: אלבום ראשון, אולפן משלי)"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();mpAddGoal();}"/>
-        <input type="month" id="mp-goal-date" title="עד מתי (לא חובה)"/>
-        <button class="btn btn-primary btn-sm" onclick="mpAddGoal()">+ הוסף</button>
-      </div>
     </div>
+
   </div>
 
 </main>
@@ -10976,135 +11147,6 @@ window.renderMyPathBoard = function() {
       + '</div>';
   }
 
-  // ── MOVES — up to 3, from real data ──
-  const movesCard = document.getElementById('mpx-moves-card');
-  const movesEl = document.getElementById('mpx-moves');
-  if (movesCard && movesEl) {
-    const moves = [];
-    const todayIso = _mpbToday();
-
-    // 1) Biggest overdue collection
-    const overdue = income.filter(i => !_mpxIsPaid(i) && !i.fromPlan && (i.date || '') < todayIso && (Number(i.amount) || 0) > 0)
-                          .sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0));
-    if (overdue.length) {
-      const o = overdue[0];
-      const days = Math.floor((Date.now() - new Date(o.date).getTime()) / 86400000);
-      const rest = overdue.length > 1 ? ' (ועוד ' + (overdue.length - 1) + ' ממתינים)' : '';
-      moves.push({
-        title: 'לגבות מ<strong>' + _escape(o.clientName || o.description || 'לקוח') + '</strong> — ' + fmtMoney(o.amount),
-        why: 'מחכה כבר ' + days + ' ימים' + rest + '. הודעת וואטסאפ אחת — זו ההכנסה הכי מהירה שיש.',
-        go: 'להכנסות', act: "chooseMode('business');showPage('income')"
-      });
-    }
-
-    // 2) Most-stuck production
-    const active = productions.filter(p => p && p.stage !== 'sent');
-    let worst = null, worstDays = 0;
-    active.forEach(p => {
-      const last = p.touchedAt || p.createdAt;
-      if (!last) return;
-      const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
-      if (days >= 7 && days > worstDays) { worst = p; worstDays = days; }
-    });
-    if (worst) {
-      let stageLbl = '';
-      try { stageLbl = (typeof prodStageMeta === 'function' && prodStageMeta(worst.stage) || {}).label || ''; } catch (_) {}
-      moves.push({
-        title: '<strong>' + _escape(worst.title || 'הפקה') + '</strong> תקועה ' + worstDays + ' ימים' + (stageLbl ? ' בשלב ' + stageLbl : ''),
-        why: 'הפקה שזזה = תשלום שמתקרב. צעד אחד קטן — טיוטה, הודעה ללקוח, משהו.',
-        go: 'להפקות', act: "chooseMode('business');showPage('productions')"
-      });
-    }
-
-    // 3) Target gap in units of his own services (3-month avg vs target)
-    const target = Number(st.targetRevenue) || 0;
-    if (target > 0) {
-      let sum = 0, cnt = 0;
-      for (let k = 1; k <= 3; k++) {
-        const key = _mpbMonthKeySafe(new Date(now.getFullYear(), now.getMonth() - k, 1));
-        const t = monthTotal(key);
-        if (t > 0) { sum += t; cnt++; }
-      }
-      const avg = cnt ? Math.round(sum / cnt) : paidThisMonth;
-      const gap = target - avg;
-      if (gap > 0) {
-        const topBlock = st.blocks.filter(b => (Number(b.price) || 0) > 0).sort((a, b) => b.price - a.price)[0];
-        moves.push({
-          title: 'לסגור את הפער ליעד: <strong>' + fmtMoney(gap) + '</strong> בחודש',
-          why: topBlock
-            ? 'זה בערך עוד ' + Math.ceil(gap / topBlock.price) + ' × ' + _escape(topBlock.name) + ' בחודש — או העלאת מחיר. המתכנן למטה עוזר להחליט.'
-            : 'תגדיר שירותים במתכנן למטה כדי לתרגם את הפער ליחידות.',
-          go: 'למתכנן', act: "document.getElementById('mp-planner-card')?.scrollIntoView({behavior:'smooth'})"
-        });
-      }
-    }
-
-    if (moves.length) {
-      movesCard.style.display = '';
-      movesEl.innerHTML = moves.slice(0, 3).map((m, i) =>
-        '<div class="mpx-move">'
-        + '<span class="mpx-move-num">' + (i + 1) + '</span>'
-        + '<div class="mpx-move-body"><div class="mpx-move-title">' + m.title + '</div>'
-        + '<div class="mpx-move-why">' + m.why + '</div></div>'
-        + '<button class="mpx-move-go" onclick="' + m.act.replace(/"/g, '&quot;') + '">' + m.go + '</button>'
-        + '</div>').join('');
-    } else {
-      movesCard.style.display = '';
-      movesEl.innerHTML = '<div class="mpx-move"><span class="mpx-move-num" style="background:var(--green)">✓</span>'
-        + '<div class="mpx-move-body"><div class="mpx-move-title">אין שריפות — הכל זורם</div>'
-        + '<div class="mpx-move-why">אף אחד לא באיחור, שום הפקה לא תקועה. זה הזמן לקדם שחרור או פנייה חדשה.</div></div></div>';
-    }
-  }
-
-  // ── ENGINE — top categories + clients, last 90 days ──
-  const engCard = document.getElementById('mpx-engine-card');
-  const engEl = document.getElementById('mpx-engine');
-  if (engCard && engEl) {
-    const cutoff = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
-    const recent = paidIn.filter(i => (i.date || '') >= cutoff);
-    const total90 = recent.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-    if (total90 > 0) {
-      const byCat = {}, byClient = {};
-      recent.forEach(i => {
-        const c = i.category || 'אחר';
-        byCat[c] = (byCat[c] || 0) + (Number(i.amount) || 0);
-        if (i.clientName) byClient[i.clientName] = (byClient[i.clientName] || 0) + (Number(i.amount) || 0);
-      });
-      const rows = (obj) => {
-        const top = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 3);
-        const maxV = top.length ? top[0][1] : 1;
-        return top.map(([name, v]) =>
-          '<div class="mpx-eng-row">'
-          + '<div class="mpx-eng-top"><span class="mpx-eng-name">' + _escape(name) + '</span>'
-          + '<span class="mpx-eng-val">' + fmtMoney(v) + ' · ' + Math.round((v / total90) * 100) + '%</span></div>'
-          + '<div class="mpx-eng-track"><div class="mpx-eng-fill" style="width:' + Math.max(6, Math.round((v / maxV) * 100)) + '%"></div></div>'
-          + '</div>').join('');
-      };
-      engCard.style.display = '';
-      engEl.innerHTML = '<div class="mpx-engine-grid">'
-        + '<div><div class="mpx-engine-h">שירותים מובילים</div>' + rows(byCat) + '</div>'
-        + '<div><div class="mpx-engine-h">לקוחות מובילים</div>' + (Object.keys(byClient).length ? rows(byClient) : '<div class="mp-empty">אין שיוך לקוחות בתקופה</div>') + '</div>'
-        + '</div>';
-    } else {
-      engCard.style.display = 'none';
-    }
-  }
-
-  // ── HABITS — compact quick-log chips, zero nagging ──
-  const habitsEl = document.getElementById('mpx-habits');
-  if (habitsEl) {
-    const year = String(now.getFullYear());
-    const wk = _mpbWeekKey();
-    const h = st.health[_mpbToday()] || {};
-    habitsEl.innerHTML =
-      '<div class="mp-label"><svg class="icon"><use href="#ic-cat-health"/></svg> מדדים מהירים</div>'
-      + '<div class="mpx-habit-row">'
-      + '<span class="mpx-habit">שחרורים השנה <span class="val">' + (Number(st.releases[year]) || 0) + '/' + (Number(st.releasesTarget) || 6) + '</span><button onclick="mpbBumpRelease()" title="שחרור חדש">+</button></span>'
-      + '<span class="mpx-habit">פניות השבוע <span class="val">' + (Number(st.outreach[wk]) || 0) + '</span><button onclick="mpbBumpOutreach()" title="פניתי לאמן">+</button></span>'
-      + '<span class="mpx-habit">צעדים היום <span class="val">' + (h.steps ? h.steps.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'steps\')">עדכן</button></span>'
-      + '<span class="mpx-habit">קלוריות <span class="val">' + (h.cal ? h.cal.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'cal\')">עדכן</button></span>'
-      + '</div>';
-  }
 };
 
 // ── Handlers (quick logs) ──
@@ -11169,6 +11211,467 @@ window.mpbSaveMetric = function(field, val) {
     try { renderMyPathBoard(); } catch (_) {}
   }, 500);
 };
+
+// ═════════════════════════════════════════════════════════════════
+//  LIFE OS — the tabbed הדרך שלי: health (with a REAL AI coach on
+//  the existing Gemini key), one tab per goal, and a process tab.
+// ═════════════════════════════════════════════════════════════════
+
+function _mptState() {
+  const st = mpState();
+  if (!st.body || typeof st.body !== 'object') st.body = {};
+  if (!Array.isArray(st.weights)) st.weights = [];
+  if (!st.workouts || typeof st.workouts !== 'object') st.workouts = {};
+  if (!Array.isArray(st.healthChat)) st.healthChat = [];
+  st.goals.forEach(g => {
+    if (!Array.isArray(g.steps)) g.steps = [];
+    if (typeof g.notes !== 'string') g.notes = '';
+  });
+  return st;
+}
+function _mptTab() { try { return localStorage.getItem('_mpt_tab') || 'health'; } catch (_) { return 'health'; } }
+function _mptSetTab(t) { try { localStorage.setItem('_mpt_tab', t); } catch (_) {} }
+
+// ── Orchestrator: tabs bar + active pane ──
+window.mptRenderAll = function() {
+  const tabsEl = document.getElementById('mpt-tabs');
+  if (!tabsEl) return;
+  const st = _mptState();
+  let tab = _mptTab();
+  const goalIds = st.goals.map(g => g.id);
+  if (tab.startsWith('goal:') && !goalIds.includes(tab.slice(5))) tab = 'health';
+
+  const pill = (id, label, icon) =>
+    '<button class="mpt-tab ' + (tab === id ? 'on' : '') + '" onclick="mptGo(\'' + id + '\')">'
+    + (icon ? '<svg viewBox="0 0 24 24"><use href="#' + icon + '"/></svg>' : '') + label + '</button>';
+
+  let html = pill('health', 'בריאות וכושר', 'ic-cat-health');
+  st.goals.forEach(g => {
+    const t = (g.title || '').length > 14 ? g.title.slice(0, 13) + '…' : g.title;
+    html += pill('goal:' + g.id, (g.done ? '✓ ' : '') + _escape(t), null);
+  });
+  html += '<button class="mpt-tab add" onclick="mptAddGoalTab()">+ יעד</button>';
+  html += pill('process', 'התהליך', 'ic-chart-bars');
+  tabsEl.innerHTML = html;
+
+  const panes = { health: 'mpt-pane-health', goal: 'mpt-pane-goal', process: 'mpt-pane-process' };
+  const kind = tab.startsWith('goal:') ? 'goal' : tab;
+  Object.entries(panes).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = k === kind ? 'block' : 'none';
+  });
+
+  const heroLine = document.getElementById('mpt-hero-line');
+  if (heroLine) {
+    heroLine.textContent = kind === 'health' ? 'הגוף הוא הכלי — בלעדיו אין אולפן ואין 100 אלף.'
+      : kind === 'process' ? 'המספרים לא משקרים — תסתכל כמה כבר בנית.'
+      : 'יעד בלי תוכנית הוא משאלה. בוא נעבוד.';
+  }
+
+  if (kind === 'health') _mptRenderHealth();
+  else if (kind === 'goal') _mptRenderGoal(tab.slice(5));
+  else {
+    try { renderMyPath(); } catch (_) {}
+    try { renderMyPathBoard(); } catch (_) {}
+    _mptRenderGoalsOverview();
+  }
+};
+window.mptGo = function(tab) { _mptSetTab(tab); mptRenderAll(); };
+window.mptAddGoalTab = function() {
+  const title = prompt('מה היעד החדש?');
+  if (!title || !title.trim()) return;
+  const st = _mptState();
+  const g = { id: genId(), title: title.trim(), date: '', done: false, steps: [], notes: '' };
+  st.goals.push(g);
+  mpSave(st);
+  mptGo('goal:' + g.id);
+  toast('✓ יעד חדש נוסף');
+};
+
+// ══════════ HEALTH TAB ══════════
+function _mptRenderHealth() {
+  const st = _mptState();
+  const fill = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && document.activeElement !== el) el.value = val || '';
+  };
+  fill('mpt-height', st.body.height || '');
+  fill('mpt-goal-weight', st.body.goalWeight || '');
+  fill('mpt-goal-wdate', st.body.goalDate || '');
+  _mptRenderWeight();
+  _mptRenderWeekChips();
+  _mptRenderCoach();
+}
+window.mptSaveBody = function(field, val) {
+  clearTimeout(_mpTimers['body-' + field]);
+  _mpTimers['body-' + field] = setTimeout(() => {
+    const st = _mptState();
+    st.body[field] = field === 'goalDate' ? (val || '') : (parseFloat(val) || 0);
+    mpSave(st);
+    _mptRenderWeight();
+  }, 500);
+};
+window.mptLogWeight = function() {
+  const st = _mptState();
+  const last = st.weights.length ? st.weights[st.weights.length - 1].kg : '';
+  const val = prompt('כמה אתה שוקל היום? (ק"ג)', last || '');
+  if (val === null) return;
+  const n = parseFloat(String(val).replace(',', '.'));
+  if (isNaN(n) || n < 25 || n > 350) { toast('משקל לא תקין'); return; }
+  const today = _mpbToday();
+  const ix = st.weights.findIndex(w => w.d === today);
+  if (ix >= 0) st.weights[ix].kg = n; else st.weights.push({ d: today, kg: n });
+  st.weights.sort((a, b) => a.d.localeCompare(b.d));
+  if (st.weights.length > 400) st.weights = st.weights.slice(-400);
+  mpSave(st);
+  if (window.haptic) window.haptic.success();
+  _mptRenderWeight();
+};
+function _mptRenderWeight() {
+  const statsEl = document.getElementById('mpt-weight-stats');
+  const chartEl = document.getElementById('mpt-weight-chart');
+  if (!statsEl || !chartEl) return;
+  const st = _mptState();
+  const w = st.weights;
+  if (!w.length) {
+    statsEl.innerHTML = '<div class="mp-empty" style="padding:16px 0 4px">שקילה ראשונה = נקודת ההתחלה של כל התהליך. לחץ למטה.</div>';
+    chartEl.innerHTML = '';
+    return;
+  }
+  const first = w[0], lastE = w[w.length - 1];
+  const goal = Number(st.body.goalWeight) || 0;
+  const lost = first.kg - lastE.kg;
+  const toGo = goal ? (lastE.kg - goal) : 0;
+  const h = Number(st.body.height) || 0;
+  const bmi = h ? (lastE.kg / Math.pow(h / 100, 2)) : 0;
+
+  // Weekly pace from up-to-last-28-days trend
+  let pace = 0;
+  const cut = new Date(Date.now() - 28 * 86400000).toISOString().slice(0, 10);
+  const recent = w.filter(x => x.d >= cut);
+  if (recent.length >= 2) {
+    const days = (new Date(recent[recent.length - 1].d) - new Date(recent[0].d)) / 86400000;
+    if (days >= 5) pace = ((recent[0].kg - recent[recent.length - 1].kg) / days) * 7;
+  }
+  let proj = '';
+  if (goal && toGo > 0 && pace > 0.05) {
+    const weeks = Math.ceil(toGo / pace);
+    const dt = new Date(Date.now() + weeks * 7 * 86400000);
+    proj = 'בקצב הנוכחי (' + pace.toFixed(1) + ' ק"ג/שבוע) תגיע ל-' + goal + ' בסביבות ' + (dt.getMonth() + 1) + '/' + dt.getFullYear() + '.';
+  } else if (goal && toGo <= 0) {
+    proj = 'אתה ביעד (או מתחתיו) — עכשיו שומרים.';
+  }
+
+  statsEl.innerHTML = '<div class="mpt-wstats">'
+    + '<div class="mpt-wstat"><div class="n">' + lastE.kg.toFixed(1) + '</div><div class="l">עכשיו</div></div>'
+    + '<div class="mpt-wstat ' + (lost > 0 ? 'good' : '') + '"><div class="n">' + (lost > 0 ? '−' + lost.toFixed(1) : lost < 0 ? '+' + Math.abs(lost).toFixed(1) : '0') + '</div><div class="l">מאז ההתחלה</div></div>'
+    + (goal ? '<div class="mpt-wstat"><div class="n">' + (toGo > 0 ? toGo.toFixed(1) : '🎉') + '</div><div class="l">' + (toGo > 0 ? 'נשאר ליעד' : 'הגעת!') + '</div></div>' : '')
+    + (bmi ? '<div class="mpt-wstat"><div class="n">' + bmi.toFixed(1) + '</div><div class="l">BMI</div></div>' : '')
+    + '</div>'
+    + (proj ? '<div class="mpt-proj">' + proj + '</div>' : '');
+
+  // Chart: last 12 points, bars scaled to [min-1, max+1]
+  const pts = w.slice(-12);
+  const vals = pts.map(p => p.kg);
+  const mn = Math.min.apply(null, vals) - 1, mx = Math.max.apply(null, vals) + 1;
+  chartEl.innerHTML = '<div class="mpt-wbars">' + pts.map((p, i) => {
+    const hh = Math.max(8, Math.round(((p.kg - mn) / (mx - mn)) * 100));
+    const isLast = i === pts.length - 1;
+    const lbl = p.d.slice(8, 10) + '.' + p.d.slice(5, 7);
+    return '<div class="mpt-wcol' + (isLast ? ' cur' : '') + '" title="' + lbl + ': ' + p.kg + ' ק"ג">'
+      + '<span class="v">' + ((isLast || i === 0) ? p.kg.toFixed(1) : '') + '</span>'
+      + '<div class="b" style="height:' + hh + '%"></div>'
+      + '<span class="d">' + ((isLast || i === 0) ? lbl : '') + '</span></div>';
+  }).join('')
+  + (goal && goal > mn && goal < mx ? '<div class="mpt-goal-line" style="bottom:' + Math.round(((goal - mn) / (mx - mn)) * 100) + '%"><span>יעד ' + goal + '</span></div>' : '')
+  + '</div>';
+}
+function _mptRenderWeekChips() {
+  const el = document.getElementById('mpt-week-chips');
+  if (!el) return;
+  const st = _mptState();
+  const wk = _mpbWeekKey();
+  const h = st.health[_mpbToday()] || {};
+  el.innerHTML = '<div class="mpx-habit-row" style="margin-top:2px">'
+    + '<span class="mpx-habit">אימונים השבוע <span class="val">' + (Number(st.workouts[wk]) || 0) + '/3</span><button onclick="mptBumpWorkout()" title="התאמנתי">+</button></span>'
+    + '<span class="mpx-habit">צעדים היום <span class="val">' + (h.steps ? h.steps.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'steps\')">עדכן</button></span>'
+    + '<span class="mpx-habit">קלוריות היום <span class="val">' + (h.cal ? h.cal.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'cal\')">עדכן</button></span>'
+    + '</div>';
+}
+window.mptBumpWorkout = function() {
+  const st = _mptState();
+  const wk = _mpbWeekKey();
+  st.workouts[wk] = (Number(st.workouts[wk]) || 0) + 1;
+  const keys = Object.keys(st.workouts).sort();
+  while (keys.length > 26) delete st.workouts[keys.shift()];
+  mpSave(st);
+  toast('💪 אימון נרשם — ' + st.workouts[wk] + ' השבוע');
+  if (window.haptic) window.haptic.success();
+  _mptRenderWeekChips();
+};
+
+// ── The AI coach — real Gemini, riding the app's existing ai_api_key ──
+function _mptCoachContext() {
+  const st = _mptState();
+  const wk = _mpbWeekKey();
+  const w = st.weights;
+  const recent7 = [];
+  for (let k = 0; k < 7; k++) {
+    const key = new Date(Date.now() - k * 86400000).toISOString().slice(0, 10);
+    const e = st.health[key];
+    if (e) recent7.push({ date: key, steps: e.steps || 0, cal: e.cal || 0 });
+  }
+  return {
+    height_cm: st.body.height || null,
+    goal_weight_kg: st.body.goalWeight || null,
+    goal_date: st.body.goalDate || null,
+    weight_log_recent: w.slice(-10),
+    weight_start: w[0] || null,
+    workouts_this_week: Number(st.workouts[wk]) || 0,
+    steps_calories_last7: recent7,
+    life_north_star: st.northStar || ''
+  };
+}
+const MPT_COACH_SYSTEM = 'אתה המאמן האישי של אליאור — מפיק מוזיקלי ישראלי שהחליט לשנות את החיים שלו, בריאותית וכלכלית. '
+  + 'אתה מאמן כושר ותזונה: ישיר, חם, דוחף אבל בגובה העיניים. עברית בלבד. תשובות קצרות ופרקטיות (עד ~6 שורות אלא אם ביקש תוכנית מלאה). '
+  + 'תמיד תתבסס על הנתונים שלו (JSON מצורף). אם חסר נתון קריטי (גיל, רמת פעילות, פציעות) — שאל שאלה אחת קצרה. '
+  + 'אתה לא רופא: בכל נושא רפואי אמיתי תפנה לרופא, בלי להיות רובוטי. '
+  + 'כשהוא מעדכן שקילה או אימון — תגיב לזה. תחגוג ניצחונות קטנים, ותהיה כן כשאין התקדמות.';
+
+function _mptRenderCoach() {
+  const thread = document.getElementById('mpt-coach-thread');
+  const sug = document.getElementById('mpt-coach-suggest');
+  const nokey = document.getElementById('mpt-coach-nokey');
+  const inputRow = document.getElementById('mpt-coach-inputrow');
+  if (!thread) return;
+  const st = _mptState();
+  const hasKey = typeof getAIKey === 'function' && !!getAIKey();
+
+  if (!hasKey) {
+    thread.innerHTML = '';
+    if (sug) sug.innerHTML = '';
+    if (inputRow) inputRow.style.display = 'none';
+    if (nokey) nokey.innerHTML =
+      '<div class="mpt-nokey">'
+      + '<div style="font-weight:800;margin-bottom:6px">חיבור חד-פעמי למאמן</div>'
+      + '<div style="font-size:12.5px;color:var(--text-muted);line-height:1.6;margin-bottom:10px">המאמן רץ על Google Gemini (חינם). אותו מפתח משמש גם את העוזרת החכמה באפליקציה — מגדירים פעם אחת וזהו.<br>1. היכנס ל-<b>aistudio.google.com/apikey</b><br>2. צור מפתח (Create API key)<br>3. הדבק כאן:</div>'
+      + '<div style="display:flex;gap:8px"><input type="password" id="mpt-key-in" placeholder="AIza..." style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);font-size:13px;direction:ltr"/>'
+      + '<button class="btn btn-primary btn-sm" onclick="mptSaveKey()">שמור</button></div></div>';
+    return;
+  }
+  if (nokey) nokey.innerHTML = '';
+  if (inputRow) inputRow.style.display = 'flex';
+
+  const chat = st.healthChat;
+  if (!chat.length) {
+    thread.innerHTML = '<div class="mp-empty" style="padding:10px 0">ספר למאמן איפה אתה עומד — או בחר שאלה מוכנה למטה.</div>';
+  } else {
+    thread.innerHTML = chat.map(m =>
+      '<div class="mpt-msg ' + (m.role === 'user' ? 'me' : 'coach') + '">' + _escape(m.text).replace(/\n/g, '<br>') + '</div>'
+    ).join('');
+    thread.scrollTop = thread.scrollHeight;
+  }
+  if (sug) {
+    const qs = ['תבנה לי תוכנית אימונים שבועית', 'כמה קלוריות ביום כדי לרדת בריא?', 'תסתכל על השקילות שלי — איך אני מתקדם?'];
+    sug.innerHTML = qs.map(q => '<button class="mpt-chip" onclick="mptCoachAsk(this.dataset.q)" data-q="' + q + '">' + q + '</button>').join('');
+  }
+}
+window.mptSaveKey = function() {
+  const inp = document.getElementById('mpt-key-in');
+  const v = (inp && inp.value || '').trim();
+  if (!v) { toast('הדבק מפתח קודם'); return; }
+  if (typeof setAIKey === 'function') setAIKey(v);
+  toast('✓ המאמן מחובר');
+  _mptRenderCoach();
+};
+window.mptCoachAsk = function(q) {
+  const inp = document.getElementById('mpt-coach-input');
+  if (inp) inp.value = q;
+  mptCoachSend();
+};
+let _mptCoachBusy = false;
+window.mptCoachSend = async function() {
+  if (_mptCoachBusy) return;
+  const inp = document.getElementById('mpt-coach-input');
+  const text = (inp && inp.value || '').trim();
+  if (!text) return;
+  const st = _mptState();
+  st.healthChat.push({ role: 'user', text });
+  if (st.healthChat.length > 30) st.healthChat = st.healthChat.slice(-30);
+  mpSave(st);
+  if (inp) inp.value = '';
+  _mptRenderCoach();
+  const thread = document.getElementById('mpt-coach-thread');
+  if (thread) {
+    const t = document.createElement('div');
+    t.className = 'mpt-msg coach thinking'; t.id = 'mpt-thinking'; t.textContent = 'חושב…';
+    thread.appendChild(t); thread.scrollTop = thread.scrollHeight;
+  }
+  _mptCoachBusy = true;
+  const sendBtn = document.getElementById('mpt-coach-send');
+  if (sendBtn) sendBtn.disabled = true;
+  try {
+    const sys = MPT_COACH_SYSTEM + '\n\n## הנתונים של אליאור (JSON):\n' + JSON.stringify(_mptCoachContext());
+    const contents = st.healthChat.slice(-16).map(m => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }]
+    }));
+    const model = await discoverGeminiModel();
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/' + model + ':generateContent?key=' + encodeURIComponent(getAIKey()), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: sys }] },
+        contents,
+        generationConfig: { temperature: 0.6, maxOutputTokens: 1024 }
+      })
+    });
+    const data = await res.json();
+    let reply;
+    if (!res.ok) reply = '⚠️ ' + (data?.error?.message || ('שגיאה ' + res.status));
+    else reply = (data.candidates?.[0]?.content?.parts || []).map(p => p.text).join('\n') || '…';
+    st.healthChat.push({ role: 'coach', text: reply });
+    if (st.healthChat.length > 30) st.healthChat = st.healthChat.slice(-30);
+    mpSave(st);
+  } catch (e) {
+    st.healthChat.push({ role: 'coach', text: '⚠️ בעיית חיבור: ' + e.message });
+    mpSave(st);
+  } finally {
+    _mptCoachBusy = false;
+    if (sendBtn) sendBtn.disabled = false;
+    document.getElementById('mpt-thinking')?.remove();
+    _mptRenderCoach();
+  }
+};
+
+// ══════════ GOAL TAB ══════════
+function _mptRenderGoal(id) {
+  const el = document.getElementById('mpt-goal-body');
+  if (!el) return;
+  const st = _mptState();
+  const g = st.goals.find(x => x.id === id);
+  if (!g) { el.innerHTML = '<div class="mp-empty">היעד לא נמצא</div>'; return; }
+  const idEsc = String(g.id).replace(/'/g, "\\'");
+  const done = g.steps.filter(s => s.done).length;
+  const pct = g.steps.length ? Math.round((done / g.steps.length) * 100) : (g.done ? 100 : 0);
+
+  el.innerHTML =
+    '<div class="table-card mp-card mpt-accent-card">'
+    + '<div class="mpt-goal-head">'
+    +   '<div style="flex:1;min-width:0"><div class="mpt-goal-title' + (g.done ? ' done' : '') + '">' + _escape(g.title) + '</div>'
+    +   '<div class="mp-sub" style="margin:4px 0 0">' + (g.date ? 'עד ' + g.date.split('-').reverse().join('/') : 'בלי תאריך יעד — כדאי לקבוע') + '</div></div>'
+    +   '<button class="mpx-move-go" onclick="mptGoalDone(\'' + idEsc + '\')">' + (g.done ? 'החזר לפעיל' : 'סמן שהושג') + '</button>'
+    + '</div>'
+    + '<div class="mp-bar-wrap" style="margin-top:12px"><div class="mp-bar-head"><span class="mp-bar-name">התקדמות</span><span class="mp-bar-nums">' + done + '/' + g.steps.length + ' · ' + pct + '%</span></div>'
+    + '<div class="mp-bar-track"><div class="mp-bar-fill" style="width:' + pct + '%;background:' + (pct >= 100 ? 'var(--green)' : 'var(--accent)') + '"></div></div></div>'
+    + '<div class="mp-target-row" style="grid-template-columns:1fr;margin-top:12px"><div class="form-group" style="margin-bottom:0"><label>עד מתי</label>'
+    + '<input type="month" value="' + (g.date || '') + '" onchange="mptGoalDate(\'' + idEsc + '\', this.value)"/></div></div>'
+    + '</div>'
+
+    + '<div class="table-card mp-card">'
+    + '<div class="mp-section-title">אבני דרך</div>'
+    + '<div class="mp-sub">תפרק את היעד לצעדים קטנים — כל ✓ מקרב.</div>'
+    + (g.steps.length ? g.steps.map(s => {
+        const sEsc = String(s.id).replace(/'/g, "\\'");
+        return '<div class="mp-goal-row ' + (s.done ? 'done' : '') + '">'
+          + '<button class="mp-goal-check ' + (s.done ? 'done' : '') + '" onclick="mptStepToggle(\'' + idEsc + '\',\'' + sEsc + '\')">'
+          + '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 10 18 20 6"/></svg></button>'
+          + '<div class="mp-goal-title">' + _escape(s.text) + '</div>'
+          + '<button class="row-icon-btn" onclick="mptStepDel(\'' + idEsc + '\',\'' + sEsc + '\')" aria-label="מחק">'
+          + '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-trash"/></svg></button></div>';
+      }).join('') : '<div class="mp-empty">עוד אין אבני דרך</div>')
+    + '<div class="mp-add-goal" style="margin-top:10px">'
+    + '<input type="text" id="mpt-step-in" placeholder="אבן דרך חדשה…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();mptStepAdd(\'' + idEsc + '\');}"/>'
+    + '<button class="btn btn-primary btn-sm" onclick="mptStepAdd(\'' + idEsc + '\')">+ הוסף</button></div>'
+    + '</div>'
+
+    + '<div class="table-card mp-card">'
+    + '<div class="mp-section-title">התוכנית שלי</div>'
+    + '<textarea class="mp-textarea" rows="5" placeholder="איך אני מגיע לזה? מה הצעד הבא? מה עוצר אותי?" oninput="mptGoalNotes(\'' + idEsc + '\', this.value)">' + _escape(g.notes || '') + '</textarea>'
+    + '</div>'
+
+    + '<button class="prod-delete-link" onclick="mptGoalDelete(\'' + idEsc + '\')" style="margin-top:4px"><svg class="icon"><use href="#ic-trash"/></svg> מחק יעד</button>';
+}
+window.mptGoalDone = function(id) {
+  const st = _mptState();
+  const g = st.goals.find(x => x.id === id); if (!g) return;
+  g.done = !g.done;
+  mpSave(st);
+  if (g.done && window.haptic) window.haptic.success();
+  if (g.done) toast('🎉 יעד הושג! ענק.');
+  mptRenderAll();
+};
+window.mptGoalDate = function(id, v) {
+  const st = _mptState();
+  const g = st.goals.find(x => x.id === id); if (!g) return;
+  g.date = v || '';
+  mpSave(st);
+};
+window.mptGoalNotes = function(id, v) {
+  clearTimeout(_mpTimers['gnotes-' + id]);
+  _mpTimers['gnotes-' + id] = setTimeout(() => {
+    const st = _mptState();
+    const g = st.goals.find(x => x.id === id); if (!g) return;
+    g.notes = v;
+    mpSave(st);
+  }, 600);
+};
+window.mptStepAdd = function(gid) {
+  const inp = document.getElementById('mpt-step-in');
+  const text = (inp && inp.value || '').trim();
+  if (!text) return;
+  const st = _mptState();
+  const g = st.goals.find(x => x.id === gid); if (!g) return;
+  g.steps.push({ id: genId(), text, done: false });
+  mpSave(st);
+  _mptRenderGoal(gid);
+  if (window.haptic) window.haptic.tap();
+};
+window.mptStepToggle = function(gid, sid) {
+  const st = _mptState();
+  const g = st.goals.find(x => x.id === gid); if (!g) return;
+  const s = g.steps.find(x => x.id === sid); if (!s) return;
+  s.done = !s.done;
+  mpSave(st);
+  if (s.done && window.haptic) window.haptic.success();
+  _mptRenderGoal(gid);
+};
+window.mptStepDel = function(gid, sid) {
+  const st = _mptState();
+  const g = st.goals.find(x => x.id === gid); if (!g) return;
+  g.steps = g.steps.filter(x => x.id !== sid);
+  mpSave(st);
+  _mptRenderGoal(gid);
+};
+window.mptGoalDelete = function(id) {
+  if (!confirm('למחוק את היעד לגמרי?')) return;
+  const st = _mptState();
+  st.goals = st.goals.filter(x => x.id !== id);
+  mpSave(st);
+  mptGo('health');
+};
+
+// ══════════ PROCESS TAB extras ══════════
+function _mptRenderGoalsOverview() {
+  const card = document.getElementById('mpt-goals-overview-card');
+  const el = document.getElementById('mpt-goals-overview');
+  if (!card || !el) return;
+  const st = _mptState();
+  if (!st.goals.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  const nowKey = _mpbMonthKeySafe(new Date());
+  el.innerHTML = st.goals.map(g => {
+    const done = g.steps.filter(s => s.done).length;
+    const pct = g.done ? 100 : (g.steps.length ? Math.round((done / g.steps.length) * 100) : 0);
+    const late = g.date && !g.done && g.date < nowKey;
+    const idEsc = String(g.id).replace(/'/g, "\\'");
+    return '<div class="mpt-ov-row" onclick="mptGo(\'goal:' + idEsc + '\')">'
+      + '<div class="mpt-ov-top"><span class="mpt-ov-name' + (g.done ? ' done' : '') + '">' + _escape(g.title) + '</span>'
+      + '<span class="mpt-ov-meta">' + (g.done ? '✓ הושג' : (g.date ? (late ? 'באיחור · ' : 'עד ') + g.date.split('-').reverse().join('/') : pct + '%')) + '</span></div>'
+      + '<div class="mp-bar-track" style="height:6px"><div class="mp-bar-fill" style="width:' + pct + '%;background:' + (g.done ? 'var(--green)' : late ? 'var(--red)' : 'var(--accent)') + '"></div></div>'
+      + '</div>';
+  }).join('');
+}
 
 // Re-categorize every pending TX + every confirmed expense currently
 // sitting on 'אחר' (or with no category) using the latest dictionary
@@ -14246,8 +14749,7 @@ function showMode(mode) {
   if (path) {
     // showPage() strips .active from every .page — re-assert ours.
     try { document.getElementById('page-mypath').classList.add('active'); } catch (e) {}
-    try { renderMyPath(); } catch (e) {}
-    try { renderMyPathBoard(); } catch (e) {}
+    try { mptRenderAll(); } catch (e) {}
   }
   if (biz && _pendingAction) { const a = _pendingAction; _pendingAction = null; runShortcutAction(a); }
 }
