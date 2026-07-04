@@ -3695,7 +3695,7 @@
 
     /* ── התוכנית מהמאמן — the coach's written plan, always on the page ── */
     .mpt-plan-card { border-top: 3px solid var(--accent); }
-    .mpt-plan-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 2px; }
+    .mpt-plan-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; margin: 4px 0 2px; }
     .mpt-plan-tile {
       background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
       padding: 10px 8px; text-align: center; cursor: pointer;
@@ -3709,6 +3709,59 @@
       white-space: pre-wrap; word-wrap: break-word;
     }
     .mpt-plan-date { margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: left; }
+
+    /* ── יומן תזונה — the food diary (Cal-AI-style logging, MFP-style budget) ── */
+    .mpt-food-card { border-top: 3px solid var(--green); }
+    .mpt-food-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .mpt-food-nav button {
+      width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text); font-size: 17px; font-weight: 900;
+      cursor: pointer; font-family: inherit; line-height: 1;
+    }
+    .mpt-food-nav button:disabled { opacity: 0.3; }
+    .mpt-food-nav .d { font-size: 13.5px; font-weight: 900; color: var(--text); }
+    .mpt-food-budget { text-align: center; padding: 4px 0 2px; }
+    .mpt-food-remain { font-size: 36px; font-weight: 900; letter-spacing: -0.02em; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .mpt-food-remain.over { color: var(--red); }
+    .mpt-food-sub { font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-top: 3px; }
+    .mpt-food-track { height: 10px; background: var(--surface3); border-radius: 6px; overflow: hidden; margin-top: 10px; }
+    .mpt-food-track span { display: block; height: 100%; border-radius: 6px; transition: width .5s; }
+    .mpt-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .mpt-macro { background: var(--surface2); border-radius: 10px; padding: 9px 8px 8px; text-align: center; }
+    .mpt-macro .n { font-size: 14.5px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+    .mpt-macro .l { font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
+    .mpt-macro .bar { height: 4px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+    .mpt-macro .bar span { display: block; height: 100%; background: var(--green); border-radius: 3px; transition: width .5s; }
+    .mpt-meal { margin-top: 13px; border-top: 1px solid var(--border); padding-top: 9px; }
+    .mpt-meal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .mpt-meal-name { font-size: 13px; font-weight: 900; color: var(--text); }
+    .mpt-meal-kcal { font-size: 11.5px; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .mpt-meal-add {
+      width: 28px; height: 28px; border-radius: 9px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--accent); font-weight: 900; font-size: 17px;
+      cursor: pointer; line-height: 1; font-family: inherit;
+    }
+    .mpt-food-item { display: flex; align-items: center; gap: 8px; padding: 7px 2px 0; font-size: 12.5px; }
+    .mpt-food-item .nm { flex: 1; min-width: 0; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mpt-food-item .pr { flex-shrink: 0; font-size: 10.5px; color: var(--text-muted); font-weight: 700; }
+    .mpt-food-item .kc { flex-shrink: 0; min-width: 44px; text-align: left; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); }
+    .mpt-food-item .rm, .mpt-ai-row .rm {
+      flex-shrink: 0; width: 22px; height: 22px; border: none; background: none;
+      color: var(--text-muted); font-size: 15px; cursor: pointer; padding: 0; line-height: 1; font-family: inherit;
+    }
+    .mpt-food-note { margin-top: 12px; font-size: 10.5px; color: var(--text-muted); font-weight: 600; text-align: center; }
+    .mpt-recents { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+    .mpt-recents .cap { width: 100%; font-size: 11px; font-weight: 900; color: var(--text-muted); }
+    .mpt-food-thumb { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border); }
+    .mpt-ai-items { margin: 14px 0 10px; border: 1px solid var(--border); border-radius: 12px; padding: 2px 12px; }
+    .mpt-ai-row { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .mpt-ai-row:last-child { border-bottom: none; }
+    .mpt-ai-row .nm { flex: 1; min-width: 0; font-weight: 700; color: var(--text); }
+    .mpt-ai-row input {
+      width: 58px; padding: 6px 4px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface2); color: var(--text); font-size: 12.5px; font-weight: 800;
+      text-align: center; font-family: inherit; outline: none;
+    }
 
     .mpt-goal-head { display: flex; align-items: flex-start; gap: 12px; }
     .mpt-goal-title { font-size: 20px; font-weight: 900; color: var(--text); letter-spacing: -0.01em; line-height: 1.25; }
@@ -6093,7 +6146,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v366</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v367</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6299,6 +6352,11 @@
       <div class="table-card mp-card mpt-plan-card">
         <div class="mp-section-title"><svg class="icon"><use href="#ic-flag"/></svg> התוכנית מהמאמן</div>
         <div id="mpt-plan-body"></div>
+      </div>
+
+      <div class="table-card mp-card mpt-food-card">
+        <div class="mp-section-title"><svg class="icon"><use href="#ic-check-circle"/></svg> יומן תזונה</div>
+        <div id="mpt-food-body"></div>
       </div>
 
       <div class="table-card mp-card">
@@ -6866,6 +6924,34 @@
   </div>
 
   <!-- Productions add/edit modal -->
+  <!-- ===== FOOD DIARY — add a meal (AI photo/text analysis or manual) ===== -->
+  <div class="modal-overlay" id="modal-foodadd">
+    <div class="modal">
+      <h3 id="foodadd-title">הוספה ליומן</h3>
+      <div class="mpt-recents" id="foodadd-recents"></div>
+      <div class="form-group">
+        <label>מה אכלת?</label>
+        <textarea id="foodadd-desc" rows="2" placeholder="למשל: 2 ביצים, סלט עם כף טחינה ופרוסת לחם מלא"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('foodadd-photo').click()">צלם / העלה תמונה</button>
+        <img id="foodadd-thumb" class="mpt-food-thumb" style="display:none" alt=""/>
+      </div>
+      <input type="file" id="foodadd-photo" accept="image/*" capture="environment" style="display:none" onchange="mptFoodPhotoPicked(event)"/>
+      <button class="btn btn-primary" style="width:100%" id="foodadd-analyze" onclick="mptFoodAnalyze()">נתח עם AI — קלוריות וחלבון</button>
+      <div id="foodadd-result"></div>
+      <div style="border-top:1px solid var(--border);margin:16px 0 10px;padding-top:12px;font-size:11px;font-weight:900;color:var(--text-muted);letter-spacing:.06em">או הזנה ידנית</div>
+      <div class="form-group" style="margin-bottom:0">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px">
+          <input id="foodadd-mname" placeholder="שם המאכל"/>
+          <input id="foodadd-mcal" type="number" min="0" placeholder="קק״ל"/>
+          <input id="foodadd-mprot" type="number" min="0" placeholder="חלבון ג׳"/>
+        </div>
+      </div>
+      <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="mptFoodManualAdd()">הוסף ידנית</button>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="modal-production">
     <div class="modal">
       <h3 id="prod-modal-title">הפקה חדשה</h3>
@@ -10769,6 +10855,8 @@ function mpState() {
   if (!(Number(st.healthTargets.cal)   > 0)) st.healthTargets.cal   = 2200;
   if (!(Number(st.healthTargets.workouts) > 0)) st.healthTargets.workouts = 3;
   if (!st.plan || typeof st.plan !== 'object') st.plan = {};
+  if (!st.meals || typeof st.meals !== 'object') st.meals = {};
+  if (!Array.isArray(st.foodRecents)) st.foodRecents = [];
   if (!(Number(st.releasesTarget) > 0))      st.releasesTarget = 6;
   // First-run seed: three typical services so the planner mechanics
   // are visible immediately. All editable/deletable.
@@ -11349,6 +11437,7 @@ function _mptRenderHealth() {
   fill('mpt-goal-wdate', st.body.goalDate || '');
   _mptRenderWeight();
   _mptRenderPlan();
+  _mptRenderFood();
   _mptRenderWeekChips();
   _mptRenderCoach();
 }
@@ -11509,6 +11598,7 @@ function _mptRenderPlan() {
   const fmt = n => (Number(n) || 0).toLocaleString('he-IL');
   let html = '<div class="mpt-plan-tiles">'
     + '<div class="mpt-plan-tile" onclick="mptEditTarget(\'cal\')"><span class="n">' + fmt(t.cal) + '</span><span class="l">קק״ל ביום</span></div>'
+    + '<div class="mpt-plan-tile" onclick="mptEditTarget(\'protein\')"><span class="n">' + fmt(_mptProteinTarget(st)) + '</span><span class="l">חלבון ביום (ג׳)</span></div>'
     + '<div class="mpt-plan-tile" onclick="mptEditTarget(\'steps\')"><span class="n">' + fmt(t.steps) + '</span><span class="l">צעדים ביום</span></div>'
     + '<div class="mpt-plan-tile" onclick="mptEditTarget(\'workouts\')"><span class="n">' + fmt(t.workouts || 3) + '</span><span class="l">אימונים בשבוע</span></div>'
     + '</div>';
@@ -11525,7 +11615,7 @@ function _mptRenderPlan() {
 }
 window.mptEditTarget = function(field) {
   const st = _mptState();
-  const labels = { cal: 'יעד קלוריות ביום', steps: 'יעד צעדים ביום', workouts: 'יעד אימונים בשבוע' };
+  const labels = { cal: 'יעד קלוריות ביום', protein: 'יעד חלבון ביום (גרם)', steps: 'יעד צעדים ביום', workouts: 'יעד אימונים בשבוע' };
   const cur = st.healthTargets[field] || '';
   const v = prompt(labels[field] + ':', cur);
   if (v === null) return;
@@ -11536,11 +11626,292 @@ window.mptEditTarget = function(field) {
   toast('✓ היעד עודכן');
   _mptRenderPlan();
   _mptRenderWeekChips();
+  try { _mptRenderFood(); } catch (_) {}
 };
 window.mptAskPlan = function() {
   mptCoachAsk('תבנה לי תוכנית מלאה ומסודרת — תזונה (כמה קלוריות ביום), צעדים יומיים ואימונים שבועיים — לפי הנתונים שלי, ותעדכן את היעדים והתוכנית בדף.');
   const inp = document.getElementById('mpt-coach-input');
   if (inp) inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+// ══════════ FOOD DIARY (יומן תזונה) ══════════
+// Photo/text AI meal logging (Cal-AI style: describe or photograph,
+// Gemini estimates) on top of an MFP-style remaining-calories budget.
+// Every change syncs the day's total into st.health so the weekly
+// table and the coach always see real intake.
+const MPT_MEALS = [['b', 'ארוחת בוקר'], ['l', 'צהריים'], ['d', 'ערב'], ['s', 'ביניים ונשנושים']];
+let _mptFoodDate = null;     // YYYY-MM-DD shown in the diary (null = today)
+let _mptFoodMeal = 'b';      // which meal the add-modal targets
+let _mptFoodImg = null;      // pending base64 jpeg (no data: prefix)
+let _mptFoodPending = null;  // AI-analyzed items awaiting confirmation
+
+function _mptFoodKey() { return _mptFoodDate || _mpbToday(); }
+function _mptProteinTarget(st) {
+  if (Number(st.healthTargets.protein) > 0) return Number(st.healthTargets.protein);
+  const gw = Number(st.body.goalWeight) || 0;
+  return gw ? Math.round(gw * 1.8) : 120; // ~1.8g/kg goal weight — solid deficit default
+}
+function _mptFoodSyncDay(st, key) {
+  const items = (st.meals[key] || []);
+  const e = st.health[key] || {};
+  e.cal = items.reduce((s, i) => s + (Number(i.cal) || 0), 0);
+  st.health[key] = e;
+}
+
+function _mptRenderFood() {
+  const el = document.getElementById('mpt-food-body');
+  if (!el) return;
+  const st = _mptState();
+  const key = _mptFoodKey();
+  const items = st.meals[key] || [];
+  const tCal = Number(st.healthTargets.cal) || 2200;
+  const tProt = _mptProteinTarget(st);
+  const sum = f => items.reduce((s, i) => s + (Number(i[f]) || 0), 0);
+  const eaten = sum('cal'), prot = sum('protein'), carbs = sum('carbs'), fat = sum('fat');
+  const remain = tCal - eaten;
+  const pct = Math.min(100, Math.round((eaten / tCal) * 100));
+  const isToday = key === _mpbToday();
+  const dLbl = isToday ? 'היום' : key.slice(8, 10) + '.' + key.slice(5, 7);
+
+  let html = '<div class="mpt-food-nav">'
+    + '<button onclick="mptFoodNav(-1)" aria-label="יום קודם">›</button>'
+    + '<span class="d">' + dLbl + '</span>'
+    + '<button onclick="mptFoodNav(1)"' + (isToday ? ' disabled' : '') + ' aria-label="יום הבא">‹</button>'
+    + '</div>'
+    + '<div class="mpt-food-budget">'
+    + '<div class="mpt-food-remain' + (remain < 0 ? ' over' : '') + '">' + Math.abs(remain).toLocaleString('he-IL') + '</div>'
+    + '<div class="mpt-food-sub">' + (remain >= 0 ? 'קק״ל נשארו' : 'קק״ל מעל היעד') + ' · יעד ' + tCal.toLocaleString('he-IL') + ' · נאכל ' + eaten.toLocaleString('he-IL') + '</div>'
+    + '<div class="mpt-food-track"><span style="width:' + pct + '%;background:' + (eaten > tCal ? 'var(--red)' : 'var(--green)') + '"></span></div>'
+    + '</div>'
+    + '<div class="mpt-macros">'
+    + '<div class="mpt-macro"><div class="n">' + prot + ' / ' + tProt + '</div><div class="l">חלבון (גרם)</div><div class="bar"><span style="width:' + Math.min(100, Math.round((prot / tProt) * 100)) + '%"></span></div></div>'
+    + '<div class="mpt-macro"><div class="n">' + carbs + '</div><div class="l">פחמימות (גרם)</div></div>'
+    + '<div class="mpt-macro"><div class="n">' + fat + '</div><div class="l">שומן (גרם)</div></div>'
+    + '</div>';
+
+  MPT_MEALS.forEach(([mk, label]) => {
+    const list = items.filter(i => i.meal === mk);
+    const mc = list.reduce((s, i) => s + (Number(i.cal) || 0), 0);
+    html += '<div class="mpt-meal"><div class="mpt-meal-head">'
+      + '<span class="mpt-meal-name">' + label + '</span>'
+      + '<span style="display:flex;align-items:center;gap:10px">'
+      + (mc ? '<span class="mpt-meal-kcal">' + mc.toLocaleString('he-IL') + ' קק״ל</span>' : '')
+      + '<button class="mpt-meal-add" onclick="mptFoodOpenAdd(\'' + mk + '\')" aria-label="הוסף">+</button></span>'
+      + '</div>'
+      + list.map(i =>
+        '<div class="mpt-food-item"><span class="nm">' + _escape(i.name) + '</span>'
+        + (Number(i.protein) ? '<span class="pr">' + i.protein + 'ג׳ חלבון</span>' : '')
+        + '<span class="kc">' + (Number(i.cal) || 0).toLocaleString('he-IL') + '</span>'
+        + '<button class="rm" onclick="mptFoodDel(\'' + String(i.id).replace(/'/g, "\\'") + '\')" aria-label="מחק">×</button></div>'
+      ).join('')
+      + '</div>';
+  });
+
+  html += '<div class="mpt-food-note">אומדני AI — סטייה של ±20% היא נורמלית. העקביות חשובה מהדיוק המושלם.</div>';
+  el.innerHTML = html;
+}
+window.mptFoodNav = function(dir) {
+  const cur = new Date(_mptFoodKey() + 'T12:00:00');
+  cur.setDate(cur.getDate() + dir);
+  const k = cur.toISOString().slice(0, 10);
+  if (k > _mpbToday()) return;
+  _mptFoodDate = (k === _mpbToday()) ? null : k;
+  _mptRenderFood();
+};
+window.mptFoodOpenAdd = function(meal) {
+  _mptFoodMeal = meal; _mptFoodImg = null; _mptFoodPending = null;
+  const m = MPT_MEALS.find(x => x[0] === meal);
+  const t = document.getElementById('foodadd-title');
+  if (t) t.textContent = 'הוספה — ' + (m ? m[1] : '');
+  ['foodadd-desc', 'foodadd-mname', 'foodadd-mcal', 'foodadd-mprot'].forEach(id => {
+    const e = document.getElementById(id); if (e) e.value = '';
+  });
+  const th = document.getElementById('foodadd-thumb');
+  if (th) { th.style.display = 'none'; th.src = ''; }
+  const res = document.getElementById('foodadd-result');
+  if (res) res.innerHTML = '';
+  const ph = document.getElementById('foodadd-photo');
+  if (ph) ph.value = '';
+  const aiBtn = document.getElementById('foodadd-analyze');
+  if (aiBtn) aiBtn.style.display = (typeof getAIKey === 'function' && getAIKey()) ? 'block' : 'none';
+  _mptFoodRenderRecents();
+  openModal('foodadd');
+};
+function _mptFoodRenderRecents() {
+  const el = document.getElementById('foodadd-recents');
+  if (!el) return;
+  const rec = _mptState().foodRecents;
+  el.innerHTML = rec.length
+    ? '<span class="cap">מהזיכרון — הוספה בנגיעה</span>' + rec.map((r, i) =>
+        '<button class="mpt-chip" onclick="mptFoodQuickAdd(' + i + ')">' + _escape(r.name) + ' · ' + (Number(r.cal) || 0) + '</button>'
+      ).join('')
+    : '';
+}
+window.mptFoodQuickAdd = function(i) {
+  const st = _mptState();
+  const r = st.foodRecents[i];
+  if (!r) return;
+  _mptFoodPush(st, [r]);
+  closeModal('foodadd');
+};
+function _mptFoodRemember(st, it) {
+  const nm = String(it.name || '').trim();
+  if (!nm) return;
+  st.foodRecents = st.foodRecents.filter(r => r.name !== nm);
+  st.foodRecents.unshift({
+    name: nm.slice(0, 60),
+    cal: Math.round(Number(it.cal) || 0),
+    protein: Math.round(Number(it.protein) || 0),
+    carbs: Math.round(Number(it.carbs) || 0),
+    fat: Math.round(Number(it.fat) || 0)
+  });
+  if (st.foodRecents.length > 12) st.foodRecents = st.foodRecents.slice(0, 12);
+}
+function _mptFoodPush(st, arr) {
+  const key = _mptFoodKey();
+  if (!st.meals[key]) st.meals[key] = [];
+  arr.forEach(it => {
+    st.meals[key].push({
+      id: genId(), meal: _mptFoodMeal,
+      name: String(it.name || 'מאכל').slice(0, 60),
+      cal: Math.max(0, Math.round(Number(it.cal) || 0)),
+      protein: Math.max(0, Math.round(Number(it.protein) || 0)),
+      carbs: Math.max(0, Math.round(Number(it.carbs) || 0)),
+      fat: Math.max(0, Math.round(Number(it.fat) || 0))
+    });
+    _mptFoodRemember(st, it);
+  });
+  const cutoff = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+  Object.keys(st.meals).forEach(k => { if (k < cutoff) delete st.meals[k]; });
+  _mptFoodSyncDay(st, key);
+  mpSave(st);
+  toast('✓ נוסף ליומן');
+  if (window.haptic) window.haptic.tap();
+  _mptRenderFood();
+  try { _mptRenderWeekChips(); } catch (_) {}
+}
+window.mptFoodDel = function(id) {
+  const st = _mptState();
+  const key = _mptFoodKey();
+  if (!st.meals[key]) return;
+  st.meals[key] = st.meals[key].filter(i => i.id !== id);
+  _mptFoodSyncDay(st, key);
+  if (!st.meals[key].length) delete st.meals[key];
+  mpSave(st);
+  _mptRenderFood();
+  try { _mptRenderWeekChips(); } catch (_) {}
+};
+window.mptFoodPhotoPicked = function(ev) {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  const img = new Image();
+  const url = URL.createObjectURL(f);
+  img.onload = function() {
+    // Downscale before upload — 768px jpeg is plenty for portion
+    // estimation and keeps the request small on cell data.
+    const MAX = 768;
+    const sc = Math.min(1, MAX / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * sc);
+    c.height = Math.round(img.height * sc);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const dataUrl = c.toDataURL('image/jpeg', 0.72);
+    _mptFoodImg = dataUrl.split(',')[1];
+    const th = document.getElementById('foodadd-thumb');
+    if (th) { th.src = dataUrl; th.style.display = 'block'; }
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+};
+const MPT_FOOD_SYS = 'אתה מנוע ניתוח תזונתי מדויק. המשתמש ישראלי — הכר מנות ישראליות טיפוסיות (חומוס, טחינה, שקשוקה, שניצל, פתיתים, בורקס, ג׳חנון וכו׳). '
+  + 'קבל תיאור טקסט ו/או תמונה של ארוחה, פרק אותה לפריטים, והחזר אך ורק JSON תקין בפורמט: '
+  + '{"items":[{"name":"שם קצר בעברית","cal":מספר,"protein":מספר,"carbs":מספר,"fat":מספר}]} '
+  + 'הערכים הם למנה שתוארה/מצולמת (לא ל-100 גרם). חלבון/פחמימות/שומן בגרמים. אם הכמות לא צוינה — הנח מנה ממוצעת. אומדנים ריאליים.';
+window.mptFoodAnalyze = async function() {
+  const desc = (document.getElementById('foodadd-desc')?.value || '').trim();
+  if (!desc && !_mptFoodImg) { toast('כתוב מה אכלת או צלם תמונה'); return; }
+  const btn = document.getElementById('foodadd-analyze');
+  if (btn) { btn.disabled = true; btn.textContent = 'מנתח…'; }
+  try {
+    const parts = [];
+    if (_mptFoodImg) parts.push({ inline_data: { mime_type: 'image/jpeg', data: _mptFoodImg } });
+    parts.push({ text: desc || 'נתח את הארוחה שבתמונה.' });
+    const payload = {
+      systemInstruction: { parts: [{ text: MPT_FOOD_SYS }] },
+      contents: [{ role: 'user', parts }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 2048, responseMimeType: 'application/json' }
+    };
+    let model = await _mptModel();
+    if (/2\.5/.test(model)) payload.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    const call = m => _mptHttp('POST', 'https://generativelanguage.googleapis.com/v1beta/' + m + ':generateContent?key=' + encodeURIComponent(getAIKey()), payload);
+    let r = await call(model);
+    if (!r.ok && (r.status === 404 || r.status === 400)) {
+      localStorage.removeItem('gemini_model');
+      delete payload.generationConfig.thinkingConfig;
+      r = await call('models/gemini-2.0-flash');
+    }
+    if (!r.ok) throw new Error(r.json?.error?.message || ('שגיאה ' + r.status));
+    const txt = (r.json.candidates?.[0]?.content?.parts || []).map(p => p.text).join('');
+    let obj = null;
+    try { obj = JSON.parse(txt); } catch (_) {
+      const m2 = txt.match(/\{[\s\S]*\}/);
+      if (m2) { try { obj = JSON.parse(m2[0]); } catch (__) {} }
+    }
+    const items = (obj && Array.isArray(obj.items)) ? obj.items.filter(i => i && i.name) : [];
+    if (!items.length) throw new Error('לא הצלחתי לפרק את הארוחה — נסה לתאר במילים');
+    _mptFoodPending = items.map(i => ({
+      name: String(i.name).slice(0, 60),
+      cal: Math.max(0, Math.round(Number(i.cal) || 0)),
+      protein: Math.max(0, Math.round(Number(i.protein) || 0)),
+      carbs: Math.max(0, Math.round(Number(i.carbs) || 0)),
+      fat: Math.max(0, Math.round(Number(i.fat) || 0))
+    }));
+    _mptFoodRenderPending();
+  } catch (e) {
+    const res = document.getElementById('foodadd-result');
+    if (res) res.innerHTML = '<div class="mp-empty" style="padding:10px 0;color:var(--red)">⚠️ ' + _escape(e.message) + '</div>';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'נתח עם AI — קלוריות וחלבון'; }
+  }
+};
+function _mptFoodRenderPending() {
+  const res = document.getElementById('foodadd-result');
+  if (!res) return;
+  const items = _mptFoodPending || [];
+  const tot = items.reduce((s, i) => s + i.cal, 0);
+  const tp = items.reduce((s, i) => s + i.protein, 0);
+  res.innerHTML = '<div class="mpt-ai-items">' + items.map((i, ix) =>
+      '<div class="mpt-ai-row"><span class="nm">' + _escape(i.name) + '</span>'
+      + '<input type="number" min="0" value="' + i.cal + '" onchange="mptFoodEditPending(' + ix + ',\'cal\',this.value)" aria-label="קק״ל"/>'
+      + '<input type="number" min="0" value="' + i.protein + '" onchange="mptFoodEditPending(' + ix + ',\'protein\',this.value)" aria-label="חלבון"/>'
+      + '<button class="rm" onclick="mptFoodDropPending(' + ix + ')" aria-label="הסר">×</button></div>'
+    ).join('') + '</div>'
+    + '<div style="font-size:12px;font-weight:800;color:var(--text-muted);margin-bottom:10px">סה״כ ~' + tot.toLocaleString('he-IL') + ' קק״ל · ' + tp + 'ג׳ חלבון <small style="font-weight:600">(קק״ל | חלבון — אפשר לתקן לפני שמירה)</small></div>'
+    + '<button class="btn btn-primary" style="width:100%" onclick="mptFoodConfirmPending()">הוסף ליומן</button>';
+}
+window.mptFoodEditPending = function(ix, f, v) {
+  if (!_mptFoodPending || !_mptFoodPending[ix]) return;
+  _mptFoodPending[ix][f] = Math.max(0, Math.round(Number(v) || 0));
+  _mptFoodRenderPending();
+};
+window.mptFoodDropPending = function(ix) {
+  if (!_mptFoodPending) return;
+  _mptFoodPending.splice(ix, 1);
+  _mptFoodRenderPending();
+};
+window.mptFoodConfirmPending = function() {
+  if (!_mptFoodPending || !_mptFoodPending.length) return;
+  _mptFoodPush(_mptState(), _mptFoodPending);
+  _mptFoodPending = null;
+  closeModal('foodadd');
+};
+window.mptFoodManualAdd = function() {
+  const nm = (document.getElementById('foodadd-mname')?.value || '').trim();
+  const cal = parseInt(document.getElementById('foodadd-mcal')?.value, 10);
+  const pr = parseInt(document.getElementById('foodadd-mprot')?.value, 10) || 0;
+  if (!nm || !(cal >= 0)) { toast('שם וקלוריות — חובה'); return; }
+  _mptFoodPush(_mptState(), [{ name: nm, cal: cal, protein: pr }]);
+  closeModal('foodadd');
 };
 
 // ── The AI coach — real Gemini, riding the app's existing ai_api_key ──
@@ -11562,8 +11933,17 @@ function _mptCoachContext() {
     weight_start: w[0] || null,
     workouts_this_week: Number(st.workouts[wk]) || 0,
     steps_calories_last7: recent7,
-    daily_targets: { steps: st.healthTargets.steps || null, calories: st.healthTargets.cal || null, workouts_per_week: st.healthTargets.workouts || null },
+    daily_targets: { steps: st.healthTargets.steps || null, calories: st.healthTargets.cal || null, protein_g: _mptProteinTarget(st), workouts_per_week: st.healthTargets.workouts || null },
     current_written_plan: (st.plan && st.plan.text) ? { text: st.plan.text, updated_at: st.plan.updatedAt || null } : null,
+    food_diary_today: (function() {
+      const items = st.meals[_mpbToday()] || [];
+      if (!items.length) return null;
+      return {
+        eaten_cal: items.reduce((s, i) => s + (Number(i.cal) || 0), 0),
+        eaten_protein_g: items.reduce((s, i) => s + (Number(i.protein) || 0), 0),
+        items: items.map(i => i.name).slice(0, 25)
+      };
+    })(),
     life_north_star: st.northStar || ''
   };
 }
@@ -11614,7 +11994,8 @@ const MPT_COACH_SYSTEM = 'אתה המאמן האישי של אליאור — מ�
   + 'תמיד תתבסס על הנתונים שלו (JSON מצורף). אם חסר נתון קריטי (גיל, רמת פעילות, פציעות) — שאל שאלה אחת קצרה. '
   + 'אתה לא רופא: בכל נושא רפואי אמיתי תפנה לרופא, בלי להיות רובוטי. '
   + 'כשהוא מעדכן שקילה או אימון — תגיב לזה. תחגוג ניצחונות קטנים, ותהיה כן כשאין התקדמות. '
-  + 'סנכרון עם האפליקציה: כשאתה קובע או מעדכן המלצה ליעדים — קלוריות ביום, צעדים ביום ו/או אימונים בשבוע — הוסף בסוף התשובה שורה נפרדת בפורמט המדויק: #SET cal=1800 steps=10000 workouts=3 (רק הערכים שהמלצת עליהם). האפליקציה תקלוט את השורה ותעדכן את הלוחות אוטומטית. אל תשתמש בפורמט הזה בשום מצב אחר. '
+  + 'יש לו באפליקציה יומן תזונה: הוא מתעד ארוחות (טקסט/צילום) והנתונים של היום מגיעים אליך ב-JSON (food_diary_today). תתייחס למה שהוא באמת אכל — תשבח בחירות טובות, תציע תיקונים קונקרטיים, ותשים לב לחלבון. '
+  + 'סנכרון עם האפליקציה: כשאתה קובע או מעדכן המלצה ליעדים — קלוריות ביום, חלבון יומי (גרם), צעדים ביום ו/או אימונים בשבוע — הוסף בסוף התשובה שורה נפרדת בפורמט המדויק: #SET cal=1800 protein=140 steps=10000 workouts=3 (רק הערכים שהמלצת עליהם). האפליקציה תקלוט את השורה ותעדכן את הלוחות אוטומטית. אל תשתמש בפורמט הזה בשום מצב אחר. '
   + 'תוכנית כתובה: יש בדף כרטיס קבוע "התוכנית מהמאמן" שמציג את התוכנית הכתובה שלך. בכל פעם שאתה בונה או מעדכן לו תוכנית (תזונה, צעדים, אימונים, שקילה) — הוסף אחרי שורת ה-#SET בלוק בפורמט המדויק: שורה שמכילה רק #PLAN, אחריה התוכנית עצמה (5–10 שורות תמציתיות ומסודרות: תזונה יומית, צעדים, מבנה שבוע האימונים, שקילה ומעקב), ואז שורה שמכילה רק #END. הבלוק לא מוצג בצ׳אט — הוא נשמר ומחליף את התוכנית הכתובה בדף, אז כתוב אותו שלם ועומד בפני עצמו, לא "כמו שאמרנו". אם current_written_plan קיים ב-JSON — זו התוכנית הנוכחית שלו; עדכן אותה רק כשיש שינוי אמיתי.';
 
 function _mptRenderCoach() {
@@ -11651,7 +12032,7 @@ function _mptRenderCoach() {
     thread.scrollTop = thread.scrollHeight;
   }
   if (sug) {
-    const qs = ['תבנה לי תוכנית מלאה — תזונה, צעדים ואימונים', 'אני מתחיל אימונים — איך משלבים את זה בתוכנית?', 'תסתכל על השקילות שלי — איך אני מתקדם?'];
+    const qs = ['תבנה לי תוכנית מלאה — תזונה, צעדים ואימונים', 'תסתכל מה אכלתי היום — תן פידבק', 'אני מתחיל אימונים — איך משלבים את זה בתוכנית?', 'תסתכל על השקילות שלי — איך אני מתקדם?'];
     sug.innerHTML = qs.map(q => '<button class="mpt-chip" onclick="mptCoachAsk(this.dataset.q)" data-q="' + q + '">' + q + '</button>').join('');
   }
 }
@@ -11735,8 +12116,10 @@ window.mptCoachSend = async function() {
       const calM = setM[1].match(/cal\s*=\s*(\d{3,5})/i);
       const stepsM = setM[1].match(/steps\s*=\s*(\d{3,6})/i);
       const wM = setM[1].match(/workouts?\s*=\s*(\d{1,2})/i);
+      const prM = setM[1].match(/protein\s*=\s*(\d{2,3})/i);
       let applied = [];
       if (calM)   { st.healthTargets.cal   = parseInt(calM[1], 10);   applied.push(st.healthTargets.cal.toLocaleString('he-IL') + ' קק״ל'); }
+      if (prM)    { st.healthTargets.protein = parseInt(prM[1], 10);  applied.push(st.healthTargets.protein + ' ג׳ חלבון'); }
       if (stepsM) { st.healthTargets.steps = parseInt(stepsM[1], 10); applied.push(st.healthTargets.steps.toLocaleString('he-IL') + ' צעדים'); }
       if (wM)     { st.healthTargets.workouts = parseInt(wM[1], 10);  applied.push(st.healthTargets.workouts + ' אימונים בשבוע'); }
       reply = reply.replace(/#SET[^\n]*/i, '').trim();
@@ -11755,8 +12138,9 @@ window.mptCoachSend = async function() {
     document.getElementById('mpt-thinking')?.remove();
     _mptRenderCoach();
     // Everything the coach set must be visible immediately — the plan
-    // card, the week table and the process-tab planner all resync.
+    // card, the food budget and the week table all resync.
     try { _mptRenderPlan(); } catch (_) {}
+    try { _mptRenderFood(); } catch (_) {}
     try { _mptRenderWeekChips(); } catch (_) {}
   }
 };
