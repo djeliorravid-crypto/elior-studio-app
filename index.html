@@ -6165,7 +6165,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v369</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v370</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6510,6 +6510,36 @@
   </div>
 
 </main>
+
+<!-- ===== FOOD DIARY — add a meal (AI photo/text analysis or manual).
+     Body-level on purpose: it opens from path mode, so it must NOT
+     live inside business-main (hidden there → invisible modal). ===== -->
+<div class="modal-overlay" id="modal-foodadd">
+  <div class="modal">
+    <h3 id="foodadd-title">הוספה ליומן</h3>
+    <div class="mpt-recents" id="foodadd-recents"></div>
+    <div class="form-group">
+      <label>מה אכלת?</label>
+      <textarea id="foodadd-desc" rows="2" placeholder="למשל: 2 ביצים, סלט עם כף טחינה ופרוסת לחם מלא"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('foodadd-photo').click()">צלם / העלה תמונה</button>
+      <img id="foodadd-thumb" class="mpt-food-thumb" style="display:none" alt=""/>
+    </div>
+    <input type="file" id="foodadd-photo" accept="image/*" capture="environment" style="display:none" onchange="mptFoodPhotoPicked(event)"/>
+    <button class="btn btn-primary" style="width:100%" id="foodadd-analyze" onclick="mptFoodAnalyze()">נתח עם AI — קלוריות וחלבון</button>
+    <div id="foodadd-result"></div>
+    <div style="border-top:1px solid var(--border);margin:16px 0 10px;padding-top:12px;font-size:11px;font-weight:900;color:var(--text-muted);letter-spacing:.06em">או הזנה ידנית</div>
+    <div class="form-group" style="margin-bottom:0">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px">
+        <input id="foodadd-mname" placeholder="שם המאכל"/>
+        <input id="foodadd-mcal" type="number" min="0" placeholder="קק״ל"/>
+        <input id="foodadd-mprot" type="number" min="0" placeholder="חלבון ג׳"/>
+      </div>
+    </div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="mptFoodManualAdd()">הוסף ידנית</button>
+  </div>
+</div>
 
 <main class="main" id="business-main">
 
@@ -6959,34 +6989,6 @@
   </div>
 
   <!-- Productions add/edit modal -->
-  <!-- ===== FOOD DIARY — add a meal (AI photo/text analysis or manual) ===== -->
-  <div class="modal-overlay" id="modal-foodadd">
-    <div class="modal">
-      <h3 id="foodadd-title">הוספה ליומן</h3>
-      <div class="mpt-recents" id="foodadd-recents"></div>
-      <div class="form-group">
-        <label>מה אכלת?</label>
-        <textarea id="foodadd-desc" rows="2" placeholder="למשל: 2 ביצים, סלט עם כף טחינה ופרוסת לחם מלא"></textarea>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('foodadd-photo').click()">צלם / העלה תמונה</button>
-        <img id="foodadd-thumb" class="mpt-food-thumb" style="display:none" alt=""/>
-      </div>
-      <input type="file" id="foodadd-photo" accept="image/*" capture="environment" style="display:none" onchange="mptFoodPhotoPicked(event)"/>
-      <button class="btn btn-primary" style="width:100%" id="foodadd-analyze" onclick="mptFoodAnalyze()">נתח עם AI — קלוריות וחלבון</button>
-      <div id="foodadd-result"></div>
-      <div style="border-top:1px solid var(--border);margin:16px 0 10px;padding-top:12px;font-size:11px;font-weight:900;color:var(--text-muted);letter-spacing:.06em">או הזנה ידנית</div>
-      <div class="form-group" style="margin-bottom:0">
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px">
-          <input id="foodadd-mname" placeholder="שם המאכל"/>
-          <input id="foodadd-mcal" type="number" min="0" placeholder="קק״ל"/>
-          <input id="foodadd-mprot" type="number" min="0" placeholder="חלבון ג׳"/>
-        </div>
-      </div>
-      <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="mptFoodManualAdd()">הוסף ידנית</button>
-    </div>
-  </div>
-
   <div class="modal-overlay" id="modal-production">
     <div class="modal">
       <h3 id="prod-modal-title">הפקה חדשה</h3>
