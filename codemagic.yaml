@@ -69,6 +69,11 @@ workflows:
           /usr/libexec/PlistBuddy -c "Add :NSCalendarsFullAccessUsageDescription string 'אנו משתמשים ביומן כדי לסנכרן פעילויות מהלוז היומי ל-Apple Calendar שלך, וממנו ל-Google Calendar אם הוא מחובר.'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Delete :NSCalendarsUsageDescription" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :NSCalendarsUsageDescription string 'אנו משתמשים ביומן כדי לסנכרן פעילויות מהלוז היומי ל-Apple Calendar שלך, וממנו ל-Google Calendar אם הוא מחובר.'" "$PLIST"
+          # Apple Health (read-only steps) — HealthKitBridgePlugin pulls
+          # daily step totals so the health tab fills itself. Read-only,
+          # so only the Share (read) description is required.
+          /usr/libexec/PlistBuddy -c "Delete :NSHealthShareUsageDescription" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSHealthShareUsageDescription string 'אנו קוראים את נתוני הצעדים שלך מ-Health כדי למלא אוטומטית את מעקב הצעדים היומי בעמוד הבריאות והכושר.'" "$PLIST"
           # Quick actions — rebuild from scratch so the array stays in sync.
           /usr/libexec/PlistBuddy -c "Delete :UIApplicationShortcutItems" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems array" "$PLIST"

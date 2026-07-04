@@ -40,13 +40,15 @@ FileUtils.cp("ios-plugin/BiometricBridge/BiometricBridgePlugin.swift",
              "#{plugin_dest}/BiometricBridgePlugin.swift")
 FileUtils.cp("ios-plugin/IosCalendarBridge/IosCalendarBridgePlugin.swift",
              "#{plugin_dest}/IosCalendarBridgePlugin.swift")
+FileUtils.cp("ios-plugin/HealthKitBridge/HealthKitBridgePlugin.swift",
+             "#{plugin_dest}/HealthKitBridgePlugin.swift")
 FileUtils.cp("ios-plugin/BridgeViewController.swift",
              "ios/App/App/BridgeViewController.swift")
 
 app_group = project.main_group['App']
 plugins_group = app_group['Plugins'] || app_group.new_group('Plugins', 'Plugins')
 
-['TaskWidgetBridgePlugin.swift', 'BiometricBridgePlugin.swift', 'IosCalendarBridgePlugin.swift'].each do |fname|
+['TaskWidgetBridgePlugin.swift', 'BiometricBridgePlugin.swift', 'IosCalendarBridgePlugin.swift', 'HealthKitBridgePlugin.swift'].each do |fname|
   unless plugins_group.files.any? { |f| f.path == fname }
     ref = plugins_group.new_file(fname)
     app_target.add_file_references([ref])

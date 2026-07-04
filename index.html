@@ -6146,7 +6146,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v367</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v368</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11440,6 +11440,7 @@ function _mptRenderHealth() {
   _mptRenderFood();
   _mptRenderWeekChips();
   _mptRenderCoach();
+  try { _mptHealthAutoSync(); } catch (_) {}
 }
 window.mptSaveBody = function(field, val) {
   clearTimeout(_mpTimers['body-' + field]);
@@ -11537,8 +11538,14 @@ function _mptRenderWeekChips() {
   let html = '<div class="mpx-habit-row" style="margin-top:2px">'
     + '<span class="mpx-habit">אימונים השבוע <span class="val">' + (Number(st.workouts[wk]) || 0) + '/' + (st.healthTargets.workouts || 3) + '</span><button onclick="mptBumpWorkout()" title="התאמנתי">+</button></span>'
     + '<span class="mpx-habit">צעדים היום <span class="val">' + (h.steps ? h.steps.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'steps\')">עדכן</button></span>'
-    + '<span class="mpx-habit">קלוריות היום <span class="val">' + (h.cal ? h.cal.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'cal\')">עדכן</button></span>'
-    + '</div>';
+    + '<span class="mpx-habit">קלוריות היום <span class="val">' + (h.cal ? h.cal.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'cal\')">עדכן</button></span>';
+  if (_mptHK()) {
+    let hkOn = false;
+    try { hkOn = localStorage.getItem('hk_connected') === '1'; } catch (_) {}
+    html += '<span class="mpx-habit">Apple Health' + (hkOn ? ' <span class="val" style="color:var(--green)">✓</span>' : '')
+      + '<button onclick="mptHealthConnect()">' + (hkOn ? 'סנכרן' : 'חבר') + '</button></span>';
+  }
+  html += '</div>';
 
   // ── 7-day table vs targets — the "what does logging give me" answer ──
   const DAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
@@ -11913,6 +11920,64 @@ window.mptFoodManualAdd = function() {
   _mptFoodPush(_mptState(), [{ name: nm, cal: cal, protein: pr }]);
   closeModal('foodadd');
 };
+
+// ══════════ APPLE HEALTH — automatic step sync ══════════
+// Rides the local HealthKitBridge plugin (ships in the next native
+// build). Everything is guarded: on the web / older builds the plugin
+// is simply absent and the manual "עדכן" flow keeps working.
+function _mptHK() {
+  return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.HealthKitBridge) || null;
+}
+let _mptHKBusy = false;
+async function _mptHealthSync(manual) {
+  const hk = _mptHK();
+  if (!hk || _mptHKBusy) return;
+  _mptHKBusy = true;
+  try {
+    const av = await hk.available();
+    if (!av || !av.available) { if (manual) toast('Health לא זמין במכשיר הזה'); return; }
+    await hk.requestAuth();
+    const r = await hk.getDailySteps({ days: 14 });
+    const days = (r && r.days) || [];
+    const st = _mptState();
+    let changed = 0;
+    days.forEach(d => {
+      const n = Math.round(Number(d.steps) || 0);
+      if (!d.date || n <= 0) return;   // never wipe a manual entry with a zero
+      const e = st.health[d.date] || {};
+      if (e.steps !== n) { e.steps = n; st.health[d.date] = e; changed++; }
+    });
+    if (changed) mpSave(st);
+    try {
+      localStorage.setItem('hk_connected', '1');
+      localStorage.setItem('hk_synced_at', String(Date.now()));
+    } catch (_) {}
+    if (manual) toast('✓ הצעדים סונכרנו מ-Health');
+    try { _mptRenderWeekChips(); } catch (_) {}
+    try { renderMyPathBoard(); } catch (_) {}
+  } catch (e) {
+    if (manual) toast('סנכרון Health נכשל — ' + (e && e.message || 'שגיאה'));
+  } finally {
+    _mptHKBusy = false;
+  }
+}
+window.mptHealthConnect = function() { _mptHealthSync(true); };
+function _mptHealthAutoSync() {
+  if (!_mptHK()) return;
+  let connected = false, last = 0;
+  try {
+    connected = localStorage.getItem('hk_connected') === '1';
+    last = Number(localStorage.getItem('hk_synced_at')) || 0;
+  } catch (_) {}
+  if (!connected) return;                       // no auto-prompt before first tap
+  if (Date.now() - last < 15 * 60 * 1000) return;
+  _mptHealthSync(false);
+}
+// Fresh steps every time the app returns to the foreground.
+try {
+  const _capApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (_capApp && _capApp.addListener) _capApp.addListener('resume', () => { try { _mptHealthAutoSync(); } catch (_) {} });
+} catch (_) {}
 
 // ── The AI coach — real Gemini, riding the app's existing ai_api_key ──
 function _mptCoachContext() {
