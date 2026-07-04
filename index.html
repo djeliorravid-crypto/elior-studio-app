@@ -6180,7 +6180,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v372</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v373</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -12124,12 +12124,14 @@ function _mptRenderToday() {
   const tile = (n, l, fn, cls) =>
     '<div class="mpt-plan-tile' + (cls ? ' ' + cls : '') + '"' + (fn ? ' onclick="' + fn + '"' : '') + '>'
     + '<span class="n">' + n + '</span><span class="l">' + l + '</span></div>';
+  const startW = Number(st.startWeight) || (w.length ? w[0].kg : 0);
   el.innerHTML = '<div class="mpt-tiles-grid">'
     + tile(dayN, 'ימים בתהליך', 'mptTileDays()')
     + tile(steps ? steps.toLocaleString('he-IL') : '—', 'צעדים היום', 'mptTileSteps()')
+    + tile(eaten.toLocaleString('he-IL') + '<small> / ' + tCal.toLocaleString('he-IL') + '</small>', 'קק״ל היום', 'mptTileCal()', eaten > tCal ? 'over' : '')
+    + tile(startW ? startW.toFixed(1) : '—', 'משקל התחלתי', 'mptTileStartW()')
     + tile(lastW ? lastW.toFixed(1) : '—', 'משקל אחרון', 'mptLogWeight()')
     + tile(goalW ? goalW : '—', 'משקל יעד', 'mptTileGoal()')
-    + tile(eaten.toLocaleString('he-IL') + '<small> / ' + tCal.toLocaleString('he-IL') + '</small>', 'קק״ל היום', 'mptTileCal()', eaten > tCal ? 'over' : '')
     + '</div>';
 
   // Section summary lines — one glance tells you if it's worth opening.
@@ -12166,6 +12168,18 @@ window.mptTileDays = function() {
 window.mptTileSteps = function() {
   if (_mptHK()) _mptHealthSync(true);
   else mpbLogHealth('steps');
+};
+window.mptTileStartW = function() {
+  const st = _mptState();
+  const cur = Number(st.startWeight) || (st.weights.length ? st.weights[0].kg : '');
+  const v = prompt('משקל התחלתי (ק״ג) — נקודת הפתיחה של התהליך:', cur || '');
+  if (v === null) return;
+  const n = parseFloat(String(v).replace(',', '.'));
+  if (!(n > 25 && n < 350)) { toast('משקל לא תקין'); return; }
+  st.startWeight = n;
+  mpSave(st);
+  _mptRenderToday();
+  try { _mptRenderWeight(); } catch (_) {}
 };
 window.mptTileGoal = function() {
   const st = _mptState();
