@@ -3710,6 +3710,25 @@
     }
     .mpt-plan-date { margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: left; }
 
+    /* ── Health tab: today dashboard + collapsible sections ── */
+    .mpt-today-card { border-top: 3px solid var(--accent); }
+    .mpt-td-remain { font-size: 40px; font-weight: 900; letter-spacing: -0.02em; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1; text-align: center; }
+    .mpt-td-remain.over { color: var(--red); }
+    .mpt-td-lbl { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-align: center; margin-top: 3px; }
+    .mpt-td-actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+    .mp-card.mpt-sec { padding: 0; }
+    .mpt-sec-head {
+      width: 100%; display: flex; align-items: center; gap: 10px;
+      padding: 15px 18px; background: none; border: none; cursor: pointer;
+      font-family: inherit; text-align: right;
+    }
+    .mpt-sec-head .t { font-size: 14px; font-weight: 900; color: var(--text); white-space: nowrap; }
+    .mpt-sec-head .s { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mpt-sec-head .ch { color: var(--text-muted); font-size: 12px; flex-shrink: 0; transition: transform .2s; }
+    .mpt-sec.open .mpt-sec-head .ch { transform: rotate(180deg); }
+    .mpt-sec-body { display: none; padding: 0 18px 18px; }
+    .mpt-sec.open .mpt-sec-body { display: block; }
+
     /* ── יומן תזונה — the food diary (Cal-AI-style logging, MFP-style budget) ── */
     .mpt-food-card { border-top: 3px solid var(--green); }
     .mpt-food-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
@@ -6146,7 +6165,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v368</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v369</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6328,8 +6347,15 @@
 
     <!-- ═══ TAB: בריאות וכושר ═══ -->
     <div class="mpt-pane" id="mpt-pane-health">
-      <div class="table-card mp-card mpt-accent-card">
-        <div class="mp-section-title"><svg class="icon"><use href="#ic-cat-health"/></svg> הגוף שלי</div>
+      <!-- Today dashboard — the one always-open card. Everything else
+           below is a collapsed section with a summary line. -->
+      <div class="table-card mp-card mpt-today-card">
+        <div id="mpt-today"></div>
+      </div>
+
+      <div class="table-card mp-card mpt-accent-card mpt-sec" id="mpt-sec-weight">
+        <button class="mpt-sec-head" onclick="mptSecToggle('weight')"><span class="t">הגוף שלי — משקל ויעד</span><span class="s" id="mpt-sum-weight"></span><span class="ch">▾</span></button>
+        <div class="mpt-sec-body">
         <div class="mp-target-row">
           <div class="form-group" style="margin-bottom:0">
             <label>גובה (ס"מ)</label>
@@ -6347,26 +6373,34 @@
         <div id="mpt-weight-stats"></div>
         <div id="mpt-weight-chart"></div>
         <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="mptLogWeight()">עדכן משקל היום</button>
+        </div>
       </div>
 
-      <div class="table-card mp-card mpt-plan-card">
-        <div class="mp-section-title"><svg class="icon"><use href="#ic-flag"/></svg> התוכנית מהמאמן</div>
-        <div id="mpt-plan-body"></div>
+      <div class="table-card mp-card mpt-food-card mpt-sec" id="mpt-sec-food">
+        <button class="mpt-sec-head" onclick="mptSecToggle('food')"><span class="t">יומן תזונה</span><span class="s" id="mpt-sum-food"></span><span class="ch">▾</span></button>
+        <div class="mpt-sec-body">
+          <div id="mpt-food-body"></div>
+        </div>
       </div>
 
-      <div class="table-card mp-card mpt-food-card">
-        <div class="mp-section-title"><svg class="icon"><use href="#ic-check-circle"/></svg> יומן תזונה</div>
-        <div id="mpt-food-body"></div>
+      <div class="table-card mp-card mpt-plan-card mpt-sec" id="mpt-sec-plan">
+        <button class="mpt-sec-head" onclick="mptSecToggle('plan')"><span class="t">התוכנית מהמאמן</span><span class="s" id="mpt-sum-plan"></span><span class="ch">▾</span></button>
+        <div class="mpt-sec-body">
+          <div id="mpt-plan-body"></div>
+        </div>
       </div>
 
-      <div class="table-card mp-card">
-        <div class="mp-section-title"><svg class="icon"><use href="#ic-check-circle"/></svg> השבוע שלי</div>
-        <div id="mpt-week-chips"></div>
+      <div class="table-card mp-card mpt-sec" id="mpt-sec-week">
+        <button class="mpt-sec-head" onclick="mptSecToggle('week')"><span class="t">השבוע שלי — מעקב יומי</span><span class="s" id="mpt-sum-week"></span><span class="ch">▾</span></button>
+        <div class="mpt-sec-body">
+          <div id="mpt-week-chips"></div>
+        </div>
       </div>
 
-      <div class="table-card mp-card mpt-coach-card">
-        <div class="mp-section-title"><svg class="icon"><use href="#ic-target"/></svg> המאמן האישי (AI)</div>
-        <div class="mp-sub">מכיר את הגובה, המשקלים, האימונים והיעד שלך — תתייעץ איתו על הכל.</div>
+      <div class="table-card mp-card mpt-coach-card mpt-sec" id="mpt-sec-coach">
+        <button class="mpt-sec-head" onclick="mptSecToggle('coach')"><span class="t">המאמן האישי (AI)</span><span class="s" id="mpt-sum-coach"></span><span class="ch">▾</span></button>
+        <div class="mpt-sec-body">
+        <div class="mp-sub">מכיר את הגובה, המשקלים, הארוחות, הצעדים והיעד שלך — תתייעץ איתו על הכל.</div>
         <div id="mpt-coach-thread" class="mpt-coach-thread"></div>
         <div id="mpt-coach-suggest" class="mpt-coach-suggest"></div>
         <div class="mpt-coach-inputrow" id="mpt-coach-inputrow">
@@ -6377,6 +6411,7 @@
           </button>
         </div>
         <div id="mpt-coach-nokey"></div>
+        </div>
       </div>
     </div>
 
@@ -11435,6 +11470,7 @@ function _mptRenderHealth() {
   fill('mpt-height', st.body.height || '');
   fill('mpt-goal-weight', st.body.goalWeight || '');
   fill('mpt-goal-wdate', st.body.goalDate || '');
+  _mptRenderToday();
   _mptRenderWeight();
   _mptRenderPlan();
   _mptRenderFood();
@@ -11582,6 +11618,7 @@ function _mptRenderWeekChips() {
     html += '<div class="mp-empty" style="padding:10px 0 2px">תתחיל לרשום צעדים וקלוריות — הטבלה השבועית תיבנה כאן, יום-יום מול היעד.</div>';
   }
   el.innerHTML = html;
+  try { _mptRenderToday(); } catch (_) {}
 }
 window.mptBumpWorkout = function() {
   const st = _mptState();
@@ -11716,6 +11753,7 @@ function _mptRenderFood() {
 
   html += '<div class="mpt-food-note">אומדני AI — סטייה של ±20% היא נורמלית. העקביות חשובה מהדיוק המושלם.</div>';
   el.innerHTML = html;
+  try { _mptRenderToday(); } catch (_) {}
 }
 window.mptFoodNav = function(dir) {
   const cur = new Date(_mptFoodKey() + 'T12:00:00');
@@ -11978,6 +12016,98 @@ try {
   const _capApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (_capApp && _capApp.addListener) _capApp.addListener('resume', () => { try { _mptHealthAutoSync(); } catch (_) {} });
 } catch (_) {}
+
+// ══════════ HEALTH TAB LAYOUT — today dashboard + collapsed sections ══════════
+// One always-open "today" card with the numbers that matter right now;
+// everything else is a section with a summary line, closed by default
+// (same collapse pattern as productions / recurring expenses).
+const MPT_SECS = ['weight', 'food', 'plan', 'week', 'coach'];
+function _mptSecIsOpen(k) {
+  try {
+    const v = localStorage.getItem('_mpt_sec_' + k);
+    if (v !== null) return v === '1';
+  } catch (_) {}
+  return false;
+}
+window.mptSecToggle = function(k) {
+  const open = !_mptSecIsOpen(k);
+  try { localStorage.setItem('_mpt_sec_' + k, open ? '1' : '0'); } catch (_) {}
+  _mptApplySecs();
+  if (k === 'coach' && open) {
+    const t = document.getElementById('mpt-coach-thread');
+    if (t) t.scrollTop = t.scrollHeight;
+  }
+};
+function _mptApplySecs() {
+  MPT_SECS.forEach(k => {
+    const el = document.getElementById('mpt-sec-' + k);
+    if (el) el.classList.toggle('open', _mptSecIsOpen(k));
+  });
+}
+function _mptRenderToday() {
+  const el = document.getElementById('mpt-today');
+  if (!el) return;
+  const st = _mptState();
+  const today = _mpbToday();
+  const items = st.meals[today] || [];
+  const tCal = Number(st.healthTargets.cal) || 2200;
+  const tProt = _mptProteinTarget(st);
+  const tSteps = Number(st.healthTargets.steps) || 8000;
+  const tW = Number(st.healthTargets.workouts) || 3;
+  const eaten = items.reduce((s, i) => s + (Number(i.cal) || 0), 0);
+  const prot = items.reduce((s, i) => s + (Number(i.protein) || 0), 0);
+  const steps = Number((st.health[today] || {}).steps) || 0;
+  const wkN = Number(st.workouts[_mpbWeekKey()]) || 0;
+  const remain = tCal - eaten;
+  const mini = (val, target, label, doneGood) => {
+    const pct = target ? Math.min(100, Math.round((val / target) * 100)) : 0;
+    return '<div class="mpt-macro"><div class="n">' + val.toLocaleString('he-IL') + ' / ' + target.toLocaleString('he-IL') + '</div>'
+      + '<div class="l">' + label + '</div>'
+      + '<div class="bar"><span style="width:' + pct + '%;background:' + (doneGood && pct >= 100 ? 'var(--green)' : 'var(--accent)') + '"></span></div></div>';
+  };
+  el.innerHTML =
+    '<div class="mpt-td-remain' + (remain < 0 ? ' over' : '') + '">' + Math.abs(remain).toLocaleString('he-IL') + '</div>'
+    + '<div class="mpt-td-lbl">' + (remain >= 0 ? 'קק״ל נשארו להיום' : 'קק״ל מעל היעד') + ' · נאכל ' + eaten.toLocaleString('he-IL') + ' מתוך ' + tCal.toLocaleString('he-IL') + '</div>'
+    + '<div class="mpt-macros">'
+    + mini(prot, tProt, 'חלבון (גרם)', true)
+    + mini(steps, tSteps, 'צעדים', true)
+    + mini(wkN, tW, 'אימונים השבוע', true)
+    + '</div>'
+    + '<div class="mpt-td-actions">'
+    + '<button class="mpt-chip" onclick="mptQuickMeal()">+ ארוחה</button>'
+    + '<button class="mpt-chip" onclick="mptQuickWorkout()">+ אימון</button>'
+    + '<button class="mpt-chip" onclick="mptLogWeight()">+ שקילה</button>'
+    + '</div>';
+
+  // Section summary lines — one glance tells you if it's worth opening.
+  const put = (id, txt) => { const s = document.getElementById(id); if (s) s.textContent = txt; };
+  const w = st.weights;
+  const lastW = w.length ? w[w.length - 1].kg : 0;
+  const goalW = Number(st.body.goalWeight) || 0;
+  put('mpt-sum-weight', lastW ? (lastW.toFixed(1) + ' ק״ג' + (goalW ? ' · יעד ' + goalW : '')) : 'הזן גובה ומשקל יעד');
+  put('mpt-sum-food', items.length
+    ? (remain >= 0 ? 'נשארו ' + remain.toLocaleString('he-IL') + ' קק״ל' : remain.toLocaleString('he-IL').replace('-', '') + ' קק״ל מעל')
+    : 'עוד לא תיעדת היום');
+  put('mpt-sum-plan', tCal.toLocaleString('he-IL') + ' קק״ל · ' + tSteps.toLocaleString('he-IL') + ' צעדים · ' + tW + ' אימונים');
+  let passDays = 0, loggedDays = 0;
+  for (let k = 0; k < 7; k++) {
+    const key = new Date(Date.now() - k * 86400000).toISOString().slice(0, 10);
+    const e = st.health[key] || {};
+    if (e.steps) { loggedDays++; if (e.steps >= tSteps) passDays++; }
+  }
+  put('mpt-sum-week', loggedDays ? ('צעדים ביעד ' + passDays + '/' + loggedDays + ' ימים') : '');
+  const hasKey = typeof getAIKey === 'function' && !!getAIKey();
+  put('mpt-sum-coach', hasKey ? (st.healthChat.length ? 'ממשיכים מאיפה שעצרתם' : 'שאל אותי הכל') : 'חיבור חד-פעמי נדרש');
+  _mptApplySecs();
+}
+window.mptQuickMeal = function() {
+  const h = new Date().getHours();
+  mptFoodOpenAdd(h < 11 ? 'b' : h < 16 ? 'l' : h < 21 ? 'd' : 's');
+};
+window.mptQuickWorkout = function() {
+  mptBumpWorkout();
+  try { _mptRenderToday(); } catch (_) {}
+};
 
 // ── The AI coach — real Gemini, riding the app's existing ai_api_key ──
 function _mptCoachContext() {
