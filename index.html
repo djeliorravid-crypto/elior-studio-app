@@ -3710,12 +3710,27 @@
     }
     .mpt-plan-date { margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: left; }
 
-    /* ── Health tab: today dashboard + collapsible sections ── */
-    .mpt-today-card { border-top: 3px solid var(--accent); }
-    .mpt-td-remain { font-size: 40px; font-weight: 900; letter-spacing: -0.02em; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1; text-align: center; }
-    .mpt-td-remain.over { color: var(--red); }
-    .mpt-td-lbl { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-align: center; margin-top: 3px; }
-    .mpt-td-actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+    /* ── Health tab: 5 tiles + collapsible sections ── */
+    .mpt-tiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .mpt-tiles-grid .mpt-plan-tile { background: var(--surface); border: 1px solid var(--border); padding: 13px 8px; }
+    .mpt-tiles-grid .mpt-plan-tile .n { font-size: 21px; }
+    .mpt-tiles-grid .mpt-plan-tile .n small { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+    .mpt-tiles-grid .mpt-plan-tile.over .n { color: var(--red); }
+    .mpt-tiles-grid .mpt-plan-tile:nth-child(4),
+    .mpt-tiles-grid .mpt-plan-tile:nth-child(5) { grid-column: span 1; }
+    .mpt-addrow { display: grid; grid-template-columns: 1.1fr 1.9fr; gap: 8px; margin-bottom: 8px; }
+    .mpt-addrow.nums { grid-template-columns: 1fr 1.3fr auto; }
+    .mpt-addrow select, .mpt-addrow input {
+      width: 100%; min-width: 0; padding: 11px 12px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--surface2); color: var(--text);
+      font-size: 14px; font-weight: 600; font-family: inherit; outline: none; direction: rtl;
+    }
+    .mpt-addrow select:focus, .mpt-addrow input:focus { border-color: var(--accent); }
+    .mpt-album { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+    .mpt-album-item { cursor: pointer; }
+    .mpt-album-item img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); display: block; }
+    .mpt-album-item span { display: block; font-size: 10px; font-weight: 700; color: var(--text-muted); text-align: center; margin-top: 3px; }
     .mp-card.mpt-sec { padding: 0; }
     .mpt-sec-head {
       width: 100%; display: flex; align-items: center; gap: 10px;
@@ -6165,7 +6180,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v370</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v371</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6347,10 +6362,25 @@
 
     <!-- ═══ TAB: בריאות וכושר ═══ -->
     <div class="mpt-pane" id="mpt-pane-health">
-      <!-- Today dashboard — the one always-open card. Everything else
-           below is a collapsed section with a summary line. -->
-      <div class="table-card mp-card mpt-today-card">
-        <div id="mpt-today"></div>
+      <!-- 5 tiles — the whole story at a glance. Below them, everything
+           lives in collapsed boxes ("תקיות") with summary lines. -->
+      <div id="mpt-tiles"></div>
+
+      <!-- Weekly body photo — album with date + weight burned in -->
+      <div class="table-card mp-card mpt-sec" id="mpt-sec-photo">
+        <button class="mpt-sec-head" onclick="mptSecToggle('photo')"><span class="t">תמונת גוף שבועית</span><span class="s" id="mpt-sum-photo"></span><span class="ch">▾</span></button>
+        <div class="mpt-sec-body">
+          <div id="mpt-photo-body"></div>
+          <input type="file" id="mpt-bodyphoto-file" accept="image/*" capture="environment" style="display:none" onchange="mptBodyPhotoPicked(event)"/>
+        </div>
+      </div>
+
+      <!-- Manual meal logging — the daily diary -->
+      <div class="table-card mp-card mpt-food-card mpt-sec" id="mpt-sec-meal">
+        <button class="mpt-sec-head" onclick="mptSecToggle('meal')"><span class="t">הוספת ארוחה</span><span class="s" id="mpt-sum-meal"></span><span class="ch">▾</span></button>
+        <div class="mpt-sec-body">
+          <div id="mpt-food-body"></div>
+        </div>
       </div>
 
       <div class="table-card mp-card mpt-accent-card mpt-sec" id="mpt-sec-weight">
@@ -6373,13 +6403,6 @@
         <div id="mpt-weight-stats"></div>
         <div id="mpt-weight-chart"></div>
         <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="mptLogWeight()">עדכן משקל היום</button>
-        </div>
-      </div>
-
-      <div class="table-card mp-card mpt-food-card mpt-sec" id="mpt-sec-food">
-        <button class="mpt-sec-head" onclick="mptSecToggle('food')"><span class="t">יומן תזונה</span><span class="s" id="mpt-sum-food"></span><span class="ch">▾</span></button>
-        <div class="mpt-sec-body">
-          <div id="mpt-food-body"></div>
         </div>
       </div>
 
@@ -6538,6 +6561,18 @@
       </div>
     </div>
     <button class="btn btn-ghost" style="width:100%;margin-top:10px" onclick="mptFoodManualAdd()">הוסף ידנית</button>
+  </div>
+</div>
+
+<!-- Body-photo viewer — full image + delete -->
+<div class="modal-overlay" id="modal-bodyphoto">
+  <div class="modal modal-narrow" style="padding:14px">
+    <img id="bodyphoto-full" style="width:100%;border-radius:12px;display:block" alt=""/>
+    <div id="bodyphoto-cap" style="font-size:13px;font-weight:800;color:var(--text);text-align:center;margin:10px 0 4px"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('bodyphoto')">סגור</button>
+      <button class="btn btn-danger" style="flex:1" onclick="mptBodyPhotoDel()">מחק תמונה</button>
+    </div>
   </div>
 </div>
 
@@ -11473,6 +11508,7 @@ function _mptRenderHealth() {
   fill('mpt-goal-weight', st.body.goalWeight || '');
   fill('mpt-goal-wdate', st.body.goalDate || '');
   _mptRenderToday();
+  _mptRenderPhotos();
   _mptRenderWeight();
   _mptRenderPlan();
   _mptRenderFood();
@@ -11503,7 +11539,9 @@ window.mptLogWeight = function() {
   if (st.weights.length > 400) st.weights = st.weights.slice(-400);
   mpSave(st);
   if (window.haptic) window.haptic.success();
+  toast('✓ המשקל נשמר — ' + n + ' ק״ג');
   _mptRenderWeight();
+  try { _mptRenderToday(); } catch (_) {}
 };
 function _mptRenderWeight() {
   const statsEl = document.getElementById('mpt-weight-stats');
@@ -11708,55 +11746,62 @@ function _mptRenderFood() {
   const el = document.getElementById('mpt-food-body');
   if (!el) return;
   const st = _mptState();
-  const key = _mptFoodKey();
-  const items = st.meals[key] || [];
+  const today = _mpbToday();
+  const items = st.meals[today] || [];
   const tCal = Number(st.healthTargets.cal) || 2200;
-  const tProt = _mptProteinTarget(st);
-  const sum = f => items.reduce((s, i) => s + (Number(i[f]) || 0), 0);
-  const eaten = sum('cal'), prot = sum('protein'), carbs = sum('carbs'), fat = sum('fat');
-  const remain = tCal - eaten;
-  const pct = Math.min(100, Math.round((eaten / tCal) * 100));
-  const isToday = key === _mpbToday();
-  const dLbl = isToday ? 'היום' : key.slice(8, 10) + '.' + key.slice(5, 7);
+  const eaten = items.reduce((s, i) => s + (Number(i.cal) || 0), 0);
+  const h = new Date().getHours();
+  const autoMeal = h < 11 ? 'b' : h < 16 ? 'l' : h < 21 ? 'd' : 's';
+  const rec = st.foodRecents;
 
-  let html = '<div class="mpt-food-nav">'
-    + '<button onclick="mptFoodNav(-1)" aria-label="יום קודם">›</button>'
-    + '<span class="d">' + dLbl + '</span>'
-    + '<button onclick="mptFoodNav(1)"' + (isToday ? ' disabled' : '') + ' aria-label="יום הבא">‹</button>'
+  // Manual-first: meal picker + name + calories (+ optional protein).
+  let html = '<div class="mpt-addrow">'
+    + '<select id="mpt-meal-sel">' + MPT_MEALS.map(m => '<option value="' + m[0] + '"' + (m[0] === autoMeal ? ' selected' : '') + '>' + m[1] + '</option>').join('') + '</select>'
+    + '<input id="mpt-meal-name" placeholder="מה אכלת?"/>'
     + '</div>'
-    + '<div class="mpt-food-budget">'
-    + '<div class="mpt-food-remain' + (remain < 0 ? ' over' : '') + '">' + Math.abs(remain).toLocaleString('he-IL') + '</div>'
-    + '<div class="mpt-food-sub">' + (remain >= 0 ? 'קק״ל נשארו' : 'קק״ל מעל היעד') + ' · יעד ' + tCal.toLocaleString('he-IL') + ' · נאכל ' + eaten.toLocaleString('he-IL') + '</div>'
-    + '<div class="mpt-food-track"><span style="width:' + pct + '%;background:' + (eaten > tCal ? 'var(--red)' : 'var(--green)') + '"></span></div>'
-    + '</div>'
-    + '<div class="mpt-macros">'
-    + '<div class="mpt-macro"><div class="n">' + prot + ' / ' + tProt + '</div><div class="l">חלבון (גרם)</div><div class="bar"><span style="width:' + Math.min(100, Math.round((prot / tProt) * 100)) + '%"></span></div></div>'
-    + '<div class="mpt-macro"><div class="n">' + carbs + '</div><div class="l">פחמימות (גרם)</div></div>'
-    + '<div class="mpt-macro"><div class="n">' + fat + '</div><div class="l">שומן (גרם)</div></div>'
+    + '<div class="mpt-addrow nums">'
+    + '<input id="mpt-meal-cal" type="number" min="0" placeholder="קלוריות"/>'
+    + '<input id="mpt-meal-prot" type="number" min="0" placeholder="חלבון ג׳ (רשות)"/>'
+    + '<button class="btn btn-primary" onclick="mptMealAdd()">הוסף</button>'
     + '</div>';
-
-  MPT_MEALS.forEach(([mk, label]) => {
-    const list = items.filter(i => i.meal === mk);
-    const mc = list.reduce((s, i) => s + (Number(i.cal) || 0), 0);
-    html += '<div class="mpt-meal"><div class="mpt-meal-head">'
-      + '<span class="mpt-meal-name">' + label + '</span>'
-      + '<span style="display:flex;align-items:center;gap:10px">'
-      + (mc ? '<span class="mpt-meal-kcal">' + mc.toLocaleString('he-IL') + ' קק״ל</span>' : '')
-      + '<button class="mpt-meal-add" onclick="mptFoodOpenAdd(\'' + mk + '\')" aria-label="הוסף">+</button></span>'
-      + '</div>'
-      + list.map(i =>
-        '<div class="mpt-food-item"><span class="nm">' + _escape(i.name) + '</span>'
-        + (Number(i.protein) ? '<span class="pr">' + i.protein + 'ג׳ חלבון</span>' : '')
-        + '<span class="kc">' + (Number(i.cal) || 0).toLocaleString('he-IL') + '</span>'
-        + '<button class="rm" onclick="mptFoodDel(\'' + String(i.id).replace(/'/g, "\\'") + '\')" aria-label="מחק">×</button></div>'
-      ).join('')
+  if (rec.length) {
+    html += '<div class="mpt-recents" style="margin:10px 0 0">'
+      + '<span class="cap">מהזיכרון — נגיעה אחת</span>'
+      + rec.slice(0, 8).map((r, i) => '<button class="mpt-chip" onclick="mptFoodQuickAdd(' + i + ')">' + _escape(r.name) + ' · ' + (Number(r.cal) || 0) + '</button>').join('')
       + '</div>';
-  });
-
-  html += '<div class="mpt-food-note">אומדני AI — סטייה של ±20% היא נורמלית. העקביות חשובה מהדיוק המושלם.</div>';
+  }
+  if (items.length) {
+    html += '<div class="mpt-week-table" style="margin-top:14px">';
+    MPT_MEALS.forEach(([mk, label]) => {
+      const list = items.filter(i => i.meal === mk);
+      if (!list.length) return;
+      html += '<div class="mpt-meal-head" style="padding-top:8px"><span class="mpt-meal-name">' + label + '</span>'
+        + '<span class="mpt-meal-kcal">' + list.reduce((s, i) => s + (Number(i.cal) || 0), 0).toLocaleString('he-IL') + ' קק״ל</span></div>'
+        + list.map(i =>
+          '<div class="mpt-food-item"><span class="nm">' + _escape(i.name) + '</span>'
+          + (Number(i.protein) ? '<span class="pr">' + i.protein + 'ג׳</span>' : '')
+          + '<span class="kc">' + (Number(i.cal) || 0).toLocaleString('he-IL') + '</span>'
+          + '<button class="rm" onclick="mptFoodDel(\'' + String(i.id).replace(/'/g, "\\'") + '\')" aria-label="מחק">×</button></div>'
+        ).join('');
+    });
+    html += '<div class="mpt-week-sum">סה״כ היום <strong>' + eaten.toLocaleString('he-IL') + '</strong> מתוך ' + tCal.toLocaleString('he-IL') + ' קק״ל</div></div>';
+  } else {
+    html += '<div class="mp-empty" style="padding:12px 0 2px">מה שתאכל היום יופיע כאן.</div>';
+  }
+  html += '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px" onclick="mptFoodOpenAdd(document.getElementById(\'mpt-meal-sel\') ? document.getElementById(\'mpt-meal-sel\').value : \'' + autoMeal + '\')">לא בא לך לחשב? ניתוח AI מתמונה או טקסט</button>';
   el.innerHTML = html;
   try { _mptRenderToday(); } catch (_) {}
 }
+window.mptMealAdd = function() {
+  const sel = document.getElementById('mpt-meal-sel');
+  const nm = (document.getElementById('mpt-meal-name')?.value || '').trim();
+  const cal = parseInt(document.getElementById('mpt-meal-cal')?.value, 10);
+  const pr = parseInt(document.getElementById('mpt-meal-prot')?.value, 10) || 0;
+  if (!nm) { toast('מה אכלת? — חסר שם'); return; }
+  if (!(cal >= 0)) { toast('כמה קלוריות? — חסר מספר'); return; }
+  _mptFoodMeal = (sel && sel.value) || 'b';
+  _mptFoodPush(_mptState(), [{ name: nm, cal: cal, protein: pr }]);
+};
 window.mptFoodNav = function(dir) {
   const cur = new Date(_mptFoodKey() + 'T12:00:00');
   cur.setDate(cur.getDate() + dir);
@@ -12010,20 +12055,28 @@ function _mptHealthAutoSync() {
     last = Number(localStorage.getItem('hk_synced_at')) || 0;
   } catch (_) {}
   if (!connected) return;                       // no auto-prompt before first tap
-  if (Date.now() - last < 15 * 60 * 1000) return;
+  if (Date.now() - last < 5 * 60 * 1000) return;
   _mptHealthSync(false);
 }
-// Fresh steps every time the app returns to the foreground.
+// Fresh steps every time the app returns to the foreground, and a
+// slow tick while the path page is open so the steps tile keeps
+// itself current without any tap.
 try {
   const _capApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (_capApp && _capApp.addListener) _capApp.addListener('resume', () => { try { _mptHealthAutoSync(); } catch (_) {} });
 } catch (_) {}
+setInterval(() => {
+  try {
+    const pm = document.getElementById('path-main');
+    if (pm && pm.style.display !== 'none') _mptHealthAutoSync();
+  } catch (_) {}
+}, 180000);
 
 // ══════════ HEALTH TAB LAYOUT — today dashboard + collapsed sections ══════════
 // One always-open "today" card with the numbers that matter right now;
 // everything else is a section with a summary line, closed by default
 // (same collapse pattern as productions / recurring expenses).
-const MPT_SECS = ['weight', 'food', 'plan', 'week', 'coach'];
+const MPT_SECS = ['photo', 'meal', 'weight', 'plan', 'week', 'coach'];
 function _mptSecIsOpen(k) {
   try {
     const v = localStorage.getItem('_mpt_sec_' + k);
@@ -12047,49 +12100,45 @@ function _mptApplySecs() {
   });
 }
 function _mptRenderToday() {
-  const el = document.getElementById('mpt-today');
+  const el = document.getElementById('mpt-tiles');
   if (!el) return;
   const st = _mptState();
   const today = _mpbToday();
+  // Day counter — starts the day he first opened the page, never stops.
+  if (!st.processStart) { st.processStart = today; mpSave(st); }
+  const dayN = Math.max(1, Math.round((new Date(today + 'T12:00:00') - new Date(st.processStart + 'T12:00:00')) / 86400000) + 1);
   const items = st.meals[today] || [];
+  const eaten = items.reduce((s, i) => s + (Number(i.cal) || 0), 0);
   const tCal = Number(st.healthTargets.cal) || 2200;
-  const tProt = _mptProteinTarget(st);
   const tSteps = Number(st.healthTargets.steps) || 8000;
   const tW = Number(st.healthTargets.workouts) || 3;
-  const eaten = items.reduce((s, i) => s + (Number(i.cal) || 0), 0);
-  const prot = items.reduce((s, i) => s + (Number(i.protein) || 0), 0);
   const steps = Number((st.health[today] || {}).steps) || 0;
-  const wkN = Number(st.workouts[_mpbWeekKey()]) || 0;
-  const remain = tCal - eaten;
-  const mini = (val, target, label, doneGood) => {
-    const pct = target ? Math.min(100, Math.round((val / target) * 100)) : 0;
-    return '<div class="mpt-macro"><div class="n">' + val.toLocaleString('he-IL') + ' / ' + target.toLocaleString('he-IL') + '</div>'
-      + '<div class="l">' + label + '</div>'
-      + '<div class="bar"><span style="width:' + pct + '%;background:' + (doneGood && pct >= 100 ? 'var(--green)' : 'var(--accent)') + '"></span></div></div>';
-  };
-  el.innerHTML =
-    '<div class="mpt-td-remain' + (remain < 0 ? ' over' : '') + '">' + Math.abs(remain).toLocaleString('he-IL') + '</div>'
-    + '<div class="mpt-td-lbl">' + (remain >= 0 ? 'קק״ל נשארו להיום' : 'קק״ל מעל היעד') + ' · נאכל ' + eaten.toLocaleString('he-IL') + ' מתוך ' + tCal.toLocaleString('he-IL') + '</div>'
-    + '<div class="mpt-macros">'
-    + mini(prot, tProt, 'חלבון (גרם)', true)
-    + mini(steps, tSteps, 'צעדים', true)
-    + mini(wkN, tW, 'אימונים השבוע', true)
-    + '</div>'
-    + '<div class="mpt-td-actions">'
-    + '<button class="mpt-chip" onclick="mptQuickMeal()">+ ארוחה</button>'
-    + '<button class="mpt-chip" onclick="mptQuickWorkout()">+ אימון</button>'
-    + '<button class="mpt-chip" onclick="mptLogWeight()">+ שקילה</button>'
+  const w = st.weights;
+  const lastW = w.length ? w[w.length - 1].kg : 0;
+  const goalW = Number(st.body.goalWeight) || 0;
+
+  const tile = (n, l, fn, cls) =>
+    '<div class="mpt-plan-tile' + (cls ? ' ' + cls : '') + '"' + (fn ? ' onclick="' + fn + '"' : '') + '>'
+    + '<span class="n">' + n + '</span><span class="l">' + l + '</span></div>';
+  el.innerHTML = '<div class="mpt-tiles-grid">'
+    + tile(dayN, 'ימים בתהליך', 'mptTileDays()')
+    + tile(steps ? steps.toLocaleString('he-IL') : '—', 'צעדים היום', 'mptTileSteps()')
+    + tile(lastW ? lastW.toFixed(1) : '—', 'משקל אחרון', 'mptLogWeight()')
+    + tile(goalW ? goalW : '—', 'משקל יעד', 'mptTileGoal()')
+    + tile(eaten.toLocaleString('he-IL') + '<small> / ' + tCal.toLocaleString('he-IL') + '</small>', 'קק״ל היום', 'mptTileCal()', eaten > tCal ? 'over' : '')
     + '</div>';
 
   // Section summary lines — one glance tells you if it's worth opening.
   const put = (id, txt) => { const s = document.getElementById(id); if (s) s.textContent = txt; };
-  const w = st.weights;
-  const lastW = w.length ? w[w.length - 1].kg : 0;
-  const goalW = Number(st.body.goalWeight) || 0;
-  put('mpt-sum-weight', lastW ? (lastW.toFixed(1) + ' ק״ג' + (goalW ? ' · יעד ' + goalW : '')) : 'הזן גובה ומשקל יעד');
-  put('mpt-sum-food', items.length
-    ? (remain >= 0 ? 'נשארו ' + remain.toLocaleString('he-IL') + ' קק״ל' : remain.toLocaleString('he-IL').replace('-', '') + ' קק״ל מעל')
+  const ph = _mptPhotos();
+  const lastPh = ph.length ? ph[ph.length - 1] : null;
+  put('mpt-sum-photo', lastPh
+    ? (ph.length + ' תמונות · אחרונה ' + _mptDaysAgoTxt(lastPh.d))
+    : 'תעד את נקודת ההתחלה');
+  put('mpt-sum-meal', items.length
+    ? ('נאכל ' + eaten.toLocaleString('he-IL') + ' · נשארו ' + Math.max(0, tCal - eaten).toLocaleString('he-IL') + ' קק״ל')
     : 'עוד לא תיעדת היום');
+  put('mpt-sum-weight', lastW ? (lastW.toFixed(1) + ' ק״ג' + (goalW ? ' · יעד ' + goalW : '')) : 'הזן משקל ויעד');
   put('mpt-sum-plan', tCal.toLocaleString('he-IL') + ' קק״ל · ' + tSteps.toLocaleString('he-IL') + ' צעדים · ' + tW + ' אימונים');
   let passDays = 0, loggedDays = 0;
   for (let k = 0; k < 7; k++) {
@@ -12102,12 +12151,133 @@ function _mptRenderToday() {
   put('mpt-sum-coach', hasKey ? (st.healthChat.length ? 'ממשיכים מאיפה שעצרתם' : 'שאל אותי הכל') : 'חיבור חד-פעמי נדרש');
   _mptApplySecs();
 }
-window.mptQuickMeal = function() {
-  const h = new Date().getHours();
-  mptFoodOpenAdd(h < 11 ? 'b' : h < 16 ? 'l' : h < 21 ? 'd' : 's');
+window.mptTileDays = function() {
+  if (!confirm('לאפס את ספירת הימים ולהתחיל את התהליך מהיום?')) return;
+  const st = _mptState();
+  st.processStart = _mpbToday();
+  mpSave(st);
+  _mptRenderToday();
+  toast('✓ התהליך מתחיל היום — יום 1');
 };
-window.mptQuickWorkout = function() {
-  mptBumpWorkout();
+window.mptTileSteps = function() {
+  if (_mptHK()) _mptHealthSync(true);
+  else mpbLogHealth('steps');
+};
+window.mptTileGoal = function() {
+  const st = _mptState();
+  const v = prompt('משקל יעד (ק״ג):', st.body.goalWeight || '');
+  if (v === null) return;
+  const n = parseFloat(v);
+  if (!(n > 0)) { toast('מספר לא תקין'); return; }
+  st.body.goalWeight = n;
+  mpSave(st);
+  _mptRenderToday();
+  try { _mptRenderWeight(); } catch (_) {}
+};
+window.mptTileCal = function() {
+  try { localStorage.setItem('_mpt_sec_meal', '1'); } catch (_) {}
+  _mptApplySecs();
+  const sec = document.getElementById('mpt-sec-meal');
+  if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+// ══════════ WEEKLY BODY PHOTO — album with date + weight burned in ══════════
+// Stored device-local (own key, NOT in the sync payload) — photos are
+// heavy and belong to this phone. Oldest photos are dropped first if
+// storage runs out.
+const MPT_PHOTO_KEY = 'body_photos';
+function _mptPhotos() {
+  try { return JSON.parse(localStorage.getItem(MPT_PHOTO_KEY) || '[]') || []; } catch (_) { return []; }
+}
+function _mptPhotosSave(arr) {
+  while (arr.length) {
+    try { localStorage.setItem(MPT_PHOTO_KEY, JSON.stringify(arr)); return true; }
+    catch (e) { arr.shift(); }
+  }
+  return false;
+}
+function _mptDaysAgo(d) {
+  return Math.round((new Date(_mpbToday() + 'T12:00:00') - new Date(d + 'T12:00:00')) / 86400000);
+}
+function _mptDaysAgoTxt(d) {
+  const n = _mptDaysAgo(d);
+  return n <= 0 ? 'היום' : n === 1 ? 'אתמול' : 'לפני ' + n + ' ימים';
+}
+function _mptRenderPhotos() {
+  const el = document.getElementById('mpt-photo-body');
+  if (!el) return;
+  const ph = _mptPhotos();
+  const last = ph.length ? ph[ph.length - 1] : null;
+  const due = !last || _mptDaysAgo(last.d) >= 7;
+  let html = '<div class="mp-sub" style="margin-bottom:10px">פעם בשבוע, אותה תאורה ואותה זווית — והשינוי ייראה בעיניים. התאריך והמשקל נטבעים על התמונה.</div>'
+    + '<button class="btn ' + (due ? 'btn-primary' : 'btn-ghost') + '" style="width:100%" onclick="document.getElementById(\'mpt-bodyphoto-file\').click()">'
+    + (last ? ('צלם תמונה חדשה' + (due ? ' — הגיע הזמן' : '')) : 'צלם את תמונת ההתחלה') + '</button>';
+  if (ph.length) {
+    html += '<div class="mpt-album">' + ph.slice().reverse().map(p =>
+      '<div class="mpt-album-item" onclick="mptBodyPhotoView(\'' + p.id + '\')">'
+      + '<img src="' + p.img + '" alt=""/>'
+      + '<span>' + p.d.split('-').reverse().slice(0, 2).join('.') + (p.kg ? ' · ' + p.kg + ' ק״ג' : '') + '</span></div>'
+    ).join('') + '</div>';
+  }
+  el.innerHTML = html;
+}
+window.mptBodyPhotoPicked = function(ev) {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  const img = new Image();
+  const url = URL.createObjectURL(f);
+  img.onload = function() {
+    const MAX = 720;
+    const sc = Math.min(1, MAX / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * sc);
+    c.height = Math.round(img.height * sc);
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    // Burn date + latest weight into the frame — his spec: the photo
+    // itself carries the number of the moment it was taken.
+    const st = _mptState();
+    const kg = st.weights.length ? st.weights[st.weights.length - 1].kg : 0;
+    const today = _mpbToday();
+    const label = today.split('-').reverse().join('.') + (kg ? '  ·  ' + kg + ' ק״ג' : '');
+    const barH = Math.max(34, Math.round(c.height * 0.055));
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, c.height - barH, c.width, barH);
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 ' + Math.round(barH * 0.5) + 'px Heebo, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, c.width / 2, c.height - barH / 2);
+    const ph = _mptPhotos();
+    ph.push({ id: genId(), d: today, kg: kg || 0, img: c.toDataURL('image/jpeg', 0.62) });
+    while (ph.length > 60) ph.shift();
+    const ok = _mptPhotosSave(ph);
+    toast(ok ? '📸 נשמר לאלבום' : 'אין מקום בזיכרון — מחק תמונות ישנות');
+    URL.revokeObjectURL(url);
+    ev.target.value = '';
+    _mptRenderPhotos();
+    try { _mptRenderToday(); } catch (_) {}
+  };
+  img.src = url;
+};
+let _mptPhotoView = null;
+window.mptBodyPhotoView = function(id) {
+  const p = _mptPhotos().find(x => x.id === id);
+  if (!p) return;
+  _mptPhotoView = id;
+  const im = document.getElementById('bodyphoto-full');
+  const cap = document.getElementById('bodyphoto-cap');
+  if (im) im.src = p.img;
+  if (cap) cap.textContent = p.d.split('-').reverse().join('.') + (p.kg ? ' · ' + p.kg + ' ק״ג' : '');
+  openModal('bodyphoto');
+};
+window.mptBodyPhotoDel = function() {
+  if (!_mptPhotoView) return;
+  if (!confirm('למחוק את התמונה הזו מהאלבום?')) return;
+  _mptPhotosSave(_mptPhotos().filter(x => x.id !== _mptPhotoView));
+  _mptPhotoView = null;
+  closeModal('bodyphoto');
+  _mptRenderPhotos();
   try { _mptRenderToday(); } catch (_) {}
 };
 
