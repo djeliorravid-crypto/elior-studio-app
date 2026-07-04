@@ -6055,7 +6055,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v360</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v361</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11432,6 +11432,48 @@ function _mptCoachContext() {
     life_north_star: st.northStar || ''
   };
 }
+// Resilient HTTP for the coach: prefer Capacitor's NATIVE http layer
+// (bypasses WKWebView CORS/fetch-patch issues that surface as the
+// generic "Load failed"), falling back to browser fetch on web.
+async function _mptHttp(method, url, bodyObj) {
+  const CH = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+  if (CH && CH.request) {
+    const r = await CH.request({
+      url, method,
+      headers: { 'Content-Type': 'application/json' },
+      data: bodyObj || undefined
+    });
+    let j = r.data;
+    if (typeof j === 'string') { try { j = JSON.parse(j); } catch (_) { j = {}; } }
+    return { ok: r.status >= 200 && r.status < 300, status: r.status, json: j || {} };
+  }
+  const res = await fetch(url, {
+    method,
+    headers: bodyObj ? { 'content-type': 'application/json' } : undefined,
+    body: bodyObj ? JSON.stringify(bodyObj) : undefined
+  });
+  return { ok: res.ok, status: res.status, json: await res.json().catch(() => ({})) };
+}
+// Model discovery with hard fallbacks — never lets a failed list call
+// kill the conversation.
+async function _mptModel() {
+  const cached = localStorage.getItem('gemini_model');
+  if (cached) return cached;
+  try {
+    const r = await _mptHttp('GET', 'https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(getAIKey()));
+    if (r.ok) {
+      const all = (r.json.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent'));
+      const pref = [/gemini-2\.5-flash$/, /gemini-2\.0-flash$/, /flash/];
+      for (const re of pref) {
+        const m = all.find(x => re.test(x.name));
+        if (m) { localStorage.setItem('gemini_model', m.name); return m.name; }
+      }
+      if (all[0]) { localStorage.setItem('gemini_model', all[0].name); return all[0].name; }
+    }
+  } catch (_) {}
+  return 'models/gemini-2.0-flash';
+}
+
 const MPT_COACH_SYSTEM = 'אתה המאמן האישי של אליאור — מפיק מוזיקלי ישראלי שהחליט לשנות את החיים שלו, בריאותית וכלכלית. '
   + 'אתה מאמן כושר ותזונה: ישיר, חם, דוחף אבל בגובה העיניים. עברית בלבד. תשובות קצרות ופרקטיות (עד ~6 שורות אלא אם ביקש תוכנית מלאה). '
   + 'תמיד תתבסס על הנתונים שלו (JSON מצורף). אם חסר נתון קריטי (גיל, רמת פעילות, פציעות) — שאל שאלה אחת קצרה. '
@@ -11516,25 +11558,28 @@ window.mptCoachSend = async function() {
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.text }]
     }));
-    const model = await discoverGeminiModel();
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/' + model + ':generateContent?key=' + encodeURIComponent(getAIKey()), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: sys }] },
-        contents,
-        generationConfig: { temperature: 0.6, maxOutputTokens: 1024 }
-      })
-    });
-    const data = await res.json();
+    const payload = {
+      systemInstruction: { parts: [{ text: sys }] },
+      contents,
+      generationConfig: { temperature: 0.6, maxOutputTokens: 1024 }
+    };
+    let model = await _mptModel();
+    let r = await _mptHttp('POST', 'https://generativelanguage.googleapis.com/v1beta/' + model + ':generateContent?key=' + encodeURIComponent(getAIKey()), payload);
+    if (!r.ok && (r.status === 404 || r.status === 400)) {
+      // Cached model may be stale/wrong — reset and retry once on a known model.
+      localStorage.removeItem('gemini_model');
+      model = 'models/gemini-2.0-flash';
+      r = await _mptHttp('POST', 'https://generativelanguage.googleapis.com/v1beta/' + model + ':generateContent?key=' + encodeURIComponent(getAIKey()), payload);
+    }
+    const data = r.json;
     let reply;
-    if (!res.ok) reply = '⚠️ ' + (data?.error?.message || ('שגיאה ' + res.status));
+    if (!r.ok) reply = '⚠️ ' + (data?.error?.message || ('שגיאה ' + r.status));
     else reply = (data.candidates?.[0]?.content?.parts || []).map(p => p.text).join('\n') || '…';
     st.healthChat.push({ role: 'coach', text: reply });
     if (st.healthChat.length > 30) st.healthChat = st.healthChat.slice(-30);
     mpSave(st);
   } catch (e) {
-    st.healthChat.push({ role: 'coach', text: '⚠️ בעיית חיבור: ' + e.message });
+    st.healthChat.push({ role: 'coach', text: '⚠️ בעיית חיבור (' + e.message + '). נסה שוב — ואם זה חוזר, בדוק שהמפתח תקין בהגדרות העוזרת.' });
     mpSave(st);
   } finally {
     _mptCoachBusy = false;
