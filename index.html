@@ -3693,6 +3693,23 @@
     #mpt-coach-send:disabled { opacity: 0.4; }
     .mpt-nokey { background: var(--surface2); border: 1.5px dashed var(--border); border-radius: 12px; padding: 14px; }
 
+    /* ── התוכנית מהמאמן — the coach's written plan, always on the page ── */
+    .mpt-plan-card { border-top: 3px solid var(--accent); }
+    .mpt-plan-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 2px; }
+    .mpt-plan-tile {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px 8px; text-align: center; cursor: pointer;
+    }
+    .mpt-plan-tile:active { background: var(--surface3); }
+    .mpt-plan-tile .n { display: block; font-size: 19px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+    .mpt-plan-tile .l { display: block; font-size: 10.5px; font-weight: 700; color: var(--text-muted); margin-top: 2px; line-height: 1.3; }
+    .mpt-plan-text {
+      margin-top: 12px; background: var(--surface2); border-radius: 12px;
+      padding: 13px 14px; font-size: 13.5px; line-height: 1.75; color: var(--text);
+      white-space: pre-wrap; word-wrap: break-word;
+    }
+    .mpt-plan-date { margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: left; }
+
     .mpt-goal-head { display: flex; align-items: flex-start; gap: 12px; }
     .mpt-goal-title { font-size: 20px; font-weight: 900; color: var(--text); letter-spacing: -0.01em; line-height: 1.25; }
     .mpt-goal-title.done { text-decoration: line-through; color: var(--text-muted); }
@@ -6076,7 +6093,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v364</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v365</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6277,6 +6294,11 @@
         <div id="mpt-weight-stats"></div>
         <div id="mpt-weight-chart"></div>
         <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="mptLogWeight()">עדכן משקל היום</button>
+      </div>
+
+      <div class="table-card mp-card mpt-plan-card">
+        <div class="mp-section-title"><svg class="icon"><use href="#ic-flag"/></svg> התוכנית מהמאמן</div>
+        <div id="mpt-plan-body"></div>
       </div>
 
       <div class="table-card mp-card">
@@ -10745,6 +10767,8 @@ function mpState() {
   if (!st.healthTargets || typeof st.healthTargets !== 'object') st.healthTargets = {};
   if (!(Number(st.healthTargets.steps) > 0)) st.healthTargets.steps = 8000;
   if (!(Number(st.healthTargets.cal)   > 0)) st.healthTargets.cal   = 2200;
+  if (!(Number(st.healthTargets.workouts) > 0)) st.healthTargets.workouts = 3;
+  if (!st.plan || typeof st.plan !== 'object') st.plan = {};
   if (!(Number(st.releasesTarget) > 0))      st.releasesTarget = 6;
   // First-run seed: three typical services so the planner mechanics
   // are visible immediately. All editable/deletable.
@@ -11233,6 +11257,7 @@ window.mpbSaveMetric = function(field, val) {
     else if (field === 'releases') st.releasesTarget      = n > 0 ? Math.round(n) : 6;
     mpSave(st);
     try { renderMyPathBoard(); } catch (_) {}
+    try { _mptRenderPlan(); } catch (_) {}
   }, 500);
 };
 
@@ -11323,6 +11348,7 @@ function _mptRenderHealth() {
   fill('mpt-goal-weight', st.body.goalWeight || '');
   fill('mpt-goal-wdate', st.body.goalDate || '');
   _mptRenderWeight();
+  _mptRenderPlan();
   _mptRenderWeekChips();
   _mptRenderCoach();
 }
@@ -11420,7 +11446,7 @@ function _mptRenderWeekChips() {
   const tCal = st.healthTargets.cal || 2200;
 
   let html = '<div class="mpx-habit-row" style="margin-top:2px">'
-    + '<span class="mpx-habit">אימונים השבוע <span class="val">' + (Number(st.workouts[wk]) || 0) + '/3</span><button onclick="mptBumpWorkout()" title="התאמנתי">+</button></span>'
+    + '<span class="mpx-habit">אימונים השבוע <span class="val">' + (Number(st.workouts[wk]) || 0) + '/' + (st.healthTargets.workouts || 3) + '</span><button onclick="mptBumpWorkout()" title="התאמנתי">+</button></span>'
     + '<span class="mpx-habit">צעדים היום <span class="val">' + (h.steps ? h.steps.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'steps\')">עדכן</button></span>'
     + '<span class="mpx-habit">קלוריות היום <span class="val">' + (h.cal ? h.cal.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'cal\')">עדכן</button></span>'
     + '</div>';
@@ -11473,6 +11499,50 @@ window.mptBumpWorkout = function() {
   _mptRenderWeekChips();
 };
 
+// ── התוכנית מהמאמן — the coach's recommendations, written on the page.
+//    Targets come from #SET (or manual tap), the written program from #PLAN. ──
+function _mptRenderPlan() {
+  const el = document.getElementById('mpt-plan-body');
+  if (!el) return;
+  const st = _mptState();
+  const t = st.healthTargets;
+  const fmt = n => (Number(n) || 0).toLocaleString('he-IL');
+  let html = '<div class="mpt-plan-tiles">'
+    + '<div class="mpt-plan-tile" onclick="mptEditTarget(\'cal\')"><span class="n">' + fmt(t.cal) + '</span><span class="l">קק״ל ביום</span></div>'
+    + '<div class="mpt-plan-tile" onclick="mptEditTarget(\'steps\')"><span class="n">' + fmt(t.steps) + '</span><span class="l">צעדים ביום</span></div>'
+    + '<div class="mpt-plan-tile" onclick="mptEditTarget(\'workouts\')"><span class="n">' + fmt(t.workouts || 3) + '</span><span class="l">אימונים בשבוע</span></div>'
+    + '</div>';
+  if (st.plan && st.plan.text) {
+    html += '<div class="mpt-plan-text">' + _escape(st.plan.text) + '</div>';
+    if (st.plan.updatedAt) {
+      html += '<div class="mpt-plan-date">עודכן ע״י המאמן · ' + st.plan.updatedAt.split('-').reverse().join('.') + '</div>';
+    }
+  } else {
+    html += '<div class="mp-empty" style="padding:12px 0 4px">עדיין אין תוכנית כתובה. בקש מהמאמן למטה — והיא תישמר כאן, שחור על גבי לבן.</div>'
+      + '<button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="mptAskPlan()">בקש מהמאמן תוכנית מלאה</button>';
+  }
+  el.innerHTML = html;
+}
+window.mptEditTarget = function(field) {
+  const st = _mptState();
+  const labels = { cal: 'יעד קלוריות ביום', steps: 'יעד צעדים ביום', workouts: 'יעד אימונים בשבוע' };
+  const cur = st.healthTargets[field] || '';
+  const v = prompt(labels[field] + ':', cur);
+  if (v === null) return;
+  const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+  if (!(n > 0)) { toast('מספר לא תקין'); return; }
+  st.healthTargets[field] = n;
+  mpSave(st);
+  toast('✓ היעד עודכן');
+  _mptRenderPlan();
+  _mptRenderWeekChips();
+};
+window.mptAskPlan = function() {
+  mptCoachAsk('תבנה לי תוכנית מלאה ומסודרת — תזונה (כמה קלוריות ביום), צעדים יומיים ואימונים שבועיים — לפי הנתונים שלי, ותעדכן את היעדים והתוכנית בדף.');
+  const inp = document.getElementById('mpt-coach-input');
+  if (inp) inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
 // ── The AI coach — real Gemini, riding the app's existing ai_api_key ──
 function _mptCoachContext() {
   const st = _mptState();
@@ -11492,7 +11562,8 @@ function _mptCoachContext() {
     weight_start: w[0] || null,
     workouts_this_week: Number(st.workouts[wk]) || 0,
     steps_calories_last7: recent7,
-    daily_targets: { steps: st.healthTargets.steps || null, calories: st.healthTargets.cal || null },
+    daily_targets: { steps: st.healthTargets.steps || null, calories: st.healthTargets.cal || null, workouts_per_week: st.healthTargets.workouts || null },
+    current_written_plan: (st.plan && st.plan.text) ? { text: st.plan.text, updated_at: st.plan.updatedAt || null } : null,
     life_north_star: st.northStar || ''
   };
 }
@@ -11543,7 +11614,8 @@ const MPT_COACH_SYSTEM = 'אתה המאמן האישי של אליאור — מ�
   + 'תמיד תתבסס על הנתונים שלו (JSON מצורף). אם חסר נתון קריטי (גיל, רמת פעילות, פציעות) — שאל שאלה אחת קצרה. '
   + 'אתה לא רופא: בכל נושא רפואי אמיתי תפנה לרופא, בלי להיות רובוטי. '
   + 'כשהוא מעדכן שקילה או אימון — תגיב לזה. תחגוג ניצחונות קטנים, ותהיה כן כשאין התקדמות. '
-  + 'סנכרון עם האפליקציה: כשאתה קובע או מעדכן המלצה ליעד יומי של קלוריות ו/או צעדים — סיים את התשובה בשורה נפרדת אחרונה בפורמט המדויק: #SET cal=1800 steps=10000 (רק המספרים שהמלצת עליהם). האפליקציה תקלוט את השורה ותעדכן את הלוחות אוטומטית. אל תשתמש בפורמט הזה בשום מצב אחר.';
+  + 'סנכרון עם האפליקציה: כשאתה קובע או מעדכן המלצה ליעדים — קלוריות ביום, צעדים ביום ו/או אימונים בשבוע — הוסף בסוף התשובה שורה נפרדת בפורמט המדויק: #SET cal=1800 steps=10000 workouts=3 (רק הערכים שהמלצת עליהם). האפליקציה תקלוט את השורה ותעדכן את הלוחות אוטומטית. אל תשתמש בפורמט הזה בשום מצב אחר. '
+  + 'תוכנית כתובה: יש בדף כרטיס קבוע "התוכנית מהמאמן" שמציג את התוכנית הכתובה שלך. בכל פעם שאתה בונה או מעדכן לו תוכנית (תזונה, צעדים, אימונים, שקילה) — הוסף אחרי שורת ה-#SET בלוק בפורמט המדויק: שורה שמכילה רק #PLAN, אחריה התוכנית עצמה (5–10 שורות תמציתיות ומסודרות: תזונה יומית, צעדים, מבנה שבוע האימונים, שקילה ומעקב), ואז שורה שמכילה רק #END. הבלוק לא מוצג בצ׳אט — הוא נשמר ומחליף את התוכנית הכתובה בדף, אז כתוב אותו שלם ועומד בפני עצמו, לא "כמו שאמרנו". אם current_written_plan קיים ב-JSON — זו התוכנית הנוכחית שלו; עדכן אותה רק כשיש שינוי אמיתי.';
 
 function _mptRenderCoach() {
   const thread = document.getElementById('mpt-coach-thread');
@@ -11579,7 +11651,7 @@ function _mptRenderCoach() {
     thread.scrollTop = thread.scrollHeight;
   }
   if (sug) {
-    const qs = ['תבנה לי תוכנית אימונים שבועית', 'כמה קלוריות ביום כדי לרדת בריא?', 'תסתכל על השקילות שלי — איך אני מתקדם?'];
+    const qs = ['תבנה לי תוכנית מלאה — תזונה, צעדים ואימונים', 'אני מתחיל אימונים — איך משלבים את זה בתוכנית?', 'תסתכל על השקילות שלי — איך אני מתקדם?'];
     sug.innerHTML = qs.map(q => '<button class="mpt-chip" onclick="mptCoachAsk(this.dataset.q)" data-q="' + q + '">' + q + '</button>').join('');
   }
 }
@@ -11644,17 +11716,33 @@ window.mptCoachSend = async function() {
     if (!r.ok) reply = '⚠️ ' + (data?.error?.message || ('שגיאה ' + r.status));
     else reply = (data.candidates?.[0]?.content?.parts || []).map(p => p.text).join('\n') || '…';
 
-    // #SET protocol — the coach updates the app's daily targets itself.
+    // #PLAN…#END protocol — the coach's written program, saved to the
+    // permanent "התוכנית מהמאמן" card. Parsed BEFORE #SET so a missing
+    // #END can't swallow anything we append below.
+    let planSaved = false;
+    const planM = reply.match(/#PLAN\s*\n([\s\S]*?)(?:\n\s*#END\b|$)/i);
+    if (planM) {
+      const planText = planM[1].replace(/#SET[^\n]*/gi, '').trim();
+      if (planText) {
+        st.plan = { text: planText, updatedAt: new Date().toISOString().slice(0, 10) };
+        planSaved = true;
+      }
+      reply = reply.replace(/#PLAN[\s\S]*?(?:#END\b|$)/i, '').trim();
+    }
+    // #SET protocol — the coach updates the app's targets itself.
     const setM = reply.match(/#SET\s+([^\n]+)/i);
     if (setM) {
       const calM = setM[1].match(/cal\s*=\s*(\d{3,5})/i);
       const stepsM = setM[1].match(/steps\s*=\s*(\d{3,6})/i);
+      const wM = setM[1].match(/workouts?\s*=\s*(\d{1,2})/i);
       let applied = [];
       if (calM)   { st.healthTargets.cal   = parseInt(calM[1], 10);   applied.push(st.healthTargets.cal.toLocaleString('he-IL') + ' קק״ל'); }
       if (stepsM) { st.healthTargets.steps = parseInt(stepsM[1], 10); applied.push(st.healthTargets.steps.toLocaleString('he-IL') + ' צעדים'); }
+      if (wM)     { st.healthTargets.workouts = parseInt(wM[1], 10);  applied.push(st.healthTargets.workouts + ' אימונים בשבוע'); }
       reply = reply.replace(/#SET[^\n]*/i, '').trim();
-      if (applied.length) reply += '\n\n✅ עדכנתי את היעדים היומיים שלך באפליקציה: ' + applied.join(' · ');
+      if (applied.length) reply += '\n\n✅ עדכנתי את היעדים שלך באפליקציה: ' + applied.join(' · ');
     }
+    if (planSaved) reply += '\n\n📋 התוכנית המלאה נשמרה בדף — בכרטיס "התוכנית מהמאמן".';
     st.healthChat.push({ role: 'coach', text: reply });
     if (st.healthChat.length > 30) st.healthChat = st.healthChat.slice(-30);
     mpSave(st);
@@ -11666,6 +11754,10 @@ window.mptCoachSend = async function() {
     if (sendBtn) sendBtn.disabled = false;
     document.getElementById('mpt-thinking')?.remove();
     _mptRenderCoach();
+    // Everything the coach set must be visible immediately — the plan
+    // card, the week table and the process-tab planner all resync.
+    try { _mptRenderPlan(); } catch (_) {}
+    try { _mptRenderWeekChips(); } catch (_) {}
   }
 };
 
