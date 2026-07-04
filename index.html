@@ -6055,7 +6055,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v362</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v363</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11197,7 +11197,10 @@ window.mpbLogHealth = function(field) {
   Object.keys(st.health).forEach(k => { if (k < cutoff) delete st.health[k]; });
   mpSave(st);
   if (window.haptic) window.haptic.tap();
-  renderMyPathBoard();
+  toast('✓ נשמר');
+  // Refresh whichever surfaces are alive (health tab chips + process board).
+  try { _mptRenderWeekChips(); } catch (_) {}
+  try { renderMyPathBoard(); } catch (_) {}
 };
 window.mpbSaveMetric = function(field, val) {
   clearTimeout(_mpTimers['metric-' + field]);
