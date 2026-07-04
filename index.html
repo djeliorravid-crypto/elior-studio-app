@@ -6180,7 +6180,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v371</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v372</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6371,7 +6371,11 @@
         <button class="mpt-sec-head" onclick="mptSecToggle('photo')"><span class="t">תמונת גוף שבועית</span><span class="s" id="mpt-sum-photo"></span><span class="ch">▾</span></button>
         <div class="mpt-sec-body">
           <div id="mpt-photo-body"></div>
-          <input type="file" id="mpt-bodyphoto-file" accept="image/*" capture="environment" style="display:none" onchange="mptBodyPhotoPicked(event)"/>
+          <!-- No `capture` attr on purpose: with it, WKWebView opens the
+               camera DIRECTLY, and a build without NSCameraUsageDescription
+               gets TCC-killed on the spot (the v371 crash). The plain
+               picker sheet offers camera + library and never crashes. -->
+          <input type="file" id="mpt-bodyphoto-file" accept="image/*" style="display:none" onchange="mptBodyPhotoPicked(event)"/>
         </div>
       </div>
 
@@ -6549,7 +6553,7 @@
       <button class="btn btn-ghost btn-sm" onclick="document.getElementById('foodadd-photo').click()">צלם / העלה תמונה</button>
       <img id="foodadd-thumb" class="mpt-food-thumb" style="display:none" alt=""/>
     </div>
-    <input type="file" id="foodadd-photo" accept="image/*" capture="environment" style="display:none" onchange="mptFoodPhotoPicked(event)"/>
+    <input type="file" id="foodadd-photo" accept="image/*" style="display:none" onchange="mptFoodPhotoPicked(event)"/>
     <button class="btn btn-primary" style="width:100%" id="foodadd-analyze" onclick="mptFoodAnalyze()">נתח עם AI — קלוריות וחלבון</button>
     <div id="foodadd-result"></div>
     <div style="border-top:1px solid var(--border);margin:16px 0 10px;padding-top:12px;font-size:11px;font-weight:900;color:var(--text-muted);letter-spacing:.06em">או הזנה ידנית</div>

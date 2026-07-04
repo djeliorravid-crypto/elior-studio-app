@@ -79,6 +79,11 @@ workflows:
           /usr/libexec/PlistBuddy -c "Add :NSHealthShareUsageDescription string 'אנו קוראים את נתוני הצעדים שלך מ-Health כדי למלא אוטומטית את מעקב הצעדים היומי בעמוד הבריאות והכושר.'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Delete :NSHealthUpdateUsageDescription" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :NSHealthUpdateUsageDescription string 'האפליקציה אינה כותבת נתונים ל-Health; ההרשאה נדרשת טכנית על ידי Apple.'" "$PLIST"
+          # Camera — the weekly body-photo + meal-photo features open
+          # the camera from a web <input type=file>. iOS TCC-kills the
+          # app instantly if this string is missing (the v371 crash).
+          /usr/libexec/PlistBuddy -c "Delete :NSCameraUsageDescription" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'אנו משתמשים במצלמה כדי לצלם תמונת גוף שבועית למעקב וכדי לצלם ארוחות לחישוב קלוריות.'" "$PLIST"
           # Quick actions — rebuild from scratch so the array stays in sync.
           /usr/libexec/PlistBuddy -c "Delete :UIApplicationShortcutItems" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems array" "$PLIST"
