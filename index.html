@@ -3703,6 +3703,27 @@
     .mpt-ov-name { font-size: 13.5px; font-weight: 800; color: var(--text); }
     .mpt-ov-name.done { text-decoration: line-through; color: var(--text-muted); }
     .mpt-ov-meta { font-size: 11.5px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
+
+    .mpt-week-table { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 6px; }
+    .mpt-day-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 2px; border-bottom: 1px solid var(--border);
+      font-size: 12.5px;
+    }
+    .mpt-day-row:last-of-type { border-bottom: none; }
+    .mpt-day-row.head { color: var(--text-muted); font-size: 11px; border-bottom: 1.5px solid var(--border); }
+    .mpt-day-row.today { background: var(--surface2); border-radius: 8px; padding-right: 8px; padding-left: 8px; }
+    .mpt-day-name { width: 52px; flex-shrink: 0; font-weight: 800; color: var(--text); display: flex; flex-direction: column; line-height: 1.2; }
+    .mpt-day-name small { font-weight: 600; color: var(--text-muted); font-size: 9.5px; }
+    .mpt-day-steps { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .mpt-day-bar { flex: 1; height: 6px; background: var(--surface3); border-radius: 4px; overflow: hidden; display: block; }
+    .mpt-day-bar span { display: block; height: 100%; border-radius: 4px; transition: width .5s; }
+    .mpt-day-val { width: 52px; flex-shrink: 0; text-align: left; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); font-size: 11.5px; }
+    .mpt-day-cal { width: 58px; flex-shrink: 0; text-align: left; font-weight: 800; font-variant-numeric: tabular-nums; font-size: 11.5px; color: var(--text-muted); }
+    .mpt-day-cal.ok { color: var(--green); }
+    .mpt-day-cal.over { color: var(--red); }
+    .mpt-week-sum { padding: 10px 2px 2px; font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.7; }
+    .mpt-week-sum strong { color: var(--text); }
     #lobby-tasks-list {
       display: flex; flex-direction: column;
     }
@@ -6055,7 +6076,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v363</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v364</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11395,11 +11416,50 @@ function _mptRenderWeekChips() {
   const st = _mptState();
   const wk = _mpbWeekKey();
   const h = st.health[_mpbToday()] || {};
-  el.innerHTML = '<div class="mpx-habit-row" style="margin-top:2px">'
+  const tSteps = st.healthTargets.steps || 8000;
+  const tCal = st.healthTargets.cal || 2200;
+
+  let html = '<div class="mpx-habit-row" style="margin-top:2px">'
     + '<span class="mpx-habit">אימונים השבוע <span class="val">' + (Number(st.workouts[wk]) || 0) + '/3</span><button onclick="mptBumpWorkout()" title="התאמנתי">+</button></span>'
     + '<span class="mpx-habit">צעדים היום <span class="val">' + (h.steps ? h.steps.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'steps\')">עדכן</button></span>'
     + '<span class="mpx-habit">קלוריות היום <span class="val">' + (h.cal ? h.cal.toLocaleString('he-IL') : '—') + '</span><button onclick="mpbLogHealth(\'cal\')">עדכן</button></span>'
     + '</div>';
+
+  // ── 7-day table vs targets — the "what does logging give me" answer ──
+  const DAYS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+  const rows = [];
+  let stepsPass = 0, calPass = 0, stepsSum = 0, stepsN = 0, calSum = 0, calN = 0, loggedAny = false;
+  for (let k = 6; k >= 0; k--) {
+    const d = new Date(Date.now() - k * 86400000);
+    const key = d.toISOString().slice(0, 10);
+    const e = st.health[key] || {};
+    const hasS = !!e.steps, hasC = !!e.cal;
+    if (hasS || hasC) loggedAny = true;
+    if (hasS) { stepsSum += e.steps; stepsN++; if (e.steps >= tSteps) stepsPass++; }
+    if (hasC) { calSum += e.cal; calN++; if (e.cal <= tCal) calPass++; }
+    const pct = hasS ? Math.min(100, Math.round((e.steps / tSteps) * 100)) : 0;
+    rows.push('<div class="mpt-day-row' + (k === 0 ? ' today' : '') + '">'
+      + '<span class="mpt-day-name">' + DAYS[d.getDay()] + '׳<small>' + String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '</small></span>'
+      + '<span class="mpt-day-steps"><span class="mpt-day-bar"><span style="width:' + pct + '%;background:' + (hasS && e.steps >= tSteps ? 'var(--green)' : 'var(--accent)') + '"></span></span>'
+      +   '<span class="mpt-day-val">' + (hasS ? e.steps.toLocaleString('he-IL') : '—') + '</span></span>'
+      + '<span class="mpt-day-cal ' + (hasC ? (e.cal <= tCal ? 'ok' : 'over') : '') + '">' + (hasC ? e.cal.toLocaleString('he-IL') : '—') + '</span>'
+      + '</div>');
+  }
+  if (loggedAny) {
+    html += '<div class="mpt-week-table">'
+      + '<div class="mpt-day-row head"><span class="mpt-day-name">יום</span>'
+      + '<span class="mpt-day-steps" style="justify-content:flex-start;font-weight:800">צעדים <small style="font-weight:600;color:var(--text-muted)">(יעד ' + tSteps.toLocaleString('he-IL') + ')</small></span>'
+      + '<span class="mpt-day-cal" style="font-weight:800">קק״ל <small style="font-weight:600;color:var(--text-muted)">(עד ' + tCal.toLocaleString('he-IL') + ')</small></span></div>'
+      + rows.join('')
+      + '<div class="mpt-week-sum">'
+      + (stepsN ? 'עמדת ביעד הצעדים <strong>' + stepsPass + '/' + stepsN + '</strong> ימים · ממוצע ' + Math.round(stepsSum / stepsN).toLocaleString('he-IL') : '')
+      + (stepsN && calN ? '<br>' : '')
+      + (calN ? 'בתקציב הקלוריות <strong>' + calPass + '/' + calN + '</strong> ימים · ממוצע ' + Math.round(calSum / calN).toLocaleString('he-IL') + ' קק״ל' : '')
+      + '</div></div>';
+  } else {
+    html += '<div class="mp-empty" style="padding:10px 0 2px">תתחיל לרשום צעדים וקלוריות — הטבלה השבועית תיבנה כאן, יום-יום מול היעד.</div>';
+  }
+  el.innerHTML = html;
 }
 window.mptBumpWorkout = function() {
   const st = _mptState();
@@ -11432,6 +11492,7 @@ function _mptCoachContext() {
     weight_start: w[0] || null,
     workouts_this_week: Number(st.workouts[wk]) || 0,
     steps_calories_last7: recent7,
+    daily_targets: { steps: st.healthTargets.steps || null, calories: st.healthTargets.cal || null },
     life_north_star: st.northStar || ''
   };
 }
@@ -11481,7 +11542,8 @@ const MPT_COACH_SYSTEM = 'אתה המאמן האישי של אליאור — מ�
   + 'אתה מאמן כושר ותזונה: ישיר, חם, דוחף אבל בגובה העיניים. עברית בלבד. תשובות קצרות ופרקטיות (עד ~6 שורות אלא אם ביקש תוכנית מלאה). '
   + 'תמיד תתבסס על הנתונים שלו (JSON מצורף). אם חסר נתון קריטי (גיל, רמת פעילות, פציעות) — שאל שאלה אחת קצרה. '
   + 'אתה לא רופא: בכל נושא רפואי אמיתי תפנה לרופא, בלי להיות רובוטי. '
-  + 'כשהוא מעדכן שקילה או אימון — תגיב לזה. תחגוג ניצחונות קטנים, ותהיה כן כשאין התקדמות.';
+  + 'כשהוא מעדכן שקילה או אימון — תגיב לזה. תחגוג ניצחונות קטנים, ותהיה כן כשאין התקדמות. '
+  + 'סנכרון עם האפליקציה: כשאתה קובע או מעדכן המלצה ליעד יומי של קלוריות ו/או צעדים — סיים את התשובה בשורה נפרדת אחרונה בפורמט המדויק: #SET cal=1800 steps=10000 (רק המספרים שהמלצת עליהם). האפליקציה תקלוט את השורה ותעדכן את הלוחות אוטומטית. אל תשתמש בפורמט הזה בשום מצב אחר.';
 
 function _mptRenderCoach() {
   const thread = document.getElementById('mpt-coach-thread');
@@ -11564,9 +11626,12 @@ window.mptCoachSend = async function() {
     const payload = {
       systemInstruction: { parts: [{ text: sys }] },
       contents,
-      generationConfig: { temperature: 0.6, maxOutputTokens: 1024 }
+      generationConfig: { temperature: 0.6, maxOutputTokens: 8192 }
     };
     let model = await _mptModel();
+    // Gemini 2.5 spends "thinking" tokens inside maxOutputTokens and can
+    // truncate the visible answer mid-sentence — turn thinking off there.
+    if (/2\.5/.test(model)) payload.generationConfig.thinkingConfig = { thinkingBudget: 0 };
     let r = await _mptHttp('POST', 'https://generativelanguage.googleapis.com/v1beta/' + model + ':generateContent?key=' + encodeURIComponent(getAIKey()), payload);
     if (!r.ok && (r.status === 404 || r.status === 400)) {
       // Cached model may be stale/wrong — reset and retry once on a known model.
@@ -11578,6 +11643,18 @@ window.mptCoachSend = async function() {
     let reply;
     if (!r.ok) reply = '⚠️ ' + (data?.error?.message || ('שגיאה ' + r.status));
     else reply = (data.candidates?.[0]?.content?.parts || []).map(p => p.text).join('\n') || '…';
+
+    // #SET protocol — the coach updates the app's daily targets itself.
+    const setM = reply.match(/#SET\s+([^\n]+)/i);
+    if (setM) {
+      const calM = setM[1].match(/cal\s*=\s*(\d{3,5})/i);
+      const stepsM = setM[1].match(/steps\s*=\s*(\d{3,6})/i);
+      let applied = [];
+      if (calM)   { st.healthTargets.cal   = parseInt(calM[1], 10);   applied.push(st.healthTargets.cal.toLocaleString('he-IL') + ' קק״ל'); }
+      if (stepsM) { st.healthTargets.steps = parseInt(stepsM[1], 10); applied.push(st.healthTargets.steps.toLocaleString('he-IL') + ' צעדים'); }
+      reply = reply.replace(/#SET[^\n]*/i, '').trim();
+      if (applied.length) reply += '\n\n✅ עדכנתי את היעדים היומיים שלך באפליקציה: ' + applied.join(' · ');
+    }
     st.healthChat.push({ role: 'coach', text: reply });
     if (st.healthChat.length > 30) st.healthChat = st.healthChat.slice(-30);
     mpSave(st);
