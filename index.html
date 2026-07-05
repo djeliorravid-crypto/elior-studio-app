@@ -6180,7 +6180,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v373</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v374</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6550,7 +6550,7 @@
       <textarea id="foodadd-desc" rows="2" placeholder="למשל: 2 ביצים, סלט עם כף טחינה ופרוסת לחם מלא"></textarea>
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px">
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('foodadd-photo').click()">צלם / העלה תמונה</button>
+      <button class="btn btn-ghost btn-sm" onclick="mptFoodPhotoStart()">צלם / העלה תמונה</button>
       <img id="foodadd-thumb" class="mpt-food-thumb" style="display:none" alt=""/>
     </div>
     <input type="file" id="foodadd-photo" accept="image/*" style="display:none" onchange="mptFoodPhotoPicked(event)"/>
@@ -11897,28 +11897,22 @@ window.mptFoodDel = function(id) {
   _mptRenderFood();
   try { _mptRenderWeekChips(); } catch (_) {}
 };
-window.mptFoodPhotoPicked = function(ev) {
-  const f = ev.target.files && ev.target.files[0];
-  if (!f) return;
-  const img = new Image();
-  const url = URL.createObjectURL(f);
-  img.onload = function() {
-    // Downscale before upload — 768px jpeg is plenty for portion
-    // estimation and keeps the request small on cell data.
-    const MAX = 768;
-    const sc = Math.min(1, MAX / Math.max(img.width, img.height));
-    const c = document.createElement('canvas');
-    c.width = Math.round(img.width * sc);
-    c.height = Math.round(img.height * sc);
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    const dataUrl = c.toDataURL('image/jpeg', 0.72);
-    _mptFoodImg = dataUrl.split(',')[1];
-    const th = document.getElementById('foodadd-thumb');
-    if (th) { th.src = dataUrl; th.style.display = 'block'; }
-    URL.revokeObjectURL(url);
-  };
-  img.src = url;
-};
+window.mptFoodPhotoStart = function() { _mptGrabPhoto('foodadd-photo', _mptProcessFoodImage); };
+window.mptFoodPhotoPicked = function(ev) { _mptFileToImg(ev, _mptProcessFoodImage); };
+function _mptProcessFoodImage(img) {
+  // Downscale before upload — 768px jpeg is plenty for portion
+  // estimation and keeps the request small on cell data.
+  const MAX = 768;
+  const sc = Math.min(1, MAX / Math.max(img.width, img.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.width * sc);
+  c.height = Math.round(img.height * sc);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  const dataUrl = c.toDataURL('image/jpeg', 0.72);
+  _mptFoodImg = dataUrl.split(',')[1];
+  const th = document.getElementById('foodadd-thumb');
+  if (th) { th.src = dataUrl; th.style.display = 'block'; }
+}
 const MPT_FOOD_SYS = 'אתה מנוע ניתוח תזונתי מדויק. המשתמש ישראלי — הכר מנות ישראליות טיפוסיות (חומוס, טחינה, שקשוקה, שניצל, פתיתים, בורקס, ג׳חנון וכו׳). '
   + 'קבל תיאור טקסט ו/או תמונה של ארוחה, פרק אותה לפריטים, והחזר אך ורק JSON תקין בפורמט: '
   + '{"items":[{"name":"שם קצר בעברית","cal":מספר,"protein":מספר,"carbs":מספר,"fat":מספר}]} '
@@ -12208,11 +12202,15 @@ function _mptPhotos() {
   try { return JSON.parse(localStorage.getItem(MPT_PHOTO_KEY) || '[]') || []; } catch (_) { return []; }
 }
 function _mptPhotosSave(arr) {
-  while (arr.length) {
+  // Always write — including an EMPTY array (deleting the last photo
+  // must persist; the old while(arr.length) loop skipped that write).
+  for (;;) {
     try { localStorage.setItem(MPT_PHOTO_KEY, JSON.stringify(arr)); return true; }
-    catch (e) { arr.shift(); }
+    catch (e) {
+      if (!arr.length) return false;
+      arr.shift();   // quota — drop oldest and retry
+    }
   }
-  return false;
 }
 function _mptDaysAgo(d) {
   return Math.round((new Date(_mpbToday() + 'T12:00:00') - new Date(d + 'T12:00:00')) / 86400000);
@@ -12228,7 +12226,7 @@ function _mptRenderPhotos() {
   const last = ph.length ? ph[ph.length - 1] : null;
   const due = !last || _mptDaysAgo(last.d) >= 7;
   let html = '<div class="mp-sub" style="margin-bottom:10px">פעם בשבוע, אותה תאורה ואותה זווית — והשינוי ייראה בעיניים. התאריך והמשקל נטבעים על התמונה.</div>'
-    + '<button class="btn ' + (due ? 'btn-primary' : 'btn-ghost') + '" style="width:100%" onclick="document.getElementById(\'mpt-bodyphoto-file\').click()">'
+    + '<button class="btn ' + (due ? 'btn-primary' : 'btn-ghost') + '" style="width:100%" onclick="mptBodyPhotoStart()">'
     + (last ? ('צלם תמונה חדשה' + (due ? ' — הגיע הזמן' : '')) : 'צלם את תמונת ההתחלה') + '</button>';
   if (ph.length) {
     html += '<div class="mpt-album">' + ph.slice().reverse().map(p =>
@@ -12239,45 +12237,73 @@ function _mptRenderPhotos() {
   }
   el.innerHTML = html;
 }
-window.mptBodyPhotoPicked = function(ev) {
+// Native-first photo grab: on builds that carry the Capacitor Camera
+// plugin this uses the real iOS sheet (rock-solid; the WKWebView photo
+// picker is flaky). Falls back to the web file input otherwise.
+function _mptGrabPhoto(fileInputId, onImg) {
+  const Cam = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera;
+  if (Cam && Cam.getPhoto) {
+    Cam.getPhoto({
+      quality: 82, allowEditing: false, resultType: 'dataUrl', source: 'PROMPT',
+      promptLabelHeader: 'תמונה', promptLabelPhoto: 'מהספרייה',
+      promptLabelPicture: 'צלם עכשיו', promptLabelCancel: 'בטל'
+    }).then(r => {
+      if (!r || !r.dataUrl) return;
+      const img = new Image();
+      img.onload = () => onImg(img);
+      img.onerror = () => toast('לא הצלחתי לקרוא את התמונה');
+      img.src = r.dataUrl;
+    }).catch(() => {});   // user cancelled — silent
+    return;
+  }
+  const inp = document.getElementById(fileInputId);
+  if (inp) inp.click();
+}
+function _mptFileToImg(ev, onImg) {
   const f = ev.target.files && ev.target.files[0];
   if (!f) return;
+  toast('⏳ מעבד תמונה…');
   const img = new Image();
   const url = URL.createObjectURL(f);
-  img.onload = function() {
-    const MAX = 720;
-    const sc = Math.min(1, MAX / Math.max(img.width, img.height));
-    const c = document.createElement('canvas');
-    c.width = Math.round(img.width * sc);
-    c.height = Math.round(img.height * sc);
-    const ctx = c.getContext('2d');
-    ctx.drawImage(img, 0, 0, c.width, c.height);
-    // Burn date + latest weight into the frame — his spec: the photo
-    // itself carries the number of the moment it was taken.
-    const st = _mptState();
-    const kg = st.weights.length ? st.weights[st.weights.length - 1].kg : 0;
-    const today = _mpbToday();
-    const label = today.split('-').reverse().join('.') + (kg ? '  ·  ' + kg + ' ק״ג' : '');
-    const barH = Math.max(34, Math.round(c.height * 0.055));
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(0, c.height - barH, c.width, barH);
-    ctx.fillStyle = '#fff';
-    ctx.font = '700 ' + Math.round(barH * 0.5) + 'px Heebo, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, c.width / 2, c.height - barH / 2);
-    const ph = _mptPhotos();
-    ph.push({ id: genId(), d: today, kg: kg || 0, img: c.toDataURL('image/jpeg', 0.62) });
-    while (ph.length > 60) ph.shift();
-    const ok = _mptPhotosSave(ph);
-    toast(ok ? '📸 נשמר לאלבום' : 'אין מקום בזיכרון — מחק תמונות ישנות');
-    URL.revokeObjectURL(url);
-    ev.target.value = '';
-    _mptRenderPhotos();
-    try { _mptRenderToday(); } catch (_) {}
+  img.onload = function() { URL.revokeObjectURL(url); ev.target.value = ''; onImg(img); };
+  img.onerror = function() {
+    URL.revokeObjectURL(url); ev.target.value = '';
+    toast('לא הצלחתי לקרוא את התמונה — נסה תמונה אחרת');
   };
   img.src = url;
-};
+}
+window.mptBodyPhotoStart = function() { _mptGrabPhoto('mpt-bodyphoto-file', _mptProcessBodyImage); };
+window.mptBodyPhotoPicked = function(ev) { _mptFileToImg(ev, _mptProcessBodyImage); };
+function _mptProcessBodyImage(img) {
+  const MAX = 720;
+  const sc = Math.min(1, MAX / Math.max(img.width, img.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.width * sc);
+  c.height = Math.round(img.height * sc);
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  // Burn date + latest weight into the frame — his spec: the photo
+  // itself carries the number of the moment it was taken.
+  const st = _mptState();
+  const kg = st.weights.length ? st.weights[st.weights.length - 1].kg : 0;
+  const today = _mpbToday();
+  const label = today.split('-').reverse().join('.') + (kg ? '  ·  ' + kg + ' ק״ג' : '');
+  const barH = Math.max(34, Math.round(c.height * 0.055));
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, c.height - barH, c.width, barH);
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 ' + Math.round(barH * 0.5) + 'px Heebo, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, c.width / 2, c.height - barH / 2);
+  const ph = _mptPhotos();
+  ph.push({ id: genId(), d: today, kg: kg || 0, img: c.toDataURL('image/jpeg', 0.62) });
+  while (ph.length > 60) ph.shift();
+  const ok = _mptPhotosSave(ph);
+  toast(ok ? '📸 נשמר לאלבום' : 'אין מקום בזיכרון — מחק תמונות ישנות');
+  _mptRenderPhotos();
+  try { _mptRenderToday(); } catch (_) {}
+}
 let _mptPhotoView = null;
 window.mptBodyPhotoView = function(id) {
   const p = _mptPhotos().find(x => x.id === id);
