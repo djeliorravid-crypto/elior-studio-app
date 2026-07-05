@@ -6180,7 +6180,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v374</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v375</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11237,7 +11237,12 @@ window.mpDelGoal = function(id) {
 //    habits — compact quick-log chips (no alarm dots, no nagging)
 // ═════════════════════════════════════════════════════════════════
 
-function _mpbToday() { return new Date().toISOString().slice(0, 10); }
+// LOCAL date key — never toISOString here: UTC lags Israel by 2-3h,
+// so the "day" only flipped at 02:00/03:00 instead of at midnight.
+function _mpbDayKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function _mpbToday() { return _mpbDayKey(new Date()); }
 function _mpbWeekKey(dIn) {
   const d = dIn ? new Date(dIn) : new Date();
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -11633,7 +11638,7 @@ function _mptRenderWeekChips() {
   let stepsPass = 0, calPass = 0, stepsSum = 0, stepsN = 0, calSum = 0, calN = 0, loggedAny = false;
   for (let k = 6; k >= 0; k--) {
     const d = new Date(Date.now() - k * 86400000);
-    const key = d.toISOString().slice(0, 10);
+    const key = _mpbDayKey(d);
     const e = st.health[key] || {};
     const hasS = !!e.steps, hasC = !!e.cal;
     if (hasS || hasC) loggedAny = true;
@@ -11809,7 +11814,7 @@ window.mptMealAdd = function() {
 window.mptFoodNav = function(dir) {
   const cur = new Date(_mptFoodKey() + 'T12:00:00');
   cur.setDate(cur.getDate() + dir);
-  const k = cur.toISOString().slice(0, 10);
+  const k = _mpbDayKey(cur);
   if (k > _mpbToday()) return;
   _mptFoodDate = (k === _mpbToday()) ? null : k;
   _mptRenderFood();
@@ -12063,12 +12068,33 @@ try {
   const _capApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (_capApp && _capApp.addListener) _capApp.addListener('resume', () => { try { _mptHealthAutoSync(); } catch (_) {} });
 } catch (_) {}
+let _mptLastDay = null;
 setInterval(() => {
   try {
     const pm = document.getElementById('path-main');
-    if (pm && pm.style.display !== 'none') _mptHealthAutoSync();
+    if (!pm || pm.style.display === 'none') return;
+    _mptHealthAutoSync();
+    // Midnight rollover: if the app sat open past 00:00, re-render so
+    // the diary, tiles and counters flip to the new day.
+    const today = _mpbToday();
+    if (_mptLastDay && _mptLastDay !== today) mptRenderAll();
+    _mptLastDay = today;
   } catch (_) {}
-}, 180000);
+}, 60000);
+// Same check when the app returns from background.
+try {
+  const _capApp2 = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (_capApp2 && _capApp2.addListener) _capApp2.addListener('resume', () => {
+    try {
+      const today = _mpbToday();
+      if (_mptLastDay && _mptLastDay !== today) {
+        const pm = document.getElementById('path-main');
+        if (pm && pm.style.display !== 'none') mptRenderAll();
+      }
+      _mptLastDay = today;
+    } catch (_) {}
+  });
+} catch (_) {}
 
 // ══════════ HEALTH TAB LAYOUT — today dashboard + collapsed sections ══════════
 // One always-open "today" card with the numbers that matter right now;
@@ -12142,7 +12168,7 @@ function _mptRenderToday() {
   put('mpt-sum-plan', tCal.toLocaleString('he-IL') + ' קק״ל · ' + tSteps.toLocaleString('he-IL') + ' צעדים · ' + tW + ' אימונים');
   let passDays = 0, loggedDays = 0;
   for (let k = 0; k < 7; k++) {
-    const key = new Date(Date.now() - k * 86400000).toISOString().slice(0, 10);
+    const key = _mpbDayKey(new Date(Date.now() - k * 86400000));
     const e = st.health[key] || {};
     if (e.steps) { loggedDays++; if (e.steps >= tSteps) passDays++; }
   }
@@ -12332,7 +12358,7 @@ function _mptCoachContext() {
   const w = st.weights;
   const recent7 = [];
   for (let k = 0; k < 7; k++) {
-    const key = new Date(Date.now() - k * 86400000).toISOString().slice(0, 10);
+    const key = _mpbDayKey(new Date(Date.now() - k * 86400000));
     const e = st.health[key];
     if (e) recent7.push({ date: key, steps: e.steps || 0, cal: e.cal || 0 });
   }
