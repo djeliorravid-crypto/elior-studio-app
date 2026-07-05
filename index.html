@@ -6186,7 +6186,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v377</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v378</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6232,9 +6232,9 @@
             <polygon points="41 23 36 36 23 41 28 28 41 23"/>
           </svg>
         </div>
-        <div class="mode-card-title">הדרך שלי</div>
+        <div class="mode-card-title">כושר ותזונה</div>
       </div>
-      <div class="mode-card-sub">חזון · יעדים · מאמן</div>
+      <div class="mode-card-sub">משקל · תזונה · מאמן</div>
     </div>
   </div>
 
@@ -6358,8 +6358,8 @@
   <div class="page active" id="page-mypath">
     <div class="mpt-hero">
       <div class="mpt-hero-inner">
-        <div class="mpt-hero-kicker"><svg viewBox="0 0 24 24"><use href="#ic-compass"/></svg> LIFE OS</div>
-        <h2 class="mpt-hero-title">הדרך שלי</h2>
+        <div class="mpt-hero-kicker"><svg viewBox="0 0 24 24"><use href="#ic-cat-health"/></svg> המסע שלי</div>
+        <h2 class="mpt-hero-title">כושר ותזונה</h2>
         <div class="mpt-hero-line" id="mpt-hero-line">המקום שבו החיים משתנים — בריאות, כסף, חלומות.</div>
       </div>
     </div>
@@ -11472,49 +11472,21 @@ function _mptState() {
 function _mptTab() { try { return localStorage.getItem('_mpt_tab') || 'health'; } catch (_) { return 'health'; } }
 function _mptSetTab(t) { try { localStorage.setItem('_mpt_tab', t); } catch (_) {} }
 
-// ── Orchestrator: tabs bar + active pane ──
+// ── Orchestrator — the page IS the health page now ("כושר ותזונה").
+//    The old goal/process tabs are retired from view; their data
+//    (goals, vision texts, financial targets) stays untouched in
+//    my_path so nothing is ever lost. ──
 window.mptRenderAll = function() {
   const tabsEl = document.getElementById('mpt-tabs');
-  if (!tabsEl) return;
-  const st = _mptState();
-  let tab = _mptTab();
-  const goalIds = st.goals.map(g => g.id);
-  if (tab.startsWith('goal:') && !goalIds.includes(tab.slice(5))) tab = 'health';
-
-  const pill = (id, label, icon) =>
-    '<button class="mpt-tab ' + (tab === id ? 'on' : '') + '" onclick="mptGo(\'' + id + '\')">'
-    + (icon ? '<svg viewBox="0 0 24 24"><use href="#' + icon + '"/></svg>' : '') + label + '</button>';
-
-  let html = pill('health', 'בריאות וכושר', 'ic-cat-health');
-  st.goals.forEach(g => {
-    const t = (g.title || '').length > 14 ? g.title.slice(0, 13) + '…' : g.title;
-    html += pill('goal:' + g.id, (g.done ? '✓ ' : '') + _escape(t), null);
-  });
-  html += '<button class="mpt-tab add" onclick="mptAddGoalTab()">+ יעד</button>';
-  html += pill('process', 'התהליך', 'ic-chart-bars');
-  tabsEl.innerHTML = html;
-
+  if (tabsEl) { tabsEl.innerHTML = ''; tabsEl.style.display = 'none'; }
   const panes = { health: 'mpt-pane-health', goal: 'mpt-pane-goal', process: 'mpt-pane-process' };
-  const kind = tab.startsWith('goal:') ? 'goal' : tab;
   Object.entries(panes).forEach(([k, id]) => {
     const el = document.getElementById(id);
-    if (el) el.style.display = k === kind ? 'block' : 'none';
+    if (el) el.style.display = k === 'health' ? 'block' : 'none';
   });
-
   const heroLine = document.getElementById('mpt-hero-line');
-  if (heroLine) {
-    heroLine.textContent = kind === 'health' ? 'הגוף הוא הכלי — בלעדיו אין אולפן ואין 100 אלף.'
-      : kind === 'process' ? 'המספרים לא משקרים — תסתכל כמה כבר בנית.'
-      : 'יעד בלי תוכנית הוא משאלה. בוא נעבוד.';
-  }
-
-  if (kind === 'health') _mptRenderHealth();
-  else if (kind === 'goal') _mptRenderGoal(tab.slice(5));
-  else {
-    try { renderMyPath(); } catch (_) {}
-    try { renderMyPathBoard(); } catch (_) {}
-    _mptRenderGoalsOverview();
-  }
+  if (heroLine) heroLine.textContent = 'הגוף הוא הכלי — יום אחרי יום, שקל אחרי שקילה.';
+  _mptRenderHealth();
 };
 window.mptGo = function(tab) { _mptSetTab(tab); mptRenderAll(); };
 window.mptAddGoalTab = function() {
