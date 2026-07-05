@@ -3731,6 +3731,12 @@
     .mpt-album-item { cursor: pointer; }
     .mpt-album-item img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); display: block; }
     .mpt-album-item span { display: block; font-size: 10px; font-weight: 700; color: var(--text-muted); text-align: center; margin-top: 3px; }
+    .dun-row { display: flex; align-items: center; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--border); }
+    .dun-row:last-child { border-bottom: none; }
+    .dun-info { flex: 1; min-width: 0; }
+    .dun-name { font-weight: 800; font-size: 14px; color: var(--text); }
+    .dun-meta { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+    .dun-nophone { font-size: 11px; color: var(--text-muted); font-weight: 700; flex-shrink: 0; }
     .mp-card.mpt-sec { padding: 0; }
     .mpt-sec-head {
       width: 100%; display: flex; align-items: center; gap: 10px;
@@ -6180,7 +6186,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v376</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v377</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6568,6 +6574,16 @@
   </div>
 </div>
 
+<!-- Collection modal — open money, one-tap WhatsApp reminders -->
+<div class="modal-overlay" id="modal-dunning">
+  <div class="modal">
+    <h3>גבייה — כסף פתוח</h3>
+    <div class="mp-sub" style="margin:-10px 0 14px">לחיצה על וואטסאפ פותחת הודעת תזכורת מנוסחת ומנומסת — רק לשלוח.</div>
+    <div id="dunning-body"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:14px" onclick="closeModal('dunning')">סגור</button>
+  </div>
+</div>
+
 <!-- Body-photo viewer — full image + delete -->
 <div class="modal-overlay" id="modal-bodyphoto">
   <div class="modal modal-narrow" style="padding:14px">
@@ -6890,6 +6906,7 @@
       <div class="table-header" style="background:transparent;border:0;padding:0 4px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
         <h3 style="font-size:20px;font-weight:900">רשימת הכנסות</h3>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="openDunningModal()">גבייה</button>
           <div class="search-bar"><svg class="si" viewBox="0 0 24 24"><use href="#ic-search"/></svg><input type="text" placeholder="חיפוש..." id="i-search" oninput="renderIncome()"/></div>
           <select style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:7px 12px;font-size:13px;color:var(--text);outline:none;" id="i-client-filter" onchange="renderIncome()">
             <option value="">כל הלקוחות</option>
@@ -8373,6 +8390,11 @@ function save(key, val) {
   if ((key === 'daily_tasks' || key === 'schedule') &&
       typeof window.updateAppBadge === 'function') {
     window.updateAppBadge();
+  }
+  // 5. שינוי בכסף → רענון מנוע התראות הכסף (מתוזמן, מקומי).
+  if ((key === 'income' || key === 'recurring_expenses' || key === 'clients') &&
+      typeof window._moneyNotifKick === 'function') {
+    window._moneyNotifKick();
   }
 }
 
@@ -15758,6 +15780,168 @@ window.testNotification = function() {
     return LN.cancel({ notifications: [{ id }] }).catch(() => {});
   };
 })();
+
+// ═════════════════════════════════════════════════════════════════
+//  MONEY NOTIFICATION ENGINE — the app chases open money by itself.
+//  Local notifications only (no server): every launch / money change
+//  recomputes and reschedules. Fixed ID namespace 7100xx so refreshes
+//  replace cleanly and never touch task-reminder ids.
+//   · dunning     — unpaid income ≥3 days → morning nudges (3 ahead)
+//   · weekly      — Sunday 09:00 money summary
+//   · recurring   — 1st of month: fixed expenses heads-up
+//  Tapping a dunning notification opens the collection modal, where
+//  each client gets a one-tap prewritten WhatsApp reminder.
+// ═════════════════════════════════════════════════════════════════
+function _dunningList(minAge) {
+  const now = new Date();
+  return load('income')
+    .filter(i => (i.status || 'pending') !== 'paid' && Number(i.amount) > 0)
+    .map(i => {
+      const d = new Date((i.date || '') + 'T12:00:00');
+      const age = isNaN(d) ? 0 : Math.max(0, Math.floor((now - d) / 86400000));
+      return { client: i.client || '', amount: Number(i.amount) || 0, desc: i.desc || '', age };
+    })
+    .filter(i => i.age >= (minAge || 0))
+    .sort((a, b) => b.age - a.age);
+}
+function _ilsFmt(n) { return (Number(n) || 0).toLocaleString('he-IL') + ' ₪'; }
+
+const _MONEY_NOTIF_IDS = [710001, 710002, 710003, 710010, 710020];
+async function _moneyNotifRefresh() {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+  try {
+    const perm = await LN.checkPermissions();
+    if (perm.display !== 'granted') return;
+  } catch (_) { return; }
+  try { await LN.cancel({ notifications: _MONEY_NOTIF_IDS.map(id => ({ id })) }); } catch (_) {}
+
+  const notifs = [];
+  const now = new Date();
+
+  // ── Dunning — one digest per morning, next 3 slots (every 3 days) ──
+  const due = _dunningList(3);
+  if (due.length) {
+    const total = due.reduce((s, i) => s + i.amount, 0);
+    const oldest = due[0];
+    const body = due.length === 1
+      ? oldest.client + ' — ' + _ilsFmt(oldest.amount) + ' פתוחים כבר ' + oldest.age + ' ימים. הקש לשליחת תזכורת.'
+      : due.length + ' תשלומים פתוחים · ' + _ilsFmt(total) + '. הוותיק: ' + oldest.client + ' (' + oldest.age + ' ימים). הקש לגבייה.';
+    for (let k = 0; k < 3; k++) {
+      const at = new Date(now);
+      at.setDate(at.getDate() + 1 + k * 3);
+      at.setHours(10, 0, 0, 0);
+      notifs.push({
+        id: _MONEY_NOTIF_IDS[k], title: '💰 כסף פתוח בחוץ', body,
+        schedule: { at, allowWhileIdle: true }, sound: 'default',
+        threadIdentifier: 'money-notifs', extra: { moneyNotif: 'dunning' }
+      });
+    }
+  }
+
+  // ── Weekly summary — next Sunday 09:00 ──
+  const income = load('income');
+  const mKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const paidMonth = income.filter(i => (i.status || 'pending') === 'paid' && (i.date || '').slice(0, 7) === mKey)
+                          .reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const openAll = _dunningList(0).reduce((s, i) => s + i.amount, 0);
+  const sun = new Date(now); sun.setHours(9, 0, 0, 0);
+  while (sun.getDay() !== 0 || sun <= now) { sun.setDate(sun.getDate() + 1); sun.setHours(9, 0, 0, 0); }
+  notifs.push({
+    id: _MONEY_NOTIF_IDS[3], title: '📊 בוקר טוב — מצב העסק',
+    body: 'נכנסו החודש ' + _ilsFmt(paidMonth) + (openAll ? ' · פתוחים בחוץ ' + _ilsFmt(openAll) : ' · אין כסף פתוח 🎉'),
+    schedule: { at: sun, allowWhileIdle: true }, sound: 'default',
+    threadIdentifier: 'money-notifs', extra: { moneyNotif: 'weekly' }
+  });
+
+  // ── Fixed expenses heads-up — 1st of next month 10:30 ──
+  const first = new Date(now.getFullYear(), now.getMonth(), 1, 10, 30, 0, 0);
+  if (first <= now) first.setMonth(first.getMonth() + 1);
+  const fKey = first.getFullYear() + '-' + String(first.getMonth() + 1).padStart(2, '0');
+  const rec = load('recurring_expenses').filter(r => r.startMonth <= fKey && (!r.endMonth || r.endMonth >= fKey));
+  const fixedTotal = rec.reduce((s, r) => s + (typeof _recAmt === 'function' ? _recAmt(r, fKey) : (Number(r.amount) || 0)), 0);
+  if (fixedTotal > 0) {
+    notifs.push({
+      id: _MONEY_NOTIF_IDS[4], title: '📅 הוצאות קבועות החודש',
+      body: rec.length + ' חיובים קבועים · ' + _ilsFmt(fixedTotal),
+      schedule: { at: first, allowWhileIdle: true }, sound: 'default',
+      threadIdentifier: 'money-notifs', extra: { moneyNotif: 'weekly' }
+    });
+  }
+
+  if (notifs.length) { try { await LN.schedule({ notifications: notifs }); } catch (_) {} }
+}
+let _moneyNotifTimer = null;
+window._moneyNotifKick = function() {
+  clearTimeout(_moneyNotifTimer);
+  _moneyNotifTimer = setTimeout(() => { _moneyNotifRefresh().catch(() => {}); }, 4000);
+};
+// First schedule pass shortly after launch; tap-handling for money notifs.
+(function setupMoneyNotifs() {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+  setTimeout(() => window._moneyNotifKick(), 8000);
+  try {
+    LN.addListener('localNotificationActionPerformed', ev => {
+      const extra = (ev && ev.notification && ev.notification.extra) || {};
+      if (!extra.moneyNotif) return;
+      try { chooseMode('business'); } catch (_) {}
+      try { showPage('income'); } catch (_) {}
+      if (extra.moneyNotif === 'dunning') {
+        setTimeout(() => { try { openDunningModal(); } catch (_) {} }, 450);
+      }
+    });
+  } catch (_) {}
+})();
+
+// ── Collection modal — one-tap WhatsApp dunning per client ──
+function _waPhone(p) {
+  let d = String(p || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('972')) return d;
+  if (d.startsWith('0')) return '972' + d.slice(1);
+  return '972' + d;
+}
+window.openDunningModal = function() {
+  const body = document.getElementById('dunning-body');
+  if (!body) return;
+  const list = _dunningList(0);
+  const clients = load('clients');
+  const phoneOf = name => {
+    const c = clients.find(x => (x.name || '').trim() === (name || '').trim());
+    return c ? _waPhone(c.phone) : '';
+  };
+  if (!list.length) {
+    body.innerHTML = '<div class="mp-empty" style="padding:16px 0">🎉 אין כסף פתוח — הכל שולם.</div>';
+  } else {
+    body.innerHTML = list.map(i => {
+      const ph = phoneOf(i.client);
+      const days = i.age === 0 ? 'מהיום' : i.age === 1 ? 'יום אחד' : i.age + ' ימים';
+      const nameEsc = _escape(i.client || '—').replace(/'/g, "\\'");
+      return '<div class="dun-row">'
+        + '<div class="dun-info"><div class="dun-name">' + _escape(i.client || '—') + '</div>'
+        + '<div class="dun-meta">' + _ilsFmt(i.amount) + ' · פתוח ' + days + (i.desc ? ' · ' + _escape(i.desc) : '') + '</div></div>'
+        + (ph ? '<button class="btn btn-primary btn-sm" onclick="dunWhatsApp(\'' + nameEsc + '\')">וואטסאפ</button>'
+              : '<span class="dun-nophone">אין טלפון בכרטיס הלקוח</span>')
+        + '</div>';
+    }).join('');
+  }
+  openModal('dunning');
+};
+window.dunWhatsApp = function(name) {
+  const items = _dunningList(0).filter(i => (i.client || '').trim() === (name || '').trim());
+  if (!items.length) return;
+  const clients = load('clients');
+  const c = clients.find(x => (x.name || '').trim() === (name || '').trim());
+  const phone = c ? _waPhone(c.phone) : '';
+  if (!phone) { toast('אין טלפון שמור ללקוח הזה'); return; }
+  const total = items.reduce((s, i) => s + i.amount, 0);
+  const what = items[0].desc ? ' על ' + items[0].desc : '';
+  const msg = 'היי ' + name + ' 👋 תזכורת קטנה מרביד סטודיו — נשאר תשלום פתוח של ' + _ilsFmt(total) + what + '. אפשר בביט / פייבוקס / העברה 🙏 תודה רבה!';
+  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+};
 
 function chooseMode(mode) {
   document.getElementById('mode-screen').classList.add('hidden');
