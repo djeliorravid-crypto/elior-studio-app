@@ -3737,6 +3737,11 @@
     .dun-name { font-weight: 800; font-size: 14px; color: var(--text); }
     .dun-meta { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
     .dun-nophone { font-size: 11px; color: var(--text-muted); font-weight: 700; flex-shrink: 0; }
+    .dun-notif-line {
+      margin-top: 14px; padding: 10px 12px; border: 1px dashed var(--border);
+      border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap; line-height: 1.7;
+    }
     .mp-card.mpt-sec { padding: 0; }
     .mpt-sec-head {
       width: 100%; display: flex; align-items: center; gap: 10px;
@@ -6186,7 +6191,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v378</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v379</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6580,6 +6585,7 @@
     <h3>גבייה — כסף פתוח</h3>
     <div class="mp-sub" style="margin:-10px 0 14px">לחיצה על וואטסאפ פותחת הודעת תזכורת מנוסחת ומנומסת — רק לשלוח.</div>
     <div id="dunning-body"></div>
+    <div id="dunning-notif-status"></div>
     <button class="btn btn-ghost" style="width:100%;margin-top:14px" onclick="closeModal('dunning')">סגור</button>
   </div>
 </div>
@@ -8395,6 +8401,10 @@ function save(key, val) {
   if ((key === 'income' || key === 'recurring_expenses' || key === 'clients') &&
       typeof window._moneyNotifKick === 'function') {
     window._moneyNotifKick();
+  }
+  // 6. שינוי בלוז → רענון התראות 30-דקות-לפני של האפליקציה.
+  if (key === 'schedule' && typeof window._schedNotifKick === 'function') {
+    window._schedNotifKick();
   }
 }
 
@@ -15800,9 +15810,12 @@ async function _moneyNotifRefresh() {
     const body = due.length === 1
       ? oldest.client + ' — ' + _ilsFmt(oldest.amount) + ' פתוחים כבר ' + oldest.age + ' ימים. הקש לשליחת תזכורת.'
       : due.length + ' תשלומים פתוחים · ' + _ilsFmt(total) + '. הוותיק: ' + oldest.client + ' (' + oldest.age + ' ימים). הקש לגבייה.';
+    // First slot lands TODAY at 10:00 when that's still ahead of us —
+    // otherwise tomorrow — then every 3 days.
+    const baseDay = (now.getHours() < 10) ? 0 : 1;
     for (let k = 0; k < 3; k++) {
       const at = new Date(now);
-      at.setDate(at.getDate() + 1 + k * 3);
+      at.setDate(at.getDate() + baseDay + k * 3);
       at.setHours(10, 0, 0, 0);
       notifs.push({
         id: _MONEY_NOTIF_IDS[k], title: '💰 כסף פתוח בחוץ', body,
@@ -15901,6 +15914,7 @@ window.openDunningModal = function() {
     }).join('');
   }
   openModal('dunning');
+  try { _notifStatusRender(); } catch (_) {}
 };
 window.dunWhatsApp = function(name) {
   const items = _dunningList(0).filter(i => (i.client || '').trim() === (name || '').trim());
@@ -15914,6 +15928,95 @@ window.dunWhatsApp = function(name) {
   const msg = 'היי ' + name + ' 👋 תזכורת קטנה מרביד סטודיו — נשאר תשלום פתוח של ' + _ilsFmt(total) + what + '. אפשר בביט / פייבוקס / העברה 🙏 תודה רבה!';
   window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
 };
+
+// ── Notification health check — shown inside the collection modal ──
+async function _notifStatusRender() {
+  const el = document.getElementById('dunning-notif-status');
+  if (!el) return;
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) {
+    el.innerHTML = ''; return;
+  }
+  const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) { el.innerHTML = ''; return; }
+  let line = '';
+  try {
+    let perm = await LN.checkPermissions();
+    if (perm.display === 'prompt' || perm.display === 'prompt-with-rationale') {
+      perm = await LN.requestPermissions();
+    }
+    if (perm.display === 'granted') {
+      let pending = 0;
+      try { pending = ((await LN.getPending()).notifications || []).length; } catch (_) {}
+      line = '<span style="color:var(--green)">✅ התראות מאושרות</span> · ' + pending + ' מתוזמנות'
+        + ' <button class="btn btn-ghost btn-sm" onclick="notifTest()">התראת בדיקה</button>';
+    } else {
+      line = '<span style="color:var(--red)">❌ ההתראות חסומות ל-Ravid Studio.</span><br>'
+        + 'פתח: הגדרות ← עדכונים (Notifications) ← Ravid Studio ← אפשר עדכונים.';
+    }
+  } catch (_) { line = ''; }
+  el.innerHTML = line ? '<div class="dun-notif-line">' + line + '</div>' : '';
+}
+window.notifTest = async function() {
+  const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+  try {
+    await LN.schedule({ notifications: [{
+      id: 710099, title: '🔔 בדיקה עברה!', body: 'ככה נראית התראה מהאפליקציה. גבייה, לוז וסיכומים יגיעו בדיוק ככה.',
+      schedule: { at: new Date(Date.now() + 10000), allowWhileIdle: true }, sound: 'default'
+    }] });
+    toast('נשלחה — סגור את האפליקציה, ההתראה תגיע בעוד 10 שניות');
+  } catch (e) { toast('שגיאה: ' + (e && e.message || '')); }
+};
+
+// ═════════════════════════════════════════════════════════════════
+//  SCHEDULE REMINDERS — the app itself alerts 30 min before every
+//  item in the לוז (own items; EventKit/Google events already alert
+//  through the Calendar app). Refreshed on launch + every schedule
+//  save. Previously-scheduled ids are tracked so edits/deletes
+//  cancel cleanly.
+// ═════════════════════════════════════════════════════════════════
+async function _schedNotifRefresh() {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+  try { if ((await LN.checkPermissions()).display !== 'granted') return; } catch (_) { return; }
+  // cancel everything we scheduled last round
+  let prev = [];
+  try { prev = JSON.parse(localStorage.getItem('sched_notif_ids') || '[]') || []; } catch (_) {}
+  if (prev.length) { try { await LN.cancel({ notifications: prev.map(id => ({ id })) }); } catch (_) {} }
+
+  const hash = k => { let h = 0; for (let i = 0; i < k.length; i++) h = ((h << 5) - h + k.charCodeAt(i)) | 0; return (Math.abs(h) % 2000000000) || 1; };
+  const now = new Date();
+  const horizon = new Date(Date.now() + 7 * 86400000);
+  const items = load('schedule').filter(it =>
+    it && it.date && /^\d{2}:\d{2}$/.test(it.time || '') && String(it.id || '').indexOf('gcal_ek_') !== 0);
+  const notifs = [];
+  const ids = [];
+  items.forEach(it => {
+    const at = new Date(it.date + 'T' + it.time + ':00');
+    if (isNaN(at) || at <= now || at > horizon) return;
+    const remindAt = new Date(at.getTime() - 30 * 60000);
+    const id = hash('sched|' + it.id);
+    ids.push(id);
+    notifs.push({
+      id,
+      title: it.title || 'אירוע בלוז',
+      body: 'בעוד 30 דקות · ' + it.time,
+      schedule: { at: (remindAt > now ? remindAt : new Date(now.getTime() + 60000)), allowWhileIdle: true },
+      sound: 'default',
+      threadIdentifier: 'schedule-reminders',
+      extra: { schedId: it.id }
+    });
+  });
+  if (notifs.length) { try { await LN.schedule({ notifications: notifs.slice(0, 40) }); } catch (_) {} }
+  try { localStorage.setItem('sched_notif_ids', JSON.stringify(ids)); } catch (_) {}
+}
+let _schedNotifTimer = null;
+window._schedNotifKick = function() {
+  clearTimeout(_schedNotifTimer);
+  _schedNotifTimer = setTimeout(() => { _schedNotifRefresh().catch(() => {}); }, 3000);
+};
+setTimeout(() => { try { window._schedNotifKick(); } catch (_) {} }, 9000);
 
 function chooseMode(mode) {
   document.getElementById('mode-screen').classList.add('hidden');
