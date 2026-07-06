@@ -2652,11 +2652,13 @@
         transform: scale(.94);
       }
     }
-    /* Hide on login + mode-screen */
+    /* Hide on login. The FAB stays visible on the lobby too — it is
+       the app's one always-available quick-add (his explicit ask). */
     body:has(#login-screen:not(.hidden)) #mobile-lobby-btn,
     body:has(#mode-screen:not(.hidden)) #mobile-lobby-btn,
-    body:has(#login-screen:not(.hidden)) .fab-container,
-    body:has(#mode-screen:not(.hidden)) .fab-container { display: none !important; }
+    body:has(#login-screen:not(.hidden)) .fab-container { display: none !important; }
+    /* On the lobby there is no bottom tab bar — let the FAB sit low. */
+    body:has(#mode-screen:not(.hidden)) .fab-container { bottom: calc(28px + env(safe-area-inset-bottom, 0px)); left: 20px; }
 
     @media (max-width: 768px) {
       :root { --sidebar-w: 0px; }
@@ -5806,10 +5808,12 @@
 <!-- Floating Quick Add FAB -->
 <div class="fab-container" id="fab-container">
   <div class="fab-menu" id="fab-menu">
+    <button class="fab-item" onclick="fabAction('schedule')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#3e6079,#5a86a8)"><svg class="fab-item-svg" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></span> אירוע בלוז</button>
     <button class="fab-item" onclick="fabAction('income')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#5a7a2e,#7a9e3e)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-up"/></svg></span> הכנסה</button>
     <button class="fab-item" onclick="fabAction('expense')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#b8442e,#d4644a)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-down"/></svg></span> הוצאה</button>
+    <button class="fab-item" onclick="fabAction('meal')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#7a5a9e,#9a7ac2)"><svg class="fab-item-svg" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M17 3c-1.5 0-3 2-3 5s1.5 4 3 4v9"/></svg></span> ארוחה</button>
     <button class="fab-item" onclick="fabAction('task')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#a06c48,#c89465)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-check-circle"/></svg></span> משימה</button>
-    <button class="fab-item" onclick="fabAction('client')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#6b5538,#8a7048)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-student"/></svg></span> לקוח</button>
+    <button class="fab-item" onclick="fabAction('dunning')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#8a6d1f,#b8952e)"><svg class="fab-item-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h3.8a1.7 1.7 0 0 1 0 3.4H10"/></svg></span> גבייה</button>
   </div>
   <button class="fab-main" id="fab-main" onclick="toggleFab()" aria-label="פעולה מהירה">+</button>
 </div>
@@ -6191,7 +6195,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v379</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v380</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -20695,11 +20699,38 @@ function fabAction(type) {
   toggleFab();
   setTimeout(() => quickAction(type), 100);
 }
+// Mode-aware quick actions: the FAB is global (lobby included), so
+// every action first lands in the right mode — otherwise the target
+// modal/page sits inside a hidden <main> and the tap looks dead.
+function _qaBiz() {
+  const biz = document.getElementById('business-main');
+  const lobbyShown = !document.getElementById('mode-screen')?.classList.contains('hidden');
+  if (lobbyShown || !biz || getComputedStyle(biz).display === 'none') chooseMode('business');
+}
 function quickAction(type) {
+  if (type === 'meal') {
+    chooseMode('path');
+    setTimeout(() => {
+      const h = new Date().getHours();
+      try { mptFoodOpenAdd(h < 11 ? 'b' : h < 16 ? 'l' : h < 21 ? 'd' : 's'); } catch (_) {}
+    }, 150);
+    return;
+  }
+  _qaBiz();
   if (type === 'task') {
     showPage('daily');
     setTimeout(() => document.getElementById('daily-input')?.focus(), 200);
+  } else if (type === 'schedule') {
+    showPage('schedule');
+    setTimeout(() => {
+      const inp = document.getElementById('schedule-title-input');
+      if (inp) { inp.scrollIntoView({ behavior: 'smooth', block: 'center' }); inp.focus(); }
+    }, 250);
+  } else if (type === 'dunning') {
+    try { openDunningModal(); } catch (_) {}
   } else {
+    if (type === 'income') showPage('income');
+    else if (type === 'expense') showPage('expenses');
     openModal(type);
   }
 }
