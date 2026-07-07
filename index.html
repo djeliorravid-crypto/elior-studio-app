@@ -6195,7 +6195,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v383</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v384</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6617,12 +6617,8 @@
     </div>
     <div class="table-card mp-card" style="border-top:3px solid var(--red)">
       <div class="mp-section-title">ממתינים לתשובה</div>
-      <div class="mp-sub">שיחות שההודעה האחרונה בהן היא מהלקוח — ואתה עוד לא ענית.</div>
+      <div class="mp-sub">שיחות שההודעה האחרונה בהן היא מהלקוח — ואתה עוד לא ענית. עונים בוואטסאפ או מסמנים טופל — והשורה נעלמת.</div>
       <div id="wa-waiting"></div>
-    </div>
-    <div class="table-card mp-card">
-      <div class="mp-section-title">שיחות אחרונות</div>
-      <div id="wa-recent"></div>
     </div>
   </div>
 
@@ -16089,22 +16085,15 @@ function _waRow(c, isWaiting) {
 }
 function _waPaint() {
   const wEl = document.getElementById('wa-waiting');
-  const rEl = document.getElementById('wa-recent');
   if (!wEl) return;
   if (!_waConvs) {
     wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">' + (_waListening ? 'טוען שיחות…' : 'מתחבר לענן…') + '</div>';
-    if (rEl) rEl.innerHTML = '';
     return;
   }
-  const list = _waConvs;
-  const waiting = list.filter(c => c.waiting).sort((a, b) => a.lastInTs - b.lastInTs);
+  const waiting = _waConvs.filter(c => c.waiting).sort((a, b) => a.lastInTs - b.lastInTs);
   wEl.innerHTML = waiting.length
     ? waiting.map(c => _waRow(c, true)).join('')
     : '<div class="mp-empty" style="padding:10px 0">🎉 אף אחד לא מחכה לתשובה.</div>';
-  if (rEl) {
-    rEl.innerHTML = list.slice(0, 25).map(c => _waRow(c, false)).join('')
-      || '<div class="mp-empty" style="padding:10px 0">עוד אין שיחות בצינור — הן ייכנסו מעכשיו והלאה.</div>';
-  }
 }
 window.renderWhatsappPage = function() {
   _waListen();
