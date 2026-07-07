@@ -155,14 +155,29 @@ export default {
           }
           // Incoming customer messages
           for (const m of v.messages || []) {
+            // Emoji reactions aren't a message that needs answering —
+            // recording them would mark the chat as waiting falsely.
+            if (m.type === 'reaction') { stored++; continue; }
             const ph = String(m.from || '').replace(/\D/g, '');
+            let text = (m.text && m.text.body) || '';
+            if (!text) {
+              const t = m.type;
+              if (t === 'sticker')        text = '🧩 סטיקר';
+              else if (t === 'image')     text = '📷 תמונה' + (m.image && m.image.caption ? ' — ' + m.image.caption : '');
+              else if (t === 'video')     text = '🎬 סרטון' + (m.video && m.video.caption ? ' — ' + m.video.caption : '');
+              else if (t === 'audio')     text = '🎤 הודעה קולית';
+              else if (t === 'document')  text = '📄 קובץ' + (m.document && m.document.filename ? ' — ' + m.document.filename : '');
+              else if (t === 'location')  text = '📍 מיקום';
+              else if (t === 'contacts')  text = '👤 איש קשר';
+              else text = '[הודעה]';
+            }
             const rec = {
               dir: 'in',
               phone: ph,
               id: m.id || '',   // wamid — needed to mark-as-read on reply
               name: (v.contacts && v.contacts[0] && v.contacts[0].profile && v.contacts[0].profile.name) || '',
               type: m.type || '',
-              text: (m.text && m.text.body) || m.caption || ('[' + (m.type || 'הודעה') + ']'),
+              text,
               ts: (Number(m.timestamp || 0) * 1000) || Date.now()
             };
             if (rec.name && ph) names[ph] = names[ph] || rec.name;

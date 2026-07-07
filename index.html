@@ -6241,7 +6241,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v391</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v392</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16024,6 +16024,10 @@ setTimeout(() => { try { window._briefKick(); } catch (_) {} }, 12000);
       const extra = (ev && ev.notification && ev.notification.extra) || {};
       if (!extra.moneyNotif) return;
       try { chooseMode('business'); } catch (_) {}
+      if (extra.moneyNotif === 'wa') {
+        try { showPage('whatsapp'); } catch (_) {}
+        return;
+      }
       try { showPage('income'); } catch (_) {}
       if (extra.moneyNotif === 'dunning') {
         setTimeout(() => { try { openDunningModal(); } catch (_) {} }, 450);
@@ -16145,7 +16149,46 @@ function _waProcess(raw) {
     }));
   } catch (_) {}
   try { _waLobbyBadge(); } catch (_) {}
+  try { _waNotifKick(list.filter(c => c.waiting).length); } catch (_) {}
   return list;
+}
+// ── Hourly nudge: "X אנשים מחכים לתשובה" — rescheduled whenever the
+//    count changes, quiet hours 22:00–08:00, cleared at zero. ──
+let _waNotifT = null, _waNotifLast = -1;
+function _waNotifKick(count) {
+  if (count === _waNotifLast) return;
+  clearTimeout(_waNotifT);
+  _waNotifT = setTimeout(() => {
+    _waNotifLast = count;
+    _waNotifSchedule(count).catch(() => {});
+  }, 12000);
+}
+async function _waNotifSchedule(count) {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+  try { if ((await LN.checkPermissions()).display !== 'granted') return; } catch (_) { return; }
+  const ids = [];
+  for (let i = 0; i < 12; i++) ids.push(710100 + i);
+  try { await LN.cancel({ notifications: ids.map(id => ({ id })) }); } catch (_) {}
+  if (!count) return;
+  const body = count === 1 ? 'לקוח אחד מחכה לתשובה בוואטסאפ' : count + ' אנשים מחכים לתשובה בוואטסאפ';
+  const base = new Date();
+  base.setMinutes(0, 0, 0);
+  const notifs = [];
+  let slot = 0;
+  for (let i = 1; slot < 12 && i <= 26; i++) {
+    const at = new Date(base.getTime() + i * 3600000);
+    const h = at.getHours();
+    if (h < 8 || h >= 22) continue;
+    notifs.push({
+      id: 710100 + slot, title: '💬 מחכים לתשובה שלך', body,
+      schedule: { at, allowWhileIdle: true }, sound: 'default',
+      threadIdentifier: 'wa-waiting', extra: { moneyNotif: 'wa' }
+    });
+    slot++;
+  }
+  if (notifs.length) { try { await LN.schedule({ notifications: notifs }); } catch (_) {} }
 }
 // ── Lobby badge: how many people await a reply, one tap to the list ──
 function _waLobbyBadge() {
