@@ -1,0 +1,18 @@
+# Cloudflare Worker config — the deploy-worker GitHub Action reads
+# this and deploys whatsapp-worker.js on every push that touches it.
+# TOML (not jsonc) because wrangler-action's default wrangler 3.x
+# doesn't parse jsonc configs.
+#
+# Secrets (WHATSAPP_TOKEN, SEND_SECRET, GEMINI_KEY, APNS_*) live in
+# the Cloudflare dashboard and survive deploys. The cron trigger is
+# applied automatically on each deploy.
+
+name = "ravid-whatsapp"
+main = "whatsapp-worker.js"
+compatibility_date = "2025-05-01"
+workers_dev = true
+
+[triggers]
+# Every minute: due scheduled messages go out on the minute; the
+# hourly "X מחכים לתשובה" push fires only at minute 0.
+crons = ["* * * * *"]
