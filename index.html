@@ -6222,7 +6222,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v388</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v389</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16125,22 +16125,26 @@ function _waListen() {
       try { localStorage.setItem('wa_names_cache', JSON.stringify(_waNames)); } catch (_) {}
       _waPaintIfVisible();
     });
-    // child_added = delta push: a new message triggers ONE tiny event
-    // and paints immediately, instead of re-shipping a full snapshot.
+    // Boot = ONE atomic full snapshot. Never paint partial data —
+    // partial paints flashed "אף אחד לא מחכה" over the real list on
+    // slow connections. After boot, child_added = delta push: a new
+    // message is one tiny event, painted immediately.
     const q = firebaseDB.ref('whatsapp/msgs').limitToLast(600);
     let boot = true;
+    q.once('value', s => {
+      _waRaw = s.val() || {};
+      boot = false;
+      _waProcess(_waRaw);
+      _waPaintIfVisible();
+    });
     q.on('child_added', s => {
       _waRaw[s.key] = s.val();
-      if (boot) {
-        // initial backlog: coalesce the burst, then flip to live mode
-        clearTimeout(_waBootT);
-        _waBootT = setTimeout(() => { boot = false; _waProcess(_waRaw); _waPaintIfVisible(); }, 80);
-      } else {
-        _waProcess(_waRaw);
-        _waPaintIfVisible();
-      }
+      if (!boot) { _waProcess(_waRaw); _waPaintIfVisible(); }
     });
-    q.on('child_removed', s => { delete _waRaw[s.key]; });
+    q.on('child_removed', s => {
+      delete _waRaw[s.key];
+      if (!boot) _waProcess(_waRaw);
+    });
     // Connection watchdog: iOS loves killing the socket — the moment
     // Firebase reports offline, shove it back online.
     firebaseDB.ref('.info/connected').on('value', s => {
