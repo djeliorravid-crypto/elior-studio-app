@@ -3758,6 +3758,10 @@
       font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 12px;
       border: 1px solid var(--border);
     }
+    .wa-lead-chip {
+      flex-shrink: 0; background: #b8801f; color: #fff;
+      font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 12px;
+    }
     #lobby-wa-badge {
       /* bottom-right corner — mirrors the FAB on the left, clear of
          the lobby tasks box. Lobby overlay is z9998, so 9999. */
@@ -6277,7 +6281,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v398</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v399</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6695,7 +6699,10 @@
   <div class="page" id="page-whatsapp">
     <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <h2>וואטסאפ</h2>
-      <button class="btn btn-ghost btn-sm" onclick="renderWhatsappPage()">רענן</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost btn-sm" id="wa-filter-btn" onclick="waFilterToggle()">לקוחות ולידים</button>
+        <button class="btn btn-ghost btn-sm" onclick="renderWhatsappPage()">רענן</button>
+      </div>
     </div>
     <div class="table-card mp-card" style="border-top:3px solid var(--red)">
       <div class="mp-section-title">ממתינים לתשובה</div>
@@ -16093,6 +16100,8 @@ let _waConvs = null;
 let _waNames = {};
 let _waPhoneBook = {};   // device contacts (native builds) phone → name
 let _waRenames = {};     // his explicit renames — always win
+let _waCliMarks = {};    // phone → true (client) / false (not relevant), synced via Firebase
+try { _waCliMarks = JSON.parse(localStorage.getItem('wa_cli_marks') || '{}') || {}; } catch (_) {}
 try { _waConvs = JSON.parse(localStorage.getItem('wa_cache') || 'null'); } catch (_) {}
 try { _waNames = JSON.parse(localStorage.getItem('wa_names_cache') || '{}') || {}; } catch (_) {}
 try { _waPhoneBook = JSON.parse(localStorage.getItem('wa_phone_book') || '{}') || {}; } catch (_) {}
@@ -16162,6 +16171,15 @@ function _waProcess(raw) {
     const cl = clients.find(x => _waPhone(x.phone) === c.phone);
     if (cl) c.client = cl.name;
     c.waiting = c.lastDir === 'in' && c.lastInTs > (dis[c.phone] || 0);
+    // Classification — his ask: only CUSTOMERS and NEW numbers count.
+    //   client  = app client card OR marked לקוח in the inbox
+    //   hidden  = explicitly marked not-relevant
+    //   known   = in his phone book but not a client (friends/family) → filtered out
+    //   lead    = unknown number reaching out → shown with a tag
+    const mark = _waCliMarks[c.phone];
+    c.cls = (c.client || mark === true) ? 'client'
+      : (mark === false ? 'hidden'
+      : (_waPhoneBook[c.phone] ? 'known' : 'lead'));
     // Unread = incoming messages since his last reply (or dismiss) —
     // "he sent 3 separate messages" shows as a count + all of them.
     const cutoff = Math.max(c.lastOutTs, dis[c.phone] || 0);
@@ -16175,7 +16193,7 @@ function _waProcess(raw) {
   // Persist for instant paint on next launch + morning-brief summary.
   try { localStorage.setItem('wa_cache', JSON.stringify(list.slice(0, 60))); } catch (_) {}
   try {
-    const waiting = list.filter(c => c.waiting);
+    const waiting = list.filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead'));
     localStorage.setItem('wa_waiting_summary', JSON.stringify({
       n: waiting.length,
       oldestTs: waiting.length ? Math.min.apply(null, waiting.map(c => c.lastInTs)) : 0,
@@ -16183,7 +16201,7 @@ function _waProcess(raw) {
     }));
   } catch (_) {}
   try { _waLobbyBadge(); } catch (_) {}
-  try { _waNotifKick(list.filter(c => c.waiting).length); } catch (_) {}
+  try { _waNotifKick(list.filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead')).length); } catch (_) {}
   return list;
  } catch (e) {
   // One malformed record must never freeze the pipeline — keep the
@@ -16234,10 +16252,13 @@ async function _waNotifSchedule(count) {
   if (notifs.length) { try { await LN.schedule({ notifications: notifs }); } catch (_) {} }
 }
 // ── Lobby badge: how many people await a reply, one tap to the list ──
+function _waWaitingCount() {
+  return (_waConvs || []).filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead')).length;
+}
 function _waLobbyBadge() {
   const el = document.getElementById('lobby-wa-badge');
   if (!el) return;
-  const n = (_waConvs || []).filter(c => c.waiting).length;
+  const n = _waWaitingCount();
   if (n > 0) {
     el.textContent = '💬 ' + (n === 1 ? 'הודעה אחת מחכה לתשובה' : n + ' הודעות מחכות לתשובה');
     el.style.display = 'block';
@@ -16265,6 +16286,12 @@ function _waListen() {
     firebaseDB.ref('whatsapp/names').on('value', s => {
       _waNames = s.val() || {};
       try { localStorage.setItem('wa_names_cache', JSON.stringify(_waNames)); } catch (_) {}
+      _waPaintIfVisible();
+    });
+    firebaseDB.ref('whatsapp/clients').on('value', s => {
+      _waCliMarks = s.val() || {};
+      try { localStorage.setItem('wa_cli_marks', JSON.stringify(_waCliMarks)); } catch (_) {}
+      if (_waRaw && Object.keys(_waRaw).length) _waProcess(_waRaw);
       _waPaintIfVisible();
     });
     // Boot = ONE atomic full snapshot. Never paint partial data —
@@ -16346,7 +16373,9 @@ function _waRow(c, isWaiting) {
   }
   // Several unread messages → count chip + all of them (up to 3) in
   // the bubble, each on its own line.
-  const countChip = (c.unread > 1) ? '<span class="wa-count">' + c.unread + ' הודעות</span>' : '';
+  const countChip = ((c.unread > 1) ? '<span class="wa-count">' + c.unread + ' הודעות</span>' : '')
+    + (c.cls === 'lead' ? '<span class="wa-lead-chip">ליד חדש</span>' : '')
+    + (c.cls === 'known' ? '<span class="wa-count" style="opacity:.7">לא לקוח</span>' : '');
   const bubble = (c.freshTexts && c.freshTexts.length > 1)
     ? c.freshTexts.map(t => '· ' + _escape(String(t).slice(0, 200))).join('<br>')
     : '״' + msg + '״';
@@ -16380,9 +16409,34 @@ function _waRow(c, isWaiting) {
     +   '<button onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח בוואטסאפ</button>'
     +   '<span>·</span>'
     +   '<button onclick="waDismiss(\'' + phoneEsc + '\')">סמן טופל</button>'
+    +   (c.cls === 'lead' || c.cls === 'known'
+        ? '<span>·</span><button style="color:var(--green)" onclick="waMarkClient(\'' + phoneEsc + '\', true)">סמן כלקוח</button>'
+        : '')
+    +   (c.cls === 'lead'
+        ? '<span>·</span><button onclick="waMarkClient(\'' + phoneEsc + '\', false)">לא רלוונטי</button>'
+        : '')
+    +   (c.cls === 'client' && !c.client
+        ? '<span>·</span><button onclick="waMarkClient(\'' + phoneEsc + '\', null)">הסר סימון לקוח</button>'
+        : '')
     + '</div>'
     + '</div>';
 }
+window.waFilterToggle = function() {
+  let cur = false;
+  try { cur = localStorage.getItem('wa_show_all') === '1'; } catch (_) {}
+  try { localStorage.setItem('wa_show_all', cur ? '0' : '1'); } catch (_) {}
+  _waPaint();
+};
+window.waMarkClient = function(phone, val) {
+  if (val === true) _waCliMarks[phone] = true;
+  else if (val === false) _waCliMarks[phone] = false;
+  else delete _waCliMarks[phone];
+  try { localStorage.setItem('wa_cli_marks', JSON.stringify(_waCliMarks)); } catch (_) {}
+  try { if (firebaseDB) firebaseDB.ref('whatsapp/clients/' + phone).set(val); } catch (_) {}
+  _waProcess(_waRaw);
+  _waPaint();
+  toast(val === true ? '✓ סומן כלקוח' : val === false ? 'הוסתר מהרשימה' : 'הסימון הוסר');
+};
 window.waRename = function(phone) {
   const cur = _waRenames[phone] || _waPhoneBook[phone] || _waNames[phone] || '';
   const v = prompt('שם לאיש הקשר הזה (' + _waPhonePretty(phone) + '):', cur);
@@ -16712,7 +16766,12 @@ function _waPaint() {
     focusId = ae.id;
     caret = (typeof ae.selectionStart === 'number') ? ae.selectionStart : (ae.value || '').length;
   }
-  const waiting = _waConvs.filter(c => c.waiting).sort((a, b) => a.lastInTs - b.lastInTs);
+  const showAll = (() => { try { return localStorage.getItem('wa_show_all') === '1'; } catch (_) { return false; } })();
+  const waiting = _waConvs
+    .filter(c => c.waiting && (showAll || c.cls === 'client' || c.cls === 'lead'))
+    .sort((a, b) => a.lastInTs - b.lastInTs);
+  const fbtn = document.getElementById('wa-filter-btn');
+  if (fbtn) fbtn.textContent = showAll ? 'מציג הכל' : 'לקוחות ולידים';
   // Live pipeline status — tells us in one glance whether events
   // reach the device, when the last one landed, and where the epoch
   // sits. Tap to rewind the epoch if it ever resets by mistake.
