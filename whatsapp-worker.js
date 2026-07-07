@@ -122,8 +122,12 @@ export default {
         return json({ error: (uj.error && uj.error.message) || ('upload ' + up.status) });
       }
       await markRead(b.readId);
-      // 2) send it as an audio message
-      const r = await graphMsg({ messaging_product: 'whatsapp', to, type: 'audio', audio: { id: uj.id } });
+      // 2) send as a REAL voice note (PTT with waveform) — voice:true
+      //    is what makes WhatsApp render it like a normal recording,
+      //    not an audio-file attachment. Only valid for OGG/Opus.
+      const isOpus = mime.indexOf('ogg') !== -1;
+      const audioObj = isOpus ? { id: uj.id, voice: true } : { id: uj.id };
+      const r = await graphMsg({ messaging_product: 'whatsapp', to, type: 'audio', audio: audioObj });
       const j = await r.json().catch(() => ({}));
       if (r.ok) {
         await fetch(FIREBASE + '/msgs.json', {
