@@ -3762,6 +3762,14 @@
       flex-shrink: 0; background: #b8801f; color: #fff;
       font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 12px;
     }
+    .wa-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .wa-tabs button {
+      flex: 1; padding: 10px 12px; border-radius: 12px;
+      border: 1.5px solid var(--border); background: var(--surface);
+      color: var(--text-muted); font-size: 13.5px; font-weight: 800;
+      font-family: inherit; cursor: pointer;
+    }
+    .wa-tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
     #lobby-wa-badge {
       /* bottom-right corner — mirrors the FAB on the left, clear of
          the lobby tasks box. Lobby overlay is z9998, so 9999. */
@@ -6281,7 +6289,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v400</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v401</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6704,9 +6712,13 @@
         <button class="btn btn-ghost btn-sm" onclick="renderWhatsappPage()">רענן</button>
       </div>
     </div>
-    <div class="table-card mp-card" style="border-top:3px solid var(--red)">
-      <div class="mp-section-title">ממתינים לתשובה</div>
-      <div class="mp-sub">שיחות שההודעה האחרונה בהן היא מהלקוח — ואתה עוד לא ענית. עונים בוואטסאפ או מסמנים טופל — והשורה נעלמת.</div>
+    <div class="wa-tabs">
+      <button id="wa-tab-waiting" onclick="waTab('waiting')">ממתינים לתשובה</button>
+      <button id="wa-tab-clients" onclick="waTab('clients')">לקוחות</button>
+    </div>
+    <div class="table-card mp-card" id="wa-main-card" style="border-top:3px solid var(--red)">
+      <div class="mp-section-title" id="wa-card-title">ממתינים לתשובה</div>
+      <div class="mp-sub" id="wa-card-sub">שיחות שההודעה האחרונה בהן היא מהלקוח — ואתה עוד לא ענית. עונים בוואטסאפ או מסמנים טופל — והשורה נעלמת.</div>
       <div id="wa-waiting"></div>
     </div>
   </div>
@@ -16762,11 +16774,52 @@ window.waVoiceSend = async function(phone) {
     if (btn) { btn.textContent = '✓ שלח את ההקלטה'; btn.disabled = false; }
   }
 };
+function _waTab() { try { return localStorage.getItem('wa_tab') || 'waiting'; } catch (_) { return 'waiting'; } }
+window.waTab = function(t) {
+  try { localStorage.setItem('wa_tab', t); } catch (_) {}
+  _waPaint();
+};
+function _waPaintTabs(tab) {
+  const w = document.getElementById('wa-tab-waiting');
+  const c = document.getElementById('wa-tab-clients');
+  if (w) w.classList.toggle('on', tab === 'waiting');
+  if (c) c.classList.toggle('on', tab === 'clients');
+  const title = document.getElementById('wa-card-title');
+  const sub = document.getElementById('wa-card-sub');
+  const card = document.getElementById('wa-main-card');
+  if (title) title.textContent = tab === 'clients' ? 'הלקוחות שלי' : 'ממתינים לתשובה';
+  if (sub) sub.textContent = tab === 'clients'
+    ? 'כל מי שמסומן לקוח — אוטומטית (ענית לו מהאפליקציה), מכרטיס לקוח, או בסימון ידני.'
+    : 'שיחות שההודעה האחרונה בהן היא מהלקוח — ואתה עוד לא ענית. עונים בוואטסאפ או מסמנים טופל — והשורה נעלמת.';
+  if (card) card.style.borderTopColor = tab === 'clients' ? 'var(--green)' : 'var(--red)';
+}
+function _waPaintClients(wEl) {
+  const convs = (_waConvs || []).filter(c => c.cls === 'client').sort((a, b) => b.lastTs - a.lastTs);
+  const inConvs = {};
+  convs.forEach(c => { inConvs[c.phone] = true; });
+  // marked clients with no recent conversation still belong on the list
+  const extra = Object.keys(_waCliMarks)
+    .filter(p => _waCliMarks[p] === true && !inConvs[p])
+    .map(p => ({ phone: p }));
+  let html = convs.map(c => _waRow(c, false)).join('');
+  html += extra.map(p => {
+    const phoneEsc = String(p.phone).replace(/[^0-9]/g, '');
+    return '<div class="dun-row">'
+      + '<div class="dun-info"><div class="dun-name" onclick="waRename(\'' + phoneEsc + '\')" style="cursor:pointer">' + _escape(_waName(p)) + '</div>'
+      + '<div class="dun-meta">אין הודעות אחרונות</div></div>'
+      + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
+      + '</div>';
+  }).join('');
+  wEl.innerHTML = html || '<div class="mp-empty" style="padding:12px 0">עוד אין לקוחות מסומנים — הם יתווספו לבד כשתענה להם מהאפליקציה.</div>';
+}
 function _waPaint() {
   const wEl = document.getElementById('wa-waiting');
   if (!wEl) return;
   // Never rebuild the DOM while a finger is holding the record button.
   if (_waRecState) return;
+  const tab = _waTab();
+  _waPaintTabs(tab);
+  if (tab === 'clients') { _waPaintClients(wEl); return; }
   if (!_waConvs) {
     wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">' + (_waListening ? 'טוען שיחות…' : 'מתחבר לענן…') + '</div>';
     return;
