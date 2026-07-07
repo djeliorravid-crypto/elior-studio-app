@@ -3757,6 +3757,20 @@
       font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 12px;
       border: 1px solid var(--border);
     }
+    #lobby-wa-badge {
+      display: block; margin: 14px auto 0; padding: 9px 18px;
+      background: var(--red); color: #fff; border: none; border-radius: 20px;
+      font-size: 13.5px; font-weight: 800; font-family: inherit; cursor: pointer;
+      box-shadow: 0 6px 18px rgba(200,60,60,0.35);
+    }
+    #lobby-wa-badge:active { transform: scale(0.96); }
+    .wa-mic {
+      flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px;
+      border: 1.5px solid var(--border); background: var(--surface2);
+      font-size: 17px; cursor: pointer; font-family: inherit;
+    }
+    .wa-mic.rec { background: var(--red); border-color: var(--red); animation: waPulse 1s infinite; }
+    @keyframes waPulse { 50% { opacity: 0.6; } }
     .wa-item-msg {
       margin: 8px 0 10px; font-size: 15px; line-height: 1.5; color: var(--text);
       background: var(--surface2); border-radius: 12px; padding: 10px 13px;
@@ -6227,7 +6241,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v390</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v391</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6278,6 +6292,9 @@
       <div class="mode-card-sub">משקל · תזונה · מאמן</div>
     </div>
   </div>
+
+  <!-- WhatsApp waiting badge — shows only when someone awaits a reply -->
+  <button id="lobby-wa-badge" style="display:none" onclick="waGoInbox()"></button>
 
   <!-- ===== Lobby tasks: visible BEFORE you pick a mode ===== -->
   <div class="lobby-tasks" id="lobby-tasks">
@@ -16097,7 +16114,7 @@ function _waProcess(raw) {
     if (m.dir === 'in' && m.name) c.name = m.name;
     if (m.ts >= c.lastTs) { c.lastTs = m.ts; c.lastDir = m.dir; c.lastText = m.text || ''; }
     if (m.dir === 'in') {
-      if (m.ts > c.lastInTs) c.lastInTs = m.ts;
+      if (m.ts > c.lastInTs) { c.lastInTs = m.ts; if (m.id) c.lastInId = m.id; }
       c.ins.push({ ts: m.ts, text: m.text || '' });
     } else if (m.ts > c.lastOutTs) c.lastOutTs = m.ts;
   });
@@ -16127,8 +16144,25 @@ function _waProcess(raw) {
       at: Date.now()
     }));
   } catch (_) {}
+  try { _waLobbyBadge(); } catch (_) {}
   return list;
 }
+// ── Lobby badge: how many people await a reply, one tap to the list ──
+function _waLobbyBadge() {
+  const el = document.getElementById('lobby-wa-badge');
+  if (!el) return;
+  const n = (_waConvs || []).filter(c => c.waiting).length;
+  if (n > 0) {
+    el.textContent = '💬 ' + (n === 1 ? 'הודעה אחת מחכה לתשובה' : n + ' הודעות מחכות לתשובה');
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+window.waGoInbox = function() {
+  chooseMode('business');
+  showPage('whatsapp');
+};
 let _waRaw = {};
 let _waBootT = null;
 function _waListen() {
@@ -16218,6 +16252,7 @@ function _waRow(c, isWaiting) {
     + '<div class="wa-replyrow">'
     +   '<input id="wa-in-' + phoneEsc + '" placeholder="כתוב תשובה…" '
     +   'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
+    +   (_waMicOk ? '<button class="wa-mic" id="wa-mic-' + phoneEsc + '" onclick="waVoice(\'' + phoneEsc + '\')" title="הקלטה קולית">🎤</button>' : '')
     +   '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
     + '</div>'
     + '<div class="wa-item-actions">'
@@ -16239,21 +16274,32 @@ window.waRename = function(phone) {
   _waPaint();
   toast('✓ השם נשמר');
 };
-window.waReply = async function(phone) {
-  const inp = document.getElementById('wa-in-' + phone);
-  const text = (inp && inp.value || '').trim();
-  if (!text) { toast('כתוב תשובה קודם'); return; }
+const WA_WORKER = 'https://ravid-whatsapp.djeliorravid.workers.dev';
+function _waSecret() {
   let sec = '';
   try { sec = localStorage.getItem('wa_send_secret') || ''; } catch (_) {}
   if (!sec) {
     sec = (prompt('פעם ראשונה: הזן את קוד השליחה (SEND_SECRET שהגדרת ב-Cloudflare):') || '').trim();
-    if (!sec) return;
-    try { localStorage.setItem('wa_send_secret', sec); } catch (_) {}
+    if (sec) { try { localStorage.setItem('wa_send_secret', sec); } catch (_) {} }
   }
+  return sec;
+}
+function _waLastInId(phone) {
+  const c = (_waConvs || []).find(x => x.phone === phone);
+  return (c && c.lastInId) || null;
+}
+window.waReply = async function(phone) {
+  const inp = document.getElementById('wa-in-' + phone);
+  const text = (inp && inp.value || '').trim();
+  if (!text) { toast('כתוב תשובה קודם'); return; }
+  const sec = _waSecret();
+  if (!sec) return;
   const btn = document.getElementById('wa-btn-' + phone);
   if (btn) { btn.disabled = true; btn.textContent = 'שולח…'; }
   try {
-    const r = await _mptHttp('POST', 'https://ravid-whatsapp.djeliorravid.workers.dev/send', { secret: sec, to: phone, text });
+    // readId: the customer's latest message gets marked as READ at
+    // Meta, so WhatsApp stops showing the chat as unanswered.
+    const r = await _mptHttp('POST', WA_WORKER + '/send', { secret: sec, to: phone, text, readId: _waLastInId(phone) });
     if (r.ok && r.json && r.json.ok) {
       toast('✓ נשלח בוואטסאפ');
       if (window.haptic) window.haptic.success();
@@ -16271,6 +16317,66 @@ window.waReply = async function(phone) {
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'שלח'; }
   }
+};
+
+// ── Voice replies: record → worker uploads to Meta → sent as audio.
+//    Mic access CRASHES builds without NSMicrophoneUsageDescription,
+//    so the button only exists on builds newer than the permission
+//    (build number = timestamp, set in codemagic). ──
+let _waMicOk = false;
+(async () => {
+  try {
+    const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (!App || !App.getInfo) return;
+    const info = await App.getInfo();
+    if (Number(info.build) >= 1783450000) { _waMicOk = true; _waPaintIfVisible(); }
+  } catch (_) {}
+})();
+let _waRec = null;
+window.waVoice = async function(phone) {
+  const btn = document.getElementById('wa-mic-' + phone);
+  if (_waRec) { try { _waRec.stop(); } catch (_) {} return; }
+  const sec = _waSecret();
+  if (!sec) return;
+  let stream = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (_) { toast('אין גישה למיקרופון'); return; }
+  const chunks = [];
+  const mr = new MediaRecorder(stream);
+  _waRec = mr;
+  if (btn) { btn.classList.add('rec'); btn.textContent = '⏹'; }
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop());
+    _waRec = null;
+    if (btn) { btn.classList.remove('rec'); btn.textContent = '🎤'; }
+    const blob = new Blob(chunks, { type: mr.mimeType || 'audio/mp4' });
+    if (blob.size < 1500) { toast('הקלטה קצרה מדי'); return; }
+    if (blob.size > 8 * 1024 * 1024) { toast('ההקלטה ארוכה מדי'); return; }
+    toast('⏳ שולח הקלטה…');
+    try {
+      const b64 = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(String(fr.result).split(',')[1]);
+        fr.onerror = rej;
+        fr.readAsDataURL(blob);
+      });
+      const r = await _mptHttp('POST', WA_WORKER + '/send-voice', {
+        secret: sec, to: phone, audio: b64,
+        mime: (mr.mimeType || 'audio/mp4').split(';')[0],
+        readId: _waLastInId(phone)
+      });
+      if (r.ok && r.json && r.json.ok) {
+        toast('✓ ההקלטה נשלחה');
+        if (window.haptic) window.haptic.success();
+      } else {
+        toast('⚠️ ' + ((r.json && r.json.error) || ('שגיאה ' + r.status)));
+      }
+    } catch (e) { toast('⚠️ ' + (e && e.message || 'שליחה נכשלה')); }
+  };
+  mr.start();
+  setTimeout(() => { if (_waRec === mr) { try { mr.stop(); } catch (_) {} } }, 60000);
 };
 function _waPaint() {
   const wEl = document.getElementById('wa-waiting');
@@ -16492,6 +16598,7 @@ function switchMode() {
   document.getElementById('mode-screen').classList.remove('hidden');
   try { renderLobbyTasks(); } catch(e) {}
   try { refreshLobbyGreeting(); } catch(e) {}
+  try { _waLobbyBadge(); } catch(e) {}
 }
 
 function showMode(mode) {

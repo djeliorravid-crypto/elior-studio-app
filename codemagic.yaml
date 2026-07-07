@@ -95,6 +95,9 @@ workflows:
           # saved contact names (read-only, stays on device).
           /usr/libexec/PlistBuddy -c "Delete :NSContactsUsageDescription" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :NSContactsUsageDescription string 'גישה לאנשי הקשר משמשת להצגת שמות בשיחות וואטסאפ בעסק — הנתונים נשארים על המכשיר בלבד.'" "$PLIST"
+          # Microphone — voice replies recorded in the WhatsApp inbox.
+          /usr/libexec/PlistBuddy -c "Delete :NSMicrophoneUsageDescription" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'המיקרופון משמש להקלטת תשובות קוליות שנשלחות בוואטסאפ ללקוחות.'" "$PLIST"
           # Quick actions — rebuild from scratch so the array stays in sync.
           /usr/libexec/PlistBuddy -c "Delete :UIApplicationShortcutItems" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems array" "$PLIST"

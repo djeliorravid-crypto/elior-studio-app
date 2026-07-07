@@ -51,7 +51,20 @@ export default {
 
     if (request.method !== 'POST') return new Response('ok', { status: 200 });
 
-    // ── /send — reply from the app ──
+    // ── shared bits for the app-facing endpoints ──
+    const graphMsg = (body) => fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const markRead = async (id) => {
+      if (!id) return;
+      try {
+        await graphMsg({ messaging_product: 'whatsapp', status: 'read', message_id: id });
+      } catch (_) {}
+    };
+
+    // ── /send — text reply from the app ──
     if (url.pathname === '/send') {
       let b = null;
       try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
@@ -62,14 +75,8 @@ export default {
       const to = String(b.to || '').replace(/\D/g, '');
       const text = String(b.text || '').slice(0, 4000);
       if (!to || !text) return json({ error: 'missing to/text' }, 400);
-      const r = await fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text } })
-      });
+      await markRead(b.readId);   // customer's message → read (no more unanswered look)
+      const r = await graphMsg({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text } });
       const j = await r.json().catch(() => ({}));
       if (r.ok) {
         // API sends don't echo back on the webhook — record ourselves
@@ -77,6 +84,51 @@ export default {
         await fetch(FIREBASE + '/msgs.json', {
           method: 'POST',
           body: JSON.stringify({ dir: 'out', phone: to, text, ts: Date.now(), via: 'app' })
+        });
+        return json({ ok: true });
+      }
+      return json({ error: (j.error && j.error.message) || ('graph ' + r.status), code: j.error && j.error.code });
+    }
+
+    // ── /send-voice — recorded audio reply from the app ──
+    if (url.pathname === '/send-voice') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !env.SEND_SECRET || !b || b.secret !== env.SEND_SECRET) {
+        return json({ error: 'forbidden' }, 403);
+      }
+      if (!env.WHATSAPP_TOKEN) return json({ error: 'WHATSAPP_TOKEN not configured' }, 500);
+      const to = String(b.to || '').replace(/\D/g, '');
+      const mime = String(b.mime || 'audio/mp4');
+      if (!to || !b.audio) return json({ error: 'missing to/audio' }, 400);
+      let bytes;
+      try {
+        const bin = atob(b.audio);
+        bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      } catch (_) { return json({ error: 'bad audio encoding' }, 400); }
+      // 1) upload the media to Meta
+      const fd = new FormData();
+      fd.append('messaging_product', 'whatsapp');
+      fd.append('type', mime);
+      fd.append('file', new Blob([bytes], { type: mime }), 'voice.m4a');
+      const up = await fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/media', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN },
+        body: fd
+      });
+      const uj = await up.json().catch(() => ({}));
+      if (!up.ok || !uj.id) {
+        return json({ error: (uj.error && uj.error.message) || ('upload ' + up.status) });
+      }
+      await markRead(b.readId);
+      // 2) send it as an audio message
+      const r = await graphMsg({ messaging_product: 'whatsapp', to, type: 'audio', audio: { id: uj.id } });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        await fetch(FIREBASE + '/msgs.json', {
+          method: 'POST',
+          body: JSON.stringify({ dir: 'out', phone: to, text: '[הקלטה קולית]', type: 'audio', ts: Date.now(), via: 'app' })
         });
         return json({ ok: true });
       }
@@ -107,6 +159,7 @@ export default {
             const rec = {
               dir: 'in',
               phone: ph,
+              id: m.id || '',   // wamid — needed to mark-as-read on reply
               name: (v.contacts && v.contacts[0] && v.contacts[0].profile && v.contacts[0].profile.name) || '',
               type: m.type || '',
               text: (m.text && m.text.body) || m.caption || ('[' + (m.type || 'הודעה') + ']'),
