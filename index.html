@@ -6222,7 +6222,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v387</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v388</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16043,23 +16043,21 @@ try { _waRenames = JSON.parse(localStorage.getItem('wa_renames') || '{}') || {};
 //    plugin): read once a day, phone→name stays ON DEVICE ONLY. ──
 async function _waSyncPhoneBook() {
   try {
-    const C = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Contacts;
-    if (!C || !C.getContacts) return;
+    // Our own local ContactsBridge plugin (ships in the next build) —
+    // zero third-party dependencies, same pattern as HealthKitBridge.
+    const C = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.ContactsBridge;
+    if (!C || !C.getAll) return;
     let last = 0;
     try { last = Number(localStorage.getItem('wa_phone_book_ts')) || 0; } catch (_) {}
     if (Date.now() - last < 24 * 3600 * 1000 && Object.keys(_waPhoneBook).length) return;
-    if (C.requestPermissions) {
-      const p = await C.requestPermissions();
-      if (p && p.contacts && p.contacts !== 'granted') return;
-    }
-    const res = await C.getContacts({ projection: { name: true, phones: true } });
+    const res = await C.getAll();
+    if (!res || !res.granted) return;
     const book = {};
-    (res && res.contacts || []).forEach(ct => {
-      const nm = (ct.name && (ct.name.display || ct.name.given)) || '';
-      if (!nm) return;
+    (res.contacts || []).forEach(ct => {
+      if (!ct || !ct.name) return;
       (ct.phones || []).forEach(ph => {
-        const d = _waPhone(ph.number);
-        if (d) book[d] = nm;
+        const d = _waPhone(ph);
+        if (d) book[d] = ct.name;
       });
     });
     if (Object.keys(book).length) {
@@ -16069,6 +16067,7 @@ async function _waSyncPhoneBook() {
         localStorage.setItem('wa_phone_book_ts', String(Date.now()));
       } catch (_) {}
       _waPaintIfVisible();
+      toast('✓ שמות מאנשי הקשר נטענו (' + Object.keys(book).length + ')');
     }
   } catch (_) {}
 }
@@ -16115,6 +16114,8 @@ function _waProcess(raw) {
   } catch (_) {}
   return list;
 }
+let _waRaw = {};
+let _waBootT = null;
 function _waListen() {
   if (_waListening || !firebaseDB) return;
   _waListening = true;
@@ -16124,9 +16125,34 @@ function _waListen() {
       try { localStorage.setItem('wa_names_cache', JSON.stringify(_waNames)); } catch (_) {}
       _waPaintIfVisible();
     });
-    firebaseDB.ref('whatsapp/msgs').limitToLast(600).on('value', s => {
-      _waProcess(s.val() || {});
-      _waPaintIfVisible();
+    // child_added = delta push: a new message triggers ONE tiny event
+    // and paints immediately, instead of re-shipping a full snapshot.
+    const q = firebaseDB.ref('whatsapp/msgs').limitToLast(600);
+    let boot = true;
+    q.on('child_added', s => {
+      _waRaw[s.key] = s.val();
+      if (boot) {
+        // initial backlog: coalesce the burst, then flip to live mode
+        clearTimeout(_waBootT);
+        _waBootT = setTimeout(() => { boot = false; _waProcess(_waRaw); _waPaintIfVisible(); }, 80);
+      } else {
+        _waProcess(_waRaw);
+        _waPaintIfVisible();
+      }
+    });
+    q.on('child_removed', s => { delete _waRaw[s.key]; });
+    // Connection watchdog: iOS loves killing the socket — the moment
+    // Firebase reports offline, shove it back online.
+    firebaseDB.ref('.info/connected').on('value', s => {
+      if (s.val() === false) {
+        try { firebase.database().goOnline(); } catch (_) {}
+      }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        try { firebase.database().goOnline(); } catch (_) {}
+        _waPaintIfVisible();
+      }
     });
   } catch (_) { _waListening = false; }
 }

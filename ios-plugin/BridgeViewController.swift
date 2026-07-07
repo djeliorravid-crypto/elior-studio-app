@@ -21,6 +21,7 @@ class BridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(BiometricBridgePlugin())
         bridge?.registerPluginInstance(IosCalendarBridgePlugin())
         bridge?.registerPluginInstance(HealthKitBridgePlugin())
+        bridge?.registerPluginInstance(ContactsBridgePlugin())
 
         // Warm-launch quick action: AppDelegate posts to this
         // NotificationCenter name; we forward to JS so the right
