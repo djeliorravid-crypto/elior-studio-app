@@ -6195,7 +6195,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v380</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v381</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8409,6 +8409,11 @@ function save(key, val) {
   // 6. שינוי בלוז → רענון התראות 30-דקות-לפני של האפליקציה.
   if (key === 'schedule' && typeof window._schedNotifKick === 'function') {
     window._schedNotifKick();
+  }
+  // 7. שינוי בנתונים שמזינים את תדרוך הבוקר → רענון התדרוך.
+  if ((key === 'income' || key === 'schedule' || key === 'my_path') &&
+      typeof window._briefKick === 'function') {
+    window._briefKick();
   }
 }
 
@@ -15866,6 +15871,79 @@ window._moneyNotifKick = function() {
   clearTimeout(_moneyNotifTimer);
   _moneyNotifTimer = setTimeout(() => { _moneyNotifRefresh().catch(() => {}); }, 4000);
 };
+
+// ═════════════════════════════════════════════════════════════════
+//  MORNING BRIEFING — every day at 07:30 the app writes Elior a
+//  personal notification before he even opens it: today's schedule,
+//  open money, yesterday's steps, day-in-process count. Composed
+//  from live data on every launch / data change, scheduled 3 mornings
+//  ahead so it keeps arriving even if he skips a day. IDs 71003x.
+// ═════════════════════════════════════════════════════════════════
+function _briefCompose(targetKey) {
+  let dayLine = '';
+  try {
+    const st = _mptState();
+    if (st.processStart) {
+      const n = Math.round((new Date(targetKey + 'T12:00:00') - new Date(st.processStart + 'T12:00:00')) / 86400000) + 1;
+      if (n > 0) dayLine = 'יום ' + n + ' בתהליך';
+    }
+    const sched = load('schedule')
+      .filter(s => s && s.date === targetKey && /^\d{2}:\d{2}$/.test(s.time || ''))
+      .sort((a, b) => a.time.localeCompare(b.time));
+    const schedLine = sched.length
+      ? '📅 ' + (sched.length === 1 ? 'אירוע אחד' : sched.length + ' אירועים') + ' היום — ' + sched[0].time + ' ' + (sched[0].title || '')
+      : '📅 אין אירועים ביומן — יום פתוח';
+    const open = _dunningList(0);
+    const openTot = open.reduce((s, i) => s + i.amount, 0);
+    const moneyLine = openTot
+      ? (open.length === 1
+          ? '💰 תשלום אחד פתוח בחוץ — ' + _ilsFmt(openTot)
+          : '💰 פתוחים בחוץ ' + _ilsFmt(openTot) + ' מ-' + open.length + ' תשלומים')
+      : '💰 אין כסף פתוח 🎉';
+    const yKey = _mpbDayKey(new Date(new Date(targetKey + 'T12:00:00').getTime() - 86400000));
+    const hs = Number((st.health[yKey] || {}).steps) || 0;
+    const tSteps = Number(st.healthTargets.steps) || 8000;
+    const stepLine = hs
+      ? '👟 אתמול ' + hs.toLocaleString('he-IL') + ' צעדים' + (hs >= tSteps ? ' — היעד הושג!' : ' מתוך ' + tSteps.toLocaleString('he-IL'))
+      : '';
+    return {
+      title: '☀️ הבוקר שלך' + (dayLine ? ' · ' + dayLine : ''),
+      body: [schedLine, moneyLine, stepLine].filter(Boolean).join('\n')
+    };
+  } catch (_) {
+    return { title: '☀️ בוקר טוב', body: 'פתח את האפליקציה למצב העסק והבריאות של היום.' };
+  }
+}
+async function _briefRefresh() {
+  if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+  const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LN) return;
+  try { if ((await LN.checkPermissions()).display !== 'granted') return; } catch (_) { return; }
+  const ids = [710030, 710031, 710032];
+  try { await LN.cancel({ notifications: ids.map(id => ({ id })) }); } catch (_) {}
+  const now = new Date();
+  const notifs = [];
+  for (let k = 0; k < 3; k++) {
+    const at = new Date(now);
+    at.setDate(at.getDate() + k);
+    at.setHours(7, 30, 0, 0);
+    if (at <= now) continue;
+    const targetKey = _mpbDayKey(at);
+    const c = _briefCompose(targetKey);
+    notifs.push({
+      id: ids[k], title: c.title, body: c.body,
+      schedule: { at, allowWhileIdle: true }, sound: 'default',
+      threadIdentifier: 'morning-brief', extra: { brief: 1 }
+    });
+  }
+  if (notifs.length) { try { await LN.schedule({ notifications: notifs }); } catch (_) {} }
+}
+let _briefTimer = null;
+window._briefKick = function() {
+  clearTimeout(_briefTimer);
+  _briefTimer = setTimeout(() => { _briefRefresh().catch(() => {}); }, 8000);
+};
+setTimeout(() => { try { window._briefKick(); } catch (_) {} }, 12000);
 // First schedule pass shortly after launch; tap-handling for money notifs.
 (function setupMoneyNotifs() {
   if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
