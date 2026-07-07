@@ -3752,6 +3752,11 @@
       flex-shrink: 0; background: var(--red); color: #fff;
       font-size: 11.5px; font-weight: 800; padding: 4px 10px; border-radius: 12px;
     }
+    .wa-count {
+      flex-shrink: 0; background: var(--surface3); color: var(--text);
+      font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 12px;
+      border: 1px solid var(--border);
+    }
     .wa-item-msg {
       margin: 8px 0 10px; font-size: 15px; line-height: 1.5; color: var(--text);
       background: var(--surface2); border-radius: 12px; padding: 10px 13px;
@@ -6222,7 +6227,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v389</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v390</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16088,10 +16093,13 @@ function _waProcess(raw) {
   const msgs = Object.keys(raw || {}).map(k => raw[k]).filter(m => m && m.phone && m.ts && m.ts >= epoch);
   const conv = {};
   msgs.forEach(m => {
-    const c = conv[m.phone] = conv[m.phone] || { phone: String(m.phone), name: '', lastTs: 0, lastDir: '', lastText: '', lastInTs: 0 };
+    const c = conv[m.phone] = conv[m.phone] || { phone: String(m.phone), name: '', lastTs: 0, lastDir: '', lastText: '', lastInTs: 0, lastOutTs: 0, ins: [] };
     if (m.dir === 'in' && m.name) c.name = m.name;
     if (m.ts >= c.lastTs) { c.lastTs = m.ts; c.lastDir = m.dir; c.lastText = m.text || ''; }
-    if (m.dir === 'in' && m.ts > c.lastInTs) c.lastInTs = m.ts;
+    if (m.dir === 'in') {
+      if (m.ts > c.lastInTs) c.lastInTs = m.ts;
+      c.ins.push({ ts: m.ts, text: m.text || '' });
+    } else if (m.ts > c.lastOutTs) c.lastOutTs = m.ts;
   });
   const dis = _waDismissed();
   const clients = load('clients');
@@ -16099,6 +16107,13 @@ function _waProcess(raw) {
     const cl = clients.find(x => _waPhone(x.phone) === c.phone);
     if (cl) c.client = cl.name;
     c.waiting = c.lastDir === 'in' && c.lastInTs > (dis[c.phone] || 0);
+    // Unread = incoming messages since his last reply (or dismiss) —
+    // "he sent 3 separate messages" shows as a count + all of them.
+    const cutoff = Math.max(c.lastOutTs, dis[c.phone] || 0);
+    const fresh = c.ins.filter(m => m.ts > cutoff).sort((a, b) => a.ts - b.ts);
+    c.unread = fresh.length;
+    c.freshTexts = fresh.slice(-3).map(m => m.text);
+    delete c.ins;
     return c;
   }).sort((a, b) => b.lastTs - a.lastTs);
   _waConvs = list;
@@ -16187,12 +16202,19 @@ function _waRow(c, isWaiting) {
       + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
       + '</div>';
   }
+  // Several unread messages → count chip + all of them (up to 3) in
+  // the bubble, each on its own line.
+  const countChip = (c.unread > 1) ? '<span class="wa-count">' + c.unread + ' הודעות</span>' : '';
+  const bubble = (c.freshTexts && c.freshTexts.length > 1)
+    ? c.freshTexts.map(t => '· ' + _escape(String(t).slice(0, 90))).join('<br>')
+    : '״' + msg + '״';
   return '<div class="wa-item">'
     + '<div class="wa-item-top">'
     +   '<span class="wa-item-name" onclick="waRename(\'' + phoneEsc + '\')" title="לחץ לשינוי שם">' + nm + '</span>'
-    +   '<span class="wa-wait-badge">מחכה ' + _waAgo(c.lastInTs) + '</span>'
+    +   '<span style="display:flex;gap:6px;align-items:center;flex-shrink:0">' + countChip
+    +   '<span class="wa-wait-badge">מחכה ' + _waAgo(c.lastInTs) + '</span></span>'
     + '</div>'
-    + '<div class="wa-item-msg">״' + msg + '״</div>'
+    + '<div class="wa-item-msg">' + bubble + '</div>'
     + '<div class="wa-replyrow">'
     +   '<input id="wa-in-' + phoneEsc + '" placeholder="כתוב תשובה…" '
     +   'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
@@ -16253,19 +16275,40 @@ window.waReply = async function(phone) {
 function _waPaint() {
   const wEl = document.getElementById('wa-waiting');
   if (!wEl) return;
-  // Never wipe a reply he's typing — if focus is inside a reply box,
-  // skip this paint; the next event or page open repaints.
-  const ae = document.activeElement;
-  if (ae && ae.id && ae.id.indexOf('wa-in-') === 0 && (ae.value || '').length) return;
   if (!_waConvs) {
     wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">' + (_waListening ? 'טוען שיחות…' : 'מתחבר לענן…') + '</div>';
     return;
+  }
+  // Draft protection done RIGHT: always paint (so nothing ever looks
+  // frozen), but snapshot every half-typed reply + focus + caret and
+  // restore them after the rebuild. The old "skip paint while typing"
+  // guard froze the whole page when a draft was left in a box.
+  const drafts = {};
+  wEl.querySelectorAll('input[id^="wa-in-"]').forEach(i => { if (i.value) drafts[i.id] = i.value; });
+  const ae = document.activeElement;
+  let focusId = null, caret = 0;
+  if (ae && ae.id && ae.id.indexOf('wa-in-') === 0) {
+    focusId = ae.id;
+    caret = (typeof ae.selectionStart === 'number') ? ae.selectionStart : (ae.value || '').length;
   }
   const waiting = _waConvs.filter(c => c.waiting).sort((a, b) => a.lastInTs - b.lastInTs);
   wEl.innerHTML = waiting.length
     ? waiting.map(c => _waRow(c, true)).join('')
     : '<div class="mp-empty" style="padding:10px 0">🎉 אף אחד לא מחכה לתשובה.</div>';
+  Object.keys(drafts).forEach(id => {
+    const i = document.getElementById(id);
+    if (i && !i.value) i.value = drafts[id];
+  });
+  if (focusId) {
+    const i = document.getElementById(focusId);
+    if (i) {
+      i.focus();
+      try { i.setSelectionRange(caret, caret); } catch (_) {}
+    }
+  }
 }
+// The waiting timers ("מחכה 21 דק׳") tick along even with no events.
+setInterval(() => { try { _waPaintIfVisible(); } catch (_) {} }, 30000);
 window.renderWhatsappPage = function() {
   _waListen();
   _waPaint();
