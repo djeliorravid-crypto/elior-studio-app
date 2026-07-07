@@ -6241,7 +6241,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v392</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v393</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16110,6 +16110,7 @@ function _waEpoch() {
   return epoch;
 }
 function _waProcess(raw) {
+ try {
   const epoch = _waEpoch();
   const msgs = Object.keys(raw || {}).map(k => raw[k]).filter(m => m && m.phone && m.ts && m.ts >= epoch);
   const conv = {};
@@ -16151,7 +16152,16 @@ function _waProcess(raw) {
   try { _waLobbyBadge(); } catch (_) {}
   try { _waNotifKick(list.filter(c => c.waiting).length); } catch (_) {}
   return list;
+ } catch (e) {
+  // One malformed record must never freeze the pipeline — keep the
+  // previous list, surface the error in the debug line.
+  _waLastErr = (e && e.message) || 'process error';
+  return _waConvs;
+ }
 }
+let _waLastErr = '';
+let _waLastEvt = 0;
+let _waConn = null;
 // ── Hourly nudge: "X אנשים מחכים לתשובה" — rescheduled whenever the
 //    count changes, quiet hours 22:00–08:00, cleared at zero. ──
 let _waNotifT = null, _waNotifLast = -1;
@@ -16206,6 +16216,13 @@ window.waGoInbox = function() {
   chooseMode('business');
   showPage('whatsapp');
 };
+window.waEpochBack = function() {
+  if (!confirm('להזיז את קו האפס 24 שעות אחורה? (הודעות מהיממה האחרונה ייכנסו לרשימה)')) return;
+  try { localStorage.setItem('wa_epoch', String(Date.now() - 24 * 3600 * 1000)); } catch (_) {}
+  _waProcess(_waRaw);
+  _waPaint();
+  toast('✓ קו האפס הוזז 24 שעות אחורה');
+};
 let _waRaw = {};
 let _waBootT = null;
 function _waListen() {
@@ -16231,6 +16248,7 @@ function _waListen() {
     });
     q.on('child_added', s => {
       _waRaw[s.key] = s.val();
+      _waLastEvt = Date.now();
       if (!boot) { _waProcess(_waRaw); _waPaintIfVisible(); }
     });
     q.on('child_removed', s => {
@@ -16240,9 +16258,11 @@ function _waListen() {
     // Connection watchdog: iOS loves killing the socket — the moment
     // Firebase reports offline, shove it back online.
     firebaseDB.ref('.info/connected').on('value', s => {
+      _waConn = s.val() === true;
       if (s.val() === false) {
         try { firebase.database().goOnline(); } catch (_) {}
       }
+      _waPaintIfVisible();
     });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
@@ -16441,9 +16461,20 @@ function _waPaint() {
     caret = (typeof ae.selectionStart === 'number') ? ae.selectionStart : (ae.value || '').length;
   }
   const waiting = _waConvs.filter(c => c.waiting).sort((a, b) => a.lastInTs - b.lastInTs);
-  wEl.innerHTML = waiting.length
+  // Live pipeline status — tells us in one glance whether events
+  // reach the device, when the last one landed, and where the epoch
+  // sits. Tap to rewind the epoch if it ever resets by mistake.
+  const t = d => { const x = new Date(d); return String(x.getHours()).padStart(2,'0') + ':' + String(x.getMinutes()).padStart(2,'0'); };
+  const dbg = '<div id="wa-debug" onclick="waEpochBack()" style="margin-top:12px;font-size:10.5px;font-weight:600;color:var(--text-muted);text-align:center;cursor:pointer">'
+    + (_waConn === true ? '🟢 מחובר' : _waConn === false ? '🔴 מנותק' : '⚪ מתחבר')
+    + ' · ' + Object.keys(_waRaw).length + ' הודעות בצינור'
+    + (_waLastEvt ? ' · אירוע אחרון ' + t(_waLastEvt) : '')
+    + ' · קו אפס ' + t(_waEpoch())
+    + (_waLastErr ? ' · ⚠️ ' + _escape(_waLastErr) : '')
+    + '</div>';
+  wEl.innerHTML = (waiting.length
     ? waiting.map(c => _waRow(c, true)).join('')
-    : '<div class="mp-empty" style="padding:10px 0">🎉 אף אחד לא מחכה לתשובה.</div>';
+    : '<div class="mp-empty" style="padding:10px 0">🎉 אף אחד לא מחכה לתשובה.</div>') + dbg;
   Object.keys(drafts).forEach(id => {
     const i = document.getElementById(id);
     if (i && !i.value) i.value = drafts[id];
