@@ -6283,7 +6283,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v404</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v405</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6683,6 +6683,22 @@
   </div>
 </div>
 
+<!-- WhatsApp scheduled message — compose + pending list (body-level) -->
+<div class="modal-overlay" id="modal-wasched">
+  <div class="modal modal-narrow">
+    <h3>⏰ הודעה מתוזמנת</h3>
+    <div class="mp-sub" id="wasched-to" style="margin:-8px 0 12px"></div>
+    <div class="form-group"><label>ההודעה *</label><textarea id="wasched-text" rows="3" placeholder="מה לשלוח?"></textarea></div>
+    <div class="form-group"><label>מתי לשלוח *</label><input type="datetime-local" id="wasched-at"/></div>
+    <div class="mp-sub" style="font-size:11.5px">שים לב: וואטסאפ מרשה שליחה מהמערכת רק למי שכתב לך ב-24 השעות שלפני מועד השליחה. אם ההודעה תידחה — תקבל חיווי כאן ובהתראה.</div>
+    <div id="wasched-list"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('wasched')">סגור</button>
+      <button class="btn btn-primary" style="flex:1" onclick="waSchedSave()">תזמן</button>
+    </div>
+  </div>
+</div>
+
 <!-- WhatsApp long-press action sheet — body-level (page containers are
      display:none when their mode is hidden; a modal inside them never shows) -->
 <div class="modal-overlay" id="modal-waact">
@@ -6732,6 +6748,13 @@
       <div class="mp-section-title">🟠 חדשים</div>
       <div class="mp-sub">מספרים חדשים שכתבו לך. לחיצה ארוכה על שם — קובעים: לקוח (עובר למעלה לתמיד) או לא רלוונטי.</div>
       <div id="wa-new-list"></div>
+    </div>
+    <!-- Scheduled-message queue — hidden entirely while empty -->
+    <div class="table-card mp-card" id="wa-sched-card" style="display:none">
+      <details>
+        <summary style="cursor:pointer;font-size:13px;font-weight:800;color:var(--text-muted);list-style-position:inside" id="wa-sched-sum">⏰ הודעות מתוזמנות</summary>
+        <div id="wa-sched-list"></div>
+      </details>
     </div>
     <div id="wa-debug-wrap"></div>
   </div>
@@ -16244,7 +16267,9 @@ let _waConn = null;
 //    (friends/family from the phone book must not be counted). Only
 //    changed keys are written; the last published map is cached. ──
 function _waPublishCls(list) {
-  if (!window.firebaseDB) return;
+  // NOTE: firebaseDB is a top-level `let` — it does NOT live on
+  // window. window.firebaseDB is always undefined; check the binding.
+  if (!firebaseDB) return;
   let pub = {};
   try { pub = JSON.parse(localStorage.getItem('wa_cls_pub') || '{}') || {}; } catch (_) {}
   const diff = {};
@@ -16323,7 +16348,7 @@ async function _waPushInit() {
         let prev = '';
         try { prev = localStorage.getItem('wa_push_token') || ''; } catch (_) {}
         if (tok === prev) return;
-        if (window.firebaseDB) {
+        if (firebaseDB) {
           firebaseDB.ref('whatsapp/push').set({ token: tok, at: Date.now() });
           try { localStorage.setItem('wa_push_token', tok); } catch (_) {}
         }
@@ -16398,6 +16423,12 @@ function _waListen() {
     q.on('child_removed', s => {
       delete _waRaw[s.key];
       if (!boot) _waProcess(_waRaw);
+    });
+    // Scheduled-message queue — small, so a full value listener keeps
+    // statuses (sent/failed) live in the ⏰ fold.
+    firebaseDB.ref('whatsapp/outbox').on('value', s => {
+      _waOutbox = s.val() || {};
+      _waPaintIfVisible();
     });
     // Async delivery FAILURES from Meta (rejected media etc.) — the
     // worker records them; here they become a visible toast instead
@@ -16493,6 +16524,7 @@ window.waActOpen = function(phone) {
   if (!isClient) html += B('🚫 לא רלוונטי — הסתר', 'hide');
   if (isClient && !c.client) html += B('הסר סימון לקוח', 'unmark');
   html += B('✏️ שנה שם', 'rename');
+  html += B('⏰ תזמן הודעה', 'sched');
   if (c.waiting) html += B('✓ סמן טופל', 'done');
   html += B('💬 פתח בוואטסאפ', 'open');
   const bEl = document.getElementById('waact-btns');
@@ -16506,8 +16538,98 @@ window.waActDo = function(phone, act) {
   else if (act === 'unmark') waMarkClient(phone, null);
   else if (act === 'rename') waRename(phone);
   else if (act === 'done') waDismiss(phone);
+  else if (act === 'sched') waSchedOpen(phone);
   else if (act === 'open') window.open('https://wa.me/' + phone, '_blank');
 };
+// ── Scheduled messages: queued to /whatsapp/outbox, sent by the
+//    worker's cron the minute they come due — phone can be off, app
+//    closed. Each item carries a SHA-256 signature derived from the
+//    send secret, so the (public) queue can't be forged. ──
+let _waOutbox = {};
+let _waSchedPhone = '';
+async function _waSchedSig(to, text, at) {
+  const sec = _waSecret();
+  if (!sec) return null;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(sec + '|' + to + '|' + text + '|' + at));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+window.waSchedOpen = function(phone) {
+  _waSchedPhone = phone;
+  const toEl = document.getElementById('wasched-to');
+  if (toEl) toEl.textContent = 'אל: ' + _waName({ phone }) + ' · ' + _waPhonePretty(phone);
+  const txtEl = document.getElementById('wasched-text');
+  if (txtEl) txtEl.value = '';
+  // default: an hour from now, rounded up to a nice :00 / :30
+  const d = new Date(Date.now() + 3600000);
+  d.setMinutes(d.getMinutes() < 30 ? 30 : 60, 0, 0);
+  const atEl = document.getElementById('wasched-at');
+  const p2 = n => String(n).padStart(2, '0');
+  if (atEl) atEl.value = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+  const listEl = document.getElementById('wasched-list');
+  if (listEl) {
+    const mine = Object.keys(_waOutbox).filter(id => (_waOutbox[id] || {}).to === phone && _waOutbox[id].status === 'pending');
+    listEl.innerHTML = mine.length
+      ? '<div class="mp-sub" style="margin-top:10px">ממתינות לאיש הזה:</div>' + mine.map(id => _waSchedRow(id)).join('')
+      : '';
+  }
+  openModal('wasched');
+};
+window.waSchedSave = async function() {
+  const txtEl = document.getElementById('wasched-text');
+  const atEl = document.getElementById('wasched-at');
+  const text = (txtEl && txtEl.value || '').trim();
+  const at = atEl && atEl.value ? new Date(atEl.value).getTime() : 0;
+  if (!text) { toast('כתוב את ההודעה קודם'); return; }
+  if (!at || at < Date.now() + 30000) { toast('בחר זמן עתידי'); return; }
+  const sig = await _waSchedSig(_waSchedPhone, text, at);
+  if (!sig) return;
+  if (!firebaseDB) { toast('אין חיבור לענן'); return; }
+  firebaseDB.ref('whatsapp/outbox').push({
+    to: _waSchedPhone, text, at, sig, status: 'pending', created: Date.now()
+  });
+  closeModal('wasched');
+  const d = new Date(at);
+  toast('⏰ תוזמן ל-' + String(d.getDate()) + '.' + String(d.getMonth() + 1) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'));
+  if (window.haptic) window.haptic.success();
+};
+window.waSchedCancel = function(id) {
+  try { if (firebaseDB) firebaseDB.ref('whatsapp/outbox/' + id).remove(); } catch (_) {}
+  toast('התזמון בוטל');
+};
+function _waSchedRow(id) {
+  const it = _waOutbox[id] || {};
+  const d = new Date(Number(it.at) || 0);
+  const p2 = n => String(n).padStart(2, '0');
+  const when = String(d.getDate()) + '.' + String(d.getMonth() + 1) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+  const st = it.status === 'sent' ? '<span style="color:var(--green);font-weight:800">✓ נשלחה</span>'
+    : it.status === 'failed' ? '<span style="color:var(--red);font-weight:800">✗ נכשלה' + (it.err ? ' — ' + _escape(String(it.err).slice(0, 80)) : '') + '</span>'
+    : '<span style="font-weight:800">⏳ ' + when + '</span>';
+  return '<div class="dun-row">'
+    + '<div class="dun-info"><div class="dun-name">' + _escape(_waName({ phone: it.to })) + '</div>'
+    + '<div class="dun-meta">' + _escape(String(it.text || '').slice(0, 90)) + '<br>' + st + '</div></div>'
+    + (it.status === 'pending'
+        ? '<button class="btn btn-ghost btn-sm" onclick="waSchedCancel(\'' + id + '\')">בטל</button>'
+        : '<button class="btn btn-ghost btn-sm" onclick="waSchedCancel(\'' + id + '\')">הסר</button>')
+    + '</div>';
+}
+function _waPaintSched() {
+  const card = document.getElementById('wa-sched-card');
+  const listEl = document.getElementById('wa-sched-list');
+  const sumEl = document.getElementById('wa-sched-sum');
+  if (!card || !listEl) return;
+  // pending + anything that resolved in the last two days (so a
+  // failure is seen even if the push didn't reach him)
+  const cutoff = Date.now() - 2 * 24 * 3600 * 1000;
+  const ids = Object.keys(_waOutbox).filter(id => {
+    const it = _waOutbox[id] || {};
+    return it.status === 'pending' || (Number(it.doneTs) || 0) > cutoff;
+  }).sort((a, b) => (Number(_waOutbox[a].at) || 0) - (Number(_waOutbox[b].at) || 0));
+  if (!ids.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  const pend = ids.filter(id => _waOutbox[id].status === 'pending').length;
+  if (sumEl) sumEl.textContent = '⏰ הודעות מתוזמנות (' + pend + ' ממתינות)';
+  listEl.innerHTML = ids.map(id => _waSchedRow(id)).join('');
+}
 function _waRow(c, isWaiting) {
   const nm = _escape(_waName(c));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
@@ -16969,6 +17091,7 @@ function _waPaint() {
         }).join(''))
       || '<div class="mp-empty" style="padding:10px 0">עוד אין לקוחות מסומנים — הם יתווספו לבד כשתענה להם מהאפליקציה.</div>';
   }
+  try { _waPaintSched(); } catch (_) {}
   // Live pipeline status — tells us in one glance whether events
   // reach the device, when the last one landed, and where the epoch
   // sits. Tap to rewind the epoch if it ever resets by mistake.

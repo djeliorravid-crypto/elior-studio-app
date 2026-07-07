@@ -163,13 +163,75 @@ export default {
     return new Response('ok', { status: 200 });
   },
 
-  // Hourly Cron Trigger (0 * * * *): count who's still waiting and
-  // push the reminder straight to the iPhone — works with the app
-  // closed, which local notifications never could.
+  // Cron Trigger (* * * * * — every minute): flush due scheduled
+  // messages every run; the hourly "X מחכים" push fires only at the
+  // top of the hour. A coarser 0 * * * * cron still works — both
+  // jobs then run hourly.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(hourlyPush(env));
+    const jobs = [flushOutbox(env)];
+    if (new Date().getMinutes() === 0) jobs.push(hourlyPush(env));
+    ctx.waitUntil(Promise.allSettled(jobs));
   }
 };
+
+// ── Scheduled messages: the app queues {to, text, at, sig} under
+//    /whatsapp/outbox; each cron run sends whatever came due. The sig
+//    (SHA-256 of SEND_SECRET|to|text|at) proves the item was queued by
+//    the app — the DB alone can't mint a valid one. ──
+async function sha256hex(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function flushOutbox(env) {
+  try {
+    const box = await fetch(FIREBASE + '/outbox.json').then(r => r.json()).catch(() => null);
+    if (!box) return;
+    const now = Date.now();
+    for (const id of Object.keys(box)) {
+      const it = box[id] || {};
+      // housekeeping: anything final and older than 30 days goes away
+      if (it.status !== 'pending' && now - (Number(it.at) || 0) > 30 * 24 * 3600 * 1000) {
+        await fetch(FIREBASE + '/outbox/' + id + '.json', { method: 'DELETE' });
+        continue;
+      }
+      if (it.status !== 'pending' || Number(it.at) > now) continue;
+      const mark = (patch) => fetch(FIREBASE + '/outbox/' + id + '.json', {
+        method: 'PATCH', body: JSON.stringify(patch)
+      });
+      const to = String(it.to || '').replace(/\D/g, '');
+      const text = String(it.text || '').slice(0, 4000);
+      if (!to || !text || !env.SEND_SECRET || !env.WHATSAPP_TOKEN) {
+        await mark({ status: 'failed', err: 'הגדרה חסרה', doneTs: now });
+        continue;
+      }
+      const expect = await sha256hex(env.SEND_SECRET + '|' + to + '|' + text + '|' + it.at);
+      if (it.sig !== expect) {
+        await mark({ status: 'failed', err: 'חתימה לא תקינה', doneTs: now });
+        continue;
+      }
+      const r = await fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text } })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        await mark({ status: 'sent', doneTs: now });
+        await fetch(FIREBASE + '/msgs.json', {
+          method: 'POST',
+          body: JSON.stringify({ dir: 'out', phone: to, text, ts: now, via: 'sched' })
+        });
+        await fetch(FIREBASE + '/waiting/' + to + '.json', { method: 'DELETE' });
+      } else {
+        const err = (j.error && j.error.message) || ('graph ' + r.status);
+        await mark({ status: 'failed', err, doneTs: now });
+        // The likeliest cause is Meta's 24h customer-service window —
+        // tell the phone right away so it isn't a silent black hole.
+        await sendApns(env, '⏰ הודעה מתוזמנת לא נשלחה', 'ל-' + to + ': ' + err).catch(() => {});
+      }
+    }
+  } catch (_) {}
+}
 
 // ── Hourly "X מחכים לתשובה" push over Apple Push (APNs) ──
 async function hourlyPush(env) {
@@ -203,21 +265,9 @@ async function hourlyPush(env) {
     const body = phones.length === 1
       ? 'לקוח אחד מחכה לתשובה בוואטסאפ'
       : phones.length + ' אנשים מחכים לתשובה בוואטסאפ';
-    const jwt = await apnsJwt(env);
-    const r = await fetch('https://api.push.apple.com/3/device/' + push.token, {
-      method: 'POST',
-      headers: {
-        'authorization': 'bearer ' + jwt,
-        'apns-topic': 'com.ravidstudio.app',
-        'apns-push-type': 'alert',
-        'apns-priority': '10'
-      },
-      body: JSON.stringify({
-        aps: { alert: { title: '💬 מחכים לתשובה שלך', body }, sound: 'default', 'thread-id': 'wa-waiting' }
-      })
-    });
-    if (r.ok) log.sent = true;
-    else log.err = 'apns ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 200);
+    const r = await sendApns(env, '💬 מחכים לתשובה שלך', body);
+    if (r && r.ok) log.sent = true;
+    else log.err = 'apns ' + (r ? r.status + ' ' + (await r.text().catch(() => '')).slice(0, 200) : 'no token/secrets');
   } catch (e) {
     log.err = (e && e.message) || 'push error';
   } finally {
@@ -225,6 +275,27 @@ async function hourlyPush(env) {
     // silent failure is impossible to miss when debugging.
     try { await fetch(FIREBASE + '/pushlog.json', { method: 'PUT', body: JSON.stringify(log) }); } catch (_) {}
   }
+}
+
+// One APNs alert to Elior's registered iPhone. Returns the fetch
+// Response, or null when the token / APNS secrets aren't set up yet.
+async function sendApns(env, title, body) {
+  if (!env.APNS_KEY || !env.APNS_KEY_ID || !env.APNS_TEAM_ID) return null;
+  const push = await fetch(FIREBASE + '/push.json').then(r => r.json()).catch(() => null);
+  if (!push || !push.token) return null;
+  const jwt = await apnsJwt(env);
+  return fetch('https://api.push.apple.com/3/device/' + push.token, {
+    method: 'POST',
+    headers: {
+      'authorization': 'bearer ' + jwt,
+      'apns-topic': 'com.ravidstudio.app',
+      'apns-push-type': 'alert',
+      'apns-priority': '10'
+    },
+    body: JSON.stringify({
+      aps: { alert: { title, body }, sound: 'default', 'thread-id': 'wa-waiting' }
+    })
+  });
 }
 
 // ES256 JWT for APNs, signed with the .p8 auth key (WebCrypto).

@@ -18,10 +18,13 @@
    - `APNS_KEY` — כל התוכן של קובץ ה-p8 (לפתוח ב-TextEdit, להעתיק הכל כולל שורות BEGIN/END)
    - `APNS_KEY_ID` — ה-Key ID מהשלב הראשון
    - `APNS_TEAM_ID` — ה-Team ID
-4. **הדבקת Worker v8**: Edit code → מחק הכל → הדבק מ:
+4. **הדבקת Worker v9**: Edit code → מחק הכל → הדבק מ:
    raw.githubusercontent.com/djeliorravid-crypto/elior-studio-app/main/whatsapp-worker.js → Deploy
-5. **טריגר שעתי**: באותו מסך → Settings → **Triggers** → Cron Triggers → Add →
-   `0 * * * *` → Save.
+5. **טריגר**: באותו מסך → Settings → **Triggers** → Cron Triggers → Add →
+   `* * * * *` (כל דקה — גם ההודעות המתוזמנות יוצאות בדיוק בזמן; התראת
+   "X מחכים" יוצאת רק בשעה עגולה) → Save.
+   הערה: ההודעות המתוזמנות (v405) עובדות כבר עם השלבים 4+5 בלבד — בלי
+   שלבי אפל 1-3, שנדרשים רק להתראות לטלפון.
 6. **בילד חדש מ-TestFlight** (נבנה אוטומטית) → לפתוח את האפליקציה פעם אחת.
    בדיקה: `/whatsapp/push.json` ב-Firebase אמור להכיל token; אחרי שעה עגולה
    `/whatsapp/pushlog.json` מראה מה קרה בריצה האחרונה (count/sent/err).
