@@ -11,6 +11,7 @@
   "author": "Elior Ravid",
   "license": "UNLICENSED",
   "dependencies": {
+    "@capacitor-community/contacts": "^7.2.0",
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.0",
     "@capacitor/camera": "^8.2.0",

@@ -3744,7 +3744,26 @@
       border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--text-muted);
       display: flex; align-items: center; gap: 8px; flex-wrap: wrap; line-height: 1.7;
     }
-    .wa-replyrow { display: flex; gap: 8px; padding: 0 2px 12px; border-bottom: 1px solid var(--border); }
+    .wa-item { padding: 14px 2px 12px; border-bottom: 1px solid var(--border); }
+    .wa-item:last-child { border-bottom: none; }
+    .wa-item-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .wa-item-name { font-size: 16px; font-weight: 900; color: var(--text); cursor: pointer; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wa-wait-badge {
+      flex-shrink: 0; background: var(--red); color: #fff;
+      font-size: 11.5px; font-weight: 800; padding: 4px 10px; border-radius: 12px;
+    }
+    .wa-item-msg {
+      margin: 8px 0 10px; font-size: 15px; line-height: 1.5; color: var(--text);
+      background: var(--surface2); border-radius: 12px; padding: 10px 13px;
+      word-wrap: break-word;
+    }
+    .wa-item-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .wa-item-actions button {
+      background: none; border: none; padding: 2px 4px; cursor: pointer;
+      font-size: 12px; font-weight: 700; color: var(--text-muted); font-family: inherit;
+    }
+    .wa-item-actions span { color: var(--text-muted); font-size: 12px; }
+    .wa-replyrow { display: flex; gap: 8px; }
     .wa-replyrow input {
       flex: 1; min-width: 0; padding: 10px 12px;
       border: 1.5px solid var(--border); border-radius: 10px;
@@ -6203,7 +6222,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v386</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v387</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16008,9 +16027,51 @@ function _waDismissed() {
 }
 // Live pipeline: a realtime RTDB listener keeps the conversation
 // cache fresh the SECOND a message lands — no manual refresh.
+// Everything paints instantly from a local cache first, then live
+// data replaces it (no "loading" screens on reopen).
 let _waListening = false;
 let _waConvs = null;
 let _waNames = {};
+let _waPhoneBook = {};   // device contacts (native builds) phone → name
+let _waRenames = {};     // his explicit renames — always win
+try { _waConvs = JSON.parse(localStorage.getItem('wa_cache') || 'null'); } catch (_) {}
+try { _waNames = JSON.parse(localStorage.getItem('wa_names_cache') || '{}') || {}; } catch (_) {}
+try { _waPhoneBook = JSON.parse(localStorage.getItem('wa_phone_book') || '{}') || {}; } catch (_) {}
+try { _waRenames = JSON.parse(localStorage.getItem('wa_renames') || '{}') || {}; } catch (_) {}
+
+// ── Device address book (lights up on builds with the Contacts
+//    plugin): read once a day, phone→name stays ON DEVICE ONLY. ──
+async function _waSyncPhoneBook() {
+  try {
+    const C = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Contacts;
+    if (!C || !C.getContacts) return;
+    let last = 0;
+    try { last = Number(localStorage.getItem('wa_phone_book_ts')) || 0; } catch (_) {}
+    if (Date.now() - last < 24 * 3600 * 1000 && Object.keys(_waPhoneBook).length) return;
+    if (C.requestPermissions) {
+      const p = await C.requestPermissions();
+      if (p && p.contacts && p.contacts !== 'granted') return;
+    }
+    const res = await C.getContacts({ projection: { name: true, phones: true } });
+    const book = {};
+    (res && res.contacts || []).forEach(ct => {
+      const nm = (ct.name && (ct.name.display || ct.name.given)) || '';
+      if (!nm) return;
+      (ct.phones || []).forEach(ph => {
+        const d = _waPhone(ph.number);
+        if (d) book[d] = nm;
+      });
+    });
+    if (Object.keys(book).length) {
+      _waPhoneBook = book;
+      try {
+        localStorage.setItem('wa_phone_book', JSON.stringify(book));
+        localStorage.setItem('wa_phone_book_ts', String(Date.now()));
+      } catch (_) {}
+      _waPaintIfVisible();
+    }
+  } catch (_) {}
+}
 function _waEpoch() {
   // "קו אפס" — his explicit ask: archived people he deliberately
   // ignores must not appear. Only messages arriving AFTER the first
@@ -16042,7 +16103,8 @@ function _waProcess(raw) {
     return c;
   }).sort((a, b) => b.lastTs - a.lastTs);
   _waConvs = list;
-  // Summary cache — feeds the morning brief without a network call.
+  // Persist for instant paint on next launch + morning-brief summary.
+  try { localStorage.setItem('wa_cache', JSON.stringify(list.slice(0, 60))); } catch (_) {}
   try {
     const waiting = list.filter(c => c.waiting);
     localStorage.setItem('wa_waiting_summary', JSON.stringify({
@@ -16059,6 +16121,7 @@ function _waListen() {
   try {
     firebaseDB.ref('whatsapp/names').on('value', s => {
       _waNames = s.val() || {};
+      try { localStorage.setItem('wa_names_cache', JSON.stringify(_waNames)); } catch (_) {}
       _waPaintIfVisible();
     });
     firebaseDB.ref('whatsapp/msgs').limitToLast(600).on('value', s => {
@@ -16078,39 +16141,51 @@ function _waAgo(ts) {
   if (h < 24) return h + ' שע׳';
   return Math.floor(h / 24) + ' ימים';
 }
+function _waName(c) {
+  // Priority: his explicit rename → clients list → device address
+  // book (native builds) → cloud names → WhatsApp push-name → number.
+  return _waRenames[c.phone] || c.client || _waPhoneBook[c.phone] || _waNames[c.phone] || c.name || _waPhonePretty(c.phone);
+}
 function _waRow(c, isWaiting) {
-  // Name priority: his clients list → his synced address-book name →
-  // the sender's WhatsApp push-name → pretty phone number.
-  const nm = _escape(c.client || _waNames[c.phone] || c.name || _waPhonePretty(c.phone));
+  const nm = _escape(_waName(c));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
-  let html = '<div class="dun-row"' + (isWaiting ? ' style="border-bottom:none;padding-bottom:4px"' : '') + '>'
-    + '<div class="dun-info"><div class="dun-name" onclick="waRename(\'' + phoneEsc + '\')" style="cursor:pointer" title="לחץ לשינוי שם">' + (isWaiting ? '🔴 ' : (c.lastDir === 'in' ? '💬 ' : '↩️ ')) + nm + '</div>'
-    + '<div class="dun-meta">' + _escape((c.lastText || '').slice(0, 60)) + ' · לפני ' + _waAgo(c.lastTs)
-    + (isWaiting ? ' · <strong>מחכה ' + _waAgo(c.lastInTs) + '</strong>' : '') + '</div></div>'
-    + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
-    + (isWaiting ? '<button class="btn btn-ghost btn-sm" onclick="waDismiss(\'' + phoneEsc + '\')">טופל</button>' : '')
-    + '</div>';
-  if (isWaiting) {
-    html += '<div class="wa-replyrow">'
-      + '<input id="wa-in-' + phoneEsc + '" placeholder="תשובה מהירה — נשלחת כוואטסאפ אמיתי…" '
-      + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
-      + '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
+  const msg = _escape((c.lastText || '').slice(0, 140));
+  if (!isWaiting) {
+    return '<div class="dun-row">'
+      + '<div class="dun-info"><div class="dun-name" onclick="waRename(\'' + phoneEsc + '\')" style="cursor:pointer">' + nm + '</div>'
+      + '<div class="dun-meta">' + msg + ' · לפני ' + _waAgo(c.lastTs) + '</div></div>'
+      + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
       + '</div>';
   }
-  return html;
+  return '<div class="wa-item">'
+    + '<div class="wa-item-top">'
+    +   '<span class="wa-item-name" onclick="waRename(\'' + phoneEsc + '\')" title="לחץ לשינוי שם">' + nm + '</span>'
+    +   '<span class="wa-wait-badge">מחכה ' + _waAgo(c.lastInTs) + '</span>'
+    + '</div>'
+    + '<div class="wa-item-msg">״' + msg + '״</div>'
+    + '<div class="wa-replyrow">'
+    +   '<input id="wa-in-' + phoneEsc + '" placeholder="כתוב תשובה…" '
+    +   'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
+    +   '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
+    + '</div>'
+    + '<div class="wa-item-actions">'
+    +   '<button onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח בוואטסאפ</button>'
+    +   '<span>·</span>'
+    +   '<button onclick="waDismiss(\'' + phoneEsc + '\')">סמן טופל</button>'
+    + '</div>'
+    + '</div>';
 }
 window.waRename = function(phone) {
-  const cur = _waNames[phone] || '';
+  const cur = _waRenames[phone] || _waPhoneBook[phone] || _waNames[phone] || '';
   const v = prompt('שם לאיש הקשר הזה (' + _waPhonePretty(phone) + '):', cur);
   if (v === null) return;
   const nm = v.trim();
-  if (!firebaseDB) { toast('אין חיבור לענן כרגע'); return; }
-  try {
-    firebaseDB.ref('whatsapp/names/' + phone).set(nm || null);
-    _waNames[phone] = nm;
-    _waPaint();
-    toast('✓ השם נשמר');
-  } catch (_) { toast('שמירה נכשלה'); }
+  _waRenames[phone] = nm;
+  if (!nm) delete _waRenames[phone];
+  try { localStorage.setItem('wa_renames', JSON.stringify(_waRenames)); } catch (_) {}
+  try { if (firebaseDB) firebaseDB.ref('whatsapp/names/' + phone).set(nm || null); } catch (_) {}
+  _waPaint();
+  toast('✓ השם נשמר');
 };
 window.waReply = async function(phone) {
   const inp = document.getElementById('wa-in-' + phone);
@@ -16164,6 +16239,7 @@ function _waPaint() {
 window.renderWhatsappPage = function() {
   _waListen();
   _waPaint();
+  try { _waSyncPhoneBook(); } catch (_) {}
   // page open = a good moment to sweep the debug junk
   try { if (firebaseDB) firebaseDB.ref('whatsapp/debug').remove(); } catch (_) {}
 };
@@ -16174,15 +16250,24 @@ window.waDismiss = function(phone) {
   if (_waConvs) _waConvs = _waConvs.map(c => (c.phone === phone ? { ...c, waiting: false } : c));
   _waPaint();
 };
-// Attach the live listener as soon as Firebase is up (init is async),
-// so the waiting summary + morning brief stay current even before the
-// page is first opened.
+// Attach the live listener the moment Firebase is up (checked every
+// 300ms — cheap no-op until then), so data is flowing before the page
+// is even opened.
 const _waAttachTimer = setInterval(() => {
   try {
     if (_waListening) { clearInterval(_waAttachTimer); return; }
     _waListen();
   } catch (_) {}
-}, 5000);
+}, 300);
+// Coming back from background: iOS froze the socket — force Firebase
+// back online immediately and repaint from cache while it reconnects.
+try {
+  const _capAppWa = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (_capAppWa && _capAppWa.addListener) _capAppWa.addListener('resume', () => {
+    try { if (window.firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
+    try { _waPaintIfVisible(); } catch (_) {}
+  });
+} catch (_) {}
 
 // ── Collection modal — one-tap WhatsApp dunning per client ──
 function _waPhone(p) {

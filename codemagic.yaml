@@ -91,6 +91,10 @@ workflows:
           /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'גישה לספריית התמונות נדרשת כדי לבחור תמונת גוף למעקב או תמונת ארוחה לחישוב קלוריות.'" "$PLIST"
           /usr/libexec/PlistBuddy -c "Delete :NSPhotoLibraryAddUsageDescription" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string 'שמירת תמונות לספרייה אינה בשימוש פעיל; ההרשאה נדרשת טכנית.'" "$PLIST"
+          # Contacts — the WhatsApp inbox matches phone numbers to HIS
+          # saved contact names (read-only, stays on device).
+          /usr/libexec/PlistBuddy -c "Delete :NSContactsUsageDescription" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSContactsUsageDescription string 'גישה לאנשי הקשר משמשת להצגת שמות בשיחות וואטסאפ בעסק — הנתונים נשארים על המכשיר בלבד.'" "$PLIST"
           # Quick actions — rebuild from scratch so the array stays in sync.
           /usr/libexec/PlistBuddy -c "Delete :UIApplicationShortcutItems" "$PLIST" 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :UIApplicationShortcutItems array" "$PLIST"
