@@ -6195,7 +6195,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v382</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v383</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16002,8 +16002,12 @@ function _waPhonePretty(p) {
 function _waDismissed() {
   try { return JSON.parse(localStorage.getItem('wa_dismissed') || '{}') || {}; } catch (_) { return {}; }
 }
-async function _waFetch() {
-  if (!firebaseDB) return null;
+// Live pipeline: a realtime RTDB listener keeps the conversation
+// cache fresh the SECOND a message lands — no manual refresh.
+let _waListening = false;
+let _waConvs = null;
+let _waNames = {};
+function _waEpoch() {
   // "קו אפס" — his explicit ask: archived people he deliberately
   // ignores must not appear. Only messages arriving AFTER the first
   // run of this feature count; history-sync (old timestamps) is out.
@@ -16013,10 +16017,11 @@ async function _waFetch() {
     epoch = Date.now();
     try { localStorage.setItem('wa_epoch', String(epoch)); } catch (_) {}
   }
-  const snap = await firebaseDB.ref('whatsapp/msgs').limitToLast(600).once('value');
-  const raw = snap.val() || {};
-  try { firebaseDB.ref('whatsapp/debug').remove(); } catch (_) {}
-  const msgs = Object.keys(raw).map(k => raw[k]).filter(m => m && m.phone && m.ts && m.ts >= epoch);
+  return epoch;
+}
+function _waProcess(raw) {
+  const epoch = _waEpoch();
+  const msgs = Object.keys(raw || {}).map(k => raw[k]).filter(m => m && m.phone && m.ts && m.ts >= epoch);
   const conv = {};
   msgs.forEach(m => {
     const c = conv[m.phone] = conv[m.phone] || { phone: String(m.phone), name: '', lastTs: 0, lastDir: '', lastText: '', lastInTs: 0 };
@@ -16032,6 +16037,7 @@ async function _waFetch() {
     c.waiting = c.lastDir === 'in' && c.lastInTs > (dis[c.phone] || 0);
     return c;
   }).sort((a, b) => b.lastTs - a.lastTs);
+  _waConvs = list;
   // Summary cache — feeds the morning brief without a network call.
   try {
     const waiting = list.filter(c => c.waiting);
@@ -16043,6 +16049,24 @@ async function _waFetch() {
   } catch (_) {}
   return list;
 }
+function _waListen() {
+  if (_waListening || !firebaseDB) return;
+  _waListening = true;
+  try {
+    firebaseDB.ref('whatsapp/names').on('value', s => {
+      _waNames = s.val() || {};
+      _waPaintIfVisible();
+    });
+    firebaseDB.ref('whatsapp/msgs').limitToLast(600).on('value', s => {
+      _waProcess(s.val() || {});
+      _waPaintIfVisible();
+    });
+  } catch (_) { _waListening = false; }
+}
+function _waPaintIfVisible() {
+  const page = document.getElementById('page-whatsapp');
+  if (page && page.classList.contains('active')) _waPaint();
+}
 function _waAgo(ts) {
   const m = Math.max(1, Math.round((Date.now() - ts) / 60000));
   if (m < 60) return m + ' דק׳';
@@ -16051,7 +16075,9 @@ function _waAgo(ts) {
   return Math.floor(h / 24) + ' ימים';
 }
 function _waRow(c, isWaiting) {
-  const nm = _escape(c.client || c.name || _waPhonePretty(c.phone));
+  // Name priority: his clients list → his synced address-book name →
+  // the sender's WhatsApp push-name → pretty phone number.
+  const nm = _escape(c.client || _waNames[c.phone] || c.name || _waPhonePretty(c.phone));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
   return '<div class="dun-row">'
     + '<div class="dun-info"><div class="dun-name">' + (isWaiting ? '🔴 ' : (c.lastDir === 'in' ? '💬 ' : '↩️ ')) + nm + '</div>'
@@ -16061,18 +16087,16 @@ function _waRow(c, isWaiting) {
     + (isWaiting ? '<button class="btn btn-ghost btn-sm" onclick="waDismiss(\'' + phoneEsc + '\')">טופל</button>' : '')
     + '</div>';
 }
-window.renderWhatsappPage = async function() {
+function _waPaint() {
   const wEl = document.getElementById('wa-waiting');
   const rEl = document.getElementById('wa-recent');
   if (!wEl) return;
-  wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">טוען שיחות…</div>';
-  let list = null;
-  try { list = await _waFetch(); } catch (_) { list = null; }
-  if (!list) {
-    wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">אין חיבור לענן כרגע — נסה לרענן בעוד רגע.</div>';
+  if (!_waConvs) {
+    wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">' + (_waListening ? 'טוען שיחות…' : 'מתחבר לענן…') + '</div>';
     if (rEl) rEl.innerHTML = '';
     return;
   }
+  const list = _waConvs;
   const waiting = list.filter(c => c.waiting).sort((a, b) => a.lastInTs - b.lastInTs);
   wEl.innerHTML = waiting.length
     ? waiting.map(c => _waRow(c, true)).join('')
@@ -16081,22 +16105,29 @@ window.renderWhatsappPage = async function() {
     rEl.innerHTML = list.slice(0, 25).map(c => _waRow(c, false)).join('')
       || '<div class="mp-empty" style="padding:10px 0">עוד אין שיחות בצינור — הן ייכנסו מעכשיו והלאה.</div>';
   }
+}
+window.renderWhatsappPage = function() {
+  _waListen();
+  _waPaint();
+  // page open = a good moment to sweep the debug junk
+  try { if (firebaseDB) firebaseDB.ref('whatsapp/debug').remove(); } catch (_) {}
 };
 window.waDismiss = function(phone) {
   const d = _waDismissed();
   d[phone] = Date.now();
   try { localStorage.setItem('wa_dismissed', JSON.stringify(d)); } catch (_) {}
-  renderWhatsappPage();
+  if (_waConvs) _waConvs = _waConvs.map(c => (c.phone === phone ? { ...c, waiting: false } : c));
+  _waPaint();
 };
-// Quiet background refresh so the waiting summary (and morning brief
-// line) stays current while he works in business mode.
-setTimeout(() => { try { _waFetch(); } catch (_) {} }, 15000);
-setInterval(() => {
+// Attach the live listener as soon as Firebase is up (init is async),
+// so the waiting summary + morning brief stay current even before the
+// page is first opened.
+const _waAttachTimer = setInterval(() => {
   try {
-    const bm = document.getElementById('business-main');
-    if (bm && getComputedStyle(bm).display !== 'none') _waFetch();
+    if (_waListening) { clearInterval(_waAttachTimer); return; }
+    _waListen();
   } catch (_) {}
-}, 600000);
+}, 5000);
 
 // ── Collection modal — one-tap WhatsApp dunning per client ──
 function _waPhone(p) {

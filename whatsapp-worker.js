@@ -34,20 +34,32 @@ export default {
     try { body = await request.json(); } catch (_) { return new Response('ok', { status: 200 }); }
 
     let stored = 0;
+    const names = {};   // phone → name, PATCHed once at the end
     try {
       for (const entry of (body && body.entry) || []) {
         for (const change of entry.changes || []) {
           const v = change.value || {};
+          // Contact-directory sync (coexistence app-state/history):
+          // these carry HIS address-book names — keep them all.
+          if (Array.isArray(v.contacts)) {
+            for (const c of v.contacts) {
+              const ph = String(c.phone_number || c.wa_id || '').replace(/\D/g, '');
+              const nm = c.full_name || (c.profile && c.profile.name) || c.first_name || '';
+              if (ph && nm) { names[ph] = nm; stored++; }
+            }
+          }
           // Incoming customer messages
           for (const m of v.messages || []) {
+            const ph = String(m.from || '').replace(/\D/g, '');
             const rec = {
               dir: 'in',
-              phone: m.from || '',
+              phone: ph,
               name: (v.contacts && v.contacts[0] && v.contacts[0].profile && v.contacts[0].profile.name) || '',
               type: m.type || '',
               text: (m.text && m.text.body) || m.caption || ('[' + (m.type || 'הודעה') + ']'),
               ts: (Number(m.timestamp || 0) * 1000) || Date.now()
             };
+            if (rec.name && ph) names[ph] = names[ph] || rec.name;
             await fetch(FIREBASE + '/msgs.json', { method: 'POST', body: JSON.stringify(rec) });
             stored++;
           }
@@ -56,7 +68,7 @@ export default {
           for (const m of v.message_echoes || v.smb_message_echoes || []) {
             const rec = {
               dir: 'out',
-              phone: m.to || m.recipient_id || '',
+              phone: String(m.to || m.recipient_id || '').replace(/\D/g, ''),
               type: m.type || '',
               text: (m.text && m.text.body) || '',
               ts: (Number(m.timestamp || 0) * 1000) || Date.now()
@@ -64,7 +76,12 @@ export default {
             await fetch(FIREBASE + '/msgs.json', { method: 'POST', body: JSON.stringify(rec) });
             stored++;
           }
+          // Delivery/read receipts — known noise, count as handled.
+          if (Array.isArray(v.statuses) && v.statuses.length) stored++;
         }
+      }
+      if (Object.keys(names).length) {
+        await fetch(FIREBASE + '/names.json', { method: 'PATCH', body: JSON.stringify(names) });
       }
       // Nothing parsed? Keep a trimmed raw copy so the payload shape
       // can be inspected and the parser adapted.
