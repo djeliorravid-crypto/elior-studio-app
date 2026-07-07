@@ -6281,7 +6281,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v399</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v400</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16421,6 +16421,21 @@ function _waRow(c, isWaiting) {
     + '</div>'
     + '</div>';
 }
+// Self-learning client marking: replying from the BUSINESS inbox is
+// itself the signal — nobody answers non-business here. So every
+// successful in-app reply auto-marks the person as a client. Zero
+// taps; converges to his WhatsApp 'לקוחות' label just by working.
+function _waAutoMark(phone) {
+  try {
+    if (_waCliMarks[phone] === true) return;
+    const c = (_waConvs || []).find(x => x.phone === phone);
+    if (c && c.client) return;   // already an app client
+    _waCliMarks[phone] = true;
+    try { localStorage.setItem('wa_cli_marks', JSON.stringify(_waCliMarks)); } catch (_) {}
+    if (firebaseDB) firebaseDB.ref('whatsapp/clients/' + phone).set(true);
+    if (_waRaw && Object.keys(_waRaw).length) _waProcess(_waRaw);
+  } catch (_) {}
+}
 window.waFilterToggle = function() {
   let cur = false;
   try { cur = localStorage.getItem('wa_show_all') === '1'; } catch (_) {}
@@ -16479,6 +16494,7 @@ window.waReply = async function(phone) {
       toast('✓ נשלח בוואטסאפ');
       if (window.haptic) window.haptic.success();
       if (inp) inp.value = '';
+      _waAutoMark(phone);
       // The worker records the outgoing message → the live listener
       // clears the row within a second. No manual bookkeeping needed.
     } else if (r.status === 403) {
@@ -16730,6 +16746,7 @@ window.waVoiceSend = async function(phone) {
       toast('✓ ההקלטה נשלחה בוואטסאפ');
       if (window.haptic) window.haptic.success();
       _waVoiceDrop(phone);
+      _waAutoMark(phone);
       _waPaint();
     } else if (r.status === 403) {
       try { localStorage.removeItem('wa_send_secret'); } catch (_) {}
