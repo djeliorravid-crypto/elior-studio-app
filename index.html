@@ -6257,7 +6257,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v396</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v397</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16268,6 +16268,18 @@ function _waListen() {
       delete _waRaw[s.key];
       if (!boot) _waProcess(_waRaw);
     });
+    // Async delivery FAILURES from Meta (rejected media etc.) — the
+    // worker records them; here they become a visible toast instead
+    // of a silent black hole.
+    const attachedAt = Date.now();
+    firebaseDB.ref('whatsapp/fails').limitToLast(1).on('child_added', s => {
+      const f = s.val() || {};
+      if (f.ts && f.ts > attachedAt) {
+        toast('⚠️ וואטסאפ דחה את ההודעה: ' + (f.err || 'שגיאה'));
+        _waLastErr = 'דחייה: ' + (f.err || '');
+        _waPaintIfVisible();
+      }
+    });
     // Connection watchdog: iOS loves killing the socket — the moment
     // Firebase reports offline, shove it back online.
     firebaseDB.ref('.info/connected').on('value', s => {
@@ -16421,9 +16433,62 @@ let _waMicOk = false;
 })();
 let _waRec = null;
 let _waVoicePending = {};   // phone → { blob, url, mime } awaiting review
+// WhatsApp's native voice-note format is OGG/Opus — iOS's default
+// recording (AAC/mp4) gets silently DROPPED by Meta after a 200 OK.
+// So we encode Opus in-app (vendored opus-recorder), which also gives
+// the real voice-note bubble with a waveform on the other side.
+let _waOpusReady = null;
+function _waLoadOpus() {
+  if (_waOpusReady) return _waOpusReady;
+  _waOpusReady = new Promise(resolve => {
+    if (window.Recorder && window.Recorder.isRecordingSupported) return resolve(true);
+    const s = document.createElement('script');
+    s.src = 'opus/recorder.min.js';
+    s.onload = () => resolve(!!(window.Recorder && Recorder.isRecordingSupported && Recorder.isRecordingSupported()));
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
+  return _waOpusReady;
+}
+function _waFinishRecording(phone, blob, mime) {
+  if (blob.size < 1500) { toast('הקלטה קצרה מדי — נסה שוב'); _waPaint(); return; }
+  if (blob.size > 8 * 1024 * 1024) { toast('ההקלטה ארוכה מדי'); _waPaint(); return; }
+  // Review-before-send, like WhatsApp: player + approve / redo / cancel.
+  _waVoicePending[phone] = { blob, url: URL.createObjectURL(blob), mime };
+  _waPaint();
+}
 window.waVoice = async function(phone) {
   const btn = document.getElementById('wa-mic-' + phone);
   if (_waRec) { try { _waRec.stop(); } catch (_) {} return; }
+  const setRecUI = () => {
+    if (btn) { btn.classList.add('rec'); btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="#fff" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'; }
+    toast('🔴 מקליט… לחץ שוב לסיום');
+  };
+  const useOpus = await _waLoadOpus();
+  if (useOpus) {
+    try {
+      const rec = new Recorder({
+        encoderPath: 'opus/encoderWorker.min.js',
+        encoderSampleRate: 16000,
+        numberOfChannels: 1,
+        encoderApplication: 2048,
+        streamPages: false
+      });
+      _waRec = { stop: () => rec.stop() };
+      rec.ondataavailable = arr => {
+        _waRec = null;
+        _waFinishRecording(phone, new Blob([arr], { type: 'audio/ogg' }), 'audio/ogg');
+      };
+      rec.onstop = () => { _waRec = null; };
+      await rec.start();
+      setRecUI();
+      const self = _waRec;
+      setTimeout(() => { if (_waRec === self) { try { rec.stop(); } catch (_) {} } }, 120000);
+      return;
+    } catch (_) { _waRec = null; /* fall through to MediaRecorder */ }
+  }
+  // Fallback: system recorder (AAC) — may be rejected by Meta, but
+  // better than nothing on devices without Opus support.
   let stream = null;
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -16431,22 +16496,13 @@ window.waVoice = async function(phone) {
   const chunks = [];
   const mr = new MediaRecorder(stream);
   _waRec = mr;
-  if (btn) { btn.classList.add('rec'); btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="#fff" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'; }
-  toast('🔴 מקליט… לחץ שוב לסיום');
+  setRecUI();
   mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
   mr.onstop = () => {
     stream.getTracks().forEach(t => t.stop());
     _waRec = null;
     const blob = new Blob(chunks, { type: mr.mimeType || 'audio/mp4' });
-    if (blob.size < 1500) { toast('הקלטה קצרה מדי — נסה שוב'); _waPaint(); return; }
-    if (blob.size > 8 * 1024 * 1024) { toast('ההקלטה ארוכה מדי'); _waPaint(); return; }
-    // Review-before-send, like WhatsApp: player + approve / redo / cancel.
-    _waVoicePending[phone] = {
-      blob,
-      url: URL.createObjectURL(blob),
-      mime: (mr.mimeType || 'audio/mp4').split(';')[0]
-    };
-    _waPaint();
+    _waFinishRecording(phone, blob, (mr.mimeType || 'audio/mp4').split(';')[0]);
   };
   mr.start();
   setTimeout(() => { if (_waRec === mr) { try { mr.stop(); } catch (_) {} } }, 120000);

@@ -249,8 +249,26 @@ async function processWebhook(body, env) {
             await fetch(FIREBASE + '/msgs.json', { method: 'POST', body: JSON.stringify(rec) });
             stored++;
           }
-          // Delivery/read receipts — known noise, count as handled.
-          if (Array.isArray(v.statuses) && v.statuses.length) stored++;
+          // Delivery/read receipts — mostly noise, but FAILURES are
+          // gold: Meta accepts a message with 200 and can reject it
+          // asynchronously (e.g. unsupported audio codec). Surface it.
+          if (Array.isArray(v.statuses) && v.statuses.length) {
+            stored++;
+            for (const st of v.statuses) {
+              if (st.status === 'failed') {
+                const e0 = (st.errors && st.errors[0]) || {};
+                await fetch(FIREBASE + '/fails.json', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    to: String(st.recipient_id || '').replace(/\D/g, ''),
+                    err: e0.message || e0.title || 'נכשל',
+                    code: e0.code || 0,
+                    ts: Date.now()
+                  })
+                });
+              }
+            }
+          }
         }
       }
       if (Object.keys(names).length) {
