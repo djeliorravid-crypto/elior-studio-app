@@ -3783,6 +3783,26 @@
     @keyframes waPulse { 50% { opacity: 0.6; } }
     .wa-voice-review { margin-top: 4px; }
     .wa-voice-review audio { width: 100%; height: 40px; }
+    /* WhatsApp-style hold-to-record */
+    .wa-replyrow { position: relative; }
+    .wa-mic { touch-action: none; -webkit-user-select: none; user-select: none; }
+    .wa-mic.big { transform: scale(1.4); border-radius: 50%; transition: transform .15s; }
+    .wa-recbar { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0 4px; }
+    .wa-recdot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); animation: waPulse 1s infinite; flex-shrink: 0; }
+    .wa-rectime { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 16px; color: var(--text); flex-shrink: 0; }
+    .wa-reccancel { flex: 1; text-align: center; color: var(--text-muted); font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+    .wa-lockpill {
+      position: absolute; bottom: calc(100% + 10px); left: 46px;
+      transform: translateX(-50%);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px; padding: 8px 9px 6px; text-align: center;
+      font-size: 15px; line-height: 1.1; box-shadow: var(--shadow-md, 0 6px 16px rgba(0,0,0,0.25));
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .wa-lockpill span { font-size: 11px; color: var(--text-muted); animation: waNudge 1s infinite; }
+    .wa-lockpill.hot { background: var(--green); border-color: var(--green); color: #fff; }
+    .wa-lockpill.hot span { color: #fff; }
+    @keyframes waNudge { 50% { transform: translateY(-3px); } }
     .wa-item-msg {
       margin: 8px 0 10px; font-size: 15px; line-height: 1.5; color: var(--text);
       background: var(--surface2); border-radius: 12px; padding: 10px 13px;
@@ -6257,7 +6277,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v397</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v398</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16345,11 +16365,14 @@ function _waRow(c, isWaiting) {
           + '<span>·</span><button onclick="waVoiceRedo(\'' + phoneEsc + '\')">הקלט מחדש</button>'
           + '<span>·</span><button onclick="waVoiceCancel(\'' + phoneEsc + '\')">בטל</button>'
           + '</div></div>'
-        : '<div class="wa-replyrow">'
+        : '<div class="wa-replyrow" id="wa-rr-' + phoneEsc + '">'
           + '<input id="wa-in-' + phoneEsc + '" placeholder="כתוב תשובה…" '
           + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
-          + (_waMicOk ? '<button class="wa-mic" id="wa-mic-' + phoneEsc + '" onclick="waVoice(\'' + phoneEsc + '\')" title="הקלטה קולית">'
-            + '<svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg>'
+          + (_waMicOk ? '<button class="wa-mic" id="wa-mic-' + phoneEsc + '" title="החזק להקלטה"'
+            + ' ontouchstart="waRecTS(event,\'' + phoneEsc + '\')" ontouchmove="waRecTM(event)" ontouchend="waRecTE(event)" ontouchcancel="waRecTE(event)"'
+            + ' onmousedown="waRecTS(event,\'' + phoneEsc + '\')" onmouseup="waRecTE(event)"'
+            + ' oncontextmenu="return false">'
+            + '<svg viewBox="0 0 24 24" style="width:18px;height:18px;pointer-events:none" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg>'
             + '</button>' : '')
           + '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
           + '</div>')
@@ -16457,63 +16480,181 @@ function _waFinishRecording(phone, blob, mime) {
   _waVoicePending[phone] = { blob, url: URL.createObjectURL(blob), mime };
   _waPaint();
 }
-window.waVoice = async function(phone) {
-  const btn = document.getElementById('wa-mic-' + phone);
-  if (_waRec) { try { _waRec.stop(); } catch (_) {} return; }
-  const setRecUI = () => {
-    if (btn) { btn.classList.add('rec'); btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="#fff" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'; }
-    toast('🔴 מקליט… לחץ שוב לסיום');
-  };
+// ══════════ WhatsApp-style hold-to-record ══════════
+// Hold the mic → recording starts instantly with a running timer.
+// Slide UP → lock (hands-free, stop→review). Slide sideways → cancel.
+// Release (unlocked) → sends immediately. Exactly the WhatsApp UX.
+let _waRecState = null;
+async function _waRecEngineStart(onBlob) {
   const useOpus = await _waLoadOpus();
   if (useOpus) {
-    try {
-      const rec = new Recorder({
-        encoderPath: 'opus/encoderWorker.min.js',
-        encoderSampleRate: 16000,
-        numberOfChannels: 1,
-        encoderApplication: 2048,
-        streamPages: false
-      });
-      _waRec = { stop: () => rec.stop() };
-      rec.ondataavailable = arr => {
-        _waRec = null;
-        _waFinishRecording(phone, new Blob([arr], { type: 'audio/ogg' }), 'audio/ogg');
-      };
-      rec.onstop = () => { _waRec = null; };
-      await rec.start();
-      setRecUI();
-      const self = _waRec;
-      setTimeout(() => { if (_waRec === self) { try { rec.stop(); } catch (_) {} } }, 120000);
-      return;
-    } catch (_) { _waRec = null; /* fall through to MediaRecorder */ }
+    const rec = new Recorder({
+      encoderPath: 'opus/encoderWorker.min.js',
+      encoderSampleRate: 16000,
+      numberOfChannels: 1,
+      encoderApplication: 2048,
+      streamPages: false
+    });
+    rec.ondataavailable = arr => onBlob(new Blob([arr], { type: 'audio/ogg' }), 'audio/ogg');
+    await rec.start();
+    return { stop: () => { try { rec.stop(); } catch (_) {} } };
   }
-  // Fallback: system recorder (AAC) — may be rejected by Meta, but
-  // better than nothing on devices without Opus support.
-  let stream = null;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (_) { toast('אין גישה למיקרופון — אשר בהגדרות'); return; }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   const chunks = [];
   const mr = new MediaRecorder(stream);
-  _waRec = mr;
-  setRecUI();
   mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
   mr.onstop = () => {
     stream.getTracks().forEach(t => t.stop());
-    _waRec = null;
-    const blob = new Blob(chunks, { type: mr.mimeType || 'audio/mp4' });
-    _waFinishRecording(phone, blob, (mr.mimeType || 'audio/mp4').split(';')[0]);
+    onBlob(new Blob(chunks, { type: mr.mimeType || 'audio/mp4' }), (mr.mimeType || 'audio/mp4').split(';')[0]);
   };
   mr.start();
-  setTimeout(() => { if (_waRec === mr) { try { mr.stop(); } catch (_) {} } }, 120000);
+  return { stop: () => { try { mr.stop(); } catch (_) {} } };
+}
+function _waRecTimeStr() {
+  if (!_waRecState) return '0:00';
+  const s = Math.floor((Date.now() - _waRecState.startTs) / 1000);
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function _waRecShowHoldUI() {
+  const s = _waRecState;
+  if (!s) return;
+  const rr = document.getElementById('wa-rr-' + s.phone);
+  if (!rr) return;
+  rr.classList.add('recording');
+  const inp = document.getElementById('wa-in-' + s.phone);
+  const send = document.getElementById('wa-btn-' + s.phone);
+  if (inp) inp.style.display = 'none';
+  if (send) send.style.display = 'none';
+  const bar = document.createElement('div');
+  bar.className = 'wa-recbar';
+  bar.id = 'wa-recbar';
+  bar.innerHTML = '<span class="wa-recdot"></span><span class="wa-rectime" id="wa-rectime">0:00</span>'
+    + '<span class="wa-reccancel" id="wa-reccancel">‹ החלק לביטול</span>';
+  rr.insertBefore(bar, rr.firstChild);
+  const lock = document.createElement('div');
+  lock.className = 'wa-lockpill';
+  lock.id = 'wa-lockpill';
+  lock.innerHTML = '🔒<span>▲</span>';
+  rr.appendChild(lock);
+  const mic = document.getElementById('wa-mic-' + s.phone);
+  if (mic) mic.classList.add('rec', 'big');
+}
+function _waRecShowLockedUI() {
+  const s = _waRecState;
+  if (!s) return;
+  const rr = document.getElementById('wa-rr-' + s.phone);
+  if (!rr) return;
+  rr.innerHTML = '<div class="wa-recbar"><span class="wa-recdot"></span>'
+    + '<span class="wa-rectime" id="wa-rectime">' + _waRecTimeStr() + '</span>'
+    + '<span style="flex:1"></span>'
+    + '<button class="btn btn-ghost btn-sm" onclick="waRecCancelBtn()">בטל</button>'
+    + '<button class="btn btn-primary btn-sm" onclick="waRecStopLocked()">⏹ עצור</button></div>';
+}
+window.waRecTS = async function(ev, phone) {
+  try { ev.preventDefault(); } catch (_) {}
+  if (_waRecState || _waVoicePending[phone]) return;
+  const t = (ev.touches && ev.touches[0]) || ev;
+  const st = {
+    phone,
+    startX: t.clientX, startY: t.clientY,
+    startTs: Date.now(),
+    locked: false, cancelled: false, released: false,
+    engine: null, timerInt: null
+  };
+  _waRecState = st;
+  try {
+    st.engine = await _waRecEngineStart((blob, mime) => _waRecFinish(blob, mime));
+  } catch (_) {
+    _waRecState = null;
+    toast('אין גישה למיקרופון — אשר בהגדרות');
+    return;
+  }
+  // If the finger already lifted while permissions were settling:
+  if (st.released && !st.locked) { st.engine.stop(); return; }
+  st.startTs = Date.now();
+  if (window.haptic) window.haptic.tap();
+  _waRecShowHoldUI();
+  st.timerInt = setInterval(() => {
+    const el = document.getElementById('wa-rectime');
+    if (el) el.textContent = _waRecTimeStr();
+  }, 250);
+  setTimeout(() => { if (_waRecState === st) { try { st.engine.stop(); } catch (_) {} } }, 120000);
 };
+window.waRecTM = function(ev) {
+  const s = _waRecState;
+  if (!s || s.locked || s.cancelled) return;
+  try { ev.preventDefault(); } catch (_) {}
+  const t = (ev.touches && ev.touches[0]) || ev;
+  const dx = t.clientX - s.startX;
+  const dy = t.clientY - s.startY;
+  const cancelEl = document.getElementById('wa-reccancel');
+  if (cancelEl) cancelEl.style.opacity = String(Math.max(0.2, 1 - Math.abs(dx) / 90));
+  const lockEl = document.getElementById('wa-lockpill');
+  if (lockEl) lockEl.classList.toggle('hot', dy < -30);
+  if (Math.abs(dx) > 90) {          // slide sideways → cancel
+    s.cancelled = true;
+    if (window.haptic) window.haptic.tap();
+    try { s.engine.stop(); } catch (_) {}
+    return;
+  }
+  if (dy < -65) {                    // slide up → lock
+    s.locked = true;
+    if (window.haptic) window.haptic.success();
+    _waRecShowLockedUI();
+  }
+};
+window.waRecTE = function(ev) {
+  const s = _waRecState;
+  if (!s) return;
+  try { ev.preventDefault(); } catch (_) {}
+  s.released = true;
+  if (s.locked || s.cancelled) return;   // locked keeps going; cancelled already stopping
+  if (Date.now() - s.startTs < 700) {    // tap too short
+    s.cancelled = true;
+    toast('החזק את הכפתור כדי להקליט');
+  }
+  if (s.engine) { try { s.engine.stop(); } catch (_) {} }
+};
+window.waRecCancelBtn = function() {
+  const s = _waRecState;
+  if (!s) return;
+  s.cancelled = true;
+  try { s.engine.stop(); } catch (_) {}
+};
+window.waRecStopLocked = function() {
+  const s = _waRecState;
+  if (!s) return;
+  s.review = true;                       // locked stop → review panel
+  try { s.engine.stop(); } catch (_) {}
+};
+function _waRecFinish(blob, mime) {
+  const s = _waRecState;
+  _waRecState = null;
+  if (s && s.timerInt) clearInterval(s.timerInt);
+  if (!s) return;
+  if (s.cancelled) { _waPaint(); return; }
+  if (blob.size < 1200) { toast('הקלטה קצרה מדי'); _waPaint(); return; }
+  if (blob.size > 8 * 1024 * 1024) { toast('ההקלטה ארוכה מדי'); _waPaint(); return; }
+  _waVoicePending[s.phone] = { blob, url: URL.createObjectURL(blob), mime };
+  if (s.review) {
+    // locked → stopped: show the review player
+    _waPaint();
+  } else {
+    // hold-release: send immediately, exactly like WhatsApp
+    _waPaint();
+    toast('⏳ שולח הקלטה…');
+    waVoiceSend(s.phone);
+  }
+}
+// (kept for the review panel's re-record button)
+window.waVoice = function(phone) { toast('החזק את כפתור המיקרופון כדי להקליט'); };
 function _waVoiceDrop(phone) {
   const pv = _waVoicePending[phone];
   if (pv) { try { URL.revokeObjectURL(pv.url); } catch (_) {} }
   delete _waVoicePending[phone];
 }
 window.waVoiceCancel = function(phone) { _waVoiceDrop(phone); _waPaint(); };
-window.waVoiceRedo = function(phone) { _waVoiceDrop(phone); _waPaint(); setTimeout(() => waVoice(phone), 150); };
+window.waVoiceRedo = function(phone) { _waVoiceDrop(phone); _waPaint(); toast('החזק את המיקרופון להקלטה חדשה'); };
 window.waVoiceSend = async function(phone) {
   const pv = _waVoicePending[phone];
   if (!pv) return;
@@ -16553,6 +16694,8 @@ window.waVoiceSend = async function(phone) {
 function _waPaint() {
   const wEl = document.getElementById('wa-waiting');
   if (!wEl) return;
+  // Never rebuild the DOM while a finger is holding the record button.
+  if (_waRecState) return;
   if (!_waConvs) {
     wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">' + (_waListening ? 'טוען שיחות…' : 'מתחבר לענן…') + '</div>';
     return;
