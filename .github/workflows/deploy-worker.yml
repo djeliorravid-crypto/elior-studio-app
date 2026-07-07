@@ -26,3 +26,25 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Re-install the worker's secrets from GitHub repo secrets on
+      # every deploy — GitHub is the single place secrets are managed;
+      # nobody ever touches the Cloudflare dashboard again. Missing
+      # ones are skipped silently (e.g. APNS_* until Apple setup).
+      - name: Sync worker secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          SEND_SECRET: ${{ secrets.SEND_SECRET }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+          APNS_KEY: ${{ secrets.APNS_KEY }}
+          APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
+          APNS_TEAM_ID: ${{ secrets.APNS_TEAM_ID }}
+        run: |
+          for k in WHATSAPP_TOKEN SEND_SECRET GEMINI_KEY APNS_KEY APNS_KEY_ID APNS_TEAM_ID; do
+            v="${!k}"
+            if [ -n "$v" ]; then
+              printf '%s' "$v" | npx wrangler@3.90.0 secret put "$k" && echo "✓ $k installed"
+            else
+              echo "– $k not set in GitHub secrets, skipped"
+            fi
+          done
