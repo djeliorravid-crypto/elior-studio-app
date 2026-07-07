@@ -1,10 +1,11 @@
 # Deploys whatsapp-worker.js to Cloudflare on every push that touches
 # it — replaces pasting code into the dashboard editor (impossible on
 # a phone) and the manual Cron Triggers step (wrangler.jsonc carries
-# the cron). Needs two repo secrets, added once:
-#   CLOUDFLARE_API_TOKEN  — dash.cloudflare.com/profile/api-tokens →
-#                           Create Token → "Edit Cloudflare Workers"
-#   CLOUDFLARE_ACCOUNT_ID — Workers & Pages overview → right sidebar
+# the cron). Needs ONE repo secret, added once:
+#   CLOUDFLARE_API_TOKEN — dash.cloudflare.com/profile/api-tokens →
+#                          Create Token → "Edit Cloudflare Workers"
+# (no account id needed — the token is scoped to a single account and
+#  wrangler auto-detects it)
 name: Deploy WhatsApp Worker
 
 on:
@@ -25,4 +26,3 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
