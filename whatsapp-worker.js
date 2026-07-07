@@ -201,7 +201,13 @@ async function flushOutbox(env) {
       const to = String(it.to || '').replace(/\D/g, '');
       const text = String(it.text || '').slice(0, 4000);
       if (!to || !text || !env.SEND_SECRET || !env.WHATSAPP_TOKEN) {
-        await mark({ status: 'failed', err: 'הגדרה חסרה', doneTs: now });
+        // Name the exact missing piece — 'הגדרה חסרה' sent Elior
+        // guessing. (Secrets must be added as type SECRET in the
+        // dashboard; plain-text vars get wiped on every deploy.)
+        const missing = !to ? 'מספר' : !text ? 'טקסט'
+          : !env.SEND_SECRET ? 'SEND_SECRET חסר בענן (Settings → Variables, סוג Secret)'
+          : 'WHATSAPP_TOKEN חסר בענן (Settings → Variables, סוג Secret)';
+        await mark({ status: 'failed', err: missing, doneTs: now });
         continue;
       }
       const expect = await sha256hex(env.SEND_SECRET + '|' + to + '|' + text + '|' + it.at);
