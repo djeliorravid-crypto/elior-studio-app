@@ -6195,7 +6195,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v381</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v382</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6324,6 +6324,7 @@
     <a onclick="showPage('income')" data-page="income"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span> הכנסות</a>
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg></span> הוצאות</a>
     <a onclick="showPage('schedule')" data-page="schedule"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><circle cx="8" cy="14" r="0.8" fill="currentColor"/><circle cx="12" cy="14" r="0.8" fill="currentColor"/><circle cx="16" cy="14" r="0.8" fill="currentColor"/></svg></span> לוז יומי</a>
+    <a onclick="showPage('whatsapp')" data-page="whatsapp"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.5L3 21l2-5.6A8.5 8.5 0 1 1 21 11.5z"/></svg></span> וואטסאפ</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span> תשלומים</a>
     <!-- כרטיסיית לקוחות מוסתרת לפי בקשה — להחזרה: מחק את style="display:none" -->
     <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="8" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> לקוחות</a>
@@ -6607,6 +6608,23 @@
 </div>
 
 <main class="main" id="business-main">
+
+  <!-- ===== WHATSAPP — waiting-for-reply (coexistence pipeline) ===== -->
+  <div class="page" id="page-whatsapp">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <h2>וואטסאפ</h2>
+      <button class="btn btn-ghost btn-sm" onclick="renderWhatsappPage()">רענן</button>
+    </div>
+    <div class="table-card mp-card" style="border-top:3px solid var(--red)">
+      <div class="mp-section-title">ממתינים לתשובה</div>
+      <div class="mp-sub">שיחות שההודעה האחרונה בהן היא מהלקוח — ואתה עוד לא ענית.</div>
+      <div id="wa-waiting"></div>
+    </div>
+    <div class="table-card mp-card">
+      <div class="mp-section-title">שיחות אחרונות</div>
+      <div id="wa-recent"></div>
+    </div>
+  </div>
 
   <!-- ===== UNIFIED CALENDAR (יומן + גוגל) — hidden, kept for gcal sync logic ===== -->
   <div class="page" id="page-gcal" style="display:none!important">
@@ -8550,7 +8568,8 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
-  const map = {productions:0, income:1, expenses:2, schedule:3, installments:4, profiles:5, daily:6, workshops:7, proposals:8, contracts:9, students:10, dashboard:11};
+  const map = {productions:0, income:1, expenses:2, schedule:3, whatsapp:4, installments:5, profiles:6, daily:7, workshops:8, proposals:9, contracts:10, students:11, dashboard:12};
+  if (name === 'whatsapp') { try { renderWhatsappPage(); } catch (e) {} }
   if (name === 'daily') _dailyDate = dailyDateStr();
   if (name === 'schedule') {
     _scheduleDate = dailyDateStr();
@@ -15906,9 +15925,14 @@ function _briefCompose(targetKey) {
     const stepLine = hs
       ? '👟 אתמול ' + hs.toLocaleString('he-IL') + ' צעדים' + (hs >= tSteps ? ' — היעד הושג!' : ' מתוך ' + tSteps.toLocaleString('he-IL'))
       : '';
+    let waLine = '';
+    try {
+      const s = JSON.parse(localStorage.getItem('wa_waiting_summary') || 'null');
+      if (s && s.n) waLine = '💬 ' + (s.n === 1 ? 'לקוח אחד מחכה' : s.n + ' לקוחות מחכים') + ' לתשובה בוואטסאפ';
+    } catch (_) {}
     return {
       title: '☀️ הבוקר שלך' + (dayLine ? ' · ' + dayLine : ''),
-      body: [schedLine, moneyLine, stepLine].filter(Boolean).join('\n')
+      body: [schedLine, moneyLine, waLine, stepLine].filter(Boolean).join('\n')
     };
   } catch (_) {
     return { title: '☀️ בוקר טוב', body: 'פתח את האפליקציה למצב העסק והבריאות של היום.' };
@@ -15962,6 +15986,117 @@ setTimeout(() => { try { window._briefKick(); } catch (_) {} }, 12000);
     });
   } catch (_) {}
 })();
+
+// ═════════════════════════════════════════════════════════════════
+//  WHATSAPP INBOX — the coexistence pipeline's payoff. Messages land
+//  in Firebase RTDB at /whatsapp/msgs (written by the Cloudflare
+//  worker); here they become conversations, and any conversation
+//  whose LAST message is from the customer = "waiting for reply".
+//  The /whatsapp/debug node (statuses, history sync) is junk — we
+//  wipe it on every fetch so the DB stays lean.
+// ═════════════════════════════════════════════════════════════════
+function _waPhonePretty(p) {
+  const d = String(p || '');
+  return d.startsWith('972') ? ('0' + d.slice(3)) : d;
+}
+function _waDismissed() {
+  try { return JSON.parse(localStorage.getItem('wa_dismissed') || '{}') || {}; } catch (_) { return {}; }
+}
+async function _waFetch() {
+  if (!firebaseDB) return null;
+  // "קו אפס" — his explicit ask: archived people he deliberately
+  // ignores must not appear. Only messages arriving AFTER the first
+  // run of this feature count; history-sync (old timestamps) is out.
+  let epoch = 0;
+  try { epoch = Number(localStorage.getItem('wa_epoch')) || 0; } catch (_) {}
+  if (!epoch) {
+    epoch = Date.now();
+    try { localStorage.setItem('wa_epoch', String(epoch)); } catch (_) {}
+  }
+  const snap = await firebaseDB.ref('whatsapp/msgs').limitToLast(600).once('value');
+  const raw = snap.val() || {};
+  try { firebaseDB.ref('whatsapp/debug').remove(); } catch (_) {}
+  const msgs = Object.keys(raw).map(k => raw[k]).filter(m => m && m.phone && m.ts && m.ts >= epoch);
+  const conv = {};
+  msgs.forEach(m => {
+    const c = conv[m.phone] = conv[m.phone] || { phone: String(m.phone), name: '', lastTs: 0, lastDir: '', lastText: '', lastInTs: 0 };
+    if (m.dir === 'in' && m.name) c.name = m.name;
+    if (m.ts >= c.lastTs) { c.lastTs = m.ts; c.lastDir = m.dir; c.lastText = m.text || ''; }
+    if (m.dir === 'in' && m.ts > c.lastInTs) c.lastInTs = m.ts;
+  });
+  const dis = _waDismissed();
+  const clients = load('clients');
+  const list = Object.values(conv).map(c => {
+    const cl = clients.find(x => _waPhone(x.phone) === c.phone);
+    if (cl) c.client = cl.name;
+    c.waiting = c.lastDir === 'in' && c.lastInTs > (dis[c.phone] || 0);
+    return c;
+  }).sort((a, b) => b.lastTs - a.lastTs);
+  // Summary cache — feeds the morning brief without a network call.
+  try {
+    const waiting = list.filter(c => c.waiting);
+    localStorage.setItem('wa_waiting_summary', JSON.stringify({
+      n: waiting.length,
+      oldestTs: waiting.length ? Math.min.apply(null, waiting.map(c => c.lastInTs)) : 0,
+      at: Date.now()
+    }));
+  } catch (_) {}
+  return list;
+}
+function _waAgo(ts) {
+  const m = Math.max(1, Math.round((Date.now() - ts) / 60000));
+  if (m < 60) return m + ' דק׳';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + ' שע׳';
+  return Math.floor(h / 24) + ' ימים';
+}
+function _waRow(c, isWaiting) {
+  const nm = _escape(c.client || c.name || _waPhonePretty(c.phone));
+  const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
+  return '<div class="dun-row">'
+    + '<div class="dun-info"><div class="dun-name">' + (isWaiting ? '🔴 ' : (c.lastDir === 'in' ? '💬 ' : '↩️ ')) + nm + '</div>'
+    + '<div class="dun-meta">' + _escape((c.lastText || '').slice(0, 60)) + ' · לפני ' + _waAgo(c.lastTs)
+    + (isWaiting ? ' · <strong>מחכה ' + _waAgo(c.lastInTs) + '</strong>' : '') + '</div></div>'
+    + '<button class="btn btn-primary btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
+    + (isWaiting ? '<button class="btn btn-ghost btn-sm" onclick="waDismiss(\'' + phoneEsc + '\')">טופל</button>' : '')
+    + '</div>';
+}
+window.renderWhatsappPage = async function() {
+  const wEl = document.getElementById('wa-waiting');
+  const rEl = document.getElementById('wa-recent');
+  if (!wEl) return;
+  wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">טוען שיחות…</div>';
+  let list = null;
+  try { list = await _waFetch(); } catch (_) { list = null; }
+  if (!list) {
+    wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">אין חיבור לענן כרגע — נסה לרענן בעוד רגע.</div>';
+    if (rEl) rEl.innerHTML = '';
+    return;
+  }
+  const waiting = list.filter(c => c.waiting).sort((a, b) => a.lastInTs - b.lastInTs);
+  wEl.innerHTML = waiting.length
+    ? waiting.map(c => _waRow(c, true)).join('')
+    : '<div class="mp-empty" style="padding:10px 0">🎉 אף אחד לא מחכה לתשובה.</div>';
+  if (rEl) {
+    rEl.innerHTML = list.slice(0, 25).map(c => _waRow(c, false)).join('')
+      || '<div class="mp-empty" style="padding:10px 0">עוד אין שיחות בצינור — הן ייכנסו מעכשיו והלאה.</div>';
+  }
+};
+window.waDismiss = function(phone) {
+  const d = _waDismissed();
+  d[phone] = Date.now();
+  try { localStorage.setItem('wa_dismissed', JSON.stringify(d)); } catch (_) {}
+  renderWhatsappPage();
+};
+// Quiet background refresh so the waiting summary (and morning brief
+// line) stays current while he works in business mode.
+setTimeout(() => { try { _waFetch(); } catch (_) {} }, 15000);
+setInterval(() => {
+  try {
+    const bm = document.getElementById('business-main');
+    if (bm && getComputedStyle(bm).display !== 'none') _waFetch();
+  } catch (_) {}
+}, 600000);
 
 // ── Collection modal — one-tap WhatsApp dunning per client ──
 function _waPhone(p) {
