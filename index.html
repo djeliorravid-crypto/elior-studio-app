@@ -6283,7 +6283,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v403</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v404</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -23439,7 +23439,11 @@ async function gcalRefreshEventKit() {
     const all = [];
     for (const t of targets) {
       try {
-        const res = await Cal.listEvents({ startDate: t, endDate: t });
+        // googleOnly:false — WhatsApp's "הוספה ללוח השנה" (and Siri,
+        // and anything else) writes to the iOS DEFAULT calendar,
+        // which is usually iCloud. Reading only Google calendars
+        // made those events invisible in the schedule.
+        const res = await Cal.listEvents({ startDate: t, endDate: t, googleOnly: false });
         if (res && res.events) all.push.apply(all, res.events);
       } catch (e) {}
     }
