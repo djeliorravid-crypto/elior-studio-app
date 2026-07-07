@@ -14,6 +14,15 @@
 //    SEND_SECRET    — a password of your choosing; the app asks for
 //                     it once and sends it with every /send call
 //
+//  HOURLY SERVER PUSH (v8) — the worker itself reminds Elior's iPhone
+//  "X אנשים מחכים לתשובה" through Apple Push, so reminders arrive even
+//  when the app has been closed for days. Needs:
+//    • a Cron Trigger:  Settings → Triggers → Cron Triggers → 0 * * * *
+//    • three more secrets: APNS_KEY (the full contents of the .p8 key
+//      file from Apple Developer → Keys), APNS_KEY_ID, APNS_TEAM_ID
+//  Without them the cron runs and quietly does nothing (result logged
+//  to /whatsapp/pushlog for debugging).
+//
 //  Deploy: Cloudflare dashboard → Workers → Create → paste → Deploy.
 //  The public URL of this worker is the "Webhook URL" DualHook asks
 //  for, and VERIFY_TOKEN below is the "Verify token".
@@ -85,6 +94,7 @@ export default {
           method: 'POST',
           body: JSON.stringify({ dir: 'out', phone: to, text, ts: Date.now(), via: 'app' })
         });
+        await fetch(FIREBASE + '/waiting/' + to + '.json', { method: 'DELETE' });
         return json({ ok: true });
       }
       return json({ error: (j.error && j.error.message) || ('graph ' + r.status), code: j.error && j.error.code });
@@ -134,6 +144,7 @@ export default {
           method: 'POST',
           body: JSON.stringify({ dir: 'out', phone: to, text: '[הקלטה קולית]', type: 'audio', ts: Date.now(), via: 'app' })
         });
+        await fetch(FIREBASE + '/waiting/' + to + '.json', { method: 'DELETE' });
         return json({ ok: true });
       }
       return json({ error: (j.error && j.error.message) || ('graph ' + r.status), code: j.error && j.error.code });
@@ -150,8 +161,89 @@ export default {
     }
     await processWebhook(body, env);
     return new Response('ok', { status: 200 });
+  },
+
+  // Hourly Cron Trigger (0 * * * *): count who's still waiting and
+  // push the reminder straight to the iPhone — works with the app
+  // closed, which local notifications never could.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(hourlyPush(env));
   }
 };
+
+// ── Hourly "X מחכים לתשובה" push over Apple Push (APNs) ──
+async function hourlyPush(env) {
+  const log = { ts: Date.now(), count: 0, sent: false, err: '' };
+  try {
+    // Quiet hours 22:00–08:00 Israel time — same rule as in the app.
+    const h = Number(new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Jerusalem', hour: 'numeric', hour12: false
+    }).format(new Date())) % 24;
+    if (h < 8 || h >= 22) { log.err = 'quiet hours'; return; }
+
+    const [waiting, cls, marks, push] = await Promise.all([
+      fetch(FIREBASE + '/waiting.json').then(r => r.json()).catch(() => null),
+      fetch(FIREBASE + '/cls.json').then(r => r.json()).catch(() => null),
+      fetch(FIREBASE + '/clients.json').then(r => r.json()).catch(() => null),
+      fetch(FIREBASE + '/push.json').then(r => r.json()).catch(() => null)
+    ]);
+    const MONTH = 30 * 24 * 3600 * 1000;
+    const phones = Object.keys(waiting || {}).filter(p => {
+      const ts = Number(waiting[p]) || 0;
+      if (!ts || Date.now() - ts > MONTH) return false;        // stale
+      if (marks && marks[p] === false) return false;           // "לא רלוונטי"
+      if (cls && cls[p] === 'skip') return false;              // friends/family
+      return true;                                             // client or lead
+    });
+    log.count = phones.length;
+    if (!phones.length) return;
+    if (!push || !push.token) { log.err = 'no device token yet'; return; }
+    if (!env.APNS_KEY || !env.APNS_KEY_ID || !env.APNS_TEAM_ID) { log.err = 'APNS secrets missing'; return; }
+
+    const body = phones.length === 1
+      ? 'לקוח אחד מחכה לתשובה בוואטסאפ'
+      : phones.length + ' אנשים מחכים לתשובה בוואטסאפ';
+    const jwt = await apnsJwt(env);
+    const r = await fetch('https://api.push.apple.com/3/device/' + push.token, {
+      method: 'POST',
+      headers: {
+        'authorization': 'bearer ' + jwt,
+        'apns-topic': 'com.ravidstudio.app',
+        'apns-push-type': 'alert',
+        'apns-priority': '10'
+      },
+      body: JSON.stringify({
+        aps: { alert: { title: '💬 מחכים לתשובה שלך', body }, sound: 'default', 'thread-id': 'wa-waiting' }
+      })
+    });
+    if (r.ok) log.sent = true;
+    else log.err = 'apns ' + r.status + ' ' + (await r.text().catch(() => '')).slice(0, 200);
+  } catch (e) {
+    log.err = (e && e.message) || 'push error';
+  } finally {
+    // Always leave a trace — one record, overwritten each run, so a
+    // silent failure is impossible to miss when debugging.
+    try { await fetch(FIREBASE + '/pushlog.json', { method: 'PUT', body: JSON.stringify(log) }); } catch (_) {}
+  }
+}
+
+// ES256 JWT for APNs, signed with the .p8 auth key (WebCrypto).
+async function apnsJwt(env) {
+  const b64u = (buf) => btoa(String.fromCharCode.apply(null, new Uint8Array(buf)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const enc = (obj) => b64u(new TextEncoder().encode(JSON.stringify(obj)));
+  const pem = String(env.APNS_KEY).replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+  const der = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    'pkcs8', der.buffer, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']
+  );
+  const head = enc({ alg: 'ES256', kid: env.APNS_KEY_ID });
+  const claims = enc({ iss: env.APNS_TEAM_ID, iat: Math.floor(Date.now() / 1000) });
+  const sig = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(head + '.' + claims)
+  );
+  return head + '.' + claims + '.' + b64u(sig);
+}
 
 // Transcribe an incoming WhatsApp voice note with Gemini (needs the
 // GEMINI_KEY secret; silently skipped without it).
@@ -192,6 +284,8 @@ async function transcribe(mediaId, env) {
 async function processWebhook(body, env) {
     let stored = 0;
     const names = {};   // phone → name, PATCHed once at the end
+    const nowWaiting = {};   // phone → ts — set when a customer writes
+    const answered = {};     // phone → true — cleared when Elior replies
     try {
       for (const entry of (body && body.entry) || []) {
         for (const change of entry.changes || []) {
@@ -238,6 +332,7 @@ async function processWebhook(body, env) {
             };
             if (rec.name && ph) names[ph] = names[ph] || rec.name;
             await fetch(FIREBASE + '/msgs.json', { method: 'POST', body: JSON.stringify(rec) });
+            if (ph) { nowWaiting[ph] = rec.ts; delete answered[ph]; }
             stored++;
           }
           // Echoes of messages sent from the WhatsApp Business app
@@ -251,6 +346,7 @@ async function processWebhook(body, env) {
               ts: (Number(m.timestamp || 0) * 1000) || Date.now()
             };
             await fetch(FIREBASE + '/msgs.json', { method: 'POST', body: JSON.stringify(rec) });
+            if (rec.phone) { answered[rec.phone] = true; delete nowWaiting[rec.phone]; }
             stored++;
           }
           // Delivery/read receipts — mostly noise, but FAILURES are
@@ -277,6 +373,15 @@ async function processWebhook(body, env) {
       }
       if (Object.keys(names).length) {
         await fetch(FIREBASE + '/names.json', { method: 'PATCH', body: JSON.stringify(names) });
+      }
+      // The waiting map is what the hourly cron push counts — customer
+      // message sets the phone, any reply from Elior (app OR phone,
+      // via the echo) clears it.
+      if (Object.keys(nowWaiting).length) {
+        await fetch(FIREBASE + '/waiting.json', { method: 'PATCH', body: JSON.stringify(nowWaiting) });
+      }
+      for (const ph of Object.keys(answered)) {
+        await fetch(FIREBASE + '/waiting/' + ph + '.json', { method: 'DELETE' });
       }
       // Nothing parsed? Keep a trimmed raw copy so the payload shape
       // can be inspected and the parser adapted.

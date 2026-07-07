@@ -4,14 +4,31 @@
 
 ## ⏳ פעולות ממתינות — לביצוע ליד המחשב (אליאור)
 
-1. **סוד GEMINI_KEY ב-Cloudflare** (בשביל תמלול הקלטות נכנסות):
-   dash.cloudflare.com → Compute → ravid-whatsapp → Settings → Variables and Secrets
-   → Add → Secret → שם `GEMINI_KEY` → ערך: מפתח הגוגל של המאמן (aistudio.google.com/apikey)
-2. **הדבקת Worker v6** (תמלול + אישור מיידי למטא):
-   Edit code → מחק הכל → הדבק מ:
-   raw.githubusercontent.com/djeliorravid-crypto/elior-studio-app/main/whatsapp-worker.js
-   → Deploy
-   (בלי זה: אין תמלול ואין mark-as-read להקלטות; כל השאר עובד)
+### התראות דחיפה מהשרת — "X מחכים לתשובה" גם כשהאפליקציה סגורה (v402)
+
+1. **מפתח APNs מאפל** (חד-פעמי):
+   developer.apple.com/account → Certificates, IDs & Profiles → **Keys** → ➕
+   → שם: `RavidPush` → סמן **Apple Push Notifications service (APNs)** → Continue → Register
+   → **Download** (קובץ `.p8` — ניתן להורדה פעם אחת בלבד!) → לרשום את ה-**Key ID**.
+   ה-**Team ID** מופיע למעלה מימין בדף החשבון (10 תווים).
+2. **להדליק Push על ה-App ID**:
+   שם → Identifiers → `com.ravidstudio.app` → סמן ✔ **Push Notifications** → Save.
+3. **3 סודות חדשים ב-Cloudflare**:
+   dash.cloudflare.com → Compute → ravid-whatsapp → Settings → Variables and Secrets:
+   - `APNS_KEY` — כל התוכן של קובץ ה-p8 (לפתוח ב-TextEdit, להעתיק הכל כולל שורות BEGIN/END)
+   - `APNS_KEY_ID` — ה-Key ID מהשלב הראשון
+   - `APNS_TEAM_ID` — ה-Team ID
+4. **הדבקת Worker v8**: Edit code → מחק הכל → הדבק מ:
+   raw.githubusercontent.com/djeliorravid-crypto/elior-studio-app/main/whatsapp-worker.js → Deploy
+5. **טריגר שעתי**: באותו מסך → Settings → **Triggers** → Cron Triggers → Add →
+   `0 * * * *` → Save.
+6. **בילד חדש מ-TestFlight** (נבנה אוטומטית) → לפתוח את האפליקציה פעם אחת.
+   בדיקה: `/whatsapp/push.json` ב-Firebase אמור להכיל token; אחרי שעה עגולה
+   `/whatsapp/pushlog.json` מראה מה קרה בריצה האחרונה (count/sent/err).
+
+### ישן (אם עוד לא בוצע)
+- **GEMINI_KEY ב-Cloudflare** (תמלול הקלטות נכנסות): Secret בשם `GEMINI_KEY`,
+  ערך מ-aistudio.google.com/apikey.
 
 ## 💬 חיבור וואטסאפ — פרויקט פעיל (הבעיה הכי גדולה של אליאור: מפספס הודעות)
 

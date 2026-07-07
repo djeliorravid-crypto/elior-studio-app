@@ -6289,7 +6289,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v401</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v402</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16214,6 +16214,7 @@ function _waProcess(raw) {
   } catch (_) {}
   try { _waLobbyBadge(); } catch (_) {}
   try { _waNotifKick(list.filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead')).length); } catch (_) {}
+  try { _waPublishCls(list); } catch (_) {}
   return list;
  } catch (e) {
   // One malformed record must never freeze the pipeline — keep the
@@ -16225,24 +16226,51 @@ function _waProcess(raw) {
 let _waLastErr = '';
 let _waLastEvt = 0;
 let _waConn = null;
-// ── Hourly nudge: "X אנשים מחכים לתשובה" — rescheduled whenever the
-//    count changes, quiet hours 22:00–08:00, cleared at zero. ──
-let _waNotifT = null, _waNotifLast = -1;
-function _waNotifKick(count) {
-  if (count === _waNotifLast) return;
-  clearTimeout(_waNotifT);
-  _waNotifT = setTimeout(() => {
-    _waNotifLast = count;
-    _waNotifSchedule(count).catch(() => {});
-  }, 12000);
+// ── Publish each conversation's classification to Firebase so the
+//    worker's hourly server-push counts EXACTLY what the app shows
+//    (friends/family from the phone book must not be counted). Only
+//    changed keys are written; the last published map is cached. ──
+function _waPublishCls(list) {
+  if (!window.firebaseDB) return;
+  let pub = {};
+  try { pub = JSON.parse(localStorage.getItem('wa_cls_pub') || '{}') || {}; } catch (_) {}
+  const diff = {};
+  (list || []).forEach(c => {
+    const v = (c.cls === 'client') ? 'client' : (c.cls === 'lead') ? 'lead' : 'skip';
+    if (pub[c.phone] !== v) { diff[c.phone] = v; pub[c.phone] = v; }
+  });
+  if (!Object.keys(diff).length) return;
+  firebaseDB.ref('whatsapp/cls').update(diff);
+  try { localStorage.setItem('wa_cls_pub', JSON.stringify(pub)); } catch (_) {}
 }
+// ── Hourly nudge: "X אנשים מחכים לתשובה" — rescheduled on EVERY
+//    recount (a "same count" skip left the phone silent once the
+//    previously-scheduled slots expired), quiet hours 22:00–08:00,
+//    cleared at zero. Flushed synchronously when the app hides so a
+//    quick open-and-close still lands the schedule. ──
+let _waNotifT = null, _waNotifPend = null;
+function _waNotifKick(count) {
+  _waNotifPend = count;
+  clearTimeout(_waNotifT);
+  _waNotifT = setTimeout(_waNotifFlush, 2500);
+}
+function _waNotifFlush() {
+  clearTimeout(_waNotifT);
+  if (_waNotifPend === null) return;
+  const c = _waNotifPend;
+  _waNotifPend = null;
+  _waNotifSchedule(c).catch(() => {});
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { try { _waNotifFlush(); } catch (_) {} }
+});
 async function _waNotifSchedule(count) {
   if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
   const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
   if (!LN) return;
   try { if ((await LN.checkPermissions()).display !== 'granted') return; } catch (_) { return; }
   const ids = [];
-  for (let i = 0; i < 12; i++) ids.push(710100 + i);
+  for (let i = 0; i < 24; i++) ids.push(710100 + i);
   try { await LN.cancel({ notifications: ids.map(id => ({ id })) }); } catch (_) {}
   if (!count) return;
   const body = count === 1 ? 'לקוח אחד מחכה לתשובה בוואטסאפ' : count + ' אנשים מחכים לתשובה בוואטסאפ';
@@ -16250,7 +16278,9 @@ async function _waNotifSchedule(count) {
   base.setMinutes(0, 0, 0);
   const notifs = [];
   let slot = 0;
-  for (let i = 1; slot < 12 && i <= 26; i++) {
+  // 24 waking-hour slots ≈ two full days of reminders even if the app
+  // stays closed the whole time.
+  for (let i = 1; slot < 24 && i <= 50; i++) {
     const at = new Date(base.getTime() + i * 3600000);
     const h = at.getHours();
     if (h < 8 || h >= 22) continue;
@@ -16263,6 +16293,35 @@ async function _waNotifSchedule(count) {
   }
   if (notifs.length) { try { await LN.schedule({ notifications: notifs }); } catch (_) {} }
 }
+// ── Server push (the REAL fix): the Cloudflare worker sees every
+//    message even when the app is closed, and pushes "X מחכים" through
+//    Apple Push every hour. All the app has to do is register its
+//    device token once. Dormant until a build with the
+//    PushNotifications plugin + aps entitlement is installed. ──
+async function _waPushInit() {
+  try {
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+    const PN = window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+    if (!PN) return;
+    PN.addListener('registration', t => {
+      try {
+        const tok = t && t.value;
+        if (!tok) return;
+        let prev = '';
+        try { prev = localStorage.getItem('wa_push_token') || ''; } catch (_) {}
+        if (tok === prev) return;
+        if (window.firebaseDB) {
+          firebaseDB.ref('whatsapp/push').set({ token: tok, at: Date.now() });
+          try { localStorage.setItem('wa_push_token', tok); } catch (_) {}
+        }
+      } catch (_) {}
+    });
+    const p = await PN.requestPermissions().catch(() => null);
+    if (!p || p.receive !== 'granted') return;
+    await PN.register();
+  } catch (_) {}
+}
+setTimeout(() => { try { _waPushInit(); } catch (_) {} }, 4000);
 // ── Lobby badge: how many people await a reply, one tap to the list ──
 function _waWaitingCount() {
   return (_waConvs || []).filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead')).length;
@@ -16460,6 +16519,7 @@ window.waMarkClient = function(phone, val) {
   else delete _waCliMarks[phone];
   try { localStorage.setItem('wa_cli_marks', JSON.stringify(_waCliMarks)); } catch (_) {}
   try { if (firebaseDB) firebaseDB.ref('whatsapp/clients/' + phone).set(val); } catch (_) {}
+  try { if (val === false && firebaseDB) firebaseDB.ref('whatsapp/waiting/' + phone).remove(); } catch (_) {}
   _waProcess(_waRaw);
   _waPaint();
   toast(val === true ? '✓ סומן כלקוח' : val === false ? 'הוסתר מהרשימה' : 'הסימון הוסר');
@@ -16882,6 +16942,9 @@ window.waDismiss = function(phone) {
   d[phone] = Date.now();
   try { localStorage.setItem('wa_dismissed', JSON.stringify(d)); } catch (_) {}
   if (_waConvs) _waConvs = _waConvs.map(c => (c.phone === phone ? { ...c, waiting: false } : c));
+  // Server-push bookkeeping: "טופל" must also silence the hourly
+  // worker reminder for this person.
+  try { if (firebaseDB) firebaseDB.ref('whatsapp/waiting/' + phone).remove(); } catch (_) {}
   _waPaint();
 };
 // Attach the live listener the moment Firebase is up (checked every
@@ -16900,6 +16963,12 @@ try {
   if (_capAppWa && _capAppWa.addListener) _capAppWa.addListener('resume', () => {
     try { if (window.firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
     try { _waPaintIfVisible(); } catch (_) {}
+    // Opening the app = the reminders did their job — sweep delivered
+    // server pushes from the notification center.
+    try {
+      const PN = window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+      if (PN && PN.removeAllDeliveredNotifications) PN.removeAllDeliveredNotifications();
+    } catch (_) {}
   });
 } catch (_) {}
 
