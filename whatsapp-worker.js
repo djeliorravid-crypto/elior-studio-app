@@ -36,6 +36,11 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type'
 };
+// Whitespace-proof secret: pasted values often carry a stray trailing
+// space or newline — never let that break auth or signatures.
+function sendSecret(env) {
+  return String((env && env.SEND_SECRET) || '').trim();
+}
 function json(obj, status) {
   return new Response(JSON.stringify(obj), {
     status: status || 200,
@@ -77,7 +82,9 @@ export default {
     if (url.pathname === '/send') {
       let b = null;
       try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
-      if (!env || !env.SEND_SECRET || !b || b.secret !== env.SEND_SECRET) {
+      // trim both sides — a stray space/newline picked up while
+      // pasting the secret must never break sending
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) {
         return json({ error: 'forbidden' }, 403);
       }
       if (!env.WHATSAPP_TOKEN) return json({ error: 'WHATSAPP_TOKEN not configured' }, 500);
@@ -104,7 +111,7 @@ export default {
     if (url.pathname === '/send-voice') {
       let b = null;
       try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
-      if (!env || !env.SEND_SECRET || !b || b.secret !== env.SEND_SECRET) {
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) {
         return json({ error: 'forbidden' }, 403);
       }
       if (!env.WHATSAPP_TOKEN) return json({ error: 'WHATSAPP_TOKEN not configured' }, 500);
@@ -200,17 +207,17 @@ async function flushOutbox(env) {
       });
       const to = String(it.to || '').replace(/\D/g, '');
       const text = String(it.text || '').slice(0, 4000);
-      if (!to || !text || !env.SEND_SECRET || !env.WHATSAPP_TOKEN) {
+      if (!to || !text || !sendSecret(env) || !env.WHATSAPP_TOKEN) {
         // Name the exact missing piece — 'הגדרה חסרה' sent Elior
         // guessing. (Secrets must be added as type SECRET in the
         // dashboard; plain-text vars get wiped on every deploy.)
         const missing = !to ? 'מספר' : !text ? 'טקסט'
-          : !env.SEND_SECRET ? 'SEND_SECRET חסר בענן (Settings → Variables, סוג Secret)'
+          : !sendSecret(env) ? 'SEND_SECRET חסר בענן'
           : 'WHATSAPP_TOKEN חסר בענן (Settings → Variables, סוג Secret)';
         await mark({ status: 'failed', err: missing, doneTs: now });
         continue;
       }
-      const expect = await sha256hex(env.SEND_SECRET + '|' + to + '|' + text + '|' + it.at);
+      const expect = await sha256hex(sendSecret(env) + '|' + to + '|' + text + '|' + it.at);
       if (it.sig !== expect) {
         await mark({ status: 'failed', err: 'חתימה לא תקינה', doneTs: now });
         continue;
