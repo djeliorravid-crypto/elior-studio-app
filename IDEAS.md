@@ -18,12 +18,14 @@
    - `APNS_KEY` — כל התוכן של קובץ ה-p8 (לפתוח ב-TextEdit, להעתיק הכל כולל שורות BEGIN/END)
    - `APNS_KEY_ID` — ה-Key ID מהשלב הראשון
    - `APNS_TEAM_ID` — ה-Team ID
-4. **הדבקת Worker v9**: Edit code → מחק הכל → הדבק מ:
-   raw.githubusercontent.com/djeliorravid-crypto/elior-studio-app/main/whatsapp-worker.js → Deploy
-5. **טריגר**: באותו מסך → Settings → **Triggers** → Cron Triggers → Add →
-   `* * * * *` (כל דקה — גם ההודעות המתוזמנות יוצאות בדיוק בזמן; התראת
-   "X מחכים" יוצאת רק בשעה עגולה) → Save.
-   הערה: ההודעות המתוזמנות (v405) עובדות כבר עם השלבים 4+5 בלבד — בלי
+4. **חיבור ה-Worker לגיטהאב (חד-פעמי — מחליף את כל ההדבקות לתמיד)**:
+   dash.cloudflare.com → Compute → ravid-whatsapp → **Settings** → **Builds**
+   → Connect / Connect repository → התחברות GitHub → בחר את
+   `djeliorravid-crypto/elior-studio-app`, branch `main` → שמור.
+   ההגדרות (deploy command: `npx wrangler deploy`, root: `/`) מגיעות
+   מ-wrangler.jsonc שבריפו. מרגע החיבור: כל push = דיפלוי אוטומטי,
+   וגם ה-Cron (`* * * * *`) מוגדר לבד — אין יותר Edit code ואין Triggers ידני.
+   הערה: ההודעות המתוזמנות (v405) עובדות כבר עם השלב הזה בלבד — בלי
    שלבי אפל 1-3, שנדרשים רק להתראות לטלפון.
 6. **בילד חדש מ-TestFlight** (נבנה אוטומטית) → לפתוח את האפליקציה פעם אחת.
    בדיקה: `/whatsapp/push.json` ב-Firebase אמור להכיל token; אחרי שעה עגולה
