@@ -1,11 +1,18 @@
 // ═════════════════════════════════════════════════════════════════
-//  Ravid Studio — WhatsApp webhook receiver
+//  Ravid Studio — WhatsApp webhook receiver + sender
 //  Runs as a Cloudflare Worker. Meta (via DualHook coexistence)
 //  delivers message webhooks here; we answer the hub.challenge
 //  verification handshake and write a compact record of every
 //  incoming customer message + every reply Elior sends from the
 //  WhatsApp Business app into the app's Firebase RTDB, where the
 //  "ממתינים לתשובה" screen reads it.
+//
+//  /send — replies FROM the app, via Meta's Graph API. Requires two
+//  SECRETS configured in the Cloudflare dashboard (Settings →
+//  Variables and Secrets — NEVER hardcoded here, this file is public):
+//    WHATSAPP_TOKEN — the Meta access token
+//    SEND_SECRET    — a password of your choosing; the app asks for
+//                     it once and sends it with every /send call
 //
 //  Deploy: Cloudflare dashboard → Workers → Create → paste → Deploy.
 //  The public URL of this worker is the "Webhook URL" DualHook asks
@@ -14,10 +21,24 @@
 
 const VERIFY_TOKEN = 'ravid-studio-whatsapp-2026';
 const FIREBASE = 'https://elior-studio-default-rtdb.firebaseio.com/whatsapp';
+const PHONE_ID = '1246363738550836';
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type'
+};
+function json(obj, status) {
+  return new Response(JSON.stringify(obj), {
+    status: status || 200,
+    headers: { 'Content-Type': 'application/json', ...CORS }
+  });
+}
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
 
     // Meta's one-time webhook verification handshake
     if (request.method === 'GET') {
@@ -29,6 +50,38 @@ export default {
     }
 
     if (request.method !== 'POST') return new Response('ok', { status: 200 });
+
+    // ── /send — reply from the app ──
+    if (url.pathname === '/send') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !env.SEND_SECRET || !b || b.secret !== env.SEND_SECRET) {
+        return json({ error: 'forbidden' }, 403);
+      }
+      if (!env.WHATSAPP_TOKEN) return json({ error: 'WHATSAPP_TOKEN not configured' }, 500);
+      const to = String(b.to || '').replace(/\D/g, '');
+      const text = String(b.text || '').slice(0, 4000);
+      if (!to || !text) return json({ error: 'missing to/text' }, 400);
+      const r = await fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text } })
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) {
+        // API sends don't echo back on the webhook — record ourselves
+        // so the app's waiting row clears instantly.
+        await fetch(FIREBASE + '/msgs.json', {
+          method: 'POST',
+          body: JSON.stringify({ dir: 'out', phone: to, text, ts: Date.now(), via: 'app' })
+        });
+        return json({ ok: true });
+      }
+      return json({ error: (j.error && j.error.message) || ('graph ' + r.status), code: j.error && j.error.code });
+    }
 
     let body = null;
     try { body = await request.json(); } catch (_) { return new Response('ok', { status: 200 }); }

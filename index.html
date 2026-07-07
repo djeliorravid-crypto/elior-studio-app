@@ -3744,6 +3744,14 @@
       border-radius: 10px; font-size: 12px; font-weight: 700; color: var(--text-muted);
       display: flex; align-items: center; gap: 8px; flex-wrap: wrap; line-height: 1.7;
     }
+    .wa-replyrow { display: flex; gap: 8px; padding: 0 2px 12px; border-bottom: 1px solid var(--border); }
+    .wa-replyrow input {
+      flex: 1; min-width: 0; padding: 10px 12px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--surface2); color: var(--text);
+      font-size: 14px; font-weight: 600; font-family: inherit; outline: none; direction: rtl;
+    }
+    .wa-replyrow input:focus { border-color: var(--green); }
     .mp-card.mpt-sec { padding: 0; }
     .mpt-sec-head {
       width: 100%; display: flex; align-items: center; gap: 10px;
@@ -6195,7 +6203,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v384</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v385</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16075,17 +16083,62 @@ function _waRow(c, isWaiting) {
   // the sender's WhatsApp push-name → pretty phone number.
   const nm = _escape(c.client || _waNames[c.phone] || c.name || _waPhonePretty(c.phone));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
-  return '<div class="dun-row">'
+  let html = '<div class="dun-row"' + (isWaiting ? ' style="border-bottom:none;padding-bottom:4px"' : '') + '>'
     + '<div class="dun-info"><div class="dun-name">' + (isWaiting ? '🔴 ' : (c.lastDir === 'in' ? '💬 ' : '↩️ ')) + nm + '</div>'
     + '<div class="dun-meta">' + _escape((c.lastText || '').slice(0, 60)) + ' · לפני ' + _waAgo(c.lastTs)
     + (isWaiting ? ' · <strong>מחכה ' + _waAgo(c.lastInTs) + '</strong>' : '') + '</div></div>'
-    + '<button class="btn btn-primary btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
+    + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
     + (isWaiting ? '<button class="btn btn-ghost btn-sm" onclick="waDismiss(\'' + phoneEsc + '\')">טופל</button>' : '')
     + '</div>';
+  if (isWaiting) {
+    html += '<div class="wa-replyrow">'
+      + '<input id="wa-in-' + phoneEsc + '" placeholder="תשובה מהירה — נשלחת כוואטסאפ אמיתי…" '
+      + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
+      + '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
+      + '</div>';
+  }
+  return html;
 }
+window.waReply = async function(phone) {
+  const inp = document.getElementById('wa-in-' + phone);
+  const text = (inp && inp.value || '').trim();
+  if (!text) { toast('כתוב תשובה קודם'); return; }
+  let sec = '';
+  try { sec = localStorage.getItem('wa_send_secret') || ''; } catch (_) {}
+  if (!sec) {
+    sec = (prompt('פעם ראשונה: הזן את קוד השליחה (SEND_SECRET שהגדרת ב-Cloudflare):') || '').trim();
+    if (!sec) return;
+    try { localStorage.setItem('wa_send_secret', sec); } catch (_) {}
+  }
+  const btn = document.getElementById('wa-btn-' + phone);
+  if (btn) { btn.disabled = true; btn.textContent = 'שולח…'; }
+  try {
+    const r = await _mptHttp('POST', 'https://ravid-whatsapp.djeliorravid.workers.dev/send', { secret: sec, to: phone, text });
+    if (r.ok && r.json && r.json.ok) {
+      toast('✓ נשלח בוואטסאפ');
+      if (window.haptic) window.haptic.success();
+      if (inp) inp.value = '';
+      // The worker records the outgoing message → the live listener
+      // clears the row within a second. No manual bookkeeping needed.
+    } else if (r.status === 403) {
+      try { localStorage.removeItem('wa_send_secret'); } catch (_) {}
+      toast('קוד שליחה שגוי — נסה שוב');
+    } else {
+      toast('⚠️ ' + ((r.json && r.json.error) || ('שגיאה ' + r.status)));
+    }
+  } catch (e) {
+    toast('⚠️ בעיית רשת: ' + (e && e.message || ''));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'שלח'; }
+  }
+};
 function _waPaint() {
   const wEl = document.getElementById('wa-waiting');
   if (!wEl) return;
+  // Never wipe a reply he's typing — if focus is inside a reply box,
+  // skip this paint; the next event or page open repaints.
+  const ae = document.activeElement;
+  if (ae && ae.id && ae.id.indexOf('wa-in-') === 0 && (ae.value || '').length) return;
   if (!_waConvs) {
     wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">' + (_waListening ? 'טוען שיחות…' : 'מתחבר לענן…') + '</div>';
     return;
