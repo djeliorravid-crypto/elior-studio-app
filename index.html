@@ -3759,16 +3759,17 @@
       border: 1px solid var(--border);
     }
     #lobby-wa-badge {
-      position: fixed; left: 50%; transform: translateX(-50%);
-      bottom: calc(112px + env(safe-area-inset-bottom, 0px));
-      /* the lobby overlay is z9998 — anything meant to be tappable ON
-         the lobby must sit above it */
-      z-index: 9999; padding: 11px 20px;
+      /* bottom-right corner — mirrors the FAB on the left, clear of
+         the lobby tasks box. Lobby overlay is z9998, so 9999. */
+      position: fixed; right: 20px;
+      bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+      z-index: 9999; padding: 11px 18px;
       background: var(--red); color: #fff; border: none; border-radius: 22px;
-      font-size: 14px; font-weight: 800; font-family: inherit; cursor: pointer;
+      font-size: 13.5px; font-weight: 800; font-family: inherit; cursor: pointer;
       box-shadow: 0 8px 22px rgba(200,60,60,0.4);
+      max-width: 55vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    #lobby-wa-badge:active { transform: translateX(-50%) scale(0.96); }
+    #lobby-wa-badge:active { transform: scale(0.96); }
     /* the badge belongs to the lobby only */
     body:has(#mode-screen.hidden) #lobby-wa-badge,
     body:has(#login-screen:not(.hidden)) #lobby-wa-badge { display: none !important; }
@@ -6256,7 +6257,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v395</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v396</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">

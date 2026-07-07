@@ -2,6 +2,17 @@
 
 רעיונות שאושרו עקרונית ומחכים לתורם. לא למחוק.
 
+## ⏳ פעולות ממתינות — לביצוע ליד המחשב (אליאור)
+
+1. **סוד GEMINI_KEY ב-Cloudflare** (בשביל תמלול הקלטות נכנסות):
+   dash.cloudflare.com → Compute → ravid-whatsapp → Settings → Variables and Secrets
+   → Add → Secret → שם `GEMINI_KEY` → ערך: מפתח הגוגל של המאמן (aistudio.google.com/apikey)
+2. **הדבקת Worker v6** (תמלול + אישור מיידי למטא):
+   Edit code → מחק הכל → הדבק מ:
+   raw.githubusercontent.com/djeliorravid-crypto/elior-studio-app/main/whatsapp-worker.js
+   → Deploy
+   (בלי זה: אין תמלול ואין mark-as-read להקלטות; כל השאר עובד)
+
 ## 💬 חיבור וואטסאפ — פרויקט פעיל (הבעיה הכי גדולה של אליאור: מפספס הודעות)
 
 **הפתרון:** WhatsApp **Coexistence** — פיצ'ר רשמי של מטא: אותו מספר עובד גם
