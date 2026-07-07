@@ -35,7 +35,7 @@ function json(obj, status) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
@@ -138,6 +138,54 @@ export default {
     let body = null;
     try { body = await request.json(); } catch (_) { return new Response('ok', { status: 200 }); }
 
+    // Ack Meta IMMEDIATELY and process in the background — slow work
+    // (like transcription) must never trigger webhook retries.
+    if (ctx && ctx.waitUntil) {
+      ctx.waitUntil(processWebhook(body, env));
+      return new Response('ok', { status: 200 });
+    }
+    await processWebhook(body, env);
+    return new Response('ok', { status: 200 });
+  }
+};
+
+// Transcribe an incoming WhatsApp voice note with Gemini (needs the
+// GEMINI_KEY secret; silently skipped without it).
+async function transcribe(mediaId, env) {
+  if (!env || !env.GEMINI_KEY || !env.WHATSAPP_TOKEN) return '';
+  try {
+    const metaRes = await fetch('https://graph.facebook.com/v21.0/' + mediaId, {
+      headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN }
+    });
+    const meta = await metaRes.json().catch(() => ({}));
+    if (!meta || !meta.url) return '';
+    const audRes = await fetch(meta.url, { headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN } });
+    if (!audRes.ok) return '';
+    const buf = new Uint8Array(await audRes.arrayBuffer());
+    if (!buf.length || buf.length > 6 * 1024 * 1024) return '';
+    let bin = '';
+    const CH = 0x8000;
+    for (let i = 0; i < buf.length; i += CH) bin += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
+    const b64 = btoa(bin);
+    const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + env.GEMINI_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { inline_data: { mime_type: meta.mime_type || 'audio/ogg', data: b64 } },
+          { text: 'תמלל את ההקלטה במדויק, בשפה שבה דיברו. החזר את התמלול בלבד — בלי הקדמות ובלי הערות.' }
+        ] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 2048 }
+      })
+    });
+    const gj = await g.json().catch(() => ({}));
+    const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
+    const tr = parts ? parts.map(p => p.text || '').join('').trim() : '';
+    return tr.slice(0, 1500);
+  } catch (_) { return ''; }
+}
+
+async function processWebhook(body, env) {
     let stored = 0;
     const names = {};   // phone → name, PATCHed once at the end
     try {
@@ -165,7 +213,11 @@ export default {
               if (t === 'sticker')        text = '🧩 סטיקר';
               else if (t === 'image')     text = '📷 תמונה' + (m.image && m.image.caption ? ' — ' + m.image.caption : '');
               else if (t === 'video')     text = '🎬 סרטון' + (m.video && m.video.caption ? ' — ' + m.video.caption : '');
-              else if (t === 'audio')     text = '🎤 הודעה קולית';
+              else if (t === 'audio') {
+                // Voice note → automatic transcription (Gemini)
+                const tr = (m.audio && m.audio.id) ? await transcribe(m.audio.id, env) : '';
+                text = tr ? ('🎤 תמלול: ' + tr) : '🎤 הודעה קולית';
+              }
               else if (t === 'document')  text = '📄 קובץ' + (m.document && m.document.filename ? ' — ' + m.document.filename : '');
               else if (t === 'location')  text = '📍 מיקום';
               else if (t === 'contacts')  text = '👤 איש קשר';
@@ -214,7 +266,4 @@ export default {
         });
       }
     } catch (_) {}
-
-    return new Response('ok', { status: 200 });
-  }
-};
+}

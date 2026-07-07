@@ -3775,10 +3775,13 @@
     .wa-mic {
       flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px;
       border: 1.5px solid var(--border); background: var(--surface2);
-      font-size: 17px; cursor: pointer; font-family: inherit;
+      color: var(--text); cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center;
     }
-    .wa-mic.rec { background: var(--red); border-color: var(--red); animation: waPulse 1s infinite; }
+    .wa-mic.rec { background: var(--red); border-color: var(--red); color: #fff; animation: waPulse 1s infinite; }
     @keyframes waPulse { 50% { opacity: 0.6; } }
+    .wa-voice-review { margin-top: 4px; }
+    .wa-voice-review audio { width: 100%; height: 40px; }
     .wa-item-msg {
       margin: 8px 0 10px; font-size: 15px; line-height: 1.5; color: var(--text);
       background: var(--surface2); border-radius: 12px; padding: 10px 13px;
@@ -6253,7 +6256,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v394</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v395</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16321,12 +16324,22 @@ function _waRow(c, isWaiting) {
     +   '<span class="wa-wait-badge">מחכה ' + _waAgo(c.lastInTs) + '</span></span>'
     + '</div>'
     + '<div class="wa-item-msg">' + bubble + '</div>'
-    + '<div class="wa-replyrow">'
-    +   '<input id="wa-in-' + phoneEsc + '" placeholder="כתוב תשובה…" '
-    +   'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
-    +   (_waMicOk ? '<button class="wa-mic" id="wa-mic-' + phoneEsc + '" onclick="waVoice(\'' + phoneEsc + '\')" title="הקלטה קולית">🎤</button>' : '')
-    +   '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
-    + '</div>'
+    + (_waVoicePending[phoneEsc]
+        ? '<div class="wa-voice-review">'
+          + '<audio controls src="' + _waVoicePending[phoneEsc].url + '"></audio>'
+          + '<div class="wa-item-actions" style="margin-top:6px">'
+          + '<button style="color:var(--green);font-weight:800" id="wa-vsend-' + phoneEsc + '" onclick="waVoiceSend(\'' + phoneEsc + '\')">✓ שלח את ההקלטה</button>'
+          + '<span>·</span><button onclick="waVoiceRedo(\'' + phoneEsc + '\')">הקלט מחדש</button>'
+          + '<span>·</span><button onclick="waVoiceCancel(\'' + phoneEsc + '\')">בטל</button>'
+          + '</div></div>'
+        : '<div class="wa-replyrow">'
+          + '<input id="wa-in-' + phoneEsc + '" placeholder="כתוב תשובה…" '
+          + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
+          + (_waMicOk ? '<button class="wa-mic" id="wa-mic-' + phoneEsc + '" onclick="waVoice(\'' + phoneEsc + '\')" title="הקלטה קולית">'
+            + '<svg viewBox="0 0 24 24" style="width:18px;height:18px" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg>'
+            + '</button>' : '')
+          + '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
+          + '</div>')
     + '<div class="wa-item-actions">'
     +   '<button onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח בוואטסאפ</button>'
     +   '<span>·</span>'
@@ -16406,50 +16419,79 @@ let _waMicOk = false;
   } catch (_) {}
 })();
 let _waRec = null;
+let _waVoicePending = {};   // phone → { blob, url, mime } awaiting review
 window.waVoice = async function(phone) {
   const btn = document.getElementById('wa-mic-' + phone);
   if (_waRec) { try { _waRec.stop(); } catch (_) {} return; }
-  const sec = _waSecret();
-  if (!sec) return;
   let stream = null;
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (_) { toast('אין גישה למיקרופון'); return; }
+  } catch (_) { toast('אין גישה למיקרופון — אשר בהגדרות'); return; }
   const chunks = [];
   const mr = new MediaRecorder(stream);
   _waRec = mr;
-  if (btn) { btn.classList.add('rec'); btn.textContent = '⏹'; }
+  if (btn) { btn.classList.add('rec'); btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="#fff" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>'; }
+  toast('🔴 מקליט… לחץ שוב לסיום');
   mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
-  mr.onstop = async () => {
+  mr.onstop = () => {
     stream.getTracks().forEach(t => t.stop());
     _waRec = null;
-    if (btn) { btn.classList.remove('rec'); btn.textContent = '🎤'; }
     const blob = new Blob(chunks, { type: mr.mimeType || 'audio/mp4' });
-    if (blob.size < 1500) { toast('הקלטה קצרה מדי'); return; }
-    if (blob.size > 8 * 1024 * 1024) { toast('ההקלטה ארוכה מדי'); return; }
-    toast('⏳ שולח הקלטה…');
-    try {
-      const b64 = await new Promise((res, rej) => {
-        const fr = new FileReader();
-        fr.onload = () => res(String(fr.result).split(',')[1]);
-        fr.onerror = rej;
-        fr.readAsDataURL(blob);
-      });
-      const r = await _mptHttp('POST', WA_WORKER + '/send-voice', {
-        secret: sec, to: phone, audio: b64,
-        mime: (mr.mimeType || 'audio/mp4').split(';')[0],
-        readId: _waLastInId(phone)
-      });
-      if (r.ok && r.json && r.json.ok) {
-        toast('✓ ההקלטה נשלחה');
-        if (window.haptic) window.haptic.success();
-      } else {
-        toast('⚠️ ' + ((r.json && r.json.error) || ('שגיאה ' + r.status)));
-      }
-    } catch (e) { toast('⚠️ ' + (e && e.message || 'שליחה נכשלה')); }
+    if (blob.size < 1500) { toast('הקלטה קצרה מדי — נסה שוב'); _waPaint(); return; }
+    if (blob.size > 8 * 1024 * 1024) { toast('ההקלטה ארוכה מדי'); _waPaint(); return; }
+    // Review-before-send, like WhatsApp: player + approve / redo / cancel.
+    _waVoicePending[phone] = {
+      blob,
+      url: URL.createObjectURL(blob),
+      mime: (mr.mimeType || 'audio/mp4').split(';')[0]
+    };
+    _waPaint();
   };
   mr.start();
-  setTimeout(() => { if (_waRec === mr) { try { mr.stop(); } catch (_) {} } }, 60000);
+  setTimeout(() => { if (_waRec === mr) { try { mr.stop(); } catch (_) {} } }, 120000);
+};
+function _waVoiceDrop(phone) {
+  const pv = _waVoicePending[phone];
+  if (pv) { try { URL.revokeObjectURL(pv.url); } catch (_) {} }
+  delete _waVoicePending[phone];
+}
+window.waVoiceCancel = function(phone) { _waVoiceDrop(phone); _waPaint(); };
+window.waVoiceRedo = function(phone) { _waVoiceDrop(phone); _waPaint(); setTimeout(() => waVoice(phone), 150); };
+window.waVoiceSend = async function(phone) {
+  const pv = _waVoicePending[phone];
+  if (!pv) return;
+  const sec = _waSecret();
+  if (!sec) return;
+  const btn = document.getElementById('wa-vsend-' + phone);
+  if (btn) { btn.textContent = 'שולח…'; btn.disabled = true; }
+  try {
+    const b64 = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(String(fr.result).split(',')[1]);
+      fr.onerror = rej;
+      fr.readAsDataURL(pv.blob);
+    });
+    const r = await _mptHttp('POST', WA_WORKER + '/send-voice', {
+      secret: sec, to: phone, audio: b64, mime: pv.mime, readId: _waLastInId(phone)
+    });
+    if (r.ok && r.json && r.json.ok) {
+      toast('✓ ההקלטה נשלחה בוואטסאפ');
+      if (window.haptic) window.haptic.success();
+      _waVoiceDrop(phone);
+      _waPaint();
+    } else if (r.status === 403) {
+      try { localStorage.removeItem('wa_send_secret'); } catch (_) {}
+      toast('קוד שליחה שגוי — נסה שוב');
+      if (btn) { btn.textContent = '✓ שלח את ההקלטה'; btn.disabled = false; }
+    } else {
+      // Keep the recording so he can retry — and show the REAL error.
+      toast('⚠️ השליחה נכשלה: ' + ((r.json && r.json.error) || ('שגיאה ' + r.status)));
+      if (btn) { btn.textContent = '✓ שלח את ההקלטה'; btn.disabled = false; }
+    }
+  } catch (e) {
+    toast('⚠️ ' + (e && e.message || 'שליחה נכשלה'));
+    if (btn) { btn.textContent = '✓ שלח את ההקלטה'; btn.disabled = false; }
+  }
 };
 function _waPaint() {
   const wEl = document.getElementById('wa-waiting');
