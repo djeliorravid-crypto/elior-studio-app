@@ -6283,7 +6283,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v405</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v406</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6729,6 +6729,7 @@
     <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <h2>וואטסאפ</h2>
       <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost btn-sm" onclick="waShowSecret()" title="הצג את קוד השליחה">🔑</button>
         <button class="btn btn-ghost btn-sm" id="wa-filter-btn" onclick="waFilterToggle()">לקוחות ולידים</button>
         <button class="btn btn-ghost btn-sm" onclick="renderWhatsappPage()">רענן</button>
       </div>
@@ -16728,6 +16729,16 @@ window.waRename = function(phone) {
   try { if (firebaseDB) firebaseDB.ref('whatsapp/names/' + phone).set(nm || null); } catch (_) {}
   _waPaint();
   toast('✓ השם נשמר');
+};
+// 🔑 header button — the send code lives in localStorage from the
+// first time he typed it; surface it so "לא שמרתי את הקודים" is
+// never a dead end (needed again when re-installing cloud secrets).
+window.waShowSecret = function() {
+  let sec = '';
+  try { sec = localStorage.getItem('wa_send_secret') || ''; } catch (_) {}
+  if (!sec) { toast('אין קוד שמור במכשיר הזה — הוא נשמר אחרי השליחה הראשונה'); return; }
+  try { navigator.clipboard && navigator.clipboard.writeText(sec); } catch (_) {}
+  prompt('קוד השליחה שלך (SEND_SECRET) — הועתק, ואפשר גם להעתיק מכאן:', sec);
 };
 const WA_WORKER = 'https://ravid-whatsapp.djeliorravid.workers.dev';
 function _waSecret() {
