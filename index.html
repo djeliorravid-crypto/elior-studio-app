@@ -3762,14 +3762,8 @@
       flex-shrink: 0; background: #b8801f; color: #fff;
       font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 12px;
     }
-    .wa-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
-    .wa-tabs button {
-      flex: 1; padding: 10px 12px; border-radius: 12px;
-      border: 1.5px solid var(--border); background: var(--surface);
-      color: var(--text-muted); font-size: 13.5px; font-weight: 800;
-      font-family: inherit; cursor: pointer;
-    }
-    .wa-tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    /* long-press names must not trigger iOS text-selection/callout */
+    .wa-item-name, .dun-name { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     #lobby-wa-badge {
       /* bottom-right corner — mirrors the FAB on the left, clear of
          the lobby tasks box. Lobby overlay is z9998, so 9999. */
@@ -6289,7 +6283,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v402</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v403</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6689,6 +6683,17 @@
   </div>
 </div>
 
+<!-- WhatsApp long-press action sheet — body-level (page containers are
+     display:none when their mode is hidden; a modal inside them never shows) -->
+<div class="modal-overlay" id="modal-waact">
+  <div class="modal modal-narrow" style="padding:18px">
+    <h3 id="waact-name" style="margin-bottom:2px">—</h3>
+    <div class="mp-sub" id="waact-phone" style="margin-bottom:14px"></div>
+    <div id="waact-btns" style="display:flex;flex-direction:column;gap:8px"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:12px" onclick="closeModal('waact')">סגור</button>
+  </div>
+</div>
+
 <!-- Body-photo viewer — full image + delete -->
 <div class="modal-overlay" id="modal-bodyphoto">
   <div class="modal modal-narrow" style="padding:14px">
@@ -6712,15 +6717,23 @@
         <button class="btn btn-ghost btn-sm" onclick="renderWhatsappPage()">רענן</button>
       </div>
     </div>
-    <div class="wa-tabs">
-      <button id="wa-tab-waiting" onclick="waTab('waiting')">ממתינים לתשובה</button>
-      <button id="wa-tab-clients" onclick="waTab('clients')">לקוחות</button>
+    <!-- Top box: CLIENTS — anyone the system knows is a client -->
+    <div class="table-card mp-card" id="wa-clients-card" style="border-top:3px solid var(--green)">
+      <div class="mp-section-title">🟢 לקוחות</div>
+      <div class="mp-sub">הודעות מלקוחות שמחכות לתשובה. עונים או מסמנים טופל — והשורה נעלמת.</div>
+      <div id="wa-clients-list"></div>
+      <details id="wa-all-clients-fold" style="margin-top:10px">
+        <summary style="cursor:pointer;font-size:13px;font-weight:800;color:var(--text-muted);list-style-position:inside" id="wa-all-clients-sum">כל הלקוחות</summary>
+        <div id="wa-all-clients"></div>
+      </details>
     </div>
-    <div class="table-card mp-card" id="wa-main-card" style="border-top:3px solid var(--red)">
-      <div class="mp-section-title" id="wa-card-title">ממתינים לתשובה</div>
-      <div class="mp-sub" id="wa-card-sub">שיחות שההודעה האחרונה בהן היא מהלקוח — ואתה עוד לא ענית. עונים בוואטסאפ או מסמנים טופל — והשורה נעלמת.</div>
-      <div id="wa-waiting"></div>
+    <!-- Bottom box: NEW — unknown numbers; long-press decides their fate -->
+    <div class="table-card mp-card" id="wa-new-card" style="border-top:3px solid var(--orange, #ff9500)">
+      <div class="mp-section-title">🟠 חדשים</div>
+      <div class="mp-sub">מספרים חדשים שכתבו לך. לחיצה ארוכה על שם — קובעים: לקוח (עובר למעלה לתמיד) או לא רלוונטי.</div>
+      <div id="wa-new-list"></div>
     </div>
+    <div id="wa-debug-wrap"></div>
   </div>
 
   <!-- ===== UNIFIED CALENDAR (יומן + גוגל) — hidden, kept for gcal sync logic ===== -->
@@ -16431,13 +16444,77 @@ function _waName(c) {
   // book (native builds) → cloud names → WhatsApp push-name → number.
   return _waRenames[c.phone] || c.client || _waPhoneBook[c.phone] || _waNames[c.phone] || c.name || _waPhonePretty(c.phone);
 }
+// ── Long-press on a name → action sheet (סמן כלקוח / לא רלוונטי /
+//    שנה שם / טופל). 450ms hold, cancelled by a >12px finger drift so
+//    scrolling never triggers it; a fired long-press swallows the
+//    click that follows (otherwise rename would pop too). ──
+let _waLPT = null, _waLPFired = false, _waLPXY = null;
+function _waLPAttrs(phoneEsc) {
+  return 'onclick="waActTap(\'' + phoneEsc + '\')"'
+    + ' ontouchstart="waLPStart(event,\'' + phoneEsc + '\')" ontouchmove="waLPMove(event)"'
+    + ' ontouchend="waLPEnd()" ontouchcancel="waLPEnd()"'
+    + ' onmousedown="waLPStart(event,\'' + phoneEsc + '\')" onmouseup="waLPEnd()" onmouseleave="waLPEnd()"'
+    + ' oncontextmenu="return false"';
+}
+window.waLPStart = function(e, phone) {
+  _waLPFired = false;
+  const t = e.touches && e.touches[0];
+  _waLPXY = t ? { x: t.clientX, y: t.clientY } : null;
+  clearTimeout(_waLPT);
+  _waLPT = setTimeout(() => {
+    _waLPFired = true;
+    try { if (window.haptic && haptic.success) haptic.success(); } catch (_) {}
+    waActOpen(phone);
+  }, 450);
+};
+window.waLPMove = function(e) {
+  if (!_waLPXY) return;
+  const t = e.touches && e.touches[0];
+  if (t && (Math.abs(t.clientX - _waLPXY.x) > 12 || Math.abs(t.clientY - _waLPXY.y) > 12)) clearTimeout(_waLPT);
+};
+window.waLPEnd = function() { clearTimeout(_waLPT); };
+window.waActTap = function(phone) {
+  // short tap on a name = rename (as before); a long-press already
+  // opened the sheet — swallow the trailing click.
+  if (_waLPFired) { _waLPFired = false; return; }
+  waRename(phone);
+};
+window.waActOpen = function(phone) {
+  const c = (_waConvs || []).find(x => x.phone === phone) || { phone };
+  const mark = _waCliMarks[phone];
+  const isClient = !!(c.client || mark === true);
+  const nEl = document.getElementById('waact-name');
+  const pEl = document.getElementById('waact-phone');
+  if (nEl) nEl.textContent = _waName(c);
+  if (pEl) pEl.textContent = _waPhonePretty(phone) + (isClient ? ' · לקוח' : '');
+  const B = (label, act, color) => '<button class="btn btn-ghost" style="width:100%;text-align:right;justify-content:flex-start' + (color ? ';color:' + color : '') + '" onclick="waActDo(\'' + phone + '\',\'' + act + '\')">' + label + '</button>';
+  let html = '';
+  if (!isClient) html += B('⭐ סמן כלקוח — יעבור לתיבה למעלה', 'client', 'var(--green)');
+  if (!isClient) html += B('🚫 לא רלוונטי — הסתר', 'hide');
+  if (isClient && !c.client) html += B('הסר סימון לקוח', 'unmark');
+  html += B('✏️ שנה שם', 'rename');
+  if (c.waiting) html += B('✓ סמן טופל', 'done');
+  html += B('💬 פתח בוואטסאפ', 'open');
+  const bEl = document.getElementById('waact-btns');
+  if (bEl) bEl.innerHTML = html;
+  openModal('waact');
+};
+window.waActDo = function(phone, act) {
+  closeModal('waact');
+  if (act === 'client') waMarkClient(phone, true);
+  else if (act === 'hide') waMarkClient(phone, false);
+  else if (act === 'unmark') waMarkClient(phone, null);
+  else if (act === 'rename') waRename(phone);
+  else if (act === 'done') waDismiss(phone);
+  else if (act === 'open') window.open('https://wa.me/' + phone, '_blank');
+};
 function _waRow(c, isWaiting) {
   const nm = _escape(_waName(c));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
   const msg = _escape((c.lastText || '').slice(0, 400));
   if (!isWaiting) {
     return '<div class="dun-row">'
-      + '<div class="dun-info"><div class="dun-name" onclick="waRename(\'' + phoneEsc + '\')" style="cursor:pointer">' + nm + '</div>'
+      + '<div class="dun-info"><div class="dun-name" ' + _waLPAttrs(phoneEsc) + ' style="cursor:pointer">' + nm + '</div>'
       + '<div class="dun-meta">' + msg + ' · לפני ' + _waAgo(c.lastTs) + '</div></div>'
       + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
       + '</div>';
@@ -16452,7 +16529,7 @@ function _waRow(c, isWaiting) {
     : '״' + msg + '״';
   return '<div class="wa-item">'
     + '<div class="wa-item-top">'
-    +   '<span class="wa-item-name" onclick="waRename(\'' + phoneEsc + '\')" title="לחץ לשינוי שם">' + nm + '</span>'
+    +   '<span class="wa-item-name" ' + _waLPAttrs(phoneEsc) + ' title="לחיצה ארוכה — אפשרויות">' + nm + '</span>'
     +   '<span style="display:flex;gap:6px;align-items:center;flex-shrink:0">' + countChip
     +   '<span class="wa-wait-badge">מחכה ' + _waAgo(c.lastInTs) + '</span></span>'
     + '</div>'
@@ -16480,14 +16557,8 @@ function _waRow(c, isWaiting) {
     +   '<button onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח בוואטסאפ</button>'
     +   '<span>·</span>'
     +   '<button onclick="waDismiss(\'' + phoneEsc + '\')">סמן טופל</button>'
-    +   (c.cls === 'lead' || c.cls === 'known'
+    +   (c.cls !== 'client'
         ? '<span>·</span><button style="color:var(--green)" onclick="waMarkClient(\'' + phoneEsc + '\', true)">סמן כלקוח</button>'
-        : '')
-    +   (c.cls === 'lead'
-        ? '<span>·</span><button onclick="waMarkClient(\'' + phoneEsc + '\', false)">לא רלוונטי</button>'
-        : '')
-    +   (c.cls === 'client' && !c.client
-        ? '<span>·</span><button onclick="waMarkClient(\'' + phoneEsc + '\', null)">הסר סימון לקוח</button>'
         : '')
     + '</div>'
     + '</div>';
@@ -16834,54 +16905,20 @@ window.waVoiceSend = async function(phone) {
     if (btn) { btn.textContent = '✓ שלח את ההקלטה'; btn.disabled = false; }
   }
 };
-function _waTab() { try { return localStorage.getItem('wa_tab') || 'waiting'; } catch (_) { return 'waiting'; } }
-window.waTab = function(t) {
-  try { localStorage.setItem('wa_tab', t); } catch (_) {}
-  _waPaint();
-};
-function _waPaintTabs(tab) {
-  const w = document.getElementById('wa-tab-waiting');
-  const c = document.getElementById('wa-tab-clients');
-  if (w) w.classList.toggle('on', tab === 'waiting');
-  if (c) c.classList.toggle('on', tab === 'clients');
-  const title = document.getElementById('wa-card-title');
-  const sub = document.getElementById('wa-card-sub');
-  const card = document.getElementById('wa-main-card');
-  if (title) title.textContent = tab === 'clients' ? 'הלקוחות שלי' : 'ממתינים לתשובה';
-  if (sub) sub.textContent = tab === 'clients'
-    ? 'כל מי שמסומן לקוח — אוטומטית (ענית לו מהאפליקציה), מכרטיס לקוח, או בסימון ידני.'
-    : 'שיחות שההודעה האחרונה בהן היא מהלקוח — ואתה עוד לא ענית. עונים בוואטסאפ או מסמנים טופל — והשורה נעלמת.';
-  if (card) card.style.borderTopColor = tab === 'clients' ? 'var(--green)' : 'var(--red)';
-}
-function _waPaintClients(wEl) {
-  const convs = (_waConvs || []).filter(c => c.cls === 'client').sort((a, b) => b.lastTs - a.lastTs);
-  const inConvs = {};
-  convs.forEach(c => { inConvs[c.phone] = true; });
-  // marked clients with no recent conversation still belong on the list
-  const extra = Object.keys(_waCliMarks)
-    .filter(p => _waCliMarks[p] === true && !inConvs[p])
-    .map(p => ({ phone: p }));
-  let html = convs.map(c => _waRow(c, false)).join('');
-  html += extra.map(p => {
-    const phoneEsc = String(p.phone).replace(/[^0-9]/g, '');
-    return '<div class="dun-row">'
-      + '<div class="dun-info"><div class="dun-name" onclick="waRename(\'' + phoneEsc + '\')" style="cursor:pointer">' + _escape(_waName(p)) + '</div>'
-      + '<div class="dun-meta">אין הודעות אחרונות</div></div>'
-      + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
-      + '</div>';
-  }).join('');
-  wEl.innerHTML = html || '<div class="mp-empty" style="padding:12px 0">עוד אין לקוחות מסומנים — הם יתווספו לבד כשתענה להם מהאפליקציה.</div>';
-}
+// ── Two-box inbox (his design): clients on top, new numbers below.
+//    A long-press decides someone's fate once — the system remembers,
+//    and their next message lands straight in the right box. ──
 function _waPaint() {
-  const wEl = document.getElementById('wa-waiting');
-  if (!wEl) return;
+  const topEl = document.getElementById('wa-clients-list');
+  const newEl = document.getElementById('wa-new-list');
+  if (!topEl || !newEl) return;
   // Never rebuild the DOM while a finger is holding the record button.
   if (_waRecState) return;
-  const tab = _waTab();
-  _waPaintTabs(tab);
-  if (tab === 'clients') { _waPaintClients(wEl); return; }
+  const page = document.getElementById('page-whatsapp');
   if (!_waConvs) {
-    wEl.innerHTML = '<div class="mp-empty" style="padding:12px 0">' + (_waListening ? 'טוען שיחות…' : 'מתחבר לענן…') + '</div>';
+    const loading = '<div class="mp-empty" style="padding:12px 0">' + (_waListening ? 'טוען שיחות…' : 'מתחבר לענן…') + '</div>';
+    topEl.innerHTML = loading;
+    newEl.innerHTML = loading;
     return;
   }
   // Draft protection done RIGHT: always paint (so nothing ever looks
@@ -16889,7 +16926,7 @@ function _waPaint() {
   // restore them after the rebuild. The old "skip paint while typing"
   // guard froze the whole page when a draft was left in a box.
   const drafts = {};
-  wEl.querySelectorAll('input[id^="wa-in-"]').forEach(i => { if (i.value) drafts[i.id] = i.value; });
+  page.querySelectorAll('input[id^="wa-in-"]').forEach(i => { if (i.value) drafts[i.id] = i.value; });
   const ae = document.activeElement;
   let focusId = null, caret = 0;
   if (ae && ae.id && ae.id.indexOf('wa-in-') === 0) {
@@ -16900,22 +16937,50 @@ function _waPaint() {
   const waiting = _waConvs
     .filter(c => c.waiting && (showAll || c.cls === 'client' || c.cls === 'lead'))
     .sort((a, b) => a.lastInTs - b.lastInTs);
+  const topWait = waiting.filter(c => c.cls === 'client');
+  const newWait = waiting.filter(c => c.cls !== 'client');
   const fbtn = document.getElementById('wa-filter-btn');
   if (fbtn) fbtn.textContent = showAll ? 'מציג הכל' : 'לקוחות ולידים';
+  topEl.innerHTML = topWait.length
+    ? topWait.map(c => _waRow(c, true)).join('')
+    : '<div class="mp-empty" style="padding:10px 0">🎉 אין הודעות שמחכות מלקוחות.</div>';
+  newEl.innerHTML = newWait.length
+    ? newWait.map(c => _waRow(c, true)).join('')
+    : '<div class="mp-empty" style="padding:10px 0">אין פניות חדשות.</div>';
+  // "כל הלקוחות" fold: answered client conversations + marked clients
+  // with no recent messages. The <details> open state lives in static
+  // HTML, so repainting the inside never collapses it.
+  const rest = _waConvs.filter(c => c.cls === 'client' && !c.waiting).sort((a, b) => b.lastTs - a.lastTs);
+  const inList = {};
+  _waConvs.forEach(c => { if (c.cls === 'client') inList[c.phone] = true; });
+  const extra = Object.keys(_waCliMarks).filter(p => _waCliMarks[p] === true && !inList[p]);
+  const sumEl = document.getElementById('wa-all-clients-sum');
+  if (sumEl) sumEl.textContent = 'כל הלקוחות (' + (rest.length + extra.length + topWait.length) + ')';
+  const foldEl = document.getElementById('wa-all-clients');
+  if (foldEl) {
+    foldEl.innerHTML = (rest.map(c => _waRow(c, false)).join('')
+      + extra.map(p => {
+          const phoneEsc = String(p).replace(/[^0-9]/g, '');
+          return '<div class="dun-row">'
+            + '<div class="dun-info"><div class="dun-name" ' + _waLPAttrs(phoneEsc) + ' style="cursor:pointer">' + _escape(_waName({ phone: p })) + '</div>'
+            + '<div class="dun-meta">אין הודעות אחרונות</div></div>'
+            + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
+            + '</div>';
+        }).join(''))
+      || '<div class="mp-empty" style="padding:10px 0">עוד אין לקוחות מסומנים — הם יתווספו לבד כשתענה להם מהאפליקציה.</div>';
+  }
   // Live pipeline status — tells us in one glance whether events
   // reach the device, when the last one landed, and where the epoch
   // sits. Tap to rewind the epoch if it ever resets by mistake.
   const t = d => { const x = new Date(d); return String(x.getHours()).padStart(2,'0') + ':' + String(x.getMinutes()).padStart(2,'0'); };
-  const dbg = '<div id="wa-debug" onclick="waEpochBack()" style="margin-top:12px;font-size:10.5px;font-weight:600;color:var(--text-muted);text-align:center;cursor:pointer">'
+  const dbgEl = document.getElementById('wa-debug-wrap');
+  if (dbgEl) dbgEl.innerHTML = '<div id="wa-debug" onclick="waEpochBack()" style="margin-top:12px;font-size:10.5px;font-weight:600;color:var(--text-muted);text-align:center;cursor:pointer">'
     + (_waConn === true ? '🟢 מחובר' : _waConn === false ? '🔴 מנותק' : '⚪ מתחבר')
     + ' · ' + Object.keys(_waRaw).length + ' הודעות בצינור'
     + (_waLastEvt ? ' · אירוע אחרון ' + t(_waLastEvt) : '')
     + ' · קו אפס ' + t(_waEpoch())
     + (_waLastErr ? ' · ⚠️ ' + _escape(_waLastErr) : '')
     + '</div>';
-  wEl.innerHTML = (waiting.length
-    ? waiting.map(c => _waRow(c, true)).join('')
-    : '<div class="mp-empty" style="padding:10px 0">🎉 אף אחד לא מחכה לתשובה.</div>') + dbg;
   Object.keys(drafts).forEach(id => {
     const i = document.getElementById(id);
     if (i && !i.value) i.value = drafts[id];
