@@ -6203,7 +6203,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v385</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v386</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16084,7 +16084,7 @@ function _waRow(c, isWaiting) {
   const nm = _escape(c.client || _waNames[c.phone] || c.name || _waPhonePretty(c.phone));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
   let html = '<div class="dun-row"' + (isWaiting ? ' style="border-bottom:none;padding-bottom:4px"' : '') + '>'
-    + '<div class="dun-info"><div class="dun-name">' + (isWaiting ? '🔴 ' : (c.lastDir === 'in' ? '💬 ' : '↩️ ')) + nm + '</div>'
+    + '<div class="dun-info"><div class="dun-name" onclick="waRename(\'' + phoneEsc + '\')" style="cursor:pointer" title="לחץ לשינוי שם">' + (isWaiting ? '🔴 ' : (c.lastDir === 'in' ? '💬 ' : '↩️ ')) + nm + '</div>'
     + '<div class="dun-meta">' + _escape((c.lastText || '').slice(0, 60)) + ' · לפני ' + _waAgo(c.lastTs)
     + (isWaiting ? ' · <strong>מחכה ' + _waAgo(c.lastInTs) + '</strong>' : '') + '</div></div>'
     + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
@@ -16099,6 +16099,19 @@ function _waRow(c, isWaiting) {
   }
   return html;
 }
+window.waRename = function(phone) {
+  const cur = _waNames[phone] || '';
+  const v = prompt('שם לאיש הקשר הזה (' + _waPhonePretty(phone) + '):', cur);
+  if (v === null) return;
+  const nm = v.trim();
+  if (!firebaseDB) { toast('אין חיבור לענן כרגע'); return; }
+  try {
+    firebaseDB.ref('whatsapp/names/' + phone).set(nm || null);
+    _waNames[phone] = nm;
+    _waPaint();
+    toast('✓ השם נשמר');
+  } catch (_) { toast('שמירה נכשלה'); }
+};
 window.waReply = async function(phone) {
   const inp = document.getElementById('wa-in-' + phone);
   const text = (inp && inp.value || '').trim();
