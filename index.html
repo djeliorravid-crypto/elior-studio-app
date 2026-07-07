@@ -2657,8 +2657,9 @@
     body:has(#login-screen:not(.hidden)) #mobile-lobby-btn,
     body:has(#mode-screen:not(.hidden)) #mobile-lobby-btn,
     body:has(#login-screen:not(.hidden)) .fab-container { display: none !important; }
-    /* On the lobby there is no bottom tab bar — let the FAB sit low. */
-    body:has(#mode-screen:not(.hidden)) .fab-container { bottom: calc(28px + env(safe-area-inset-bottom, 0px)); left: 20px; }
+    /* On the lobby there is no bottom tab bar — let the FAB sit low.
+       And lift it above the lobby overlay (z9998), or taps never land. */
+    body:has(#mode-screen:not(.hidden)) .fab-container { bottom: calc(28px + env(safe-area-inset-bottom, 0px)); left: 20px; z-index: 9999; }
 
     @media (max-width: 768px) {
       :root { --sidebar-w: 0px; }
@@ -3758,12 +3759,19 @@
       border: 1px solid var(--border);
     }
     #lobby-wa-badge {
-      display: block; margin: 14px auto 0; padding: 9px 18px;
-      background: var(--red); color: #fff; border: none; border-radius: 20px;
-      font-size: 13.5px; font-weight: 800; font-family: inherit; cursor: pointer;
-      box-shadow: 0 6px 18px rgba(200,60,60,0.35);
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+      /* the lobby overlay is z9998 — anything meant to be tappable ON
+         the lobby must sit above it */
+      z-index: 9999; padding: 11px 20px;
+      background: var(--red); color: #fff; border: none; border-radius: 22px;
+      font-size: 14px; font-weight: 800; font-family: inherit; cursor: pointer;
+      box-shadow: 0 8px 22px rgba(200,60,60,0.4);
     }
-    #lobby-wa-badge:active { transform: scale(0.96); }
+    #lobby-wa-badge:active { transform: translateX(-50%) scale(0.96); }
+    /* the badge belongs to the lobby only */
+    body:has(#mode-screen.hidden) #lobby-wa-badge,
+    body:has(#login-screen:not(.hidden)) #lobby-wa-badge { display: none !important; }
     .wa-mic {
       flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px;
       border: 1.5px solid var(--border); background: var(--surface2);
@@ -3774,7 +3782,7 @@
     .wa-item-msg {
       margin: 8px 0 10px; font-size: 15px; line-height: 1.5; color: var(--text);
       background: var(--surface2); border-radius: 12px; padding: 10px 13px;
-      word-wrap: break-word;
+      word-wrap: break-word; max-height: 200px; overflow-y: auto;
     }
     .wa-item-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
     .wa-item-actions button {
@@ -5852,6 +5860,10 @@
 </button>
 
 <!-- Floating Quick Add FAB -->
+<!-- WhatsApp waiting badge — body-level so no lobby layout/overlay can
+     swallow it; CSS shows it on the lobby only, JS only when count>0 -->
+<button id="lobby-wa-badge" style="display:none" onclick="waGoInbox()"></button>
+
 <div class="fab-container" id="fab-container">
   <div class="fab-menu" id="fab-menu">
     <button class="fab-item" onclick="fabAction('schedule')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#3e6079,#5a86a8)"><svg class="fab-item-svg" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></span> אירוע בלוז</button>
@@ -6241,7 +6253,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v393</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v394</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6292,9 +6304,6 @@
       <div class="mode-card-sub">משקל · תזונה · מאמן</div>
     </div>
   </div>
-
-  <!-- WhatsApp waiting badge — shows only when someone awaits a reply -->
-  <button id="lobby-wa-badge" style="display:none" onclick="waGoInbox()"></button>
 
   <!-- ===== Lobby tasks: visible BEFORE you pick a mode ===== -->
   <div class="lobby-tasks" id="lobby-tasks">
@@ -16134,7 +16143,7 @@ function _waProcess(raw) {
     const cutoff = Math.max(c.lastOutTs, dis[c.phone] || 0);
     const fresh = c.ins.filter(m => m.ts > cutoff).sort((a, b) => a.ts - b.ts);
     c.unread = fresh.length;
-    c.freshTexts = fresh.slice(-3).map(m => m.text);
+    c.freshTexts = fresh.slice(-5).map(m => m.text);
     delete c.ins;
     return c;
   }).sort((a, b) => b.lastTs - a.lastTs);
@@ -16291,7 +16300,7 @@ function _waName(c) {
 function _waRow(c, isWaiting) {
   const nm = _escape(_waName(c));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
-  const msg = _escape((c.lastText || '').slice(0, 140));
+  const msg = _escape((c.lastText || '').slice(0, 400));
   if (!isWaiting) {
     return '<div class="dun-row">'
       + '<div class="dun-info"><div class="dun-name" onclick="waRename(\'' + phoneEsc + '\')" style="cursor:pointer">' + nm + '</div>'
@@ -16303,7 +16312,7 @@ function _waRow(c, isWaiting) {
   // the bubble, each on its own line.
   const countChip = (c.unread > 1) ? '<span class="wa-count">' + c.unread + ' הודעות</span>' : '';
   const bubble = (c.freshTexts && c.freshTexts.length > 1)
-    ? c.freshTexts.map(t => '· ' + _escape(String(t).slice(0, 90))).join('<br>')
+    ? c.freshTexts.map(t => '· ' + _escape(String(t).slice(0, 200))).join('<br>')
     : '״' + msg + '״';
   return '<div class="wa-item">'
     + '<div class="wa-item-top">'
@@ -16392,7 +16401,8 @@ let _waMicOk = false;
     const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
     if (!App || !App.getInfo) return;
     const info = await App.getInfo();
-    if (Number(info.build) >= 1783450000) { _waMicOk = true; _waPaintIfVisible(); }
+    // builds carrying NSMicrophoneUsageDescription started 7.7 evening
+    if (Number(info.build) >= 1783438000) { _waMicOk = true; _waPaintIfVisible(); }
   } catch (_) {}
 })();
 let _waRec = null;
