@@ -6283,7 +6283,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v409</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v410</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16427,6 +16427,31 @@ window.waEpochBack = function() {
 };
 let _waRaw = {};
 let _waBootT = null;
+// Instant reconciliation pull: on every page-open / resume / focus,
+// fetch the latest messages RIGHT NOW instead of waiting for the
+// (possibly frozen) socket to wake and replay child_added events.
+// This is what kills the "glanced, looked empty, messages landed a
+// second later" feeling. Throttled so rapid triggers don't spam.
+let _waSyncing = false, _waLastPull = 0;
+function _waPull(force) {
+  if (!firebaseDB) return;
+  const now = Date.now();
+  if (!force && now - _waLastPull < 1200) return;
+  _waLastPull = now;
+  _waSyncing = true;
+  _waPaintIfVisible();   // empty boxes show "מסנכרן…" while in flight
+  try {
+    firebaseDB.ref('whatsapp/msgs').limitToLast(600).once('value')
+      .then(s => {
+        _waRaw = s.val() || {};
+        _waLastEvt = Date.now();
+        _waProcess(_waRaw);
+        _waSyncing = false;
+        _waPaintIfVisible();
+      })
+      .catch(() => { _waSyncing = false; _waPaintIfVisible(); });
+  } catch (_) { _waSyncing = false; }
+}
 function _waListen() {
   if (_waListening || !firebaseDB) return;
   _waListening = true;
@@ -16451,6 +16476,7 @@ function _waListen() {
     q.once('value', s => {
       _waRaw = s.val() || {};
       boot = false;
+      _waLastPull = Date.now();   // boot read counts as a pull
       _waProcess(_waRaw);
       _waPaintIfVisible();
     });
@@ -16494,6 +16520,7 @@ function _waListen() {
       if (document.visibilityState === 'visible') {
         try { firebase.database().goOnline(); } catch (_) {}
         _waPaintIfVisible();
+        _waPull();   // pull anything that landed while hidden
       }
     });
   } catch (_) { _waListening = false; }
@@ -17136,12 +17163,16 @@ function _waPaint() {
   const newWait = waiting.filter(c => c.cls !== 'client');
   const fbtn = document.getElementById('wa-filter-btn');
   if (fbtn) fbtn.textContent = showAll ? 'מציג הכל' : 'לקוחות ולידים';
+  // While a fresh pull is in flight, an empty box shows "מסנכרן…"
+  // instead of a triumphant "אין הודעות" — so a mid-work glance never
+  // reads a not-yet-loaded list as "nothing waiting".
+  const syncing = '<div class="mp-empty" style="padding:10px 0">⏳ מסנכרן…</div>';
   topEl.innerHTML = topWait.length
     ? topWait.map(c => _waRow(c, true)).join('')
-    : '<div class="mp-empty" style="padding:10px 0">🎉 אין הודעות שמחכות מלקוחות.</div>';
+    : (_waSyncing ? syncing : '<div class="mp-empty" style="padding:10px 0">🎉 אין הודעות שמחכות מלקוחות.</div>');
   newEl.innerHTML = newWait.length
     ? newWait.map(c => _waRow(c, true)).join('')
-    : '<div class="mp-empty" style="padding:10px 0">אין פניות חדשות.</div>';
+    : (_waSyncing ? syncing : '<div class="mp-empty" style="padding:10px 0">אין פניות חדשות.</div>');
   // "כל הלקוחות" fold: answered client conversations + marked clients
   // with no recent messages. The <details> open state lives in static
   // HTML, so repainting the inside never collapses it.
@@ -17194,6 +17225,7 @@ setInterval(() => { try { _waPaintIfVisible(); } catch (_) {} }, 30000);
 window.renderWhatsappPage = function() {
   _waListen();
   _waPaint();
+  _waPull();   // fresh pull the instant the page opens — no stale glance
   try { _waSyncPhoneBook(); } catch (_) {}
   // page open = a good moment to sweep the debug junk
   try { if (firebaseDB) firebaseDB.ref('whatsapp/debug').remove(); } catch (_) {}
@@ -17224,6 +17256,7 @@ try {
   if (_capAppWa && _capAppWa.addListener) _capAppWa.addListener('resume', () => {
     try { if (window.firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
     try { _waPaintIfVisible(); } catch (_) {}
+    try { _waPull(true); } catch (_) {}   // force-pull on app resume
     // Opening the app = the reminders did their job — sweep delivered
     // server pushes from the notification center.
     try {
