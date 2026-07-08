@@ -6283,7 +6283,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v406</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v407</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16040,19 +16040,30 @@ function _briefCompose(targetKey) {
       const n = Math.round((new Date(targetKey + 'T12:00:00') - new Date(st.processStart + 'T12:00:00')) / 86400000) + 1;
       if (n > 0) dayLine = 'יום ' + n + ' בתהליך';
     }
-    const sched = load('schedule')
-      .filter(s => s && s.date === targetKey && /^\d{2}:\d{2}$/.test(s.time || ''))
+    // Schedule = EVERY source, exactly like the schedule page and the
+    // widget: manual items + calendar events (EventKit cache), deduped
+    // by the gcalEventId stamped on mirrored items. Counting manual
+    // only said "אירוע אחד" on mornings with a full calendar.
+    const manualRaw = load('schedule').filter(s => s && s.date === targetKey);
+    const claimedEk = new Set(manualRaw.filter(s => s.gcalEventId).map(s => String(s.gcalEventId)));
+    const sched = manualRaw.map(s => ({ time: s.time, title: s.title }))
+      .concat((window._eventKitCache || [])
+        .filter(ev => ev && ev.date === targetKey && !claimedEk.has(String(ev.id || '')))
+        .map(ev => ({ time: ev.time, title: ev.title })))
+      .filter(s => /^\d{2}:\d{2}$/.test(s.time || ''))
       .sort((a, b) => a.time.localeCompare(b.time));
     const schedLine = sched.length
       ? '📅 ' + (sched.length === 1 ? 'אירוע אחד' : sched.length + ' אירועים') + ' היום — ' + sched[0].time + ' ' + (sched[0].title || '')
       : '📅 אין אירועים ביומן — יום פתוח';
-    const open = _dunningList(0);
-    const openTot = open.reduce((s, i) => s + i.amount, 0);
-    const moneyLine = openTot
-      ? (open.length === 1
-          ? '💰 תשלום אחד פתוח בחוץ — ' + _ilsFmt(openTot)
-          : '💰 פתוחים בחוץ ' + _ilsFmt(openTot) + ' מ-' + open.length + ' תשלומים')
-      : '💰 אין כסף פתוח 🎉';
+    // His ask: the morning line shows what CAME IN this month — the
+    // open-payments nagging stays in the dedicated dunning notification.
+    const mKey = targetKey.slice(0, 7);
+    const paidMonth = load('income')
+      .filter(i => (i.status || 'pending') === 'paid' && (i.date || '').slice(0, 7) === mKey)
+      .reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const moneyLine = paidMonth
+      ? '💰 נכנס החודש ' + _ilsFmt(paidMonth)
+      : '💰 עוד לא נכנס כסף החודש — קדימה לעבודה';
     const yKey = _mpbDayKey(new Date(new Date(targetKey + 'T12:00:00').getTime() - 86400000));
     const hs = Number((st.health[yKey] || {}).steps) || 0;
     const tSteps = Number(st.healthTargets.steps) || 8000;
@@ -16102,6 +16113,30 @@ window._briefKick = function() {
   _briefTimer = setTimeout(() => { _briefRefresh().catch(() => {}); }, 8000);
 };
 setTimeout(() => { try { window._briefKick(); } catch (_) {} }, 12000);
+// One-shot after the v407 fix: today's 07:30 already fired with the
+// old format — pop the CORRECTED briefing once, ~45s after launch
+// (late enough for the calendar cache to fill), so he sees the fix
+// today and not only tomorrow morning.
+(function briefFixShot() {
+  try {
+    if (localStorage.getItem('brief_fix_407')) return;
+    setTimeout(async () => {
+      try {
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+        const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+        if (!LN) return;
+        if ((await LN.checkPermissions()).display !== 'granted') return;
+        const c = _briefCompose(_mpbDayKey(new Date()));
+        await LN.schedule({ notifications: [{
+          id: 710033, title: c.title, body: c.body,
+          schedule: { at: new Date(Date.now() + 30000), allowWhileIdle: true }, sound: 'default',
+          threadIdentifier: 'morning-brief', extra: { brief: 1 }
+        }] });
+        localStorage.setItem('brief_fix_407', '1');
+      } catch (_) {}
+    }, 15000);
+  } catch (_) {}
+})();
 // First schedule pass shortly after launch; tap-handling for money notifs.
 (function setupMoneyNotifs() {
   if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
@@ -23569,7 +23604,10 @@ async function gcalRefreshEventKit() {
     // gets its own day if it's mounted.
     const today = (typeof dailyDateStr === 'function') ? dailyDateStr() : new Date().toISOString().slice(0,10);
     const day   = (typeof _scheduleDate === 'string') ? _scheduleDate : today;
-    const targets = (day === today) ? [today] : [today, day];
+    // today..+2 covers the three pre-scheduled morning briefings, so
+    // "3 אירועים היום" counts calendar events for tomorrow too.
+    const plus2 = _mpbDayKey(new Date(new Date(today + 'T12:00:00').getTime() + 2 * 86400000));
+    const targets = (day >= today && day <= plus2) ? [[today, plus2]] : [[today, plus2], [day, day]];
     const all = [];
     for (const t of targets) {
       try {
@@ -23577,7 +23615,7 @@ async function gcalRefreshEventKit() {
         // and anything else) writes to the iOS DEFAULT calendar,
         // which is usually iCloud. Reading only Google calendars
         // made those events invisible in the schedule.
-        const res = await Cal.listEvents({ startDate: t, endDate: t, googleOnly: false });
+        const res = await Cal.listEvents({ startDate: t[0], endDate: t[1], googleOnly: false });
         if (res && res.events) all.push.apply(all, res.events);
       } catch (e) {}
     }
