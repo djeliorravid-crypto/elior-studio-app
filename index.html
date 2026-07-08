@@ -6283,7 +6283,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v408</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v409</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16771,14 +16771,37 @@ window.waRename = function(phone) {
 // 🔑 header button — the send code lives in localStorage from the
 // first time he typed it; surface it so "לא שמרתי את הקודים" is
 // never a dead end (needed again when re-installing cloud secrets).
-window.waShowSecret = function() {
+const WA_WORKER = 'https://ravid-whatsapp.djeliorravid.workers.dev';
+// 🔑 — set the send code AND test it against the cloud in one shot.
+// The whole send-secret nightmare came from two sources drifting apart
+// (the code in GitHub vs. the code on the phone) with no way to see
+// the mismatch. This gives instant ✓/✗ feedback so the loop ends.
+window.waTestSecret = async function(sec) {
+  // /send with empty text: 403 = wrong secret, 400 = secret OK (just
+  // no message). Lets us verify WITHOUT sending anything.
+  try {
+    const r = await _mptHttp('POST', WA_WORKER + '/send', { secret: sec, to: '', text: '' });
+    if (r.status === 403) return 'bad';
+    if (r.status === 400) return 'ok';
+    if (r.status === 500) return 'notoken';   // secret OK but WHATSAPP_TOKEN missing
+    return 'ok';
+  } catch (_) { return 'neterr'; }
+};
+window.waShowSecret = async function() {
   let sec = '';
   try { sec = localStorage.getItem('wa_send_secret') || ''; } catch (_) {}
-  if (!sec) { toast('אין קוד שמור במכשיר הזה — הוא נשמר אחרי השליחה הראשונה'); return; }
-  try { navigator.clipboard && navigator.clipboard.writeText(sec); } catch (_) {}
-  prompt('קוד השליחה שלך (SEND_SECRET) — הועתק, ואפשר גם להעתיק מכאן:', sec);
+  const v = prompt('קוד השליחה (SEND_SECRET)\n\nהזן כאן בדיוק את מה שהגדרת ב-GitHub בשם SEND_SECRET.\nהקוד נשמר במכשיר ונבדק מול הענן.', sec);
+  if (v === null) return;
+  const code = v.trim();
+  if (!code) { toast('לא הוזן קוד'); return; }
+  try { localStorage.setItem('wa_send_secret', code); } catch (_) {}
+  toast('בודק מול הענן…');
+  const res = await waTestSecret(code);
+  if (res === 'ok') toast('✓ הקוד תואם לענן — אפשר לשלוח!');
+  else if (res === 'bad') toast('✗ הקוד לא תואם למה שב-GitHub. עדכן שם SEND_SECRET לאותו ערך בדיוק.');
+  else if (res === 'notoken') toast('הקוד תקין, אבל חסר WHATSAPP_TOKEN בענן.');
+  else toast('לא הצלחתי לבדוק (רשת). הקוד נשמר — נסה לשלוח.');
 };
-const WA_WORKER = 'https://ravid-whatsapp.djeliorravid.workers.dev';
 function _waSecret() {
   let sec = '';
   try { sec = localStorage.getItem('wa_send_secret') || ''; } catch (_) {}
@@ -16812,8 +16835,9 @@ window.waReply = async function(phone) {
       // The worker records the outgoing message → the live listener
       // clears the row within a second. No manual bookkeeping needed.
     } else if (r.status === 403) {
-      try { localStorage.removeItem('wa_send_secret'); } catch (_) {}
-      toast('קוד שליחה שגוי — נסה שוב');
+      // DON'T wipe the code — wiping created an endless re-enter loop.
+      // Keep it and point him at the 🔑 button to fix + test it.
+      toast('✗ קוד השליחה לא תואם לענן. לחץ 🔑 למעלה כדי לתקן.');
     } else {
       toast('⚠️ ' + ((r.json && r.json.error) || ('שגיאה ' + r.status)));
     }
@@ -17063,8 +17087,8 @@ window.waVoiceSend = async function(phone) {
       _waAutoMark(phone);
       _waPaint();
     } else if (r.status === 403) {
-      try { localStorage.removeItem('wa_send_secret'); } catch (_) {}
-      toast('קוד שליחה שגוי — נסה שוב');
+      // Keep the recording AND the code (no wipe) — fix the code via 🔑.
+      toast('✗ קוד השליחה לא תואם לענן. לחץ 🔑 למעלה כדי לתקן.');
       if (btn) { btn.textContent = '✓ שלח את ההקלטה'; btn.disabled = false; }
     } else {
       // Keep the recording so he can retry — and show the REAL error.
