@@ -6283,7 +6283,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v410</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v411</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16241,20 +16241,32 @@ function _waEpoch() {
 function _waProcess(raw) {
  try {
   const epoch = _waEpoch();
-  const msgs = Object.keys(raw || {}).map(k => raw[k]).filter(m => m && m.phone && m.ts && m.ts >= epoch);
   const conv = {};
-  msgs.forEach(m => {
-    const c = conv[m.phone] = conv[m.phone] || { phone: String(m.phone), name: '', lastTs: 0, lastDir: '', lastText: '', lastInTs: 0, lastOutTs: 0, ins: [] };
-    if (m.dir === 'in' && m.name) c.name = m.name;
-    if (m.ts >= c.lastTs) { c.lastTs = m.ts; c.lastDir = m.dir; c.lastText = m.text || ''; }
-    if (m.dir === 'in') {
-      if (m.ts > c.lastInTs) { c.lastInTs = m.ts; if (m.id) c.lastInId = m.id; }
-      c.ins.push({ ts: m.ts, text: m.text || '' });
-    } else if (m.ts > c.lastOutTs) c.lastOutTs = m.ts;
+  // Per-record resilience: ONE malformed message (an edit, an exotic
+  // type, a bad timestamp) must never freeze the whole inbox. Each
+  // record is normalized + processed in its own try/catch, so a poison
+  // record is simply skipped instead of killing every future update.
+  Object.keys(raw || {}).forEach(k => {
+    try {
+      const m = raw[k];
+      if (!m || !m.phone) return;
+      const ts = Number(m.ts);
+      if (!ts || !isFinite(ts) || ts < epoch) return;
+      const phone = String(m.phone);
+      const c = conv[phone] = conv[phone] || { phone: phone, name: '', lastTs: 0, lastDir: '', lastText: '', lastInTs: 0, lastOutTs: 0, ins: [] };
+      const text = (m.text == null) ? '' : String(m.text);
+      if (m.dir === 'in' && m.name) c.name = String(m.name);
+      if (ts >= c.lastTs) { c.lastTs = ts; c.lastDir = m.dir; c.lastText = text; }
+      if (m.dir === 'in') {
+        if (ts > c.lastInTs) { c.lastInTs = ts; if (m.id) c.lastInId = m.id; }
+        c.ins.push({ ts: ts, text: text });
+      } else if (ts > c.lastOutTs) c.lastOutTs = ts;
+    } catch (_) {}
   });
   const dis = _waDismissed();
   const clients = load('clients');
   const list = Object.values(conv).map(c => {
+   try {
     const cl = clients.find(x => _waPhone(x.phone) === c.phone);
     if (cl) c.client = cl.name;
     c.waiting = c.lastDir === 'in' && c.lastInTs > (dis[c.phone] || 0);
@@ -16275,7 +16287,8 @@ function _waProcess(raw) {
     c.freshTexts = fresh.slice(-5).map(m => m.text);
     delete c.ins;
     return c;
-  }).sort((a, b) => b.lastTs - a.lastTs);
+   } catch (_) { delete c.ins; c.cls = c.cls || 'lead'; return c; }
+  }).sort((a, b) => (Number(b.lastTs) || 0) - (Number(a.lastTs) || 0));
   _waConvs = list;
   // Persist for instant paint on next launch + morning-brief summary.
   try { localStorage.setItem('wa_cache', JSON.stringify(list.slice(0, 60))); } catch (_) {}
@@ -16440,17 +16453,20 @@ function _waPull(force) {
   _waLastPull = now;
   _waSyncing = true;
   _waPaintIfVisible();   // empty boxes show "מסנכרן…" while in flight
+  // Offline .once() can hang forever — never let "מסנכרן…" stick.
+  let done = false;
+  const clear = () => { if (done) return; done = true; _waSyncing = false; _waPaintIfVisible(); };
+  const guard = setTimeout(clear, 4000);
   try {
     firebaseDB.ref('whatsapp/msgs').limitToLast(600).once('value')
       .then(s => {
         _waRaw = s.val() || {};
         _waLastEvt = Date.now();
         _waProcess(_waRaw);
-        _waSyncing = false;
-        _waPaintIfVisible();
+        clearTimeout(guard); clear();
       })
-      .catch(() => { _waSyncing = false; _waPaintIfVisible(); });
-  } catch (_) { _waSyncing = false; }
+      .catch(() => { clearTimeout(guard); clear(); });
+  } catch (_) { clearTimeout(guard); clear(); }
 }
 function _waListen() {
   if (_waListening || !firebaseDB) return;

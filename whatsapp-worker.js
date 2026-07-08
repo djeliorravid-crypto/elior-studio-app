@@ -389,10 +389,16 @@ async function processWebhook(body, env) {
             // recording them would mark the chat as waiting falsely.
             if (m.type === 'reaction') { stored++; continue; }
             const ph = String(m.from || '').replace(/\D/g, '');
-            let text = (m.text && m.text.body) || '';
+            // Edited messages arrive as a NEW webhook that references the
+            // original — treat the edited body as the message text.
+            let text = (m.text && m.text.body)
+              || (m.edited && m.edited.text && m.edited.text.body)
+              || (m.text_edited && m.text_edited.body)
+              || '';
             if (!text) {
               const t = m.type;
-              if (t === 'sticker')        text = '🧩 סטיקר';
+              if (t === 'text')           text = '✏️ ' + ((m.text && m.text.body) || '(עריכה)');
+              else if (t === 'sticker')   text = '🧩 סטיקר';
               else if (t === 'image')     text = '📷 תמונה' + (m.image && m.image.caption ? ' — ' + m.image.caption : '');
               else if (t === 'video')     text = '🎬 סרטון' + (m.video && m.video.caption ? ' — ' + m.video.caption : '');
               else if (t === 'audio') {
@@ -403,7 +409,20 @@ async function processWebhook(body, env) {
               else if (t === 'document')  text = '📄 קובץ' + (m.document && m.document.filename ? ' — ' + m.document.filename : '');
               else if (t === 'location')  text = '📍 מיקום';
               else if (t === 'contacts')  text = '👤 איש קשר';
-              else text = '[הודעה]';
+              // Button / interactive replies carry their label elsewhere.
+              else if (t === 'button')    text = (m.button && m.button.text) || '🔘 כפתור';
+              else if (t === 'interactive') text = (m.interactive && ((m.interactive.button_reply && m.interactive.button_reply.title) || (m.interactive.list_reply && m.interactive.list_reply.title))) || '🔘 בחירה';
+              else {
+                // Truly unknown — label with the type so it's not a
+                // mystery, and capture the raw shape once for diagnosis.
+                text = '📩 הודעה (' + (t || 'לא ידוע') + ')';
+                try {
+                  await fetch(FIREBASE + '/debug.json', {
+                    method: 'POST',
+                    body: JSON.stringify({ raw: JSON.stringify(m).slice(0, 2000), ts: Date.now() })
+                  });
+                } catch (_) {}
+              }
             }
             const rec = {
               dir: 'in',
