@@ -6283,7 +6283,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v407</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v408</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16119,7 +16119,10 @@ setTimeout(() => { try { window._briefKick(); } catch (_) {} }, 12000);
 // today and not only tomorrow morning.
 (function briefFixShot() {
   try {
-    if (localStorage.getItem('brief_fix_407')) return;
+    // 'b': the first shot armed itself only after 15s in-app — a quick
+    // close froze the timer and burned nothing but the opportunity.
+    // Arm after 6s (before any realistic close), fire 25s later.
+    if (localStorage.getItem('brief_fix_407b')) return;
     setTimeout(async () => {
       try {
         if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
@@ -16129,12 +16132,12 @@ setTimeout(() => { try { window._briefKick(); } catch (_) {} }, 12000);
         const c = _briefCompose(_mpbDayKey(new Date()));
         await LN.schedule({ notifications: [{
           id: 710033, title: c.title, body: c.body,
-          schedule: { at: new Date(Date.now() + 30000), allowWhileIdle: true }, sound: 'default',
+          schedule: { at: new Date(Date.now() + 25000), allowWhileIdle: true }, sound: 'default',
           threadIdentifier: 'morning-brief', extra: { brief: 1 }
         }] });
-        localStorage.setItem('brief_fix_407', '1');
+        localStorage.setItem('brief_fix_407b', '1');
       } catch (_) {}
-    }, 15000);
+    }, 6000);
   } catch (_) {}
 })();
 // First schedule pass shortly after launch; tap-handling for money notifs.
