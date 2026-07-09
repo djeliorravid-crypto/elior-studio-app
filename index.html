@@ -3883,6 +3883,19 @@
     }
     .wa-quick button:active { background: var(--surface3); }
     .wa-quick .sep { width: 1px; height: 12px; background: var(--border); }
+    /* premium box headers with live count pills */
+    .wa-box { border-top: none; }
+    .wa-box-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+    .wa-box-title { display: flex; align-items: center; gap: 9px; font-size: 17px; font-weight: 900; color: var(--text); }
+    .wa-box-ic { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .wa-box-ic.green { background: var(--green); box-shadow: 0 0 0 4px rgba(46,160,90,0.16); }
+    .wa-box-ic.orange { background: #ff9500; box-shadow: 0 0 0 4px rgba(255,149,0,0.16); }
+    .wa-box-count {
+      background: var(--surface3); color: var(--text-muted); font-size: 13px; font-weight: 800;
+      min-width: 26px; height: 26px; padding: 0 9px; border-radius: 13px;
+      display: flex; align-items: center; justify-content: center; transition: background .2s, color .2s;
+    }
+    .wa-box-count.hot { background: var(--red); color: #fff; }
     /* conversation-history thread modal */
     .wa-thread {
       display: flex; flex-direction: column; gap: 7px;
@@ -6355,7 +6368,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v413</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v414</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6834,8 +6847,11 @@
       </div>
     </div>
     <!-- Top box: CLIENTS — anyone the system knows is a client -->
-    <div class="table-card mp-card" id="wa-clients-card" style="border-top:3px solid var(--green)">
-      <div class="mp-section-title">🟢 לקוחות</div>
+    <div class="table-card mp-card wa-box" id="wa-clients-card">
+      <div class="wa-box-head">
+        <div class="wa-box-title"><span class="wa-box-ic green"></span>לקוחות</div>
+        <span class="wa-box-count" id="wa-cnt-clients">0</span>
+      </div>
       <div class="mp-sub">הודעות מלקוחות שמחכות לתשובה. עונים או מסמנים טופל — והשורה נעלמת.</div>
       <div id="wa-clients-list"></div>
       <details id="wa-all-clients-fold" style="margin-top:10px">
@@ -6844,8 +6860,11 @@
       </details>
     </div>
     <!-- Bottom box: NEW — unknown numbers; long-press decides their fate -->
-    <div class="table-card mp-card" id="wa-new-card" style="border-top:3px solid var(--orange, #ff9500)">
-      <div class="mp-section-title">🟠 חדשים</div>
+    <div class="table-card mp-card wa-box" id="wa-new-card">
+      <div class="wa-box-head">
+        <div class="wa-box-title"><span class="wa-box-ic orange"></span>חדשים</div>
+        <span class="wa-box-count" id="wa-cnt-new">0</span>
+      </div>
       <div class="mp-sub">מספרים חדשים שכתבו לך. לחיצה ארוכה על שם — קובעים: לקוח (עובר למעלה לתמיד) או לא רלוונטי.</div>
       <div id="wa-new-list"></div>
     </div>
@@ -16563,28 +16582,46 @@ let _waBootT = null;
 // (possibly frozen) socket to wake and replay child_added events.
 // This is what kills the "glanced, looked empty, messages landed a
 // second later" feeling. Throttled so rapid triggers don't spam.
-let _waSyncing = false, _waLastPull = 0;
+const WA_RTDB = 'https://elior-studio-default-rtdb.firebaseio.com';
+let _waSyncing = false, _waLastPull = 0, _waRestInFlight = false;
 function _waPull(force) {
-  if (!firebaseDB) return;
   const now = Date.now();
-  if (!force && now - _waLastPull < 1200) return;
+  if (!force && now - _waLastPull < 700) return;
   _waLastPull = now;
+  // 1) INSTANT — repaint from the in-memory / cached data with zero
+  //    wait, so there is never a blank moment.
+  _waPaintIfVisible();
+  // 2) FAST — pull fresh over plain HTTPS (REST). This is the whole
+  //    fix: the realtime WebSocket is FROZEN by iOS while the app is
+  //    backgrounded and takes several seconds to wake, so waiting on
+  //    it (once/child_added) is what caused the 5-second lag. A REST
+  //    GET doesn't touch that socket — it returns in a few hundred ms.
+  _waPullREST();
+  // 3) BACKGROUND — nudge the socket so live deltas resume for as long
+  //    as the app stays open. We don't wait on it.
+  try { if (window.firebase && firebase.database) firebase.database().goOnline(); } catch (_) {}
+}
+async function _waPullREST() {
+  if (_waRestInFlight) return;
+  _waRestInFlight = true;
   _waSyncing = true;
-  _waPaintIfVisible();   // empty boxes show "מסנכרן…" while in flight
-  // Offline .once() can hang forever — never let "מסנכרן…" stick.
-  let done = false;
-  const clear = () => { if (done) return; done = true; _waSyncing = false; _waPaintIfVisible(); };
-  const guard = setTimeout(clear, 4000);
+  _waPaintIfVisible();
+  const done = () => { _waRestInFlight = false; _waSyncing = false; _waPaintIfVisible(); };
+  const guard = setTimeout(done, 3500);
   try {
-    firebaseDB.ref('whatsapp/msgs').limitToLast(600).once('value')
-      .then(s => {
-        _waRaw = s.val() || {};
+    // orderBy="$key"&limitToLast=600 — newest 600 messages, no index needed.
+    const url = WA_RTDB + '/whatsapp/msgs.json?orderBy=%22%24key%22&limitToLast=600';
+    const r = await fetch(url, { cache: 'no-store' });
+    if (r.ok) {
+      const data = await r.json();
+      if (data && typeof data === 'object') {
+        _waRaw = data;
         _waLastEvt = Date.now();
         _waProcess(_waRaw);
-        clearTimeout(guard); clear();
-      })
-      .catch(() => { clearTimeout(guard); clear(); });
-  } catch (_) { clearTimeout(guard); clear(); }
+      }
+    }
+  } catch (_) {}
+  clearTimeout(guard); done();
 }
 function _waListen() {
   if (_waListening || !firebaseDB) return;
@@ -17458,6 +17495,11 @@ function _waPaint() {
     .sort((a, b) => a.lastInTs - b.lastInTs);
   const topWait = waiting.filter(c => c.cls === 'client');
   const newWait = waiting.filter(c => c.cls !== 'client');
+  // Live count pills in the box headers.
+  const cntC = document.getElementById('wa-cnt-clients');
+  const cntN = document.getElementById('wa-cnt-new');
+  if (cntC) { cntC.textContent = topWait.length; cntC.classList.toggle('hot', topWait.length > 0); }
+  if (cntN) { cntN.textContent = newWait.length; cntN.classList.toggle('hot', newWait.length > 0); }
   const fbtn = document.getElementById('wa-filter-btn');
   if (fbtn) fbtn.textContent = showAll ? 'מציג הכל' : 'לקוחות ולידים';
   // While a fresh pull is in flight, an empty box shows "מסנכרן…"
