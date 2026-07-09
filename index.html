@@ -3883,6 +3883,36 @@
     }
     .wa-quick button:active { background: var(--surface3); }
     .wa-quick .sep { width: 1px; height: 12px; background: var(--border); }
+    /* ===== Live hero — the inbox has a heartbeat ===== */
+    .wa-hero {
+      position: relative; overflow: hidden; border-radius: 22px;
+      padding: 20px 22px 22px; margin-bottom: 16px; color: #fff;
+      background: linear-gradient(135deg, #1f7a49, #2ea05a 70%, #37b768);
+      box-shadow: 0 12px 34px rgba(46,160,90,0.28);
+      transition: background .6s ease, box-shadow .6s ease;
+    }
+    .wa-hero.busy {
+      background: linear-gradient(135deg, #a83a3a, #d9552b 70%, #e8722f);
+      box-shadow: 0 12px 34px rgba(210,70,50,0.32);
+    }
+    .wa-hero-glow {
+      position: absolute; top: -55%; inset-inline-start: -12%;
+      width: 240px; height: 240px; border-radius: 50%; pointer-events: none;
+      background: radial-gradient(circle, rgba(255,255,255,0.28), transparent 68%);
+      animation: waFloat 6.5s ease-in-out infinite;
+    }
+    @keyframes waFloat { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(16px) scale(1.12); } }
+    .wa-hero-live {
+      position: relative; display: inline-flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 800; background: rgba(255,255,255,0.16);
+      padding: 5px 12px; border-radius: 20px; backdrop-filter: blur(4px);
+    }
+    .wa-hero-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.9); animation: waLivePulse 1.5s ease-in-out infinite; }
+    @keyframes waLivePulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.65); } }
+    .wa-hero-num { position: relative; font-size: 54px; font-weight: 900; line-height: 1; margin: 12px 0 3px; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+    .wa-hero-num.pop { animation: waPop .45s cubic-bezier(.2,1.4,.4,1); }
+    @keyframes waPop { 0% { transform: scale(.5); opacity: .3; } 60% { transform: scale(1.18); } 100% { transform: scale(1); opacity: 1; } }
+    .wa-hero-label { position: relative; font-size: 15.5px; font-weight: 700; opacity: .96; }
     /* premium box headers with live count pills */
     .wa-box { border-top: none; }
     .wa-box-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
@@ -6368,7 +6398,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v414</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v415</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6845,6 +6875,13 @@
         <button class="btn btn-ghost btn-sm" id="wa-filter-btn" onclick="waFilterToggle()">לקוחות ולידים</button>
         <button class="btn btn-ghost btn-sm" onclick="renderWhatsappPage()">רענן</button>
       </div>
+    </div>
+    <!-- Live hero — the mood of the inbox at a glance -->
+    <div class="wa-hero" id="wa-hero">
+      <div class="wa-hero-glow"></div>
+      <div class="wa-hero-live"><span class="wa-hero-dot"></span><span id="wa-hero-status">בזמן אמת</span></div>
+      <div class="wa-hero-num" id="wa-hero-num">0</div>
+      <div class="wa-hero-label" id="wa-hero-label">טוען…</div>
     </div>
     <!-- Top box: CLIENTS — anyone the system knows is a client -->
     <div class="table-card mp-card wa-box" id="wa-clients-card">
@@ -16910,6 +16947,15 @@ function _waReplyBlock(phoneEsc) {
     + '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
     + '</div>';
 }
+// Wait-time urgency: the list breathes — fresh waits calm green,
+// forgotten ones burn red. Drives the card accent + the wait pill.
+function _waUrgency(ts) {
+  const min = (Date.now() - ts) / 60000;
+  if (min < 15) return '#2ea05a';
+  if (min < 60) return '#e0a52f';
+  if (min < 180) return '#e0662f';
+  return '#d64545';
+}
 function _waRow(c, isWaiting) {
   const nm = _escape(_waName(c));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
@@ -16930,9 +16976,10 @@ function _waRow(c, isWaiting) {
   const texts = (c.freshTexts && c.freshTexts.length) ? c.freshTexts.slice(-3) : [c.lastText || ''];
   const bubbles = texts.map(t => '<div class="wa-bub">' + _escape(String(t).slice(0, 300)) + '</div>').join('');
   const leadChip = c.cls === 'lead' ? '<span class="wa-chip-lead">ליד חדש</span>' : '';
-  const sub = '<span class="wa-wait2">מחכה ' + _waAgo(c.lastInTs) + '</span>'
+  const urg = _waUrgency(c.lastInTs);
+  const sub = '<span class="wa-wait2" style="color:' + urg + '">● מחכה ' + _waAgo(c.lastInTs) + '</span>'
     + (c.unread > 1 ? '<span class="wa-dot2"></span>' + c.unread + ' הודעות' : '');
-  return '<div class="wa-card2' + (c.cls === 'lead' ? ' lead' : '') + '">'
+  return '<div class="wa-card2' + (c.cls === 'lead' ? ' lead' : '') + '" style="border-inline-start:4px solid ' + urg + '">'
     + '<div class="wa-card2-head">'
     +   _waAvatarHtml(c, phoneEsc, true)
     +   '<div class="wa-card2-id" ' + _waLPAttrs(phoneEsc) + ' style="cursor:pointer" title="לחיצה ארוכה — אפשרויות">'
@@ -17500,6 +17547,23 @@ function _waPaint() {
   const cntN = document.getElementById('wa-cnt-new');
   if (cntC) { cntC.textContent = topWait.length; cntC.classList.toggle('hot', topWait.length > 0); }
   if (cntN) { cntN.textContent = newWait.length; cntN.classList.toggle('hot', newWait.length > 0); }
+  // Live hero — the mood of the whole inbox in one breathing card.
+  const total = topWait.length + newWait.length;
+  const hero = document.getElementById('wa-hero');
+  const heroNum = document.getElementById('wa-hero-num');
+  const heroLbl = document.getElementById('wa-hero-label');
+  const heroSt = document.getElementById('wa-hero-status');
+  if (hero) hero.classList.toggle('busy', total > 0);
+  if (heroNum && heroNum.textContent !== String(total)) {
+    heroNum.textContent = total;
+    heroNum.classList.remove('pop'); void heroNum.offsetWidth; heroNum.classList.add('pop');
+  }
+  if (heroLbl) {
+    heroLbl.textContent = total === 0 ? 'אף אחד לא מחכה — הכל נקי 🎉'
+      : total === 1 ? 'לקוח אחד מחכה לתשובה שלך'
+      : total + ' אנשים מחכים לתשובה שלך';
+  }
+  if (heroSt) heroSt.textContent = _waSyncing ? 'מסנכרן…' : (_waConn === false ? 'מתחבר…' : 'בזמן אמת');
   const fbtn = document.getElementById('wa-filter-btn');
   if (fbtn) fbtn.textContent = showAll ? 'מציג הכל' : 'לקוחות ולידים';
   // While a fresh pull is in flight, an empty box shows "מסנכרן…"
