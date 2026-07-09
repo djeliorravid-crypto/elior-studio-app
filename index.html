@@ -3828,6 +3828,78 @@
       font-size: 14px; font-weight: 600; font-family: inherit; outline: none; direction: rtl;
     }
     .wa-replyrow input:focus { border-color: var(--green); }
+
+    /* ===== WhatsApp inbox — premium card redesign (v412) ===== */
+    .wa-card2 {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 16px; padding: 13px 13px 11px; margin-bottom: 11px;
+      transition: transform .12s ease, box-shadow .2s ease;
+    }
+    .wa-card2:active { transform: scale(0.994); }
+    .wa-card2.lead { border-color: rgba(200,137,31,0.5); }
+    .wa-card2-head { display: flex; align-items: center; gap: 11px; }
+    .wa-av {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 800; font-size: 17px; position: relative;
+      -webkit-user-select: none; user-select: none; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+    }
+    .wa-av-badge {
+      position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px;
+      padding: 0 5px; border-radius: 10px; background: var(--red); color: #fff;
+      font-size: 11px; font-weight: 800; display: flex; align-items: center;
+      justify-content: center; border: 2px solid var(--surface2); box-sizing: border-box;
+    }
+    .wa-card2-id { flex: 1; min-width: 0; }
+    .wa-card2-name {
+      font-size: 16px; font-weight: 800; color: var(--text);
+      display: flex; align-items: center; gap: 7px; overflow: hidden;
+    }
+    .wa-card2-name .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .wa-card2-sub {
+      font-size: 12px; color: var(--text-muted); font-weight: 600;
+      margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .wa-dot2 { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .45; flex-shrink: 0; }
+    .wa-wait2 { color: var(--red); font-weight: 800; }
+    .wa-chip-lead { background: #c8891f; color: #fff; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 9px; flex-shrink: 0; }
+    .wa-hist-btn {
+      flex-shrink: 0; background: var(--surface3); border: 1px solid var(--border);
+      color: var(--text); border-radius: 11px; padding: 8px 12px; font-size: 12.5px;
+      font-weight: 800; font-family: inherit; cursor: pointer; display: flex;
+      align-items: center; gap: 5px; align-self: flex-start;
+    }
+    .wa-hist-btn:active { background: var(--surface); }
+    .wa-bubbles { margin: 11px 0 10px; display: flex; flex-direction: column; gap: 5px; }
+    .wa-bub {
+      align-self: flex-start; max-width: 90%; background: var(--surface3);
+      border-radius: 5px 15px 15px 15px; padding: 9px 13px; font-size: 14.5px;
+      line-height: 1.45; color: var(--text); word-wrap: break-word; overflow-wrap: anywhere;
+    }
+    .wa-quick { display: flex; align-items: center; gap: 3px; margin-top: 9px; flex-wrap: wrap; }
+    .wa-quick button {
+      background: none; border: none; padding: 5px 8px; cursor: pointer; border-radius: 8px;
+      font-size: 12.5px; font-weight: 700; color: var(--text-muted); font-family: inherit;
+    }
+    .wa-quick button:active { background: var(--surface3); }
+    .wa-quick .sep { width: 1px; height: 12px; background: var(--border); }
+    /* conversation-history thread modal */
+    .wa-thread {
+      display: flex; flex-direction: column; gap: 7px;
+      max-height: 62vh; overflow-y: auto; padding: 6px 2px; margin: 4px 0 6px;
+    }
+    .wa-th-row { display: flex; flex-direction: column; max-width: 100%; }
+    /* RTL: customer (in) on the right, my replies (out) on the left —
+       mirrors native Hebrew WhatsApp. */
+    .wa-th-row.in { align-items: flex-start; }
+    .wa-th-row.out { align-items: flex-end; }
+    .wa-th-msg {
+      max-width: 84%; padding: 9px 13px; font-size: 14px; line-height: 1.45;
+      word-wrap: break-word; overflow-wrap: anywhere;
+    }
+    .wa-th-row.in .wa-th-msg { background: var(--surface3); color: var(--text); border-radius: 5px 15px 15px 15px; }
+    .wa-th-row.out .wa-th-msg { background: var(--green); color: #fff; border-radius: 15px 5px 15px 15px; }
+    .wa-th-time { font-size: 10px; color: var(--text-muted); margin: 2px 6px 0; }
     .mp-card.mpt-sec { padding: 0; }
     .mpt-sec-head {
       width: 100%; display: flex; align-items: center; gap: 10px;
@@ -6283,7 +6355,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v411</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v412</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6696,6 +6768,16 @@
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal('wasched')">סגור</button>
       <button class="btn btn-primary" style="flex:1" onclick="waSchedSave()">תזמן</button>
     </div>
+  </div>
+</div>
+
+<!-- WhatsApp conversation history — last messages for context -->
+<div class="modal-overlay" id="modal-waconvo">
+  <div class="modal modal-narrow">
+    <h3 id="waconvo-name">שיחה</h3>
+    <div class="mp-sub" id="waconvo-sub" style="margin:-8px 0 10px"></div>
+    <div class="wa-thread" id="waconvo-thread"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:6px" onclick="closeModal('waconvo')">סגור</button>
   </div>
 </div>
 
@@ -16292,6 +16374,20 @@ function _waProcess(raw) {
   _waConvs = list;
   // Persist for instant paint on next launch + morning-brief summary.
   try { localStorage.setItem('wa_cache', JSON.stringify(list.slice(0, 60))); } catch (_) {}
+  // Cache the RAW messages too — gives the next cold-boot full-fidelity
+  // data instantly AND powers the offline conversation-history view.
+  // Capped to the most recent 400 records to stay well within quota.
+  try {
+    const rk = Object.keys(raw);
+    let store = raw;
+    if (rk.length > 400) {
+      store = {};
+      rk.map(k => [k, Number(raw[k] && raw[k].ts) || 0])
+        .sort((a, b) => b[1] - a[1]).slice(0, 400)
+        .forEach(pair => { store[pair[0]] = raw[pair[0]]; });
+    }
+    localStorage.setItem('wa_raw_cache', JSON.stringify(store));
+  } catch (_) {}
   try {
     const waiting = list.filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead'));
     localStorage.setItem('wa_waiting_summary', JSON.stringify({
@@ -16439,6 +16535,11 @@ window.waEpochBack = function() {
   toast('✓ קו האפס הוזז 24 שעות אחורה');
 };
 let _waRaw = {};
+// Cold boot with FULL data instantly: hydrate raw messages from the
+// last session's cache so the inbox + history are populated before the
+// network even wakes. The live pull/listener then reconciles.
+try { _waRaw = JSON.parse(localStorage.getItem('wa_raw_cache') || '{}') || {}; } catch (_) { _waRaw = {}; }
+try { if (Object.keys(_waRaw).length) _waProcess(_waRaw); } catch (_) {}
 let _waBootT = null;
 // Instant reconciliation pull: on every page-open / resume / focus,
 // fetch the latest messages RIGHT NOW instead of waiting for the
@@ -16605,6 +16706,7 @@ window.waActOpen = function(phone) {
   if (!isClient) html += B('⭐ סמן כלקוח — יעבור לתיבה למעלה', 'client', 'var(--green)');
   if (!isClient) html += B('🚫 לא רלוונטי — הסתר', 'hide');
   if (isClient && !c.client) html += B('הסר סימון לקוח', 'unmark');
+  html += B('📜 רקע לשיחה', 'history');
   html += B('✏️ שנה שם', 'rename');
   html += B('⏰ תזמן הודעה', 'sched');
   if (c.waiting) html += B('✓ סמן טופל', 'done');
@@ -16621,6 +16723,7 @@ window.waActDo = function(phone, act) {
   else if (act === 'rename') waRename(phone);
   else if (act === 'done') waDismiss(phone);
   else if (act === 'sched') waSchedOpen(phone);
+  else if (act === 'history') waHistory(phone);
   else if (act === 'open') window.open('https://wa.me/' + phone, '_blank');
 };
 // ── Scheduled messages: queued to /whatsapp/outbox, sent by the
@@ -16712,61 +16815,115 @@ function _waPaintSched() {
   if (sumEl) sumEl.textContent = '⏰ הודעות מתוזמנות (' + pend + ' ממתינות)';
   listEl.innerHTML = ids.map(id => _waSchedRow(id)).join('');
 }
+// Avatar: stable colour from the phone, initials from the name.
+function _waHue(phone) {
+  let h = 0; const s = String(phone);
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+  return h;
+}
+function _waInitials(name) {
+  const n = String(name || '').replace(/^[^֐-׿a-zA-Z0-9]+/, '').trim();
+  if (!n) return '?';
+  const parts = n.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] || '') + (parts[1][0] || '');
+  return n.slice(0, 2);
+}
+function _waAvatarHtml(c, phoneEsc, showBadge) {
+  const hue = _waHue(phoneEsc);
+  const badge = (showBadge && c.unread > 1) ? '<span class="wa-av-badge">' + c.unread + '</span>' : '';
+  return '<div class="wa-av" style="background:hsl(' + hue + ',42%,44%)">' + _escape(_waInitials(_waName(c))) + badge + '</div>';
+}
+// Reply / voice block — SAME ids the recording engine + waReply expect.
+function _waReplyBlock(phoneEsc) {
+  if (_waVoicePending[phoneEsc]) {
+    return '<div class="wa-voice-review">'
+      + '<audio controls src="' + _waVoicePending[phoneEsc].url + '"></audio>'
+      + '<div class="wa-quick" style="margin-top:6px">'
+      + '<button style="color:var(--green);font-weight:800" id="wa-vsend-' + phoneEsc + '" onclick="waVoiceSend(\'' + phoneEsc + '\')">✓ שלח את ההקלטה</button>'
+      + '<span class="sep"></span><button onclick="waVoiceRedo(\'' + phoneEsc + '\')">הקלט מחדש</button>'
+      + '<span class="sep"></span><button onclick="waVoiceCancel(\'' + phoneEsc + '\')">בטל</button>'
+      + '</div></div>';
+  }
+  return '<div class="wa-replyrow" id="wa-rr-' + phoneEsc + '">'
+    + '<input id="wa-in-' + phoneEsc + '" placeholder="כתוב תשובה…" '
+    + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
+    + (_waMicOk ? '<button class="wa-mic" id="wa-mic-' + phoneEsc + '" title="החזק להקלטה"'
+      + ' ontouchstart="waRecTS(event,\'' + phoneEsc + '\')" ontouchmove="waRecTM(event)" ontouchend="waRecTE(event)" ontouchcancel="waRecTE(event)"'
+      + ' onmousedown="waRecTS(event,\'' + phoneEsc + '\')" onmouseup="waRecTE(event)"'
+      + ' oncontextmenu="return false">'
+      + '<svg viewBox="0 0 24 24" style="width:18px;height:18px;pointer-events:none" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg>'
+      + '</button>' : '')
+    + '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
+    + '</div>';
+}
 function _waRow(c, isWaiting) {
   const nm = _escape(_waName(c));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
-  const msg = _escape((c.lastText || '').slice(0, 400));
+  const histBtn = '<button class="wa-hist-btn" onclick="waHistory(\'' + phoneEsc + '\')">📜 רקע</button>';
   if (!isWaiting) {
-    return '<div class="dun-row">'
-      + '<div class="dun-info"><div class="dun-name" ' + _waLPAttrs(phoneEsc) + ' style="cursor:pointer">' + nm + '</div>'
-      + '<div class="dun-meta">' + msg + ' · לפני ' + _waAgo(c.lastTs) + '</div></div>'
-      + '<button class="btn btn-ghost btn-sm" onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח</button>'
-      + '</div>';
+    const msg = _escape((c.lastText || '').slice(0, 80));
+    return '<div class="wa-card2">'
+      + '<div class="wa-card2-head">'
+      +   _waAvatarHtml(c, phoneEsc, false)
+      +   '<div class="wa-card2-id" ' + _waLPAttrs(phoneEsc) + ' style="cursor:pointer">'
+      +     '<div class="wa-card2-name"><span class="nm">' + nm + '</span></div>'
+      +     '<div class="wa-card2-sub"><span class="nm">' + msg + '</span><span class="wa-dot2"></span>לפני ' + _waAgo(c.lastTs) + '</div>'
+      +   '</div>'
+      +   histBtn
+      + '</div></div>';
   }
-  // Several unread messages → count chip + all of them (up to 3) in
-  // the bubble, each on its own line.
-  const countChip = ((c.unread > 1) ? '<span class="wa-count">' + c.unread + ' הודעות</span>' : '')
-    + (c.cls === 'lead' ? '<span class="wa-lead-chip">ליד חדש</span>' : '')
-    + (c.cls === 'known' ? '<span class="wa-count" style="opacity:.7">לא לקוח</span>' : '');
-  const bubble = (c.freshTexts && c.freshTexts.length > 1)
-    ? c.freshTexts.map(t => '· ' + _escape(String(t).slice(0, 200))).join('<br>')
-    : '״' + msg + '״';
-  return '<div class="wa-item">'
-    + '<div class="wa-item-top">'
-    +   '<span class="wa-item-name" ' + _waLPAttrs(phoneEsc) + ' title="לחיצה ארוכה — אפשרויות">' + nm + '</span>'
-    +   '<span style="display:flex;gap:6px;align-items:center;flex-shrink:0">' + countChip
-    +   '<span class="wa-wait-badge">מחכה ' + _waAgo(c.lastInTs) + '</span></span>'
+  // Bubbles: the last up to 3 unanswered incoming messages, each its own.
+  const texts = (c.freshTexts && c.freshTexts.length) ? c.freshTexts.slice(-3) : [c.lastText || ''];
+  const bubbles = texts.map(t => '<div class="wa-bub">' + _escape(String(t).slice(0, 300)) + '</div>').join('');
+  const leadChip = c.cls === 'lead' ? '<span class="wa-chip-lead">ליד חדש</span>' : '';
+  const sub = '<span class="wa-wait2">מחכה ' + _waAgo(c.lastInTs) + '</span>'
+    + (c.unread > 1 ? '<span class="wa-dot2"></span>' + c.unread + ' הודעות' : '');
+  return '<div class="wa-card2' + (c.cls === 'lead' ? ' lead' : '') + '">'
+    + '<div class="wa-card2-head">'
+    +   _waAvatarHtml(c, phoneEsc, true)
+    +   '<div class="wa-card2-id" ' + _waLPAttrs(phoneEsc) + ' style="cursor:pointer" title="לחיצה ארוכה — אפשרויות">'
+    +     '<div class="wa-card2-name"><span class="nm">' + nm + '</span>' + leadChip + '</div>'
+    +     '<div class="wa-card2-sub">' + sub + '</div>'
+    +   '</div>'
+    +   histBtn
     + '</div>'
-    + '<div class="wa-item-msg">' + bubble + '</div>'
-    + (_waVoicePending[phoneEsc]
-        ? '<div class="wa-voice-review">'
-          + '<audio controls src="' + _waVoicePending[phoneEsc].url + '"></audio>'
-          + '<div class="wa-item-actions" style="margin-top:6px">'
-          + '<button style="color:var(--green);font-weight:800" id="wa-vsend-' + phoneEsc + '" onclick="waVoiceSend(\'' + phoneEsc + '\')">✓ שלח את ההקלטה</button>'
-          + '<span>·</span><button onclick="waVoiceRedo(\'' + phoneEsc + '\')">הקלט מחדש</button>'
-          + '<span>·</span><button onclick="waVoiceCancel(\'' + phoneEsc + '\')">בטל</button>'
-          + '</div></div>'
-        : '<div class="wa-replyrow" id="wa-rr-' + phoneEsc + '">'
-          + '<input id="wa-in-' + phoneEsc + '" placeholder="כתוב תשובה…" '
-          + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
-          + (_waMicOk ? '<button class="wa-mic" id="wa-mic-' + phoneEsc + '" title="החזק להקלטה"'
-            + ' ontouchstart="waRecTS(event,\'' + phoneEsc + '\')" ontouchmove="waRecTM(event)" ontouchend="waRecTE(event)" ontouchcancel="waRecTE(event)"'
-            + ' onmousedown="waRecTS(event,\'' + phoneEsc + '\')" onmouseup="waRecTE(event)"'
-            + ' oncontextmenu="return false">'
-            + '<svg viewBox="0 0 24 24" style="width:18px;height:18px;pointer-events:none" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg>'
-            + '</button>' : '')
-          + '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
-          + '</div>')
-    + '<div class="wa-item-actions">'
+    + '<div class="wa-bubbles">' + bubbles + '</div>'
+    + _waReplyBlock(phoneEsc)
+    + '<div class="wa-quick">'
     +   '<button onclick="window.open(\'https://wa.me/' + phoneEsc + '\', \'_blank\')">פתח בוואטסאפ</button>'
-    +   '<span>·</span>'
-    +   '<button onclick="waDismiss(\'' + phoneEsc + '\')">סמן טופל</button>'
+    +   '<span class="sep"></span><button onclick="waDismiss(\'' + phoneEsc + '\')">✓ טופל</button>'
     +   (c.cls !== 'client'
-        ? '<span>·</span><button style="color:var(--green)" onclick="waMarkClient(\'' + phoneEsc + '\', true)">סמן כלקוח</button>'
+        ? '<span class="sep"></span><button style="color:var(--green)" onclick="waMarkClient(\'' + phoneEsc + '\', true)">⭐ לקוח</button>'
         : '')
     + '</div>'
     + '</div>';
 }
+// ── Conversation history: a few recent messages for context, so a
+//    cold "מה מדברים בכלל?" message has its backstory one tap away. ──
+window.waHistory = function(phone) {
+  const ph = String(phone);
+  const all = Object.keys(_waRaw || {}).map(k => _waRaw[k])
+    .filter(m => m && String(m.phone) === ph && m.ts)
+    .sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0));
+  const last = all.slice(-18);
+  const nEl = document.getElementById('waconvo-name');
+  const sEl = document.getElementById('waconvo-sub');
+  const tEl = document.getElementById('waconvo-thread');
+  if (nEl) nEl.textContent = _waName({ phone: ph });
+  if (sEl) sEl.textContent = _waPhonePretty(ph) + (last.length ? ' · ' + last.length + ' הודעות אחרונות' : '');
+  if (tEl) {
+    tEl.innerHTML = last.length ? last.map(m => {
+      const dir = m.dir === 'out' ? 'out' : 'in';
+      const t = new Date(Number(m.ts));
+      const time = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+      return '<div class="wa-th-row ' + dir + '">'
+        + '<div class="wa-th-msg">' + _escape(String(m.text || '')) + '</div>'
+        + '<div class="wa-th-time">' + time + '</div></div>';
+    }).join('') : '<div class="mp-empty" style="padding:18px 0">אין היסטוריה זמינה עדיין לשיחה הזו.</div>';
+  }
+  openModal('waconvo');
+  setTimeout(() => { if (tEl) tEl.scrollTop = tEl.scrollHeight; }, 60);
+};
 // Self-learning client marking: replying from the BUSINESS inbox is
 // itself the signal — nobody answers non-business here. So every
 // successful in-app reply auto-marks the person as a client. Zero
