@@ -3883,12 +3883,115 @@
     }
     .wa-quick button:active { background: var(--surface3); }
     .wa-quick .sep { width: 1px; height: 12px; background: var(--border); }
+    /* ═══════ WhatsApp-authentic skin (v416) — the real thing ═══════
+       Official WA-dark palette: canvas #0B141A, surfaces #111B21/#202C33,
+       incoming bubble #202C33, outgoing #005C4B, accents #00A884/#25D366,
+       read-ticks #53BDEB — plus the iconic doodle wallpaper (music-
+       flavoured, because this is a studio). Scoped to the page + thread. */
+    #page-whatsapp {
+      background:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='190' height='190'><g fill='%23E9EDEF' fill-opacity='0.045' font-size='22' font-family='sans-serif'><text x='14' y='34' transform='rotate(-14 14 34)'>♪</text><text x='120' y='52' transform='rotate(11 120 52)'>♫</text><text x='58' y='96' transform='rotate(-7 58 96)'>♡</text><text x='150' y='120' transform='rotate(16 150 120)'>♩</text><text x='24' y='150' transform='rotate(8 24 150)'>☆</text><text x='96' y='178' transform='rotate(-12 96 178)'>♬</text><text x='166' y='26' transform='rotate(-5 166 26)'>✉</text><text x='80' y='22' font-size='16' transform='rotate(9 80 22)'>☏</text></g></svg>"),
+        #0B141A;
+      background-size: 190px 190px, auto;
+      border-radius: 24px;
+      padding: 16px 12px 20px;
+      margin: 0 -2px;
+    }
+    #page-whatsapp .page-header h2 { color: #E9EDEF; }
+    #page-whatsapp .btn-ghost { background: rgba(32,44,51,0.8); border-color: rgba(134,150,160,0.15); color: #8696A0; }
+    #page-whatsapp .wa-box {
+      background: rgba(17,27,33,0.92);
+      border: 1px solid rgba(134,150,160,0.12);
+      border-radius: 18px;
+      backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    }
+    #page-whatsapp .wa-box-title { color: #E9EDEF; }
+    #page-whatsapp .mp-sub { color: #8696A0; }
+    #page-whatsapp .wa-box-count { background: #202C33; color: #8696A0; }
+    #page-whatsapp .wa-box-count.hot { background: #25D366; color: #0B141A; }
+    #page-whatsapp .wa-card2 { background: #17212A; border-color: rgba(134,150,160,0.10); }
+    #page-whatsapp .wa-card2-name { color: #E9EDEF; }
+    #page-whatsapp .wa-card2-sub { color: #8696A0; }
+    #page-whatsapp .wa-av-badge { background: #25D366; color: #0B141A; border-color: #17212A; }
+    #page-whatsapp .wa-hist-btn { background: #202C33; border: none; color: #8696A0; }
+    #page-whatsapp .wa-quick button { color: #8696A0; }
+    #page-whatsapp .wa-quick .sep { background: rgba(134,150,160,0.25); }
+    #page-whatsapp .dun-name { color: #E9EDEF; }
+    #page-whatsapp .dun-meta { color: #8696A0; }
+    #page-whatsapp .dun-row { border-color: rgba(134,150,160,0.10); }
+    #page-whatsapp .mp-empty { color: #8696A0; }
+    /* incoming bubbles — WA dark, with the classic tail on the first */
+    #page-whatsapp .wa-bub {
+      position: relative; background: #202C33; color: #E9EDEF;
+      border-radius: 12px; border-start-start-radius: 4px;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.25);
+    }
+    #page-whatsapp .wa-bub:first-child { border-start-start-radius: 0; }
+    #page-whatsapp .wa-bub:first-child::before {
+      content: ''; position: absolute; top: 0; inset-inline-start: -8px;
+      border: 8px solid transparent; border-top-color: #202C33;
+      border-inline-end-color: #202C33; border-inline-end-width: 0;
+      border-top-width: 10px; transform: scaleX(1.2);
+    }
+    /* composer — pill input + round green send, like the real thing */
+    #page-whatsapp .wa-replyrow input {
+      background: #2A3942; border: none; border-radius: 22px;
+      color: #E9EDEF; padding: 12px 17px; font-size: 15px;
+    }
+    #page-whatsapp .wa-replyrow input::placeholder { color: #8696A0; }
+    #page-whatsapp .wa-replyrow input:focus { box-shadow: 0 0 0 1.5px rgba(0,168,132,0.55); }
+    #page-whatsapp .wa-mic { border-radius: 50%; background: #2A3942; border: none; color: #8696A0; width: 44px; height: 44px; }
+    #page-whatsapp .wa-mic.rec { background: var(--red); color: #fff; }
+    .wa-sendbtn {
+      width: 44px !important; height: 44px; border-radius: 50% !important;
+      padding: 0 !important; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #00A884 !important; border: none !important; color: #fff;
+      box-shadow: 0 3px 10px rgba(0,168,132,0.35);
+    }
+    .wa-sendbtn:active { transform: scale(0.92); }
+    /* thread modal → a genuine WhatsApp chat window */
+    #modal-waconvo .modal { background: #0B141A; border: 1px solid rgba(134,150,160,0.15); }
+    #modal-waconvo h3 { color: #E9EDEF; }
+    #modal-waconvo .mp-sub { color: #8696A0; }
+    #modal-waconvo .btn-ghost { background: #202C33; border-color: transparent; color: #8696A0; }
+    .wa-thread {
+      background:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='190' height='190'><g fill='%23E9EDEF' fill-opacity='0.05' font-size='22' font-family='sans-serif'><text x='14' y='34' transform='rotate(-14 14 34)'>♪</text><text x='120' y='52' transform='rotate(11 120 52)'>♫</text><text x='58' y='96' transform='rotate(-7 58 96)'>♡</text><text x='150' y='120' transform='rotate(16 150 120)'>♩</text><text x='24' y='150' transform='rotate(8 24 150)'>☆</text><text x='96' y='178' transform='rotate(-12 96 178)'>♬</text><text x='166' y='26' transform='rotate(-5 166 26)'>✉</text><text x='80' y='22' font-size='16' transform='rotate(9 80 22)'>☏</text></g></svg>"),
+        #0B141A;
+      background-size: 190px 190px, auto;
+      border-radius: 14px; padding: 14px 10px;
+    }
+    .wa-th-msg { position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.3); padding: 8px 11px 7px; }
+    .wa-th-row.in .wa-th-msg {
+      background: #202C33; color: #E9EDEF;
+      border-radius: 12px; border-start-start-radius: 0;
+    }
+    .wa-th-row.in .wa-th-msg::before {
+      content: ''; position: absolute; top: 0; inset-inline-start: -8px;
+      border: 8px solid transparent; border-top-color: #202C33; border-top-width: 10px;
+    }
+    .wa-th-row.out .wa-th-msg {
+      background: #005C4B; color: #E9EDEF;
+      border-radius: 12px; border-start-end-radius: 0;
+    }
+    .wa-th-row.out .wa-th-msg::before {
+      content: ''; position: absolute; top: 0; inset-inline-end: -8px;
+      border: 8px solid transparent; border-top-color: #005C4B; border-top-width: 10px;
+    }
+    .wa-th-meta {
+      display: inline-block; margin-inline-start: 10px; margin-top: 4px;
+      font-size: 10.5px; color: rgba(233,237,239,0.55); float: left;
+      direction: ltr; line-height: 1; transform: translateY(4px);
+    }
+    .wa-ticks { color: #53BDEB; font-size: 11px; letter-spacing: -2px; }
+
     /* ===== Live hero — the inbox has a heartbeat ===== */
     .wa-hero {
       position: relative; overflow: hidden; border-radius: 22px;
       padding: 20px 22px 22px; margin-bottom: 16px; color: #fff;
-      background: linear-gradient(135deg, #1f7a49, #2ea05a 70%, #37b768);
-      box-shadow: 0 12px 34px rgba(46,160,90,0.28);
+      background: linear-gradient(135deg, #075E54, #128C7E 62%, #00A884);
+      box-shadow: 0 12px 34px rgba(0,168,132,0.30);
       transition: background .6s ease, box-shadow .6s ease;
     }
     .wa-hero.busy {
@@ -3940,9 +4043,7 @@
       max-width: 84%; padding: 9px 13px; font-size: 14px; line-height: 1.45;
       word-wrap: break-word; overflow-wrap: anywhere;
     }
-    .wa-th-row.in .wa-th-msg { background: var(--surface3); color: var(--text); border-radius: 5px 15px 15px 15px; }
-    .wa-th-row.out .wa-th-msg { background: var(--green); color: #fff; border-radius: 15px 5px 15px 15px; }
-    .wa-th-time { font-size: 10px; color: var(--text-muted); margin: 2px 6px 0; }
+    /* (bubble colours/tails live in the WhatsApp-skin block above) */
     .mp-card.mpt-sec { padding: 0; }
     .mpt-sec-head {
       width: 100%; display: flex; align-items: center; gap: 10px;
@@ -6398,7 +6499,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v415</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v416</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16924,6 +17025,8 @@ function _waAvatarHtml(c, phoneEsc, showBadge) {
   const badge = (showBadge && c.unread > 1) ? '<span class="wa-av-badge">' + c.unread + '</span>' : '';
   return '<div class="wa-av" style="background:hsl(' + hue + ',42%,44%)">' + _escape(_waInitials(_waName(c))) + badge + '</div>';
 }
+// WhatsApp's round green send button — a paper plane, not a word.
+const WA_SEND_SVG = '<svg viewBox="0 0 24 24" style="width:20px;height:20px;pointer-events:none;transform:scaleX(-1)" fill="currentColor"><path d="M3.4 20.4l17.45-7.48a1 1 0 0 0 0-1.84L3.4 3.6a.993.993 0 0 0-1.39.91L2 9.12c0 .5.37.93.87.99L17 12 2.87 13.88c-.5.07-.87.5-.87 1l.01 4.61c0 .71.73 1.2 1.39.91z"/></svg>';
 // Reply / voice block — SAME ids the recording engine + waReply expect.
 function _waReplyBlock(phoneEsc) {
   if (_waVoicePending[phoneEsc]) {
@@ -16944,7 +17047,7 @@ function _waReplyBlock(phoneEsc) {
       + ' oncontextmenu="return false">'
       + '<svg viewBox="0 0 24 24" style="width:18px;height:18px;pointer-events:none" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg>'
       + '</button>' : '')
-    + '<button class="btn btn-primary btn-sm" id="wa-btn-' + phoneEsc + '" onclick="waReply(\'' + phoneEsc + '\')">שלח</button>'
+    + '<button class="btn btn-primary btn-sm wa-sendbtn" id="wa-btn-' + phoneEsc + '" title="שלח" onclick="waReply(\'' + phoneEsc + '\')">' + WA_SEND_SVG + '</button>'
     + '</div>';
 }
 // Wait-time urgency: the list breathes — fresh waits calm green,
@@ -17017,9 +17120,11 @@ window.waHistory = function(phone) {
       const dir = m.dir === 'out' ? 'out' : 'in';
       const t = new Date(Number(m.ts));
       const time = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+      // WhatsApp-authentic: time (+ blue double-check on outgoing)
+      // lives INSIDE the bubble, bottom corner.
+      const meta = '<span class="wa-th-meta">' + time + (dir === 'out' ? ' <span class="wa-ticks">✓✓</span>' : '') + '</span>';
       return '<div class="wa-th-row ' + dir + '">'
-        + '<div class="wa-th-msg">' + _escape(String(m.text || '')) + '</div>'
-        + '<div class="wa-th-time">' + time + '</div></div>';
+        + '<div class="wa-th-msg">' + _escape(String(m.text || '')) + meta + '</div></div>';
     }).join('') : '<div class="mp-empty" style="padding:18px 0">אין היסטוריה זמינה עדיין לשיחה הזו.</div>';
   }
   openModal('waconvo');
@@ -17229,7 +17334,7 @@ window.waReply = async function(phone) {
   const sec = _waSecret();
   if (!sec) return;
   const btn = document.getElementById('wa-btn-' + phone);
-  if (btn) { btn.disabled = true; btn.textContent = 'שולח…'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '…'; }
   try {
     // readId: the customer's latest message gets marked as READ at
     // Meta, so WhatsApp stops showing the chat as unanswered.
@@ -17252,7 +17357,7 @@ window.waReply = async function(phone) {
   } catch (e) {
     toast('⚠️ בעיית רשת: ' + (e && e.message || ''));
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'שלח'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = WA_SEND_SVG; }
   }
 };
 
