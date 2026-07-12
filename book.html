@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>קביעת סשן — אולפן רביד</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800;900&family=Frank+Ruhl+Libre:wght@900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Heebo', sans-serif; min-height: 100vh; color: #f3e9dc;
+    background: #241a12;
+    background-image:
+      radial-gradient(42% 34% at 80% 5%, rgba(232,180,110,0.18), transparent 70%),
+      radial-gradient(36% 30% at 10% 95%, rgba(200,120,60,0.12), transparent 70%);
+    padding: 26px 16px calc(40px + env(safe-area-inset-bottom));
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  .logo { text-align: center; margin-bottom: 6px; font-family: 'Frank Ruhl Libre', serif; font-size: 30px; font-weight: 900;
+    background: linear-gradient(120deg, #f5e2c8, #e8b46e); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .sub { text-align: center; color: #b09a80; font-size: 13.5px; font-weight: 600; margin-bottom: 26px; }
+  .card { background: rgba(46,35,25,0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px 18px; margin-bottom: 14px; box-shadow: 0 10px 34px rgba(0,0,0,0.35); }
+  .day-title { font-size: 14px; font-weight: 900; margin: 4px 2px 10px; color: #e8c9a0; }
+  .slots { display: flex; flex-wrap: wrap; gap: 8px; }
+  .slot {
+    padding: 11px 16px; border-radius: 13px; font-size: 15px; font-weight: 800; cursor: pointer;
+    background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12); color: #f3e9dc;
+    font-family: inherit; transition: transform .12s, background .2s, border-color .2s;
+  }
+  .slot:active { transform: scale(0.95); }
+  .slot.on { background: linear-gradient(135deg, #b57d33, #e8b46e); border-color: #e8b46e; color: #241a12; }
+  input {
+    width: 100%; padding: 13px 16px; border-radius: 13px; font-size: 16px; font-weight: 700;
+    background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.14); color: #f3e9dc;
+    font-family: inherit; outline: none; direction: rtl;
+  }
+  input::placeholder { color: #a08a70; }
+  .btn {
+    width: 100%; padding: 15px; border-radius: 15px; border: none; cursor: pointer; margin-top: 14px;
+    font-family: inherit; font-size: 16.5px; font-weight: 900; color: #241a12;
+    background: linear-gradient(135deg, #b57d33, #e8b46e); box-shadow: 0 8px 26px rgba(200,140,60,0.35);
+    transition: transform .15s, opacity .2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: .45; }
+  .center { text-align: center; padding: 34px 10px; font-size: 16px; font-weight: 700; color: #d9c4a6; line-height: 1.7; }
+  .big { font-size: 46px; margin-bottom: 12px; }
+  .picked-line { font-size: 13px; color: #b09a80; margin-top: 8px; text-align: center; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">אולפן רביד</div>
+  <div class="sub">אליאור רביד · הפקה והקלטות</div>
+  <div id="app"><div class="center">טוען מועדים פנויים…</div></div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+if (typeof firebase === 'undefined') {
+  document.getElementById('app').innerHTML = '<div class="card center">בעיית רשת — נסו לרענן את הדף.</div>';
+  throw new Error('firebase sdk failed to load');
+}
+firebase.initializeApp({ databaseURL: 'https://elior-studio-default-rtdb.firebaseio.com' });
+const db = firebase.database();
+const token = new URLSearchParams(location.search).get('t') || '';
+const appEl = document.getElementById('app');
+const DAYS = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+let booking = null, chosen = null;
+
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
+function dayLabel(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  return 'יום ' + DAYS[d.getDay()] + ' · ' + d.getDate() + '.' + (d.getMonth() + 1);
+}
+function show(html) { appEl.innerHTML = html; }
+
+function render() {
+  const now = Date.now();
+  const slots = (booking.slots || []).filter(s => new Date(s.date + 'T' + s.time).getTime() > now);
+  if (!slots.length) { show('<div class="card center"><div class="big">😕</div>כל המועדים בקישור הזה כבר נתפסו או עברו.<br>שלחו הודעה לאליאור לתיאום.</div>'); return; }
+  const byDay = {};
+  slots.forEach(s => { (byDay[s.date] = byDay[s.date] || []).push(s); });
+  let html = '<div class="card">';
+  Object.keys(byDay).sort().forEach(d => {
+    html += '<div class="day-title">' + dayLabel(d) + '</div><div class="slots">';
+    byDay[d].sort((a, b) => a.time.localeCompare(b.time)).forEach(s => {
+      const key = s.date + '|' + s.time;
+      html += '<button class="slot' + (chosen === key ? ' on' : '') + '" onclick="pick(\'' + key + '\')">' + s.time + '</button>';
+    });
+    html += '</div>';
+  });
+  html += '</div>'
+    + '<div class="card"><input id="nm" placeholder="השם שלך *" value="' + esc(window._nm || '') + '"/>'
+    + '<button class="btn" id="go" onclick="confirmPick()"' + (chosen ? '' : ' disabled') + '>אשר את הסשן 🎹</button>'
+    + '<div class="picked-line">' + (chosen ? 'נבחר: ' + dayLabel(chosen.split('|')[0]) + ' בשעה ' + chosen.split('|')[1] : 'בחר שעה למעלה') + '</div></div>';
+  show(html);
+}
+window.pick = function(key) {
+  const nmEl = document.getElementById('nm');
+  if (nmEl) window._nm = nmEl.value;
+  chosen = (chosen === key) ? null : key;
+  render();
+};
+window.confirmPick = function() {
+  const nm = (document.getElementById('nm').value || '').trim();
+  if (!nm) { document.getElementById('nm').focus(); return; }
+  if (!chosen) return;
+  const btn = document.getElementById('go');
+  btn.disabled = true; btn.textContent = 'קובע…';
+  const parts = chosen.split('|');
+  db.ref('booking/' + token + '/picked').transaction(cur => {
+    if (cur) return;   // someone beat us to it
+    return { date: parts[0], time: parts[1], name: nm, ts: Date.now() };
+  }, (err, committed) => {
+    if (err || !committed) {
+      show('<div class="card center"><div class="big">⚡</div>אופס — מישהו הספיק לתפוס את המועד ממש עכשיו.<br>רעננו את הדף ובחרו שעה אחרת.</div>');
+      return;
+    }
+    show('<div class="card center"><div class="big">🎉</div><b>' + esc(nm) + '</b>, הסשן נקבע!<br>'
+      + dayLabel(parts[0]) + ' בשעה ' + parts[1] + '<br><br>אליאור קיבל את זה ברגע זה — נתראה באולפן 🎹</div>');
+  });
+};
+if (!token) show('<div class="card center">קישור לא תקין.</div>');
+else db.ref('booking/' + token).once('value').then(s => {
+  booking = s.val();
+  if (!booking) { show('<div class="card center">הקישור לא נמצא או פג תוקפו.</div>'); return; }
+  if (booking.picked) { show('<div class="card center"><div class="big">✅</div>הסשן בקישור הזה כבר נקבע (' + esc(booking.picked.name) + ').<br>לתיאום נוסף — שלחו הודעה לאליאור.</div>'); return; }
+  if (booking.expires && booking.expires < Date.now()) { show('<div class="card center">הקישור פג תוקף — בקשו מאליאור קישור חדש.</div>'); return; }
+  render();
+}).catch(() => show('<div class="card center">שגיאה בטעינה — נסו לרענן.</div>'));
+</script>
+</body>
+</html>

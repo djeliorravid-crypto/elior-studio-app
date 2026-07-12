@@ -6667,7 +6667,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v422</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v423</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7092,6 +7092,28 @@
     </div>
     <div id="gsearch-res" style="max-height:52vh;overflow-y:auto"></div>
     <button class="btn btn-ghost" style="width:100%;margin-top:12px" onclick="closeModal('gsearch')">סגור</button>
+  </div>
+</div>
+
+<!-- Booking link — pick which free slots the client may book (his veto) -->
+<div class="modal-overlay" id="modal-wabook">
+  <div class="modal modal-narrow" style="max-height:86vh">
+    <h3>📅 קישור לקביעת סשן</h3>
+    <div class="mp-sub" id="wabook-sub" style="margin:-8px 0 12px"></div>
+    <div class="form-row">
+      <div class="form-group"><label>אורך סשן</label>
+        <select id="wabook-dur" onchange="_waBookBuild()"><option value="1">שעה</option><option value="2" selected>שעתיים</option><option value="3">3 שעות</option></select>
+      </div>
+      <div class="form-group"><label>טווח</label>
+        <select id="wabook-days" onchange="_waBookBuild()"><option value="7" selected>שבוע קדימה</option><option value="14">שבועיים</option></select>
+      </div>
+    </div>
+    <div class="mp-sub" style="margin:0 0 8px;font-size:11.5px">הכל דולק = פתוח לקביעה. <b>כבה בנגיעה</b> כל שעה שלא בא לך שיקבעו בה.</div>
+    <div id="wabook-slots" style="max-height:40vh;overflow-y:auto"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('wabook')">בטל</button>
+      <button class="btn btn-primary" style="flex:1" onclick="waBookCreate()">צור ושלח בוואטסאפ</button>
+    </div>
   </div>
 </div>
 
@@ -17019,6 +17041,11 @@ function _waListen() {
       _waOutbox = s.val() || {};
       _waPaintIfVisible();
     });
+    // Booking links: a client picked a slot → schedule + calendar + party.
+    firebaseDB.ref('booking').on('child_added', s => { try { _waBookPicked(s.key, s.val()); } catch (_) {} });
+    firebaseDB.ref('booking').on('child_changed', s => { try { _waBookPicked(s.key, s.val()); } catch (_) {} });
+    // Remote commands he texted to his own business number.
+    firebaseDB.ref('whatsapp/cmdqueue').on('child_added', s => { try { _waCmdApply(s.key, s.val()); } catch (_) {} });
     // Async delivery FAILURES from Meta (rejected media etc.) — the
     // worker records them; here they become a visible toast instead
     // of a silent black hole.
@@ -17114,6 +17141,7 @@ window.waActOpen = function(phone) {
   if (!isClient) html += B('🚫 לא רלוונטי — הסתר', 'hide');
   if (isClient && !c.client) html += B('הסר סימון לקוח', 'unmark');
   html += B('📜 רקע לשיחה', 'history');
+  html += B('📅 שלח קישור לקביעת סשן', 'book');
   if (c.waiting) html += B('😴 הזכר לי לענות מאוחר יותר', 'snooze');
   html += B(_waPins[phone] ? '📌 הסר נעיצה' : '📌 נעץ למעלה', 'pin');
   html += B('✏️ שנה שם', 'rename');
@@ -17134,6 +17162,7 @@ window.waActDo = function(phone, act) {
   else if (act === 'sched') waSchedOpen(phone);
   else if (act === 'history') waHistory(phone);
   else if (act === 'snooze') waSnoozeOpen(phone);
+  else if (act === 'book') waBookOpen(phone);
   else if (act === 'pin') waPinToggle(phone);
   else if (act === 'open') window.open('https://wa.me/' + phone, '_blank');
 };
@@ -17779,6 +17808,135 @@ function _waFmtDur(ms) {
   if (m < 60) return m + ' דק׳';
   const h = Math.round(m / 6) / 10;
   return h + ' שע׳';
+}
+// ══════════════ BOOKING LINK — his own Calendly, with a veto ══════════════
+// Free slots are computed from the schedule + iOS calendar; EVERY slot
+// starts enabled and he taps OFF the ones clients must not book. The
+// approved list is published under a token; book.html renders it.
+let _waBookPhone = '', _waBookSlots = [];
+window.waBookOpen = function(phone) {
+  _waBookPhone = phone;
+  closeModal('waact');
+  const sub = document.getElementById('wabook-sub');
+  if (sub) sub.textContent = 'קישור עבור ' + _waName({ phone }) + '. הוא יראה רק את השעות שתשאיר דולקות — ויבחר אחת.';
+  openModal('wabook');
+  _waBookBuild();
+};
+window._waBookBuild = async function() {
+  const el = document.getElementById('wabook-slots');
+  if (el) el.innerHTML = '<div class="mp-empty" style="padding:12px 0">מחשב שעות פנויות…</div>';
+  const days = Number(document.getElementById('wabook-days').value) || 7;
+  const dur = Number(document.getElementById('wabook-dur').value) || 2;
+  // busy blocks: manual schedule (1h default) + every calendar event
+  const busy = [];
+  (load('schedule') || []).forEach(s => {
+    if (s && s.date && /^\d\d:\d\d$/.test(s.time || '')) busy.push({ date: s.date, h: Number(s.time.slice(0, 2)) });
+  });
+  try {
+    const Cal = _iosCalPlugin();
+    if (Cal && _iosCalGranted() && Cal.listEvents) {
+      const t0 = _mpbDayKey(new Date());
+      const t1 = _mpbDayKey(new Date(Date.now() + days * 864e5));
+      const res = await Cal.listEvents({ startDate: t0, endDate: t1, googleOnly: false });
+      ((res && res.events) || []).forEach(ev => {
+        if (ev && ev.date && /^\d\d:\d\d/.test(ev.time || '')) busy.push({ date: ev.date, h: Number(ev.time.slice(0, 2)) });
+      });
+    }
+  } catch (_) {}
+  const isBusy = (date, h, d) => busy.some(b => b.date === date && b.h >= h && b.h < h + d);
+  _waBookSlots = [];
+  for (let i = 1; i <= days; i++) {
+    const date = _mpbDayKey(new Date(Date.now() + i * 864e5));
+    for (let h = 10; h + dur <= 23; h++) {
+      if (!isBusy(date, h, dur)) _waBookSlots.push({ date, time: String(h).padStart(2, '0') + ':00', on: true });
+    }
+  }
+  _waBookRender();
+};
+function _waBookRender() {
+  const el = document.getElementById('wabook-slots');
+  if (!el) return;
+  if (!_waBookSlots.length) { el.innerHTML = '<div class="mp-empty" style="padding:12px 0">אין שעות פנויות בטווח — פתח את הלוז.</div>'; return; }
+  const byDay = {};
+  _waBookSlots.forEach((s, i) => { (byDay[s.date] = byDay[s.date] || []).push(i); });
+  let html = '';
+  Object.keys(byDay).sort().forEach(d => {
+    html += '<div style="font-size:12px;font-weight:900;color:var(--text-muted);margin:10px 2px 6px">' + _escape(_waHumanDay(d, true)) + '</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+    byDay[d].forEach(i => {
+      const s = _waBookSlots[i];
+      html += '<button class="waappt-chip' + (s.on ? ' on' : '') + '" onclick="waBookToggle(' + i + ')">' + s.time + '</button>';
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+window.waBookToggle = function(i) {
+  if (_waBookSlots[i]) { _waBookSlots[i].on = !_waBookSlots[i].on; _waBookRender(); }
+};
+window.waBookCreate = async function() {
+  const sel = _waBookSlots.filter(s => s.on).map(s => ({ date: s.date, time: s.time }));
+  if (!sel.length) { toast('השאר דולקת לפחות שעה אחת'); return; }
+  if (!firebaseDB) { toast('אין חיבור לענן'); return; }
+  const token = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+  const dur = Number(document.getElementById('wabook-dur').value) || 2;
+  try {
+    await firebaseDB.ref('booking/' + token).set({
+      slots: sel, dur, client: _waBookPhone,
+      clientName: _waName({ phone: _waBookPhone }),
+      created: Date.now(), expires: Date.now() + 14 * 864e5
+    });
+  } catch (_) { toast('שגיאה ביצירת הקישור'); return; }
+  const link = 'https://djeliorravid-crypto.github.io/elior-studio-app/book.html?t=' + token;
+  closeModal('wabook');
+  try { navigator.clipboard && navigator.clipboard.writeText(link); } catch (_) {}
+  toast('✓ הקישור נוצר והועתק');
+  if (window.haptic) window.haptic.success();
+  window.open('https://wa.me/' + _waBookPhone + '?text=' + encodeURIComponent('היי! בוא נקבע סשן באולפן 🎹 בחר שעה שנוחה לך כאן:\n' + link), '_blank');
+};
+// A client picked a slot → it lands in the schedule + calendar + a
+// notification, and the token is consumed so it can't double-fire.
+function _waBookPicked(key, b) {
+  try {
+    if (!b || !b.picked || b.consumed) return;
+    firebaseDB.ref('booking/' + key + '/consumed').set(true);
+    const nm = b.picked.name || b.clientName || 'לקוח';
+    const item = { id: genId(), date: b.picked.date, time: b.picked.time, title: 'סשן — ' + nm, notes: 'נקבע דרך קישור הקביעה', createdAt: new Date().toISOString() };
+    const all = load('schedule'); all.push(item); save('schedule', all);
+    (async () => {
+      try {
+        const gid = await gcalWriteCreateEvent(item);
+        if (gid) { const cur = load('schedule'); const sv = cur.find(x => x.id === item.id); if (sv) { sv.gcalEventId = gid; save('schedule', cur); } }
+      } catch (_) {}
+    })();
+    toast('🎉 ' + nm + ' קבע סשן — ' + _waHumanDay(b.picked.date, true) + ' ' + b.picked.time);
+    try {
+      const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+      if (LN) LN.schedule({ notifications: [{
+        id: 712000 + Math.floor(Math.random() * 400), title: '🎉 סשן נקבע!',
+        body: nm + ' — ' + _waHumanDay(b.picked.date, true) + ' בשעה ' + b.picked.time,
+        schedule: { at: new Date(Date.now() + 1500) }, sound: 'default'
+      }] });
+    } catch (_) {}
+  } catch (_) {}
+}
+// ══════════════ REMOTE COMMANDS — expenses/income sent from WhatsApp ══════════════
+// The worker queues owner commands under /whatsapp/cmdqueue; the app
+// applies them through the normal save() pipeline and clears the queue.
+function _waCmdApply(key, c) {
+  try {
+    if (c && c.type === 'expense') {
+      const all = load('expenses');
+      all.push({ id: genId(), date: _mpbDayKey(new Date(Number(c.ts) || Date.now())), amount: Number(c.amount) || 0, desc: c.desc || 'מוואטסאפ', cat: 'אחר', notes: 'נרשם מרחוק דרך וואטסאפ' });
+      save('expenses', all);
+      toast('✓ הוצאה שנשלחה בוואטסאפ נרשמה (' + _ilsFmt(Number(c.amount) || 0) + ')');
+    } else if (c && c.type === 'income') {
+      const all = load('income');
+      all.push({ id: genId(), date: _mpbDayKey(new Date(Number(c.ts) || Date.now())), amount: Number(c.amount) || 0, client: c.desc || '', desc: c.desc || 'מוואטסאפ', status: 'pending' });
+      save('income', all);
+      toast('✓ הכנסה שנשלחה בוואטסאפ נרשמה (' + _ilsFmt(Number(c.amount) || 0) + ')');
+    }
+  } catch (_) {}
+  try { firebaseDB.ref('whatsapp/cmdqueue/' + key).remove(); } catch (_) {}
 }
 // ══════════════ GLOBAL SEARCH — one box, the whole world ══════════════
 window.gsOpen = function() {

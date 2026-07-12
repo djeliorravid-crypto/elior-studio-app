@@ -365,6 +365,85 @@ async function transcribe(mediaId, env) {
   } catch (_) { return ''; }
 }
 
+// ══════════ OWNER REMOTE CONTROL — Elior texts his own business
+// number from his personal phone (env.OWNER_PHONE secret) and the
+// business answers: expenses/income queued into the app, live money
+// and schedule queries answered instantly. ══════════
+const ROOT_DB = FIREBASE.replace(/\/whatsapp$/, '');
+async function handleOwnerCmd(raw, env) {
+  const t = String(raw || '').trim();
+  const owner = String(env.OWNER_PHONE || '').replace(/\D/g, '');
+  const reply = (msg) => fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messaging_product: 'whatsapp', to: owner, type: 'text', text: { body: String(msg).slice(0, 3500) } })
+  }).catch(() => {});
+  const getData = (p) => fetch(ROOT_DB + '/studio_data/' + p + '.json').then(r => r.json()).catch(() => null);
+  const ils = (n) => (Math.round(Number(n) || 0)).toLocaleString('en-US') + ' ₪';
+  try {
+    let m;
+    // הוצאה 200 דלק
+    if ((m = t.match(/^הוצאה\s+(\d+(?:\.\d+)?)\s*(.*)$/))) {
+      await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'expense', amount: +m[1], desc: (m[2] || '').trim(), ts: Date.now() }) });
+      await reply('✓ נרשמה הוצאה: ' + ils(m[1]) + (m[2] ? ' — ' + m[2].trim() : ''));
+      return;
+    }
+    // הכנסה 500 מוקי
+    if ((m = t.match(/^הכנסה\s+(\d+(?:\.\d+)?)\s*(.*)$/))) {
+      await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'income', amount: +m[1], desc: (m[2] || '').trim(), ts: Date.now() }) });
+      await reply('✓ נרשמה הכנסה פתוחה: ' + ils(m[1]) + (m[2] ? ' — ' + m[2].trim() : ''));
+      return;
+    }
+    // כמה נכנס / מצב
+    if (/כמה נכנס|^מצב\b|כמה עשיתי/.test(t)) {
+      const inc = (await getData('income')) || [];
+      const now = new Date();
+      const mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      const arr = Array.isArray(inc) ? inc : Object.values(inc);
+      const paid = arr.filter(i => i && (i.status || 'pending') === 'paid' && String(i.date || '').slice(0, 7) === mk).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+      const open = arr.filter(i => i && (i.status || 'pending') !== 'paid').reduce((s, i) => s + (Number(i.amount) || 0), 0);
+      await reply('💰 מצב העסק:\nנכנס החודש: ' + ils(paid) + '\nפתוח בחוץ: ' + ils(open));
+      return;
+    }
+    // לוז / לוז מחר
+    if (/^לוז/.test(t)) {
+      const sched = (await getData('schedule')) || [];
+      const arr = Array.isArray(sched) ? sched : Object.values(sched);
+      const d = new Date();
+      if (/מחר/.test(t)) d.setDate(d.getDate() + 1);
+      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const items = arr.filter(s => s && s.date === key).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+      await reply(items.length
+        ? '📅 ' + (/מחר/.test(t) ? 'מחר' : 'היום') + ':\n' + items.map(s => s.time + ' — ' + s.title).join('\n')
+        : '📅 ' + (/מחר/.test(t) ? 'מחר' : 'היום') + ' פנוי — אין אירועים בלוז.');
+      return;
+    }
+    // מי מחכה
+    if (/מי מחכה|ממתינים/.test(t)) {
+      const [waiting, cls, marks, names] = await Promise.all([
+        fetch(FIREBASE + '/waiting.json').then(r => r.json()).catch(() => null),
+        fetch(FIREBASE + '/cls.json').then(r => r.json()).catch(() => null),
+        fetch(FIREBASE + '/clients.json').then(r => r.json()).catch(() => null),
+        fetch(FIREBASE + '/names.json').then(r => r.json()).catch(() => null)
+      ]);
+      const phones = Object.keys(waiting || {}).filter(p => {
+        if (marks && marks[p] === false) return false;
+        if (cls && cls[p] === 'skip') return false;
+        return true;
+      });
+      await reply(phones.length
+        ? '💬 ' + phones.length + ' מחכים לתשובה:\n' + phones.slice(0, 10).map(p => '· ' + ((names && names[p]) || p)).join('\n')
+        : '🎉 אף אחד לא מחכה לתשובה.');
+      return;
+    }
+    // anything else → the menu
+    await reply('היי אליאור 👋 אני העוזר של האפליקציה. אפשר לכתוב לי:\n'
+      + '· הוצאה 200 דלק\n· הכנסה 500 מוקי\n· כמה נכנס\n· לוז / לוז מחר\n· מי מחכה');
+  } catch (_) {
+    try { await reply('⚠️ משהו השתבש בפקודה — נסה שוב.'); } catch (__) {}
+  }
+}
+
 async function processWebhook(body, env) {
     let stored = 0;
     const names = {};   // phone → name, PATCHed once at the end
@@ -423,6 +502,14 @@ async function processWebhook(body, env) {
                   });
                 } catch (_) {}
               }
+            }
+            // Owner remote control: a message from HIS personal number
+            // is a command, not a customer conversation.
+            const ownerPh = String(env.OWNER_PHONE || '').replace(/\D/g, '');
+            if (ownerPh && ph === ownerPh) {
+              stored++;
+              await handleOwnerCmd((m.text && m.text.body) || text, env);
+              continue;
             }
             const rec = {
               dir: 'in',
