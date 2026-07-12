@@ -5867,7 +5867,10 @@
       from { transform: translate3d(0,0,0) scale(1); }
       to   { transform: translate3d(3%,-4%,0) scale(1.08); }
     }
-    .sidebar, .main, .modal-overlay, #mode-screen, #login-screen { position: relative; z-index: 1; }
+    /* (aurora is pointer-events:none and ~8% opacity — it may sit
+       visually above flat content, which is exactly the intent; never
+       touch other elements' position/z-index for it. Doing so broke
+       the lobby + modals in v418.) */
 
     /* 2 · Page entrance — rise-and-settle, cards follow in a wave */
     .page.active { animation: pageRise .34s cubic-bezier(.22,1,.36,1); }
@@ -5882,12 +5885,14 @@
     .page.active > .summary-cards {
       animation: cardRise .5s cubic-bezier(.22,1,.36,1) backwards;
     }
-    .page.active > :nth-child(1) { animation-delay: .02s; }
-    .page.active > :nth-child(2) { animation-delay: .06s; }
-    .page.active > :nth-child(3) { animation-delay: .10s; }
-    .page.active > :nth-child(4) { animation-delay: .14s; }
-    .page.active > :nth-child(5) { animation-delay: .18s; }
-    .page.active > :nth-child(6) { animation-delay: .22s; }
+    /* delays scoped to the SAME animated elements only — a bare
+       :nth-child delay leaked animation-delay onto arbitrary children */
+    .page.active > :is(.page-header,.table-card,.mp-card,.wa-hero,.summary-cards):nth-child(1) { animation-delay: .02s; }
+    .page.active > :is(.page-header,.table-card,.mp-card,.wa-hero,.summary-cards):nth-child(2) { animation-delay: .06s; }
+    .page.active > :is(.page-header,.table-card,.mp-card,.wa-hero,.summary-cards):nth-child(3) { animation-delay: .10s; }
+    .page.active > :is(.page-header,.table-card,.mp-card,.wa-hero,.summary-cards):nth-child(4) { animation-delay: .14s; }
+    .page.active > :is(.page-header,.table-card,.mp-card,.wa-hero,.summary-cards):nth-child(5) { animation-delay: .18s; }
+    .page.active > :is(.page-header,.table-card,.mp-card,.wa-hero,.summary-cards):nth-child(6) { animation-delay: .22s; }
     @keyframes cardRise {
       from { opacity: 0; transform: translateY(16px) scale(.985); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -6600,7 +6605,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v418</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v419</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
