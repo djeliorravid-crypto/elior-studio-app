@@ -3986,6 +3986,22 @@
     }
     .wa-ticks { color: #53BDEB; font-size: 11px; letter-spacing: -2px; }
 
+    /* appointment-confirm modal: date/time rows + quick-day chips */
+    .waappt-row { display: flex; gap: 7px; align-items: center; margin-bottom: 4px; }
+    .waappt-row input[type=date] { flex: 1.3; }
+    .waappt-row input[type=time] { flex: 1; }
+    .waappt-row input { min-width: 0; background: var(--surface3); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 10px; font-size: 15px; font-weight: 700; color: var(--text); font-family: inherit; outline: none; }
+    .waappt-del { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--surface3); color: var(--text-muted); font-size: 14px; cursor: pointer; font-family: inherit; }
+    .waappt-hum { font-size: 11.5px; font-weight: 700; color: var(--green); margin: 0 2px 10px; }
+    .waappt-chips { display: flex; gap: 6px; overflow-x: auto; padding: 6px 0 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .waappt-chips::-webkit-scrollbar { display: none; }
+    .waappt-chip {
+      flex-shrink: 0; padding: 7px 12px; border-radius: 15px; cursor: pointer;
+      background: var(--surface3); border: 1px solid var(--border);
+      font-size: 12px; font-weight: 800; color: var(--text); font-family: inherit; white-space: nowrap;
+    }
+    .waappt-chip.on { background: var(--green); border-color: var(--green); color: #fff; }
+
     /* ===== Live hero — the inbox has a heartbeat ===== */
     .wa-hero {
       position: relative; overflow: hidden; border-radius: 22px;
@@ -6499,7 +6515,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v416</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v417</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6915,16 +6931,15 @@
   </div>
 </div>
 
-<!-- WhatsApp → calendar: detected an appointment in a sent reply -->
+<!-- WhatsApp → calendar: detected appointment(s) in a sent reply -->
 <div class="modal-overlay" id="modal-waappt">
   <div class="modal modal-narrow">
     <h3>📅 נראה שסגרת תור</h3>
     <div class="mp-sub" id="waappt-sub" style="margin:-8px 0 13px"></div>
     <div class="form-group"><label>שם האירוע</label><input id="waappt-title" placeholder="פגישה"/></div>
-    <div class="form-row">
-      <div class="form-group"><label>תאריך</label><input type="date" id="waappt-date"/></div>
-      <div class="form-group"><label>שעה</label><input type="time" id="waappt-time"/></div>
-    </div>
+    <div id="waappt-rows"></div>
+    <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:4px" onclick="waApptAddRow()">+ עוד מועד</button>
+    <div class="waappt-chips" id="waappt-chips"></div>
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal('waappt')">לא צריך</button>
       <button class="btn btn-primary" style="flex:1" onclick="waApptSave()">הוסף ליומן</button>
@@ -17139,100 +17154,214 @@ window.waHistory = function(phone) {
 function _waDateOffset(base, days) {
   return _mpbDayKey(new Date(base.getFullYear(), base.getMonth(), base.getDate() + days));
 }
-function _waNextDow(base, dow) {
-  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
-  let add = (dow - d.getDay() + 7) % 7;
-  if (add === 0) add = 7;   // "ביום שני" when today IS Monday → next week
-  d.setDate(d.getDate() + add);
-  return _mpbDayKey(d);
+// Day-of-week resolver with week qualifiers:
+//   'this' = "יום חמישי השבוע" (this calendar week; if passed → next)
+//   'next' = "יום שלישי שבוע הבא" / "יום שלישי הבא"
+//   'auto' = bare "ביום שני" → next occurrence (never today/past)
+function _waWeekDay(base, dow, week) {
+  const d0 = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  const target = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() - d0.getDay() + dow);
+  if (week === 'next') target.setDate(target.getDate() + 7);
+  else if (target <= d0 && !(week === 'this' && target.getTime() === d0.getTime())) target.setDate(target.getDate() + 7);
+  return _mpbDayKey(target);
 }
-function _waDetectAppt(text) {
+// Multi-appointment parser: "יום שני ב-14 ויום רביעי ב-16:30" → two
+// events. The text is split at DATE ANCHORS; each anchor owns the
+// times/part-of-day words in its own segment.
+function _waDetectAppts(text) {
   const t = String(text || '');
-  // Relative "בעוד 5 דקות" isn't a calendar event.
-  if (/בעוד|דקות|דקה|דק['׳]/.test(t)) return null;
-  let hour = null, min = 0, rawHour = null;   // rawHour = the digit as
-  // written, before an evening +12 shift — used to avoid mistaking the
-  // hour token ("ב-8 בערב") for a day-of-month.
-  // explicit clock HH:MM
-  let m = t.match(/([01]?\d|2[0-3]):([0-5]\d)/);
-  if (m) { hour = +m[1]; min = +m[2]; rawHour = hour; }
-  // "בשעה 16" / "ב-16" / "ב16" (hour only)
-  if (hour === null) {
-    m = t.match(/(?:בשעה\s*|ב\s*[-־]?\s*)(\d{1,2})(?![:.\d])/);
-    if (m) { const h = +m[1]; if (h >= 1 && h <= 23) { hour = h; rawHour = h; } }
-  }
-  const evening = /בערב|בלילה|אחה["׳]?\s*[צc]|אחרי\s*הצהריי?ם/.test(t);
-  const pod = /בבוקר/.test(t) ? 9 : /בצהריי?ם/.test(t) ? 13 : evening ? (/בלילה/.test(t) ? 21 : 19) : null;
-  if (hour === null && pod !== null) hour = pod;
-  // "ב-8 בערב" → 20:00
-  if (hour !== null && hour >= 1 && hour <= 11 && evening) hour += 12;
-  // date
   const today = new Date();
-  let date = null;
-  if (/מחרתיים/.test(t)) date = _waDateOffset(today, 2);
-  else if (/מחר/.test(t)) date = _waDateOffset(today, 1);
-  else if (/היום|הערב/.test(t)) date = _waDateOffset(today, 0);
-  else {
-    const dows = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-    let dowIdx = -1;
-    for (let i = 0; i < dows.length; i++) {
-      if (new RegExp('יום\\s+' + dows[i] + '|ב' + dows[i] + '\\b').test(t)) { dowIdx = i; break; }
-    }
-    if (dowIdx >= 0) date = _waNextDow(today, dowIdx);
-    else {
-      let dm = t.match(/\b(\d{1,2})[./](\d{1,2})\b/);   // 14.7 / 14/7
-      if (dm) {
-        const d = +dm[1], mo = +dm[2];
-        if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) date = _mpbDayKey(new Date(today.getFullYear(), mo - 1, d));
-      } else {
-        let dd = t.match(/[בה]\s*[-־]?\s*(\d{1,2})\b(?!:)/);   // "ב-14" day of month
-        if (dd) {
-          const d = +dd[1];
-          if (d >= 1 && d <= 31 && d !== rawHour) {
-            const mo = (d >= today.getDate()) ? today.getMonth() : today.getMonth() + 1;
-            date = _mpbDayKey(new Date(today.getFullYear(), mo, d));
-          }
-        }
-      }
+  const anchors = [];   // {idx, date}
+  let m;
+  let re = /מחרתיים/g;
+  while ((m = re.exec(t))) anchors.push({ idx: m.index, date: _waDateOffset(today, 2) });
+  re = /מחר(?!תיים)/g;
+  while ((m = re.exec(t))) anchors.push({ idx: m.index, date: _waDateOffset(today, 1) });
+  re = /היום|הערב/g;
+  while ((m = re.exec(t))) anchors.push({ idx: m.index, date: _waDateOffset(today, 0) });
+  const dows = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  for (let i = 0; i < dows.length; i++) {
+    re = new RegExp('(?:ביום\\s*|יום\\s+|ב)' + dows[i] + '(?![א-ת])', 'g');
+    while ((m = re.exec(t))) {
+      const tail = t.slice(m.index, m.index + m[0].length + 16);
+      const week = /שבוע\s+הבא/.test(tail) ? 'next' : /השבוע/.test(tail) ? 'this' : /הבא/.test(tail) ? 'next' : 'auto';
+      anchors.push({ idx: m.index, date: _waWeekDay(today, i, week) });
     }
   }
-  if (hour === null && !date) return null;   // nothing schedule-like
-  if (!date) date = _waDateOffset(today, 0);
-  if (hour === null) hour = 12;
-  return { date: date, time: String(hour).padStart(2, '0') + ':' + String(min).padStart(2, '0') };
+  re = /(^|[^\d:.])(\d{1,2})[./](\d{1,2})(?![\d./:])/g;   // 14.7 / 14/7
+  while ((m = re.exec(t))) {
+    const d = +m[2], mo = +m[3];
+    if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
+      anchors.push({ idx: m.index, date: _mpbDayKey(new Date(today.getFullYear(), mo - 1, d)) });
+    }
+  }
+  re = /[בה]\s*[-־]?\s*(\d{1,2})(?![:.\d])/g;   // bare ב-NN: 24-31 must be a day
+  while ((m = re.exec(t))) {
+    const d = +m[1];
+    if (d >= 24 && d <= 31) {
+      const mo = (d >= today.getDate()) ? today.getMonth() : today.getMonth() + 1;
+      anchors.push({ idx: m.index, date: _mpbDayKey(new Date(today.getFullYear(), mo, d)) });
+    }
+  }
+  // time tokens
+  const times = [];   // {idx, h, min}
+  re = /([01]?\d|2[0-3]):([0-5]\d)/g;
+  while ((m = re.exec(t))) times.push({ idx: m.index, h: +m[1], min: +m[2] });
+  re = /(?:בשעה\s*|ב\s*[-־]?\s*)(\d{1,2})(?![:.\d])/g;
+  while ((m = re.exec(t))) {
+    const h = +m[1];
+    if (h >= 1 && h <= 23) times.push({ idx: m.index, h: h, min: 0 });
+  }
+  times.sort((a, b) => a.idx - b.idx);
+  // part-of-day tokens
+  const pods = [];   // {idx, base, evening}
+  re = /בבוקר/g; while ((m = re.exec(t))) pods.push({ idx: m.index, base: 9, evening: false });
+  re = /בצהריי?ם/g; while ((m = re.exec(t))) pods.push({ idx: m.index, base: 13, evening: false });
+  re = /בערב|אחה["׳]?\s*[צc]|אחרי\s*הצהריי?ם/g; while ((m = re.exec(t))) pods.push({ idx: m.index, base: 19, evening: true });
+  re = /בלילה/g; while ((m = re.exec(t))) pods.push({ idx: m.index, base: 21, evening: true });
+  // no anchors → relative talk ("בעוד 5 דקות") is not an event
+  if (!anchors.length) {
+    if (/בעוד|דקות|דקה|דק['׳]/.test(t)) return null;
+    if (!times.length && !pods.length) return null;
+    let h = times.length ? times[0].h : pods[0].base;
+    let mn = times.length ? times[0].min : 0;
+    if (times.length && h >= 1 && h <= 11 && pods.some(p => p.evening)) h += 12;
+    return [{ date: _waDateOffset(today, 0), time: String(h).padStart(2, '0') + ':' + String(mn).padStart(2, '0') }];
+  }
+  anchors.sort((a, b) => a.idx - b.idx);
+  const out = [];
+  for (let i = 0; i < anchors.length && out.length < 4; i++) {
+    const segStart = (i === 0) ? 0 : anchors[i].idx;   // leading times belong to the first anchor
+    const segEnd = (i + 1 < anchors.length) ? anchors[i + 1].idx : Infinity;
+    const segT = times.filter(x => x.idx >= segStart && x.idx < segEnd);
+    const segP = pods.filter(x => x.idx >= segStart && x.idx < segEnd);
+    let h, mn = 0;
+    if (segT.length) {
+      h = segT[0].h; mn = segT[0].min;
+      if (h >= 1 && h <= 11 && segP.some(p => p.evening)) h += 12;
+    } else if (segP.length) h = segP[0].base;
+    else { h = 12; }
+    const timeStr = String(h).padStart(2, '0') + ':' + String(mn).padStart(2, '0');
+    if (!out.some(o => o.date === anchors[i].date && o.time === timeStr)) {
+      out.push({ date: anchors[i].date, time: timeStr });
+    }
+  }
+  return out.length ? out : null;
+}
+// kept for compatibility — first hit only
+function _waDetectAppt(text) { const a = _waDetectAppts(text); return a ? a[0] : null; }
+// Human-readable day: היום / מחר / יום חמישי השבוע / יום שלישי שבוע הבא
+function _waHumanDay(ds, withDate) {
+  try {
+    const names = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+    const now = new Date();
+    const t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const d = new Date(ds + 'T12:00:00');
+    const diff = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - t0) / 86400000);
+    const dm = d.getDate() + '.' + (d.getMonth() + 1);
+    let label;
+    if (diff === 0) label = 'היום';
+    else if (diff === 1) label = 'מחר';
+    else if (diff === 2) label = 'מחרתיים';
+    else {
+      const weekOff = Math.floor((t0.getDay() + diff) / 7);
+      label = 'יום ' + names[d.getDay()] + (weekOff === 0 ? ' השבוע' : weekOff === 1 ? ' שבוע הבא' : '');
+    }
+    return withDate ? label + ' · ' + dm : label;
+  } catch (_) { return ds; }
 }
 let _waApptPhone = '';
+let _waApptN = 0;        // rows ever created (ids stay stable)
+let _waApptActive = 0;   // which row the quick-day chips act on
+function _waApptRowHtml(i, date, time) {
+  return '<div class="waappt-row" id="waappt-row-' + i + '">'
+    + '<input type="date" id="waappt-date-' + i + '" value="' + date + '" onfocus="_waApptActive=' + i + ';_waApptChips()" onchange="_waApptHum(' + i + ');_waApptChips()"/>'
+    + '<input type="time" id="waappt-time-' + i + '" value="' + time + '"/>'
+    + '<button class="waappt-del" onclick="waApptDelRow(' + i + ')">✕</button>'
+    + '</div>'
+    + '<div class="waappt-hum" id="waappt-hum-' + i + '">' + _escape(_waHumanDay(date, true)) + '</div>';
+}
+function _waApptHum(i) {
+  const d = document.getElementById('waappt-date-' + i);
+  const h = document.getElementById('waappt-hum-' + i);
+  if (d && h) h.textContent = d.value ? _waHumanDay(d.value, true) : '';
+}
+// Quick-day chips: היום / מחר / יום חמישי / יום שלישי הבא … two weeks
+// ahead. Tapping one sets the date of the active row.
+function _waApptChips() {
+  const el = document.getElementById('waappt-chips');
+  if (!el) return;
+  const act = document.getElementById('waappt-date-' + _waApptActive);
+  const cur = act ? act.value : '';
+  const today = new Date();
+  let html = '';
+  for (let off = 0; off < 14; off++) {
+    const ds = _waDateOffset(today, off);
+    html += '<button class="waappt-chip' + (ds === cur ? ' on' : '') + '" onclick="waApptChip(\'' + ds + '\')">' + _escape(_waHumanDay(ds, false)) + '</button>';
+  }
+  el.innerHTML = html;
+}
+window.waApptChip = function(ds) {
+  const d = document.getElementById('waappt-date-' + _waApptActive);
+  if (d) { d.value = ds; _waApptHum(_waApptActive); }
+  _waApptChips();
+};
+window.waApptAddRow = function() {
+  const rows = document.getElementById('waappt-rows');
+  if (!rows) return;
+  const i = _waApptN++;
+  rows.insertAdjacentHTML('beforeend', _waApptRowHtml(i, _waDateOffset(new Date(), 1), '12:00'));
+  _waApptActive = i;
+  _waApptChips();
+};
+window.waApptDelRow = function(i) {
+  const r = document.getElementById('waappt-row-' + i);
+  const h = document.getElementById('waappt-hum-' + i);
+  if (r) r.remove();
+  if (h) h.remove();
+};
 function _waApptCheck(phone, text) {
   try {
-    const g = _waDetectAppt(text);
-    if (!g) return;
+    const guesses = _waDetectAppts(text);
+    if (!guesses || !guesses.length) return;
     _waApptPhone = phone;
     const nm = _waName({ phone });
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-    set('waappt-title', 'פגישה עם ' + nm);
-    set('waappt-date', g.date);
-    set('waappt-time', g.time);
+    const tEl = document.getElementById('waappt-title');
+    if (tEl) tEl.value = 'פגישה עם ' + nm;
+    const rows = document.getElementById('waappt-rows');
+    _waApptN = 0; _waApptActive = 0;
+    if (rows) rows.innerHTML = guesses.map(g => _waApptRowHtml(_waApptN++, g.date, g.time)).join('');
+    _waApptChips();
     const sub = document.getElementById('waappt-sub');
-    if (sub) sub.textContent = 'זיהיתי שסגרת תור עם ' + nm + '. לבדוק שהפרטים נכונים ולהוסיף ליומן?';
+    if (sub) sub.textContent = guesses.length === 1
+      ? 'זיהיתי שסגרת תור עם ' + nm + '. לבדוק שהפרטים נכונים ולהוסיף ליומן?'
+      : 'זיהיתי ' + guesses.length + ' מועדים עם ' + nm + '. בדוק, תקן במידת הצורך — והכל ייכנס ליומן.';
     openModal('waappt');
     if (window.haptic) window.haptic.light && window.haptic.light();
   } catch (_) {}
 }
 window.waApptSave = async function() {
   const title = (document.getElementById('waappt-title').value || '').trim();
-  const date = document.getElementById('waappt-date').value;
-  const time = document.getElementById('waappt-time').value;
-  if (!title || !date || !time) { toast('מלא שם, תאריך ושעה'); return; }
-  const item = { id: genId(), date: date, time: time, title: title, notes: 'נוצר אוטומטית משיחת וואטסאפ', createdAt: new Date().toISOString() };
-  const all = load('schedule'); all.push(item); save('schedule', all);
+  if (!title) { toast('תן שם לאירוע'); return; }
+  const items = [];
+  for (let i = 0; i < _waApptN; i++) {
+    const d = document.getElementById('waappt-date-' + i);
+    const tm = document.getElementById('waappt-time-' + i);
+    if (!d || !tm || !d.value || !tm.value) continue;
+    items.push({ id: genId(), date: d.value, time: tm.value, title: title, notes: 'נוצר אוטומטית משיחת וואטסאפ', createdAt: new Date().toISOString() });
+  }
+  if (!items.length) { toast('מלא תאריך ושעה'); return; }
+  const all = load('schedule'); items.forEach(it => all.push(it)); save('schedule', all);
   closeModal('waappt');
-  toast('✓ נוסף ליומן');
+  toast(items.length === 1 ? '✓ נוסף ליומן' : '✓ ' + items.length + ' מועדים נוספו ליומן');
   if (window.haptic) window.haptic.success();
-  // Mirror to the iOS / Google calendar (same path the schedule uses).
-  try {
-    const gid = await gcalWriteCreateEvent(item);
-    if (gid) { const cur = load('schedule'); const sv = cur.find(x => x.id === item.id); if (sv) { sv.gcalEventId = gid; save('schedule', cur); } }
-  } catch (_) {}
+  // Mirror each to the iOS / Google calendar (same path the לוז uses).
+  for (const item of items) {
+    try {
+      const gid = await gcalWriteCreateEvent(item);
+      if (gid) { const cur = load('schedule'); const sv = cur.find(x => x.id === item.id); if (sv) { sv.gcalEventId = gid; save('schedule', cur); } }
+    } catch (_) {}
+  }
   try { if (typeof renderSchedule === 'function') renderSchedule(); } catch (_) {}
   try { if (typeof window.syncTasksToWidget === 'function') window.syncTasksToWidget(); } catch (_) {}
 };
