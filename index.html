@@ -5854,18 +5854,20 @@
        Ambient aurora, staggered page entrances, tactile cards, glassy
        toast, living tab bar. Pure feel — zero layout or logic change. */
 
-    /* 1 · Aurora — two soft colour fields drifting behind everything */
+    /* 1 · Aurora — WARM and actually visible on the brown canvas:
+       molten gold + ember + a whisper of teal, drifting slowly */
     body::before {
-      content: ''; position: fixed; inset: -20%;
+      content: ''; position: fixed; inset: -25%;
       pointer-events: none; z-index: 0;
       background:
-        radial-gradient(38% 30% at 82% 12%, rgba(108,71,245,0.10), transparent 70%),
-        radial-gradient(34% 28% at 12% 88%, rgba(46,160,90,0.08), transparent 70%);
-      animation: auroraDrift 22s ease-in-out infinite alternate;
+        radial-gradient(42% 34% at 80% 8%, rgba(232,180,110,0.20), transparent 70%),
+        radial-gradient(36% 30% at 10% 85%, rgba(200,120,60,0.14), transparent 70%),
+        radial-gradient(26% 22% at 55% 55%, rgba(0,168,132,0.07), transparent 70%);
+      animation: auroraDrift 18s ease-in-out infinite alternate;
     }
     @keyframes auroraDrift {
-      from { transform: translate3d(0,0,0) scale(1); }
-      to   { transform: translate3d(3%,-4%,0) scale(1.08); }
+      from { transform: translate3d(0,0,0) scale(1) rotate(0deg); }
+      to   { transform: translate3d(4%,-5%,0) scale(1.12) rotate(2deg); }
     }
     /* (aurora is pointer-events:none and ~8% opacity — it may sit
        visually above flat content, which is exactly the intent; never
@@ -5933,11 +5935,76 @@
     /* 6 · Quiet hands — no grey tap flash anywhere */
     * { -webkit-tap-highlight-color: transparent; }
 
+    /* 7 · The lobby LIVES — circles levitate, greeting glows */
+    .mode-card { animation: lobbyFloat 5.2s ease-in-out infinite; will-change: transform; }
+    .mode-cards-row .mode-card:nth-child(2) { animation-delay: 1.3s; }
+    #mode-screen .mode-card:only-child,
+    #mode-screen > .mode-card { animation-delay: 2.4s; }
+    @keyframes lobbyFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+    .mode-card:active { animation-play-state: paused; }
+    #lobby-greet {
+      background: linear-gradient(120deg, #f5e2c8, #e8b46e 45%, #f5e2c8 90%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+      background-size: 220% 100%;
+      animation: greetSheen 5.5s ease-in-out infinite;
+    }
+    @keyframes greetSheen { 0%,100% { background-position: 0% 0; } 50% { background-position: 100% 0; } }
+
+    /* 8 · Page titles get the golden signature.
+       text-shadow MUST be killed — with a transparent fill the old
+       shadow paints as a dark smear behind the glyphs. */
+    .page-header h2 {
+      background: linear-gradient(100deg, #f3e6d2 25%, #e8b46e 80%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+      text-shadow: none !important;
+    }
+    .page-header h2 svg { color: #e8b46e; }
+    html[data-theme="light"] .page-header h2,
+    body.light .page-header h2 {
+      background: linear-gradient(100deg, #4a3826 30%, #b57d33 85%);
+      -webkit-background-clip: text; background-clip: text;
+    }
+    #page-whatsapp .page-header h2 {
+      background: linear-gradient(100deg, #E9EDEF 30%, #25D366 90%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* 9 · Floating glass dock — the tab bar detaches from the edge */
+    @media (max-width: 768px) {
+      /* NOTE: never touch .sidebar background here — the theme system
+         overrides it at higher specificity, and forcing it with
+         !important turned the dark dock cream (v420 draft bug). Float
+         the dock; let the theme keep painting it. */
+      .sidebar {
+        left: 10px !important; right: 10px !important;
+        bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+        border-radius: 26px;
+        border: 1px solid rgba(255,255,255,0.09) !important;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+        padding-bottom: 0 !important;
+        overflow: hidden;
+      }
+    }
+
+    /* 10 · The FAB breathes */
+    .fab-main { animation: fabBreath 3.6s ease-in-out infinite; }
+    @keyframes fabBreath {
+      0%, 100% { box-shadow: 0 8px 24px var(--accent-glow, rgba(200,140,80,0.35)); }
+      50% { box-shadow: 0 8px 38px var(--accent-glow, rgba(200,140,80,0.6)); }
+    }
+
     /* Respect reduced-motion users: freeze the theatrics */
     @media (prefers-reduced-motion: reduce) {
       body::before { animation: none; }
       .page.active, .page.active > * { animation: none !important; }
       nav a.active .nav-icon { animation: none; }
+      .mode-card, #lobby-greet, .fab-main { animation: none !important; }
     }
 
   </style>
@@ -6605,7 +6672,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v419</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v420</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
