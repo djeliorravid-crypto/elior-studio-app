@@ -5850,6 +5850,91 @@
       }
     }
 
+    /* ═══════════ REFRESH LAYER (v418) — the app breathes ═══════════
+       Ambient aurora, staggered page entrances, tactile cards, glassy
+       toast, living tab bar. Pure feel — zero layout or logic change. */
+
+    /* 1 · Aurora — two soft colour fields drifting behind everything */
+    body::before {
+      content: ''; position: fixed; inset: -20%;
+      pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(38% 30% at 82% 12%, rgba(108,71,245,0.10), transparent 70%),
+        radial-gradient(34% 28% at 12% 88%, rgba(46,160,90,0.08), transparent 70%);
+      animation: auroraDrift 22s ease-in-out infinite alternate;
+    }
+    @keyframes auroraDrift {
+      from { transform: translate3d(0,0,0) scale(1); }
+      to   { transform: translate3d(3%,-4%,0) scale(1.08); }
+    }
+    .sidebar, .main, .modal-overlay, #mode-screen, #login-screen { position: relative; z-index: 1; }
+
+    /* 2 · Page entrance — rise-and-settle, cards follow in a wave */
+    .page.active { animation: pageRise .34s cubic-bezier(.22,1,.36,1); }
+    @keyframes pageRise {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .page.active > .page-header,
+    .page.active > .table-card,
+    .page.active > .mp-card,
+    .page.active > .wa-hero,
+    .page.active > .summary-cards {
+      animation: cardRise .5s cubic-bezier(.22,1,.36,1) backwards;
+    }
+    .page.active > :nth-child(1) { animation-delay: .02s; }
+    .page.active > :nth-child(2) { animation-delay: .06s; }
+    .page.active > :nth-child(3) { animation-delay: .10s; }
+    .page.active > :nth-child(4) { animation-delay: .14s; }
+    .page.active > :nth-child(5) { animation-delay: .18s; }
+    .page.active > :nth-child(6) { animation-delay: .22s; }
+    @keyframes cardRise {
+      from { opacity: 0; transform: translateY(16px) scale(.985); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* 3 · Tactile cards — a physical press on touch */
+    .table-card, .mp-card {
+      transition: transform .16s cubic-bezier(.34,1.2,.64,1), box-shadow .25s;
+    }
+    .table-card:active, .mp-card:active { transform: scale(.995); }
+
+    /* 4 · Glassy toast — floating pill with an accent pulse */
+    .toast {
+      background: rgba(30,26,22,0.82);
+      backdrop-filter: blur(14px) saturate(150%);
+      -webkit-backdrop-filter: blur(14px) saturate(150%);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 18px; padding: 13px 26px;
+      box-shadow: 0 14px 44px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07);
+      transition: transform .38s cubic-bezier(.22,1.3,.4,1);
+    }
+
+    /* 5 · Living tab bar — active tab floats on a soft pill */
+    @media (max-width: 768px) {
+      nav a { border-radius: 15px; margin: 3px 2px; }
+      nav a.active {
+        background: var(--accent-light);
+        box-shadow: inset 0 0 0 1px rgba(108,71,245,0.14);
+      }
+      nav a.active .nav-icon { animation: navPopIn .38s cubic-bezier(.34,1.6,.64,1); }
+      @keyframes navPopIn {
+        0% { transform: translateY(2px) scale(.82); }
+        60% { transform: translateY(-2px) scale(1.12); }
+        100% { transform: translateY(-1px) scale(1); }
+      }
+    }
+
+    /* 6 · Quiet hands — no grey tap flash anywhere */
+    * { -webkit-tap-highlight-color: transparent; }
+
+    /* Respect reduced-motion users: freeze the theatrics */
+    @media (prefers-reduced-motion: reduce) {
+      body::before { animation: none; }
+      .page.active, .page.active > * { animation: none !important; }
+      nav a.active .nav-icon { animation: none; }
+    }
+
   </style>
 <style>
   /* ===== LOGIN SCREEN ===== */
@@ -6515,7 +6600,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v417</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v418</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
