@@ -5975,21 +5975,10 @@
       -webkit-text-fill-color: transparent;
     }
 
-    /* 9 · Floating glass dock — the tab bar detaches from the edge */
+    /* 9 · (floating dock reverted per Elior — the tab bar belongs
+       flush at the bottom edge; keeping only a soft top shadow) */
     @media (max-width: 768px) {
-      /* NOTE: never touch .sidebar background here — the theme system
-         overrides it at higher specificity, and forcing it with
-         !important turned the dark dock cream (v420 draft bug). Float
-         the dock; let the theme keep painting it. */
-      .sidebar {
-        left: 10px !important; right: 10px !important;
-        bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
-        border-radius: 26px;
-        border: 1px solid rgba(255,255,255,0.09) !important;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06) !important;
-        padding-bottom: 0 !important;
-        overflow: hidden;
-      }
+      .sidebar { box-shadow: 0 -6px 24px rgba(0,0,0,0.25); }
     }
 
     /* 10 · The FAB breathes */
@@ -6672,7 +6661,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v420</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v421</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
