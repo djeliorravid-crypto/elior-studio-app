@@ -4032,6 +4032,11 @@
     .wa-hero-num.pop { animation: waPop .45s cubic-bezier(.2,1.4,.4,1); }
     @keyframes waPop { 0% { transform: scale(.5); opacity: .3; } 60% { transform: scale(1.18); } 100% { transform: scale(1); opacity: 1; } }
     .wa-hero-label { position: relative; font-size: 15.5px; font-weight: 700; opacity: .96; }
+    .wa-hero-stats {
+      position: relative; margin-top: 10px; font-size: 12px; font-weight: 800;
+      background: rgba(255,255,255,0.14); border-radius: 14px; padding: 6px 12px;
+      display: inline-block; backdrop-filter: blur(4px);
+    }
     /* premium box headers with live count pills */
     .wa-box { border-top: none; }
     .wa-box-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
@@ -6274,6 +6279,7 @@
 
 <div class="fab-container" id="fab-container">
   <div class="fab-menu" id="fab-menu">
+    <button class="fab-item" onclick="fabAction('search')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#6c47f5,#8b6bf7)"><svg class="fab-item-svg" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg></span> חיפוש בכל האפליקציה</button>
     <button class="fab-item" onclick="fabAction('schedule')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#3e6079,#5a86a8)"><svg class="fab-item-svg" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></span> אירוע בלוז</button>
     <button class="fab-item" onclick="fabAction('income')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#5a7a2e,#7a9e3e)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-up"/></svg></span> הכנסה</button>
     <button class="fab-item" onclick="fabAction('expense')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#b8442e,#d4644a)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-down"/></svg></span> הוצאה</button>
@@ -6661,7 +6667,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v421</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v422</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7077,6 +7083,46 @@
   </div>
 </div>
 
+<!-- Global search — everything, one box (z10000: usable from the lobby too) -->
+<div class="modal-overlay" id="modal-gsearch" style="z-index:10000">
+  <div class="modal modal-narrow" style="max-height:82vh">
+    <h3>🔍 חיפוש בכל האפליקציה</h3>
+    <div class="form-group" style="margin-bottom:10px">
+      <input id="gsearch-in" placeholder="שם, לקוח, הודעה, אירוע…" oninput="gsRun(this.value)" autocomplete="off"/>
+    </div>
+    <div id="gsearch-res" style="max-height:52vh;overflow-y:auto"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:12px" onclick="closeModal('gsearch')">סגור</button>
+  </div>
+</div>
+
+<!-- WhatsApp quick-reply templates -->
+<div class="modal-overlay" id="modal-watpl">
+  <div class="modal modal-narrow">
+    <h3>⚡ תשובות מהירות</h3>
+    <div class="mp-sub" style="margin:-8px 0 12px">נגיעה על תבנית — והיא נכנסת לתיבת הכתיבה. תבניות שאתה מגדיר פעם אחת וחוסכות הקלדה כל יום.</div>
+    <div id="watpl-list"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('watpl')">סגור</button>
+      <button class="btn btn-primary" style="flex:1" onclick="waTplAdd()">+ תבנית חדשה</button>
+    </div>
+  </div>
+</div>
+
+<!-- WhatsApp snooze — "remind me later" for a conversation -->
+<div class="modal-overlay" id="modal-wasnooze">
+  <div class="modal modal-narrow">
+    <h3>⏰ הזכר לי לענות</h3>
+    <div class="mp-sub" id="wasnooze-sub" style="margin:-8px 0 14px"></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-ghost" style="width:100%" onclick="waSnoozeSet('1h')">בעוד שעה</button>
+      <button class="btn btn-ghost" style="width:100%" onclick="waSnoozeSet('3h')">בעוד 3 שעות</button>
+      <button class="btn btn-ghost" style="width:100%" onclick="waSnoozeSet('eve')">הערב ב-19:00</button>
+      <button class="btn btn-ghost" style="width:100%" onclick="waSnoozeSet('mor')">מחר ב-09:00</button>
+    </div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:12px" onclick="closeModal('wasnooze')">בטל</button>
+  </div>
+</div>
+
 <!-- WhatsApp → calendar: detected appointment(s) in a sent reply -->
 <div class="modal-overlay" id="modal-waappt">
   <div class="modal modal-narrow">
@@ -7144,6 +7190,7 @@
       <div class="wa-hero-live"><span class="wa-hero-dot"></span><span id="wa-hero-status">בזמן אמת</span></div>
       <div class="wa-hero-num" id="wa-hero-num">0</div>
       <div class="wa-hero-label" id="wa-hero-label">טוען…</div>
+      <div class="wa-hero-stats" id="wa-hero-stats"></div>
     </div>
     <!-- Top box: CLIENTS — anyone the system knows is a client -->
     <div class="table-card mp-card wa-box" id="wa-clients-card">
@@ -7166,6 +7213,13 @@
       </div>
       <div class="mp-sub">מספרים חדשים שכתבו לך. לחיצה ארוכה על שם — קובעים: לקוח (עובר למעלה לתמיד) או לא רלוונטי.</div>
       <div id="wa-new-list"></div>
+    </div>
+    <!-- Snoozed conversations — hidden entirely while empty -->
+    <div class="table-card mp-card" id="wa-snooze-card" style="display:none">
+      <details>
+        <summary style="cursor:pointer;font-size:13px;font-weight:800;color:var(--text-muted);list-style-position:inside" id="wa-snooze-sum">😴 בנודניק</summary>
+        <div id="wa-snooze-list"></div>
+      </details>
     </div>
     <!-- Scheduled-message queue — hidden entirely while empty -->
     <div class="table-card mp-card" id="wa-sched-card" style="display:none">
@@ -16724,7 +16778,7 @@ function _waProcess(raw) {
     localStorage.setItem('wa_raw_cache', JSON.stringify(store));
   } catch (_) {}
   try {
-    const waiting = list.filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead'));
+    const waiting = list.filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead') && !_waSnoozeActive(c));
     localStorage.setItem('wa_waiting_summary', JSON.stringify({
       n: waiting.length,
       oldestTs: waiting.length ? Math.min.apply(null, waiting.map(c => c.lastInTs)) : 0,
@@ -16732,7 +16786,7 @@ function _waProcess(raw) {
     }));
   } catch (_) {}
   try { _waLobbyBadge(); } catch (_) {}
-  try { _waNotifKick(list.filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead')).length); } catch (_) {}
+  try { _waNotifKick(list.filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead') && !_waSnoozeActive(c)).length); } catch (_) {}
   try { _waPublishCls(list); } catch (_) {}
   return list;
  } catch (e) {
@@ -16845,7 +16899,7 @@ async function _waPushInit() {
 setTimeout(() => { try { _waPushInit(); } catch (_) {} }, 4000);
 // ── Lobby badge: how many people await a reply, one tap to the list ──
 function _waWaitingCount() {
-  return (_waConvs || []).filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead')).length;
+  return (_waConvs || []).filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead') && !_waSnoozeActive(c)).length;
 }
 function _waLobbyBadge() {
   const el = document.getElementById('lobby-wa-badge');
@@ -17060,6 +17114,8 @@ window.waActOpen = function(phone) {
   if (!isClient) html += B('🚫 לא רלוונטי — הסתר', 'hide');
   if (isClient && !c.client) html += B('הסר סימון לקוח', 'unmark');
   html += B('📜 רקע לשיחה', 'history');
+  if (c.waiting) html += B('😴 הזכר לי לענות מאוחר יותר', 'snooze');
+  html += B(_waPins[phone] ? '📌 הסר נעיצה' : '📌 נעץ למעלה', 'pin');
   html += B('✏️ שנה שם', 'rename');
   html += B('⏰ תזמן הודעה', 'sched');
   if (c.waiting) html += B('✓ סמן טופל', 'done');
@@ -17077,6 +17133,8 @@ window.waActDo = function(phone, act) {
   else if (act === 'done') waDismiss(phone);
   else if (act === 'sched') waSchedOpen(phone);
   else if (act === 'history') waHistory(phone);
+  else if (act === 'snooze') waSnoozeOpen(phone);
+  else if (act === 'pin') waPinToggle(phone);
   else if (act === 'open') window.open('https://wa.me/' + phone, '_blank');
 };
 // ── Scheduled messages: queued to /whatsapp/outbox, sent by the
@@ -17200,6 +17258,7 @@ function _waReplyBlock(phoneEsc) {
       + '</div></div>';
   }
   return '<div class="wa-replyrow" id="wa-rr-' + phoneEsc + '">'
+    + '<button class="wa-mic" title="תשובות מהירות" onclick="waTplOpen(\'' + phoneEsc + '\')" style="font-size:16px">⚡</button>'
     + '<input id="wa-in-' + phoneEsc + '" placeholder="כתוב תשובה…" '
     + 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();waReply(\'' + phoneEsc + '\');}"/>'
     + (_waMicOk ? '<button class="wa-mic" id="wa-mic-' + phoneEsc + '" title="החזק להקלטה"'
@@ -17239,7 +17298,8 @@ function _waRow(c, isWaiting) {
   // Bubbles: the last up to 3 unanswered incoming messages, each its own.
   const texts = (c.freshTexts && c.freshTexts.length) ? c.freshTexts.slice(-3) : [c.lastText || ''];
   const bubbles = texts.map(t => '<div class="wa-bub">' + _escape(String(t).slice(0, 300)) + '</div>').join('');
-  const leadChip = c.cls === 'lead' ? '<span class="wa-chip-lead">ליד חדש</span>' : '';
+  const leadChip = (c.cls === 'lead' ? '<span class="wa-chip-lead">ליד חדש</span>' : '')
+    + (_waPins[c.phone] ? '<span style="flex-shrink:0">📌</span>' : '');
   const urg = _waUrgency(c.lastInTs);
   const sub = '<span class="wa-wait2" style="color:' + urg + '">● מחכה ' + _waAgo(c.lastInTs) + '</span>'
     + (c.unread > 1 ? '<span class="wa-dot2"></span>' + c.unread + ' הודעות' : '');
@@ -17531,6 +17591,261 @@ window.waFilterToggle = function() {
   try { cur = localStorage.getItem('wa_show_all') === '1'; } catch (_) {}
   try { localStorage.setItem('wa_show_all', cur ? '0' : '1'); } catch (_) {}
   _waPaint();
+};
+// ══════════════ SNOOZE — "אענה אחר כך" שבאמת חוזר ══════════════
+// A snoozed conversation leaves the waiting lists + counters and
+// comes back at the chosen time WITH a local notification. A new
+// message from the person wakes it early (they pinged again).
+function _waSnoozeMap() { try { return JSON.parse(localStorage.getItem('wa_snooze') || '{}') || {}; } catch (_) { return {}; } }
+function _waSnoozeSave(m) { try { localStorage.setItem('wa_snooze', JSON.stringify(m)); } catch (_) {} }
+function _waSnoozeActive(c) {
+  const m = _waSnoozeMap();
+  const s = m[c.phone];
+  if (!s) return false;
+  if ((c.lastInTs && c.lastInTs > s.setAt) || s.until <= Date.now()) {
+    delete m[c.phone]; _waSnoozeSave(m);
+    return false;
+  }
+  return true;
+}
+function _waSnoozeNotifId(phone) {
+  let h = 0; const s = String(phone);
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 450;
+  return 711000 + h;
+}
+let _waSnoozePhone = '';
+window.waSnoozeOpen = function(phone) {
+  _waSnoozePhone = phone;
+  const sub = document.getElementById('wasnooze-sub');
+  if (sub) sub.textContent = _waName({ phone }) + ' יירד מהרשימה בשקט — ויחזור בדיוק בזמן, עם התראה.';
+  closeModal('waact');
+  openModal('wasnooze');
+};
+window.waSnoozeSet = async function(kind) {
+  const phone = _waSnoozePhone;
+  if (!phone) return;
+  const now = new Date();
+  let until;
+  if (kind === '1h') until = Date.now() + 3600e3;
+  else if (kind === '3h') until = Date.now() + 3 * 3600e3;
+  else if (kind === 'eve') {
+    const d = new Date(now); d.setHours(19, 0, 0, 0);
+    if (d <= now) d.setDate(d.getDate() + 1);
+    until = d.getTime();
+  } else {
+    const d = new Date(now); d.setDate(d.getDate() + (now.getHours() < 9 ? 0 : 1)); d.setHours(9, 0, 0, 0);
+    if (d <= now) d.setDate(d.getDate() + 1);
+    until = d.getTime();
+  }
+  const m = _waSnoozeMap();
+  m[phone] = { until, setAt: Date.now() };
+  _waSnoozeSave(m);
+  closeModal('wasnooze');
+  const d2 = new Date(until);
+  toast('😴 ' + _waName({ phone }) + ' יחזור ב-' + String(d2.getHours()).padStart(2, '0') + ':' + String(d2.getMinutes()).padStart(2, '0'));
+  if (window.haptic) window.haptic.success();
+  _waPaint();
+  // the comeback notification
+  try {
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+      if (LN && (await LN.checkPermissions()).display === 'granted') {
+        const id = _waSnoozeNotifId(phone);
+        try { await LN.cancel({ notifications: [{ id }] }); } catch (_) {}
+        await LN.schedule({ notifications: [{
+          id, title: '⏰ הבטחת לענות ל' + _waName({ phone }),
+          body: 'השיחה חזרה לרשימת הממתינים.',
+          schedule: { at: new Date(until), allowWhileIdle: true }, sound: 'default',
+          threadIdentifier: 'wa-waiting', extra: { moneyNotif: 'wa' }
+        }] });
+      }
+    }
+  } catch (_) {}
+};
+window.waSnoozeClear = function(phone) {
+  const m = _waSnoozeMap();
+  delete m[phone];
+  _waSnoozeSave(m);
+  try {
+    const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+    if (LN) LN.cancel({ notifications: [{ id: _waSnoozeNotifId(phone) }] });
+  } catch (_) {}
+  toast('הנודניק בוטל — חזר לרשימה');
+  _waPaint();
+};
+function _waPaintSnooze() {
+  const card = document.getElementById('wa-snooze-card');
+  const listEl = document.getElementById('wa-snooze-list');
+  const sumEl = document.getElementById('wa-snooze-sum');
+  if (!card || !listEl) return;
+  const m = _waSnoozeMap();
+  const now = Date.now();
+  const ids = Object.keys(m).filter(p => m[p] && m[p].until > now);
+  if (!ids.length) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  if (sumEl) sumEl.textContent = '😴 בנודניק (' + ids.length + ')';
+  const p2 = n => String(n).padStart(2, '0');
+  listEl.innerHTML = ids.map(p => {
+    const d = new Date(m[p].until);
+    return '<div class="dun-row">'
+      + '<div class="dun-info"><div class="dun-name">' + _escape(_waName({ phone: p })) + '</div>'
+      + '<div class="dun-meta">חוזר ב-' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + '</div></div>'
+      + '<button class="btn btn-ghost btn-sm" onclick="waSnoozeClear(\'' + String(p).replace(/[^0-9]/g, '') + '\')">החזר עכשיו</button>'
+      + '</div>';
+  }).join('');
+}
+// ══════════════ PIN — the important one stays on top ══════════════
+let _waPins = {};
+try { _waPins = JSON.parse(localStorage.getItem('wa_pins') || '{}') || {}; } catch (_) {}
+window.waPinToggle = function(phone) {
+  if (_waPins[phone]) delete _waPins[phone]; else _waPins[phone] = true;
+  try { localStorage.setItem('wa_pins', JSON.stringify(_waPins)); } catch (_) {}
+  toast(_waPins[phone] ? '📌 ננעץ למעלה' : 'הנעיצה הוסרה');
+  _waPaint();
+};
+// ══════════════ QUICK-REPLY TEMPLATES ══════════════
+function _waTpls() { try { return JSON.parse(localStorage.getItem('wa_templates') || '[]') || []; } catch (_) { return []; } }
+function _waTplsSave(a) { try { localStorage.setItem('wa_templates', JSON.stringify(a)); } catch (_) {} }
+let _waTplPhone = '';
+function _waTplRender() {
+  const el = document.getElementById('watpl-list');
+  if (!el) return;
+  const tpls = _waTpls();
+  el.innerHTML = tpls.length ? tpls.map((t, i) =>
+    '<div class="dun-row">'
+    + '<div class="dun-info" style="cursor:pointer" onclick="waTplUse(' + i + ')"><div class="dun-meta" style="font-size:13.5px;color:var(--text);font-weight:700">' + _escape(String(t).slice(0, 120)) + '</div></div>'
+    + '<button class="waappt-del" onclick="event.stopPropagation();waTplDel(' + i + ')">✕</button>'
+    + '</div>'
+  ).join('') : '<div class="mp-empty" style="padding:14px 0">עוד אין תבניות — הוסף את הראשונה: מחירון, כתובת האולפן, פרטי ביט…</div>';
+}
+window.waTplOpen = function(phone) {
+  _waTplPhone = phone;
+  _waTplRender();
+  openModal('watpl');
+};
+window.waTplUse = function(i) {
+  const t = _waTpls()[i];
+  if (t == null) return;
+  const inp = document.getElementById('wa-in-' + _waTplPhone);
+  if (inp) {
+    inp.value = inp.value ? (inp.value + ' ' + t) : t;
+    closeModal('watpl');
+    inp.focus();
+  } else closeModal('watpl');
+};
+window.waTplAdd = function() {
+  const v = prompt('טקסט התבנית (למשל: המחירון שלי — סשן הקלטה 350₪ לשעה):');
+  if (!v || !v.trim()) return;
+  const a = _waTpls(); a.push(v.trim()); _waTplsSave(a);
+  _waTplRender();
+};
+window.waTplDel = function(i) {
+  const a = _waTpls(); a.splice(i, 1); _waTplsSave(a);
+  _waTplRender();
+};
+// ══════════════ RESPONSE-TIME STATS — the business fitness meter ══════════════
+function _waRespStats() {
+  const byPhone = {};
+  Object.keys(_waRaw || {}).forEach(k => {
+    const m = _waRaw[k];
+    if (m && m.phone && m.ts && (m.dir === 'in' || m.dir === 'out')) {
+      (byPhone[m.phone] = byPhone[m.phone] || []).push(m);
+    }
+  });
+  const now = Date.now(), W = 7 * 864e5;
+  const cur = [], prev = [];
+  Object.keys(byPhone).forEach(ph => {
+    const arr = byPhone[ph].sort((a, b) => Number(a.ts) - Number(b.ts));
+    let firstIn = null;
+    arr.forEach(m => {
+      const ts = Number(m.ts);
+      if (m.dir === 'in') { if (firstIn === null) firstIn = ts; }
+      else if (firstIn !== null) {
+        const d = ts - firstIn;
+        if (d > 0 && d < 48 * 3600e3) {
+          if (ts > now - W) cur.push(d);
+          else if (ts > now - 2 * W) prev.push(d);
+        }
+        firstIn = null;
+      }
+    });
+  });
+  const med = a => { if (!a.length) return null; a.sort((x, y) => x - y); return a[Math.floor(a.length / 2)]; };
+  return { cur: med(cur), prev: med(prev), n: cur.length };
+}
+function _waFmtDur(ms) {
+  const m = Math.round(ms / 60000);
+  if (m < 1) return 'פחות מדק׳';
+  if (m < 60) return m + ' דק׳';
+  const h = Math.round(m / 6) / 10;
+  return h + ' שע׳';
+}
+// ══════════════ GLOBAL SEARCH — one box, the whole world ══════════════
+window.gsOpen = function() {
+  openModal('gsearch');
+  const inp = document.getElementById('gsearch-in');
+  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 120); }
+  gsRun('');
+};
+let _gsT = null;
+window.gsRun = function(q) {
+  clearTimeout(_gsT);
+  _gsT = setTimeout(() => _gsRunNow(q), 120);
+};
+function _gsRow(icon, title, meta, onclick) {
+  return '<div class="dun-row" style="cursor:pointer" onclick="' + onclick + '">'
+    + '<div style="font-size:17px;flex-shrink:0">' + icon + '</div>'
+    + '<div class="dun-info"><div class="dun-name">' + title + '</div>'
+    + (meta ? '<div class="dun-meta">' + meta + '</div>' : '') + '</div>'
+    + '</div>';
+}
+function _gsHead(t) { return '<div style="font-size:11px;font-weight:800;color:var(--text-muted);margin:12px 2px 2px;letter-spacing:.04em">' + t + '</div>'; }
+function _gsRunNow(q) {
+  const el = document.getElementById('gsearch-res');
+  if (!el) return;
+  q = String(q || '').trim().toLowerCase();
+  if (q.length < 2) { el.innerHTML = '<div class="mp-empty" style="padding:16px 0">הקלד לפחות שתי אותיות…</div>'; return; }
+  const hit = s => String(s || '').toLowerCase().includes(q);
+  let html = '';
+  // clients
+  const cls = (load('clients') || []).filter(c => hit(c.name) || hit(c.phone)).slice(0, 5);
+  if (cls.length) html += _gsHead('👤 לקוחות') + cls.map(c =>
+    _gsRow('👤', _escape(c.name || '—'), _escape(c.phone || ''), "gsGo('client')")).join('');
+  // income
+  const inc = (load('income') || []).filter(i => hit(i.client) || hit(i.desc) || hit(i.notes)).slice(0, 5);
+  if (inc.length) html += _gsHead('💰 הכנסות') + inc.map(i =>
+    _gsRow('💰', _escape(i.client || i.desc || '—'), _ilsFmt(Number(i.amount) || 0) + ' · ' + _escape(i.date || '') + ((i.status || 'pending') === 'paid' ? ' · שולם ✓' : ' · פתוח'), "gsGo('income')")).join('');
+  // schedule
+  const sch = (load('schedule') || []).filter(s => hit(s.title)).slice(0, 5);
+  if (sch.length) html += _gsHead('📅 לוז') + sch.map(s =>
+    _gsRow('📅', _escape(s.title || '—'), _escape(s.date || '') + ' ' + _escape(s.time || ''), "gsGo('schedule')")).join('');
+  // whatsapp — names + message text
+  const seen = {};
+  const waHits = [];
+  Object.keys(_waRaw || {}).forEach(k => {
+    const m = _waRaw[k];
+    if (!m || !m.phone || seen[m.phone]) return;
+    if (hit(m.text) || hit(m.name) || hit(_waName({ phone: m.phone }))) {
+      seen[m.phone] = true;
+      waHits.push(m.phone);
+    }
+  });
+  if (waHits.length) html += _gsHead('💬 וואטסאפ') + waHits.slice(0, 5).map(p => {
+    const pe = String(p).replace(/[^0-9]/g, '');
+    return _gsRow('💬', _escape(_waName({ phone: p })), _escape(_waPhonePretty(p)), "gsGo('wa','" + pe + "')");
+  }).join('');
+  el.innerHTML = html || '<div class="mp-empty" style="padding:16px 0">לא נמצא כלום ל"' + _escape(q) + '"</div>';
+}
+window.gsGo = function(type, key) {
+  closeModal('gsearch');
+  _qaBiz();
+  if (type === 'client') showPage('profiles');
+  else if (type === 'income') showPage('income');
+  else if (type === 'schedule') showPage('schedule');
+  else if (type === 'wa') {
+    showPage('whatsapp');
+    if (key) setTimeout(() => { try { waHistory(key); } catch (_) {} }, 350);
+  }
 };
 window.waMarkClient = function(phone, val) {
   if (val === true) _waCliMarks[phone] = true;
@@ -17918,8 +18233,8 @@ function _waPaint() {
   }
   const showAll = (() => { try { return localStorage.getItem('wa_show_all') === '1'; } catch (_) { return false; } })();
   const waiting = _waConvs
-    .filter(c => c.waiting && (showAll || c.cls === 'client' || c.cls === 'lead'))
-    .sort((a, b) => a.lastInTs - b.lastInTs);
+    .filter(c => c.waiting && (showAll || c.cls === 'client' || c.cls === 'lead') && !_waSnoozeActive(c))
+    .sort((a, b) => ((_waPins[b.phone] ? 1 : 0) - (_waPins[a.phone] ? 1 : 0)) || (a.lastInTs - b.lastInTs));
   const topWait = waiting.filter(c => c.cls === 'client');
   const newWait = waiting.filter(c => c.cls !== 'client');
   // Live count pills in the box headers.
@@ -17944,6 +18259,24 @@ function _waPaint() {
       : total + ' אנשים מחכים לתשובה שלך';
   }
   if (heroSt) heroSt.textContent = _waSyncing ? 'מסנכרן…' : (_waConn === false ? 'מתחבר…' : 'בזמן אמת');
+  // Response-time meter — his business fitness, right in the hero.
+  try {
+    const stEl = document.getElementById('wa-hero-stats');
+    if (stEl) {
+      const rs = _waRespStats();
+      if (rs.cur !== null && rs.n >= 2) {
+        let trend = '';
+        if (rs.prev !== null && rs.prev > 0) {
+          trend = rs.cur < rs.prev ? ' · ⬇️ שיפור משבוע שעבר (' + _waFmtDur(rs.prev) + ')'
+            : rs.cur > rs.prev ? ' · ⬆️ שבוע שעבר היית על ' + _waFmtDur(rs.prev)
+            : '';
+        }
+        stEl.textContent = '⚡ זמן תגובה השבוע: ~' + _waFmtDur(rs.cur) + trend;
+        stEl.style.display = '';
+      } else stEl.style.display = 'none';
+    }
+  } catch (_) {}
+  try { _waPaintSnooze(); } catch (_) {}
   const fbtn = document.getElementById('wa-filter-btn');
   if (fbtn) fbtn.textContent = showAll ? 'מציג הכל' : 'לקוחות ולידים';
   // While a fresh pull is in flight, an empty box shows "מסנכרן…"
@@ -22873,6 +23206,7 @@ function _qaBiz() {
   if (lobbyShown || !biz || getComputedStyle(biz).display === 'none') chooseMode('business');
 }
 function quickAction(type) {
+  if (type === 'search') { try { gsOpen(); } catch (_) {} return; }
   if (type === 'meal') {
     chooseMode('path');
     setTimeout(() => {
