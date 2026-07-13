@@ -379,7 +379,9 @@ function ownerDigits(env) {
   if (d.startsWith('0')) return '972' + d.slice(1);
   return d;
 }
-async function handleOwnerCmd(raw, env, replyTo) {
+async function handleOwnerCmd(raw, env, replyTo, freeMode) {
+  // freeMode: a DEDICATED assistant chat — every message is for the
+  // bot. false = the self-chat, which doubles as his notepad.
   const t = String(raw || '').trim();
   const owner = String(replyTo || '').replace(/\D/g, '') || ownerDigits(env);
   // Meta hard-blocks number→itself (#100), so replies go out from the
@@ -509,11 +511,20 @@ async function handleOwnerCmd(raw, env, replyTo) {
         : '🎉 אף אחד לא מחכה לתשובה.');
       return;
     }
-    // Unrecognized text: reply with the menu ONLY when he clearly
-    // addressed the assistant — the self-chat is also his personal
-    // notepad, and spamming help after every note would be hell.
+    // No exact pattern matched → the AI brain reads his intent in
+    // free Hebrew. The self-chat doubles as his personal notepad, so
+    // there the AI only engages when clearly addressed (a question
+    // mark, or starting with עוזר/a question word); on the dedicated
+    // assistant number EVERYTHING goes to the AI.
+    const addressed = freeMode === true
+      || /\?\s*$/.test(t)
+      || /^(עוזר|מה|כמה|מתי|מי|איך|תרשום|תוסיף|תקבע|תזכיר|רשום|קבע|הוסף)(?![א-ת])/.test(t);
+    if (addressed && env.GEMINI_KEY) {
+      const done = await aiCommand(t, env, reply);
+      if (done) return;
+    }
     if (/^(עזרה|עוזר|פקודות|מה קורה|מה המצב|היי)(?![א-ת])/.test(t)) {
-      await reply('היי אליאור 👋 אני העוזר של האולפן. אפשר לכתוב לי:\n'
+      await reply('היי אליאור 👋 אני העוזר של האולפן. דבר אליי חופשי ("תרשום 200 על דלק", "מה המצב החודש?") או בקיצורים:\n'
         + '💰 הוצאה 200 דלק · הכנסה 500 מוקי · כמה נכנס\n'
         + '📅 לוז / לוז מחר · קבע מחר 16:00 פגישה עם מוקי\n'
         + '💬 מי מחכה · טופל מוקי · נודניק מוקי הערב\n'
@@ -522,6 +533,71 @@ async function handleOwnerCmd(raw, env, replyTo) {
   } catch (_) {
     try { await reply('⚠️ משהו השתבש בפקודה — נסה שוב.'); } catch (__) {}
   }
+}
+
+// ══════════ THE AI BRAIN — free-Hebrew understanding ══════════
+// When no exact pattern matches, Gemini reads the message WITH the
+// live business snapshot and returns strict JSON: an action to
+// execute and/or a Hebrew reply. Costs ~nothing at his volume.
+async function aiCommand(t, env, reply) {
+  try {
+    const now = new Date();
+    const dow = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][now.getDay()];
+    const dkey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    // live snapshot
+    const [incRaw, schRaw, waiting, names] = await Promise.all([
+      fetch(ROOT_DB + '/studio_data/income.json').then(r => r.json()).catch(() => null),
+      fetch(ROOT_DB + '/studio_data/schedule.json').then(r => r.json()).catch(() => null),
+      fetch(FIREBASE + '/waiting.json').then(r => r.json()).catch(() => null),
+      fetch(FIREBASE + '/names.json').then(r => r.json()).catch(() => null)
+    ]);
+    const inc = Array.isArray(incRaw) ? incRaw : Object.values(incRaw || {});
+    const sch = Array.isArray(schRaw) ? schRaw : Object.values(schRaw || {});
+    const mk = dkey(now).slice(0, 7);
+    const paid = inc.filter(i => i && (i.status || 'pending') === 'paid' && String(i.date || '').slice(0, 7) === mk).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const open = inc.filter(i => i && (i.status || 'pending') !== 'paid');
+    const openSum = open.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const next7 = sch.filter(s => s && s.date >= dkey(now) && s.date <= dkey(new Date(now.getTime() + 7 * 864e5)))
+      .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).slice(0, 15)
+      .map(s => s.date + ' ' + s.time + ' ' + s.title).join(' | ');
+    const waitNames = Object.keys(waiting || {}).map(p => (names && names[p]) || p).slice(0, 8).join(', ');
+    const sys = 'אתה העוזר של אליאור רביד, מפיק מוזיקלי (אולפן רביד). היום ' + dow + ' ' + dkey(now) + '.\n'
+      + 'נתוני העסק: נכנס החודש ' + Math.round(paid) + '₪. פתוחים לגבייה: ' + open.length + ' תשלומים בסך ' + Math.round(openSum) + '₪'
+      + (open.length ? ' (' + open.slice(0, 6).map(i => (i.client || i.desc || '') + ' ' + Math.round(Number(i.amount) || 0) + '₪').join(', ') + ')' : '') + '.\n'
+      + 'לוז השבוע: ' + (next7 || 'ריק') + '.\n'
+      + 'מחכים לתשובה בוואטסאפ: ' + (waitNames || 'אף אחד') + '.\n'
+      + 'קרא את ההודעה של אליאור והחזר JSON בלבד (בלי טקסט מסביב, בלי ```):\n'
+      + '{"action":"expense|income|event|task|done|snooze|answer","amount":מספר,"desc":"","date":"YYYY-MM-DD","time":"HH:MM","title":"","name":"","when":"שעה|הערב|מחר","reply":"תשובה קצרה בעברית בטון חברי"}\n'
+      + 'השתמש ב-action מתאים רק אם הוא ביקש פעולה; לשאלות מידע החזר action="answer" עם reply מלא ומספרים אמיתיים מהנתונים. שדות לא רלוונטיים השמט.';
+    const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + env.GEMINI_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: sys + '\n\nההודעה: "' + t + '"' }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+      })
+    });
+    const gj = await g.json().catch(() => ({}));
+    const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
+    let raw = parts ? parts.map(p => p.text || '').join('').trim() : '';
+    raw = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
+    let out = null;
+    try { out = JSON.parse(raw); } catch (_) {
+      const mjs = raw.match(/\{[\s\S]*\}/);
+      if (mjs) { try { out = JSON.parse(mjs[0]); } catch (__) {} }
+    }
+    if (!out) return false;
+    // execute the action through the same queue the exact commands use
+    const post = (obj) => fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify(Object.assign({ ts: Date.now() }, obj)) });
+    if (out.action === 'expense' && out.amount) await post({ type: 'expense', amount: +out.amount, desc: out.desc || '' });
+    else if (out.action === 'income' && out.amount) await post({ type: 'income', amount: +out.amount, desc: out.desc || out.name || '' });
+    else if (out.action === 'event' && out.date) await post({ type: 'event', date: out.date, time: out.time || '12:00', title: out.title || 'פגישה' });
+    else if (out.action === 'task' && (out.desc || out.title)) await post({ type: 'task', text: out.desc || out.title });
+    else if (out.action === 'done' && out.name) await post({ type: 'done', name: out.name });
+    else if (out.action === 'snooze' && out.name) await post({ type: 'snooze', name: out.name, when: out.when || '3 שעות' });
+    await reply(out.reply || '✓ בוצע');
+    return true;
+  } catch (_) { return false; }
 }
 
 // Compact diagnostic trace — answers "what shape does a self-chat
@@ -567,7 +643,7 @@ async function processWebhook(body, env) {
               const fromPh = String(m.from || '').replace(/\D/g, '');
               stored++;
               if (fromPh === ownerDigits(env)) {
-                await handleOwnerCmd((m.text && m.text.body) || '', env, fromPh);
+                await handleOwnerCmd((m.text && m.text.body) || '', env, fromPh, true);
               }
             }
             stored++;   // statuses etc. on the assistant line are noise
