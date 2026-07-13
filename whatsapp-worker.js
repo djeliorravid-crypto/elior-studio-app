@@ -370,9 +370,18 @@ async function transcribe(mediaId, env) {
 // business answers: expenses/income queued into the app, live money
 // and schedule queries answered instantly. ══════════
 const ROOT_DB = FIREBASE.replace(/\/whatsapp$/, '');
+// Accept the owner number in ANY format he pasted it — 052…, 972…,
+// +972…, with dashes — and normalize to WhatsApp's international form.
+function ownerDigits(env) {
+  let d = String((env && env.OWNER_PHONE) || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d.startsWith('972')) return d;
+  if (d.startsWith('0')) return '972' + d.slice(1);
+  return d;
+}
 async function handleOwnerCmd(raw, env) {
   const t = String(raw || '').trim();
-  const owner = String(env.OWNER_PHONE || '').replace(/\D/g, '');
+  const owner = ownerDigits(env);
   const reply = (msg) => fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
@@ -505,7 +514,7 @@ async function processWebhook(body, env) {
             }
             // Owner remote control: a message from HIS personal number
             // is a command, not a customer conversation.
-            const ownerPh = String(env.OWNER_PHONE || '').replace(/\D/g, '');
+            const ownerPh = ownerDigits(env);
             if (ownerPh && ph === ownerPh) {
               stored++;
               await handleOwnerCmd((m.text && m.text.body) || text, env);
