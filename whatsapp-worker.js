@@ -575,11 +575,17 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
       const dm = rest.match(/(\d{1,2})[./](\d{1,2})/);
       if (dm) d = new Date(now.getFullYear(), +dm[2] - 1, +dm[1]);
       const tm = rest.match(/(\d{1,2}):(\d{2})/) || rest.match(/(?:בשעה|לשעה|ב-?)\s*(\d{1,2})(?![:.\d])/);
-      const hh = tm ? String(+tm[1]).padStart(2, '0') : '12';
-      const mm2 = (tm && tm[2]) ? tm[2] : '00';
+      // "6 וחצי" → :30, "ורבע" → :15; "8 בערב" → 20:00, "11 בלילה" → 23:00
+      let hhNum = tm ? +tm[1] : 12;
+      if (/בערב|אחר\s?הצהריים|אחה["״']?צ/.test(rest) && hhNum < 12) hhNum += 12;
+      else if (/בלילה/.test(rest) && hhNum >= 7 && hhNum < 12) hhNum += 12;
+      const hh = String(hhNum).padStart(2, '0');
+      const mm2 = (tm && tm[2]) ? tm[2] : (/וחצי/.test(rest) ? '30' : (/ורבע/.test(rest) ? '15' : '00'));
       const title = rest
         .replace(/מחרתיים|מחר|היום|הערב/g, '')
         .replace(/ליומן|ביומן|ללוז|בלוז/g, '')
+        .replace(/בבוקר|בערב|בצהריים|אחר\s?הצהריים|אחה["״']?צ|בלילה/g, '')
+        .replace(/וחצי|ורבע/g, '')
         .replace(/(\d{1,2})[./](\d{1,2})/, '')
         .replace(/(\d{1,2}):(\d{2})/, '')
         .replace(/(?:בשעה|לשעה|ב-?)\s*\d{1,2}(?![:.\d])/, '')
@@ -588,7 +594,9 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
         // a standalone ב token (never a word that starts with ב)
         .replace(/(^|\s)ב-?(?=\s|$)/g, ' ')
         .replace(/^\s*לי(?![א-ת])\s*/, '')
-        .replace(/\s+/g, ' ').trim() || 'פגישה';
+        .replace(/\s+/g, ' ').trim()
+        // he often wraps the title in quotes — the quotes aren't the name
+        .replace(/^["'״׳]+|["'״׳]+$/g, '').trim() || 'פגישה';
       const dateKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       await addEventDirect(env, dateKey, hh + ':' + mm2, title);
       await reply('סגור אחי 📅 קבעתי: ' + title + ' — ' + String(d.getDate()) + '.' + (d.getMonth() + 1) + ' בשעה ' + hh + ':' + mm2 + '. כבר יושב לך בלוז.');
