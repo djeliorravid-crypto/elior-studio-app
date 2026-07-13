@@ -616,19 +616,21 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
     // deterministic money answers, straight from the data, zero AI.
     // (NOTE: never use \b next to Hebrew — JS word boundaries only
     // know ASCII, so \b after א-ת never matches)
-    if (/כמה\s+(?:כסף\s+)?(?:נכנס|עשיתי|הרווחתי)|^מצב(?![א-ת])|מי\s+(?:עוד\s+)?לא\s+שילם/.test(t)) {
+    if (/כמה\s+(?:כסף\s+)?(?:נכנס|עשיתי|הרווחתי)|כמה\s+(?:כסף\s+)?(?:צריך|אמור)\s+לה?י?כנס|^מצב(?![א-ת])|מי\s+(?:עוד\s+)?לא\s+שילם/.test(t)) {
       const inc = (await getData('income')) || [];
       const now = ilNow();
       const mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
       const arr = Array.isArray(inc) ? inc : Object.values(inc);
       const paid = arr.filter(i => i && (i.status || 'pending') === 'paid' && String(i.date || '').slice(0, 7) === mk).reduce((s, i) => s + (Number(i.amount) || 0), 0);
-      const openArr = arr.filter(i => i && (i.status || 'pending') !== 'paid');
+      // Open-for-collection = THIS month only. Plan installments dated
+      // other months aren't money he's chasing right now.
+      const openArr = arr.filter(i => i && (i.status || 'pending') !== 'paid' && String(i.date || '').slice(0, 7) === mk);
       const open = openArr.reduce((s, i) => s + (Number(i.amount) || 0), 0);
       const openLines = openArr
         .sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0)).slice(0, 8)
         .map(i => '· ' + ((i.client || i.desc || 'ללא שם')) + ' — ' + ils(i.amount)).join('\n');
       await reply('💰 מצב העסק:\nנכנס החודש: ' + ils(paid)
-        + '\nפתוח בחוץ: ' + ils(open) + (openArr.length ? ' (' + openArr.length + ' תשלומים):\n' + openLines : ''));
+        + '\nפתוח לגבייה החודש: ' + ils(open) + (openArr.length ? ' (' + openArr.length + ' תשלומים):\n' + openLines : ''));
       return;
     }
     // לוז / לוז מחר / מה הלוז שלי מחר / מה יש לי היום — deterministic
@@ -725,7 +727,9 @@ async function aiCommand(t, env, reply) {
     const sch = Array.isArray(schRaw) ? schRaw : Object.values(schRaw || {});
     const mk = dkey(now).slice(0, 7);
     const paid = inc.filter(i => i && (i.status || 'pending') === 'paid' && String(i.date || '').slice(0, 7) === mk).reduce((s, i) => s + (Number(i.amount) || 0), 0);
-    const open = inc.filter(i => i && (i.status || 'pending') !== 'paid');
+    // THIS month's open payments only — same rule as the deterministic
+    // answer, per Elior: other months' installments don't count.
+    const open = inc.filter(i => i && (i.status || 'pending') !== 'paid' && String(i.date || '').slice(0, 7) === mk);
     const openSum = open.reduce((s, i) => s + (Number(i.amount) || 0), 0);
     const tomorrow = new Date(now.getTime() + 864e5);
     const dayList = (key) => sch.filter(s => s && s.date === key)
@@ -739,7 +743,7 @@ async function aiCommand(t, env, reply) {
     const sys = 'אתה העוזר האישי של אליאור רביד, מפיק מוזיקלי (אולפן רביד).\n'
       + 'עכשיו בישראל: יום ' + dow + ' ' + dkey(now) + ', השעה ' + hhmm + '. מחר = יום ' + IL_DAYS[tomorrow.getDay()] + ' ' + dkey(tomorrow) + '.\n'
       + 'נתוני אמת (אל תמציא שום דבר מעבר להם):\n'
-      + '— נכנס החודש: ' + Math.round(paid) + '₪. פתוחים לגבייה: ' + open.length + ' תשלומים בסך ' + Math.round(openSum) + '₪'
+      + '— נכנס החודש: ' + Math.round(paid) + '₪. פתוחים לגבייה החודש: ' + open.length + ' תשלומים בסך ' + Math.round(openSum) + '₪'
       + (open.length ? ' (' + open.slice(0, 6).map(i => (i.client || i.desc || '') + ' ' + Math.round(Number(i.amount) || 0) + '₪').join(', ') + ')' : '') + '\n'
       + '— הלוז של היום (' + dkey(now) + '):\n' + dayList(dkey(now)) + '\n'
       + '— הלוז של מחר (' + dkey(tomorrow) + '):\n' + dayList(dkey(tomorrow)) + '\n'
