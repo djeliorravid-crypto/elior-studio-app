@@ -6667,7 +6667,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v425</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v426</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17943,11 +17943,26 @@ function _waCmdFindPhone(name) {
   const c = (_waConvs || []).find(x => hit(x.name) || hit(x.client));
   return c ? c.phone : null;
 }
+// Execution receipt — a REAL app notification (not just a toast) the
+// moment a WhatsApp command is carried out.
+function _waCmdNotify(text) {
+  try {
+    if (!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()) return;
+    const LN = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+    if (!LN) return;
+    LN.schedule({ notifications: [{
+      id: 713000 + Math.floor(Math.random() * 900),
+      title: '🤖 בוצע', body: String(text || '').slice(0, 160),
+      schedule: { at: new Date(Date.now() + 800) }, sound: 'default',
+      threadIdentifier: 'wa-assistant'
+    }] });
+  } catch (_) {}
+}
 function _waCmdApply(key, c) {
   try {
     if (c && c.type === 'done') {
       const ph = _waCmdFindPhone(c.name);
-      if (ph) { waDismiss(ph); toast('✓ (מוואטסאפ) טופל: ' + _waName({ phone: ph })); }
+      if (ph) { waDismiss(ph); toast('✓ (מוואטסאפ) טופל: ' + _waName({ phone: ph })); _waCmdNotify('טופל: ' + _waName({ phone: ph })); }
       else toast('🤖 לא מצאתי את "' + (c.name || '') + '" לסימון טופל');
     } else if (c && c.type === 'snooze') {
       const ph = _waCmdFindPhone(c.name);
@@ -17960,7 +17975,7 @@ function _waCmdApply(key, c) {
         else until = Date.now() + 3 * 3600e3;
         const mp = _waSnoozeMap(); mp[ph] = { until, setAt: Date.now() }; _waSnoozeSave(mp);
         _waPaint();
-        toast('😴 (מוואטסאפ) ' + _waName({ phone: ph }) + ' בנודניק');
+        toast('😴 (מוואטסאפ) ' + _waName({ phone: ph }) + ' בנודניק'); _waCmdNotify(_waName({ phone: ph }) + ' בנודניק — יחזור עם התראה');
       } else toast('🤖 לא מצאתי את "' + (c.name || '') + '" לנודניק');
     } else if (c && c.type === 'event') {
       // UPSERT by id — the worker already wrote the item straight into
@@ -17975,22 +17990,22 @@ function _waCmdApply(key, c) {
       if (!item.gcalEventId) {
         (async () => { try { const gid = await gcalWriteCreateEvent(item); if (gid) { const cur = load('schedule'); const sv = cur.find(x => x.id === item.id); if (sv) { sv.gcalEventId = gid; save('schedule', cur); } } } catch (_) {} })();
       }
-      toast('📅 (מוואטסאפ) נקבע: ' + (c.title || '') + ' ' + c.date + ' ' + c.time);
+      toast('📅 (מוואטסאפ) נקבע: ' + (c.title || '') + ' ' + c.date + ' ' + c.time); _waCmdNotify('נקבע: ' + (c.title || '') + ' — ' + c.date + ' ' + c.time);
     } else if (c && c.type === 'task') {
       const all = load('daily_tasks');
       all.push({ id: genId(), date: _mpbDayKey(new Date()), text: c.text || '', done: false, createdAt: new Date().toISOString() });
       save('daily_tasks', all);
-      toast('✓ (מוואטסאפ) משימה: ' + (c.text || ''));
+      toast('✓ (מוואטסאפ) משימה: ' + (c.text || '')); _waCmdNotify('משימה נוספה: ' + (c.text || ''));
     } else if (c && c.type === 'expense') {
       const all = load('expenses');
       all.push({ id: genId(), date: _mpbDayKey(new Date(Number(c.ts) || Date.now())), amount: Number(c.amount) || 0, desc: c.desc || 'מוואטסאפ', cat: 'אחר', notes: 'נרשם מרחוק דרך וואטסאפ' });
       save('expenses', all);
-      toast('✓ הוצאה שנשלחה בוואטסאפ נרשמה (' + _ilsFmt(Number(c.amount) || 0) + ')');
+      toast('✓ הוצאה שנשלחה בוואטסאפ נרשמה (' + _ilsFmt(Number(c.amount) || 0) + ')'); _waCmdNotify('הוצאה נרשמה: ' + _ilsFmt(Number(c.amount) || 0) + (c.desc ? ' — ' + c.desc : ''));
     } else if (c && c.type === 'income') {
       const all = load('income');
       all.push({ id: genId(), date: _mpbDayKey(new Date(Number(c.ts) || Date.now())), amount: Number(c.amount) || 0, client: c.desc || '', desc: c.desc || 'מוואטסאפ', status: 'pending' });
       save('income', all);
-      toast('✓ הכנסה שנשלחה בוואטסאפ נרשמה (' + _ilsFmt(Number(c.amount) || 0) + ')');
+      toast('✓ הכנסה שנשלחה בוואטסאפ נרשמה (' + _ilsFmt(Number(c.amount) || 0) + ')'); _waCmdNotify('הכנסה נרשמה: ' + _ilsFmt(Number(c.amount) || 0) + (c.desc ? ' — ' + c.desc : ''));
     }
   } catch (_) {}
   try { firebaseDB.ref('whatsapp/cmdqueue/' + key).remove(); } catch (_) {}

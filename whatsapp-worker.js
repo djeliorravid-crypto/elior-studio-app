@@ -516,13 +516,19 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode) {
     // there the AI only engages when clearly addressed (a question
     // mark, or starting with עוזר/a question word); on the dedicated
     // assistant number EVERYTHING goes to the AI.
+    // Anything with a time/date signal, a question mark, or a request
+    // verb goes to the AI. The AI itself is told to stay SILENT on
+    // pure personal notes (action:"note"), so over-triggering is safe.
+    const timeSignal = /(\d{1,2}:\d{2})|בשעה|לשעה|שעה\s*\d|מחר|מחרתיים|הערב|היום/.test(t);
     const addressed = freeMode === true
       || /\?\s*$/.test(t)
-      || /^(עוזר|מה|כמה|מתי|מי|איך|תרשום|תוסיף|תקבע|תזכיר|רשום|קבע|הוסף)(?![א-ת])/.test(t);
+      || timeSignal
+      || /^(עוזר|מה|כמה|מתי|מי|איך|תרשום|תוסיף|תקבע|תזכיר|רשום|קבע|הוסף|שים|תשים|להוסיף|לקבוע|לרשום|תעשה|צור|תיצור|תבטל)(?![א-ת])/.test(t);
     if (addressed && env.GEMINI_KEY) {
       const done = await aiCommand(t, env, reply);
       if (done) return;
     }
+    if (!addressed) { await diag(env, 'skipped', { t: t.slice(0, 40) }); return; }
     if (/^(עזרה|עוזר|פקודות|מה קורה|מה המצב|היי)(?![א-ת])/.test(t)) {
       await reply('היי אליאור 👋 אני העוזר של האולפן. דבר אליי חופשי ("תרשום 200 על דלק", "מה המצב החודש?") או בקיצורים:\n'
         + '💰 הוצאה 200 דלק · הכנסה 500 מוקי · כמה נכנס\n'
@@ -568,7 +574,8 @@ async function aiCommand(t, env, reply) {
       + 'מחכים לתשובה בוואטסאפ: ' + (waitNames || 'אף אחד') + '.\n'
       + 'קרא את ההודעה של אליאור והחזר JSON בלבד (בלי טקסט מסביב, בלי ```):\n'
       + '{"action":"expense|income|event|task|done|snooze|answer","amount":מספר,"desc":"","date":"YYYY-MM-DD","time":"HH:MM","title":"","name":"","when":"שעה|הערב|מחר","reply":"תשובה קצרה בעברית בטון חברי"}\n'
-      + 'השתמש ב-action מתאים רק אם הוא ביקש פעולה; לשאלות מידע החזר action="answer" עם reply מלא ומספרים אמיתיים מהנתונים. שדות לא רלוונטיים השמט.';
+      + 'השתמש ב-action מתאים רק אם הוא ביקש פעולה; לשאלות מידע החזר action="answer" עם reply מלא ומספרים אמיתיים מהנתונים. '
+      + 'אם זה סתם פתק אישי שלא מבקש ממך כלום (רשימת קניות, מחשבה) — החזר action="note" בלי reply. שדות לא רלוונטיים השמט.';
     const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + env.GEMINI_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -587,6 +594,7 @@ async function aiCommand(t, env, reply) {
       if (mjs) { try { out = JSON.parse(mjs[0]); } catch (__) {} }
     }
     if (!out) return false;
+    if (out.action === 'note') return true;   // his notepad — stay silent
     // execute the action through the same queue the exact commands use
     const post = (obj) => fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify(Object.assign({ ts: Date.now() }, obj)) });
     if (out.action === 'expense' && out.amount) await post({ type: 'expense', amount: +out.amount, desc: out.desc || '' });
