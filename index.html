@@ -6667,7 +6667,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v427</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v428</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15824,12 +15824,31 @@ let _gcalEventsCache = []; // אירועי גוגל האחרונים — לשי�
 function gcalSaveToken(token) {
   _gcalToken = token;
   localStorage.setItem('gcal_token', token);
-  localStorage.setItem('gcal_token_exp', String(Date.now() + 55 * 60 * 1000)); // תקף 55 דקות
+  const exp = Date.now() + 55 * 60 * 1000; // תקף 55 דקות
+  localStorage.setItem('gcal_token_exp', String(exp));
+  gcalPublishToken(token, exp, true);
+}
+// Hand the fresh Google token to the worker (encrypted server-side)
+// so a WhatsApp "קבע" lands in Google Calendar the same second, app
+// closed or not. Throttled — no point re-sending an unchanged token.
+function gcalPublishToken(token, exp, force) {
+  try {
+    const sec = localStorage.getItem('wa_send_secret') || '';
+    if (!sec || !token || !exp) return;
+    const last = parseInt(localStorage.getItem('gcal_pub_ts') || '0', 10);
+    if (!force && Date.now() - last < 10 * 60 * 1000) return;
+    localStorage.setItem('gcal_pub_ts', String(Date.now()));
+    fetch('https://ravid-whatsapp.djeliorravid.workers.dev/gcaltok', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: sec, token: token, exp: exp })
+    }).catch(() => {});
+  } catch (_) {}
 }
 function gcalLoadToken() {
   const token = localStorage.getItem('gcal_token');
   const exp   = parseInt(localStorage.getItem('gcal_token_exp') || '0');
-  if (token && Date.now() < exp) { _gcalToken = token; return true; }
+  if (token && Date.now() < exp) { _gcalToken = token; gcalPublishToken(token, exp); return true; }
   return false;
 }
 function gcalClearToken() {
@@ -18020,6 +18039,7 @@ function _waCmdApply(key, c) {
       let item = c.id ? all.find(x => x.id === c.id) : null;
       if (!item) {
         item = { id: c.id || genId(), date: c.date, time: c.time, title: c.title || 'פגישה', notes: 'נקבע מרחוק דרך וואטסאפ', createdAt: new Date().toISOString() };
+        if (c.gcalEventId) item.gcalEventId = c.gcalEventId;   // worker already mirrored to Google
         all.push(item); save('schedule', all);
       }
       if (!item.gcalEventId) {

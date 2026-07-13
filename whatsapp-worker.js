@@ -107,6 +107,30 @@ export default {
       return json({ error: (j.error && j.error.message) || ('graph ' + r.status), code: j.error && j.error.code });
     }
 
+    // ── /gcaltok — the app hands over its fresh Google Calendar
+    // token (55-min lifetime) so the worker can mirror events into
+    // Google Calendar THE MOMENT a command lands, app closed or not.
+    // Stored AES-GCM-encrypted in RTDB; only the worker can read it. ──
+    if (url.pathname === '/gcaltok') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) {
+        return json({ error: 'forbidden' }, 403);
+      }
+      const token = String(b.token || '');
+      const exp = Number(b.exp) || 0;
+      if (!token || !exp) return json({ error: 'missing token/exp' }, 400);
+      const key = await gcalCryptKey(env);
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(token));
+      const b64 = (buf) => btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
+      await fetch(FIREBASE + '/gcaltok.json', {
+        method: 'PUT',
+        body: JSON.stringify({ iv: b64(iv), ct: b64(ct), exp })
+      });
+      return json({ ok: true });
+    }
+
     // ── /twilio — Twilio WhatsApp sandbox webhook. A REAL WhatsApp
     // chat that answers him TODAY, no Meta onboarding: the reply rides
     // back on the TwiML response, so no Twilio credentials are needed.
@@ -893,21 +917,76 @@ async function aiCommand(t, env, reply) {
   } catch (_) { return false; }
 }
 
+// ── Google Calendar mirroring from the worker ──
+async function gcalCryptKey(env) {
+  const raw = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('gcal|' + sendSecret(env)));
+  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+}
+async function gcalWorkerToken(env) {
+  try {
+    const rec = await fetch(FIREBASE + '/gcaltok.json').then(r => r.json());
+    if (!rec || !rec.ct || !rec.iv || (Number(rec.exp) || 0) < Date.now() + 60e3) return null;
+    const key = await gcalCryptKey(env);
+    const un64 = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: un64(rec.iv) }, key, un64(rec.ct));
+    return new TextDecoder().decode(pt);
+  } catch (_) { return null; }
+}
+// Insert straight into his primary Google Calendar. Returns the new
+// event id, or null (token missing/expired → the app's on-open
+// EventKit mirror still covers it, as before).
+async function gcalWorkerInsert(env, dateKey, time, title) {
+  const tok = await gcalWorkerToken(env);
+  if (!tok) { await diag(env, 'gcal-mirror', { ok: false, why: 'no fresh token' }); return null; }
+  try {
+    const p = dateKey.split('-').map(Number);
+    const tp = String(time).split(':').map(Number);
+    const start = new Date(p[0], p[1] - 1, p[2], tp[0] || 12, tp[1] || 0);
+    const end = new Date(start.getTime() + 3600e3);
+    const fmt = (x) => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0')
+      + 'T' + String(x.getHours()).padStart(2, '0') + ':' + String(x.getMinutes()).padStart(2, '0') + ':00';
+    const r = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        summary: title,
+        start: { dateTime: fmt(start), timeZone: 'Asia/Jerusalem' },
+        end: { dateTime: fmt(end), timeZone: 'Asia/Jerusalem' },
+        description: 'נקבע מרחוק דרך העוזר של האולפן 🤖'
+      })
+    });
+    const j = await r.json().catch(() => ({}));
+    await diag(env, 'gcal-mirror', { ok: r.ok, status: r.status, id: j.id });
+    return r.ok ? (j.id || null) : null;
+  } catch (e) {
+    await diag(env, 'gcal-mirror', { ok: false, err: String(e && e.message).slice(0, 120) });
+    return null;
+  }
+}
+
 // Add a schedule event DIRECTLY into the app's cloud data — so 'קבע'
 // exists the moment the command lands, even with the app closed. The
 // cmdqueue entry (same id → app upserts, no duplicate) only handles
 // what the cloud can't: mirroring to the iOS/Google calendar.
 async function addEventDirect(env, dateKey, time, title) {
   const id = 'ev' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  // Mirror into Google Calendar RIGHT NOW (app's published token) —
+  // the event carries gcalEventId so the app never double-creates it.
+  let gcalEventId = null;
+  try { gcalEventId = await gcalWorkerInsert(env, dateKey, time, title); } catch (_) {}
   try {
     const arr = await fetch(ROOT_DB + '/studio_data/schedule.json').then(r => r.json()).catch(() => null);
     const list = Array.isArray(arr) ? arr.slice() : (arr ? Object.values(arr) : []);
-    list.push({ id, date: dateKey, time, title, notes: 'נקבע מרחוק דרך וואטסאפ', createdAt: new Date().toISOString() });
+    const item = { id, date: dateKey, time, title, notes: 'נקבע מרחוק דרך וואטסאפ', createdAt: new Date().toISOString() };
+    if (gcalEventId) item.gcalEventId = gcalEventId;
+    list.push(item);
     await fetch(ROOT_DB + '/studio_data/schedule.json', { method: 'PUT', body: JSON.stringify(list) });
     await fetch(ROOT_DB + '/studio_meta/schedule.json', { method: 'PUT', body: JSON.stringify(Date.now()) });
   } catch (_) {}
   try {
-    await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'event', id, date: dateKey, time, title, ts: Date.now() }) });
+    const q = { type: 'event', id, date: dateKey, time, title, ts: Date.now() };
+    if (gcalEventId) q.gcalEventId = gcalEventId;
+    await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify(q) });
   } catch (_) {}
   return id;
 }
