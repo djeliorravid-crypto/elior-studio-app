@@ -6667,7 +6667,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v426</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v427</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -15689,33 +15689,57 @@ initFirebase().then(() => {
 
 // ── עקביות נתונים ──
 
+const _DB_REST = 'https://elior-studio-default-rtdb.firebaseio.com';
+let _syncRestBusy = false;
 function _syncFromCloud(reason) {
-  if (!firebaseDB) return;
   // קודם שלח pending — אחר כך קח מהענן רק מה שאין pending עליו
   flushPending();
-  firebaseDB.ref().once('value').then(snapshot => {
-    const root = snapshot.val() || {};
-    const cloudData = root.studio_data || {};
-    const cloudMeta = root.studio_meta || {};
-    let changed = false;
-    ALL_KEYS.forEach(key => {
-      if (_pending[key]) return; // יש שינוי מקומי — אל תדרוס!
-      if (cloudData[key] === undefined) return;
-      const localTs = parseInt(localStorage.getItem('s_' + key + '_ts') || '0', 10);
-      const cloudTs = parseInt(cloudMeta[key] || '0', 10);
-      // Use cloud only if it's strictly newer than local
-      // (covers replication lag + protects local changes)
-      if (cloudTs > 0 && localTs > 0 && cloudTs <= localTs) return;
-      const cur  = localStorage.getItem('s_' + key);
-      const next = JSON.stringify(cloudData[key]);
-      if (cur !== next) {
-        localStorage.setItem('s_' + key, next);
-        if (cloudTs > 0) localStorage.setItem('s_' + key + '_ts', String(cloudTs));
-        changed = true;
+  // Plain-HTTPS REST, NOT the SDK: after iOS suspends the app the
+  // Firebase WebSocket freezes and .once('value') hangs forever with
+  // no error — the exact bug _waPullREST bypasses for the WhatsApp
+  // page. This is why a "קבע" event sat in the cloud while the לוז
+  // showed nothing until a full cold boot.
+  if (_syncRestBusy) return;
+  _syncRestBusy = true;
+  (async () => {
+    try {
+      const meta = await fetch(_DB_REST + '/studio_meta.json', { cache: 'no-store' }).then(r => r.json()) || {};
+      let changed = false;
+      for (const key of ALL_KEYS) {
+        if (_pending[key]) continue; // יש שינוי מקומי — אל תדרוס!
+        const localTs = parseInt(localStorage.getItem('s_' + key + '_ts') || '0', 10);
+        const cloudTs = parseInt(meta[key] || '0', 10);
+        // Use cloud only if it's strictly newer than local
+        // (covers replication lag + protects local changes)
+        if (cloudTs > 0 && localTs > 0 && cloudTs <= localTs) continue;
+        try {
+          const val = await fetch(_DB_REST + '/studio_data/' + key + '.json', { cache: 'no-store' }).then(r => r.json());
+          if (val === null || val === undefined) continue;
+          const cur  = localStorage.getItem('s_' + key);
+          const next = JSON.stringify(val);
+          if (cur !== next) {
+            localStorage.setItem('s_' + key, next);
+            if (cloudTs > 0) localStorage.setItem('s_' + key + '_ts', String(cloudTs));
+            changed = true;
+          } else if (cloudTs > 0) {
+            localStorage.setItem('s_' + key + '_ts', String(cloudTs));
+          }
+        } catch (_) {}
       }
-    });
-    if (changed) { refreshAll(); console.log('🔄', reason); }
-  }).catch(() => {});
+      if (changed) { refreshAll(); console.log('🔄', reason); }
+      // Drain remote-command queue over REST too — the SDK child_added
+      // listener rides the same frozen socket, so without this an
+      // event's Google-Calendar mirror + "בוצע" receipt waited for a
+      // cold boot as well.
+      try {
+        const q = await fetch(_DB_REST + '/whatsapp/cmdqueue.json', { cache: 'no-store' }).then(r => r.json());
+        if (q && typeof q === 'object' && typeof _waCmdApply === 'function') {
+          for (const k of Object.keys(q)) { try { _waCmdApply(k, q[k]); } catch (_) {} }
+        }
+      } catch (_) {}
+    } catch (_) {}
+    _syncRestBusy = false;
+  })();
 }
 
 // 1. כשחוזרים לאפליקציה — סנכרן מהענן + בדוק איחורים
@@ -17959,6 +17983,17 @@ function _waCmdNotify(text) {
   } catch (_) {}
 }
 function _waCmdApply(key, c) {
+  // The SDK child_added listener and the REST resume-drain can both
+  // deliver the same queue entry (and queue removal may lag on a
+  // frozen socket) — apply each key exactly once, ever.
+  try {
+    if (key) {
+      const seen = JSON.parse(localStorage.getItem('wa_cmd_seen') || '[]');
+      if (seen.includes(key)) return;
+      seen.push(key);
+      localStorage.setItem('wa_cmd_seen', JSON.stringify(seen.slice(-80)));
+    }
+  } catch (_) {}
   try {
     if (c && c.type === 'done') {
       const ph = _waCmdFindPhone(c.name);
@@ -18008,7 +18043,10 @@ function _waCmdApply(key, c) {
       toast('✓ הכנסה שנשלחה בוואטסאפ נרשמה (' + _ilsFmt(Number(c.amount) || 0) + ')'); _waCmdNotify('הכנסה נרשמה: ' + _ilsFmt(Number(c.amount) || 0) + (c.desc ? ' — ' + c.desc : ''));
     }
   } catch (_) {}
+  // Remove over SDK AND REST — the SDK write queues forever behind a
+  // frozen socket, while the REST DELETE always lands.
   try { firebaseDB.ref('whatsapp/cmdqueue/' + key).remove(); } catch (_) {}
+  try { fetch(_DB_REST + '/whatsapp/cmdqueue/' + key + '.json', { method: 'DELETE' }); } catch (_) {}
 }
 // ══════════════ GLOBAL SEARCH — one box, the whole world ══════════════
 window.gsOpen = function() {
