@@ -725,14 +725,21 @@ async function aiCommand(t, env, reply) {
     const dow = IL_DAYS[now.getDay()];
     const dkey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     // live snapshot
-    const [incRaw, schRaw, waiting, names] = await Promise.all([
-      fetch(ROOT_DB + '/studio_data/income.json').then(r => r.json()).catch(() => null),
-      fetch(ROOT_DB + '/studio_data/schedule.json').then(r => r.json()).catch(() => null),
+    // The assistant sees EVERY dataset the app holds — any question
+    // the app can answer, he can answer.
+    const gd = (k) => fetch(ROOT_DB + '/studio_data/' + k + '.json').then(r => r.json()).catch(() => null);
+    const [incRaw, schRaw, expRaw, taskRaw, cliRaw, planRaw, waiting, names] = await Promise.all([
+      gd('income'), gd('schedule'), gd('expenses'), gd('daily_tasks'), gd('clients'), gd('plans'),
       fetch(FIREBASE + '/waiting.json').then(r => r.json()).catch(() => null),
       fetch(FIREBASE + '/names.json').then(r => r.json()).catch(() => null)
     ]);
-    const inc = Array.isArray(incRaw) ? incRaw : Object.values(incRaw || {});
-    const sch = Array.isArray(schRaw) ? schRaw : Object.values(schRaw || {});
+    const asArr = (v) => Array.isArray(v) ? v : Object.values(v || {});
+    const inc = asArr(incRaw);
+    const sch = asArr(schRaw);
+    const exp = asArr(expRaw);
+    const tasks = asArr(taskRaw);
+    const clients = asArr(cliRaw);
+    const plans = asArr(planRaw);
     const mk = dkey(now).slice(0, 7);
     const paid = inc.filter(i => i && (i.status || 'pending') === 'paid' && String(i.date || '').slice(0, 7) === mk).reduce((s, i) => s + (Number(i.amount) || 0), 0);
     // THIS month's open payments only — same rule as the deterministic
@@ -748,14 +755,38 @@ async function aiCommand(t, env, reply) {
       .map(s => s.date + ' ' + s.time + ' ' + s.title).join(' | ');
     const waitNames = Object.keys(waiting || {}).map(p => (names && names[p]) || p).slice(0, 8).join(', ');
     const hhmm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-    const sys = 'אתה העוזר האישי של אליאור רביד, מפיק מוזיקלי (אולפן רביד).\n'
+    // expenses this month
+    const expMonth = exp.filter(e => e && String(e.date || '').slice(0, 7) === mk);
+    const expSum = expMonth.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const expLast = expMonth.slice(-6).map(e => (e.desc || e.cat || '') + ' ' + Math.round(Number(e.amount) || 0) + '₪').join(', ');
+    // open tasks
+    const openTasks = tasks.filter(x => x && !x.done).slice(-10).map(x => x.text).filter(Boolean);
+    // active payment plans: paid-of-total per client
+    const planLines = plans.map(p => {
+      if (!p) return null;
+      const pays = Array.isArray(p.payments) ? p.payments : [];
+      if (!pays.length) return null;
+      const tot = pays.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+      const pd = pays.filter(x => x && x.paid).reduce((s, x) => s + (Number(x.amount) || 0), 0);
+      if (pd >= tot) return null;   // finished plan — noise
+      return (p.client || p.name || 'ללא שם') + ': שולם ' + Math.round(pd) + '₪ מתוך ' + Math.round(tot) + '₪';
+    }).filter(Boolean).slice(0, 8).join(' | ');
+    const cliNames = clients.map(c => c && c.name).filter(Boolean).slice(-15).join(', ');
+    const next14 = sch.filter(s => s && s.date > dkey(tomorrow) && s.date <= dkey(new Date(now.getTime() + 14 * 864e5)))
+      .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).slice(0, 20)
+      .map(s => s.date + ' ' + s.time + ' ' + s.title).join(' | ');
+    const sys = 'אתה העוזר האישי של אליאור רביד, מפיק מוזיקלי (אולפן רביד). אתה מחובר לאפליקציית ניהול האולפן שלו ורואה את כל הנתונים שלה.\n'
       + 'עכשיו בישראל: יום ' + dow + ' ' + dkey(now) + ', השעה ' + hhmm + '. מחר = יום ' + IL_DAYS[tomorrow.getDay()] + ' ' + dkey(tomorrow) + '.\n'
-      + 'נתוני אמת (אל תמציא שום דבר מעבר להם):\n'
-      + '— נכנס החודש: ' + Math.round(paid) + '₪. פתוחים לגבייה החודש: ' + open.length + ' תשלומים בסך ' + Math.round(openSum) + '₪'
+      + 'נתוני אמת מהאפליקציה (אל תמציא שום דבר מעבר להם):\n'
+      + '— כספים: נכנס החודש ' + Math.round(paid) + '₪. פתוחים לגבייה החודש: ' + open.length + ' תשלומים בסך ' + Math.round(openSum) + '₪'
       + (open.length ? ' (' + open.slice(0, 6).map(i => (i.client || i.desc || '') + ' ' + Math.round(Number(i.amount) || 0) + '₪').join(', ') + ')' : '') + '\n'
+      + '— הוצאות החודש: ' + Math.round(expSum) + '₪ ב-' + expMonth.length + ' הוצאות' + (expLast ? ' (אחרונות: ' + expLast + ')' : '') + '\n'
+      + '— תוכניות תשלום פעילות: ' + (planLines || 'אין') + '\n'
       + '— הלוז של היום (' + dkey(now) + '):\n' + dayList(dkey(now)) + '\n'
       + '— הלוז של מחר (' + dkey(tomorrow) + '):\n' + dayList(dkey(tomorrow)) + '\n'
-      + '— בהמשך השבוע: ' + (next7 || 'ריק') + '\n'
+      + '— שבועיים קדימה: ' + (next14 || 'ריק') + '\n'
+      + '— משימות פתוחות: ' + (openTasks.length ? openTasks.join(' | ') : 'אין') + '\n'
+      + '— לקוחות (' + clients.length + '): ' + (cliNames || '—') + '\n'
       + '— מחכים לתשובה בוואטסאפ: ' + (waitNames || 'אף אחד') + '\n'
       + 'קרא את ההודעה של אליאור והחזר JSON בלבד (בלי טקסט מסביב, בלי ```):\n'
       + '{"action":"expense|income|event|task|done|snooze|answer","amount":מספר,"desc":"","date":"YYYY-MM-DD","time":"HH:MM","title":"","name":"","when":"שעה|הערב|מחר","reply":"תשובה בעברית"}\n'
@@ -775,8 +806,8 @@ async function aiCommand(t, env, reply) {
             { role: 'system', content: sys },
             { role: 'user', content: 'ההודעה: "' + t + '"' }
           ],
-          max_tokens: 500,
-          temperature: 0.2
+          max_tokens: 600,
+          temperature: 0.15
         });
         // Workers AI sometimes hands back the model's JSON already
         // parsed (an object) instead of text — stringify it back so
