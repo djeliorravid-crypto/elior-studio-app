@@ -446,8 +446,8 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode) {
       const mm2 = (tm && tm[2]) ? tm[2] : '00';
       const title = rest.replace(/מחרתיים|מחר|היום/g, '').replace(/(\d{1,2})[./](\d{1,2})/, '').replace(/(\d{1,2}):(\d{2})/, '').replace(/ב-?\s*\d{1,2}(?![:.\d])/, '').replace(/\s+/g, ' ').trim() || 'פגישה';
       const dateKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'event', date: dateKey, time: hh + ':' + mm2, title, ts: Date.now() }) });
-      await reply('📅 נקבע: ' + title + ' — ' + String(d.getDate()) + '.' + (d.getMonth() + 1) + ' בשעה ' + hh + ':' + mm2 + ' (נכנס ללוז וליומן)');
+      await addEventDirect(env, dateKey, hh + ':' + mm2, title);
+      await reply('סגור אחי 📅 קבעתי: ' + title + ' — ' + String(d.getDate()) + '.' + (d.getMonth() + 1) + ' בשעה ' + hh + ':' + mm2 + '. כבר יושב לך בלוז.');
       return;
     }
     // משימה לסדר את האולפן / תזכורת להוציא חשבונית
@@ -591,13 +591,32 @@ async function aiCommand(t, env, reply) {
     const post = (obj) => fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify(Object.assign({ ts: Date.now() }, obj)) });
     if (out.action === 'expense' && out.amount) await post({ type: 'expense', amount: +out.amount, desc: out.desc || '' });
     else if (out.action === 'income' && out.amount) await post({ type: 'income', amount: +out.amount, desc: out.desc || out.name || '' });
-    else if (out.action === 'event' && out.date) await post({ type: 'event', date: out.date, time: out.time || '12:00', title: out.title || 'פגישה' });
+    else if (out.action === 'event' && out.date) await addEventDirect(env, out.date, out.time || '12:00', out.title || 'פגישה');
     else if (out.action === 'task' && (out.desc || out.title)) await post({ type: 'task', text: out.desc || out.title });
     else if (out.action === 'done' && out.name) await post({ type: 'done', name: out.name });
     else if (out.action === 'snooze' && out.name) await post({ type: 'snooze', name: out.name, when: out.when || '3 שעות' });
     await reply(out.reply || '✓ בוצע');
     return true;
   } catch (_) { return false; }
+}
+
+// Add a schedule event DIRECTLY into the app's cloud data — so 'קבע'
+// exists the moment the command lands, even with the app closed. The
+// cmdqueue entry (same id → app upserts, no duplicate) only handles
+// what the cloud can't: mirroring to the iOS/Google calendar.
+async function addEventDirect(env, dateKey, time, title) {
+  const id = 'ev' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  try {
+    const arr = await fetch(ROOT_DB + '/studio_data/schedule.json').then(r => r.json()).catch(() => null);
+    const list = Array.isArray(arr) ? arr.slice() : (arr ? Object.values(arr) : []);
+    list.push({ id, date: dateKey, time, title, notes: 'נקבע מרחוק דרך וואטסאפ', createdAt: new Date().toISOString() });
+    await fetch(ROOT_DB + '/studio_data/schedule.json', { method: 'PUT', body: JSON.stringify(list) });
+    await fetch(ROOT_DB + '/studio_meta/schedule.json', { method: 'PUT', body: JSON.stringify(Date.now()) });
+  } catch (_) {}
+  try {
+    await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'event', id, date: dateKey, time, title, ts: Date.now() }) });
+  } catch (_) {}
+  return id;
 }
 
 // Compact diagnostic trace — answers "what shape does a self-chat

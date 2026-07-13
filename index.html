@@ -6667,7 +6667,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v424</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v425</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17963,9 +17963,18 @@ function _waCmdApply(key, c) {
         toast('😴 (מוואטסאפ) ' + _waName({ phone: ph }) + ' בנודניק');
       } else toast('🤖 לא מצאתי את "' + (c.name || '') + '" לנודניק');
     } else if (c && c.type === 'event') {
-      const item = { id: genId(), date: c.date, time: c.time, title: c.title || 'פגישה', notes: 'נקבע מרחוק דרך וואטסאפ', createdAt: new Date().toISOString() };
-      const all = load('schedule'); all.push(item); save('schedule', all);
-      (async () => { try { const gid = await gcalWriteCreateEvent(item); if (gid) { const cur = load('schedule'); const sv = cur.find(x => x.id === item.id); if (sv) { sv.gcalEventId = gid; save('schedule', cur); } } } catch (_) {} })();
+      // UPSERT by id — the worker already wrote the item straight into
+      // the cloud data, so it may exist here already (or arrive on the
+      // next boot-sync). Never duplicate; always mirror to the calendar.
+      const all = load('schedule');
+      let item = c.id ? all.find(x => x.id === c.id) : null;
+      if (!item) {
+        item = { id: c.id || genId(), date: c.date, time: c.time, title: c.title || 'פגישה', notes: 'נקבע מרחוק דרך וואטסאפ', createdAt: new Date().toISOString() };
+        all.push(item); save('schedule', all);
+      }
+      if (!item.gcalEventId) {
+        (async () => { try { const gid = await gcalWriteCreateEvent(item); if (gid) { const cur = load('schedule'); const sv = cur.find(x => x.id === item.id); if (sv) { sv.gcalEventId = gid; save('schedule', cur); } } } catch (_) {} })();
+      }
       toast('📅 (מוואטסאפ) נקבע: ' + (c.title || '') + ' ' + c.date + ' ' + c.time);
     } else if (c && c.type === 'task') {
       const all = load('daily_tasks');
