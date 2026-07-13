@@ -310,24 +310,31 @@ async function sendApns(env, title, body) {
   const push = await fetch(FIREBASE + '/push.json').then(r => r.json()).catch(() => null);
   if (!push || !push.token) return null;
   const jwt = await apnsJwt(env);
-  const r = await fetch('https://api.push.apple.com/3/device/' + push.token, {
-    method: 'POST',
-    headers: {
-      'authorization': 'bearer ' + jwt,
-      'apns-topic': 'com.ravidstudio.app',
-      'apns-push-type': 'alert',
-      'apns-priority': '10'
-    },
-    body: JSON.stringify({
-      aps: { alert: { title, body }, sound: 'default', 'thread-id': 'wa-waiting' }
-    })
-  });
-  // Read Apple's answer once, trace it, and hand callers a Response-
-  // compatible shim ({ok,status,text()}) — a silent BadDeviceToken/
-  // InvalidProviderToken cost us days of "לא הגיעה התראה".
-  const txt = await r.text().catch(() => '');
-  await diag(env, 'apns', { ok: r.ok, status: r.status, apple: txt.slice(0, 200) });
-  return { ok: r.ok, status: r.status, text: () => Promise.resolve(txt) };
+  // Try production first, then sandbox. His .p8 key came back
+  // BadEnvironmentKeyInToken on production (key was created
+  // sandbox-only), and dev builds register sandbox tokens anyway —
+  // trying both means pushes work regardless of key scope or build
+  // type, and the diag trace shows exactly which side Apple rejects.
+  let last = { ok: false, status: 0, txt: '' };
+  for (const host of ['api.push.apple.com', 'api.sandbox.push.apple.com']) {
+    const r = await fetch('https://' + host + '/3/device/' + push.token, {
+      method: 'POST',
+      headers: {
+        'authorization': 'bearer ' + jwt,
+        'apns-topic': 'com.ravidstudio.app',
+        'apns-push-type': 'alert',
+        'apns-priority': '10'
+      },
+      body: JSON.stringify({
+        aps: { alert: { title, body }, sound: 'default', 'thread-id': 'wa-waiting' }
+      })
+    });
+    const txt = await r.text().catch(() => '');
+    await diag(env, 'apns', { host, ok: r.ok, status: r.status, apple: txt.slice(0, 200) });
+    last = { ok: r.ok, status: r.status, txt };
+    if (r.ok) break;
+  }
+  return { ok: last.ok, status: last.status, text: () => Promise.resolve(last.txt) };
 }
 
 // ES256 JWT for APNs, signed with the .p8 auth key (WebCrypto).

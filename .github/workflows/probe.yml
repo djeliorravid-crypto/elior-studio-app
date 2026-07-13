@@ -57,3 +57,6 @@ jobs:
           | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/testpush" \
               -H 'Content-Type: application/json' -d @-
           echo
+          # apns diag rows show BOTH hosts' verdicts
+          sleep 2
+          curl -sS "https://elior-studio-default-rtdb.firebaseio.com/whatsapp/diag.json?orderBy=%22%24key%22&limitToLast=4" | python3 -m json.tool
