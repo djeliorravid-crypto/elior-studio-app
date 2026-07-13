@@ -624,7 +624,11 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
     // deterministic money answers, straight from the data, zero AI.
     // (NOTE: never use \b next to Hebrew — JS word boundaries only
     // know ASCII, so \b after א-ת never matches)
-    if (/כמה\s+(?:כסף\s+)?(?:נכנס|עשיתי|הרווחתי)|כמה\s+(?:כסף\s+)?(?:צריך|אמור)\s+לה?י?כנס|^מצב(?![א-ת])|מי\s+(?:עוד\s+)?לא\s+שילם/.test(t)) {
+    if (/כמה\s+(?:כסף\s+)?(?:נכנס|עשיתי|הרווחתי)/.test(t)
+        || /כמה\s+(?:אני\s+)?(?:כסף\s+)?(?:צריך|אמור|הולך)\s+(?:עוד\s+)?(?:לה?י?כנס|להכניס)/.test(t)
+        || /כמה\s+(?:עוד\s+)?(?:יכנס|ייכנס|צריך\s+להכנס)/.test(t)
+        || /^מצב(?![א-ת])/.test(t)
+        || /מי\s+(?:עוד\s+)?לא\s+שילם/.test(t)) {
       const inc = (await getData('income')) || [];
       const now = ilNow();
       const mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
@@ -647,19 +651,35 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
     // to fall to the AI and came back messy/wrong.
     if (/^לוז(?![א-ת])/.test(t)
         || (/לוז|ביומן|יומן/.test(t) && /^(?:מה|תן|שלח|הצג|תראה|איזה|מתי)/.test(t))
-        || /מה\s+יש\s+לי\s+(?:היום|מחר|מחרתיים)/.test(t)) {
+        || /מה\s+יש\s+לי\s+(?:היום|מחר|מחרתיים|השבוע)/.test(t)
+        || /^(?:של\s+)?(?:כל\s+)?השבוע\s*\??$/.test(t)) {
       const sched = (await getData('schedule')) || [];
       const arr = Array.isArray(sched) ? sched : Object.values(sched);
+      // junk guard: events with neither time nor title render as "— "
+      const real = arr.filter(s => s && s.date && ((s.title && String(s.title).trim()) || s.time));
+      const dkey2 = (x) => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+      const lines = (items) => items.sort((a, b) => String(a.time).localeCompare(String(b.time)))
+        .map(s => '· ' + (s.time || '--:--') + ' — ' + (String(s.title || '').trim() || 'ללא שם')).join('\n');
       const d = ilNow();
+      // "מה הלוז השבוע" / "של כל השבוע" → 7 days grouped by day
+      if (/שבוע/.test(t)) {
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+          const dd = new Date(d); dd.setDate(dd.getDate() + i);
+          const items = real.filter(s => s.date === dkey2(dd));
+          if (items.length) days.push('יום ' + IL_DAYS[dd.getDay()] + ' ' + dd.getDate() + '.' + (dd.getMonth() + 1) + ':\n' + lines(items));
+        }
+        await reply(days.length
+          ? '📅 הלוז של השבוע:\n\n' + days.join('\n\n')
+          : '📅 השבוע פנוי לגמרי 🎉');
+        return;
+      }
       let label = 'היום';
       if (/מחרתיים/.test(t)) { d.setDate(d.getDate() + 2); label = 'מחרתיים'; }
       else if (/מחר/.test(t)) { d.setDate(d.getDate() + 1); label = 'מחר'; }
-      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      const items = arr.filter(s => s && s.date === key).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+      const items = real.filter(s => s.date === dkey2(d));
       const head = '📅 הלוז של ' + label + ' (יום ' + IL_DAYS[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + ')';
-      await reply(items.length
-        ? head + ':\n' + items.map(s => '· ' + s.time + ' — ' + s.title).join('\n')
-        : head + ': פנוי — אין אירועים בלוז 🎉');
+      await reply(items.length ? head + ':\n' + lines(items) : head + ': פנוי — אין אירועים בלוז 🎉');
       return;
     }
     // מי מחכה
@@ -747,7 +767,8 @@ async function aiCommand(t, env, reply) {
     const open = inc.filter(i => i && (i.status || 'pending') !== 'paid' && String(i.date || '').slice(0, 7) === mk);
     const openSum = open.reduce((s, i) => s + (Number(i.amount) || 0), 0);
     const tomorrow = new Date(now.getTime() + 864e5);
-    const dayList = (key) => sch.filter(s => s && s.date === key)
+    const schReal = sch.filter(s => s && s.date && ((s.title && String(s.title).trim()) || s.time));
+    const dayList = (key) => schReal.filter(s => s.date === key)
       .sort((a, b) => String(a.time).localeCompare(String(b.time)))
       .map(s => '· ' + s.time + ' — ' + s.title).join('\n') || 'ריק';
     const next7 = sch.filter(s => s && s.date > dkey(tomorrow) && s.date <= dkey(new Date(now.getTime() + 7 * 864e5)))
@@ -772,9 +793,16 @@ async function aiCommand(t, env, reply) {
       return (p.client || p.name || 'ללא שם') + ': שולם ' + Math.round(pd) + '₪ מתוך ' + Math.round(tot) + '₪';
     }).filter(Boolean).slice(0, 8).join(' | ');
     const cliNames = clients.map(c => c && c.name).filter(Boolean).slice(-15).join(', ');
-    const next14 = sch.filter(s => s && s.date > dkey(tomorrow) && s.date <= dkey(new Date(now.getTime() + 14 * 864e5)))
+    // humanized dates — the model regurgitates whatever format it's
+    // fed, and 2026-07-16 in a WhatsApp reply reads like a robot
+    const humanDate = (iso) => {
+      const p = String(iso).split('-');
+      const dd = new Date(+p[0], +p[1] - 1, +p[2]);
+      return 'יום ' + IL_DAYS[dd.getDay()] + ' ' + dd.getDate() + '.' + (dd.getMonth() + 1);
+    };
+    const next14 = schReal.filter(s => s.date > dkey(tomorrow) && s.date <= dkey(new Date(now.getTime() + 14 * 864e5)))
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).slice(0, 20)
-      .map(s => s.date + ' ' + s.time + ' ' + s.title).join(' | ');
+      .map(s => humanDate(s.date) + ' ' + s.time + ' ' + s.title).join(' | ');
     const sys = 'אתה העוזר האישי של אליאור רביד, מפיק מוזיקלי (אולפן רביד). אתה מחובר לאפליקציית ניהול האולפן שלו ורואה את כל הנתונים שלה.\n'
       + 'עכשיו בישראל: יום ' + dow + ' ' + dkey(now) + ', השעה ' + hhmm + '. מחר = יום ' + IL_DAYS[tomorrow.getDay()] + ' ' + dkey(tomorrow) + '.\n'
       + 'נתוני אמת מהאפליקציה (אל תמציא שום דבר מעבר להם):\n'
@@ -791,7 +819,8 @@ async function aiCommand(t, env, reply) {
       + 'קרא את ההודעה של אליאור והחזר JSON בלבד (בלי טקסט מסביב, בלי ```):\n'
       + '{"action":"expense|income|event|task|done|snooze|answer","amount":מספר,"desc":"","date":"YYYY-MM-DD","time":"HH:MM","title":"","name":"","when":"שעה|הערב|מחר","reply":"תשובה בעברית"}\n'
       + 'השתמש ב-action מתאים רק אם הוא ביקש פעולה; לשאלות מידע החזר action="answer" עם reply מהנתונים בלבד. '
-      + 'כללי reply: קצר וחברי, בשורות מסודרות; כל אירוע בשורה נפרדת בפורמט "· HH:MM — שם" ממוין לפי שעה; סכומים במספרים מדויקים מהנתונים; אם אין נתון — כתוב שאין, אל תנחש ואל תמציא. '
+      + 'כללי reply: קצר וחברי, בשורות מסודרות; כל אירוע בשורה נפרדת בפורמט "· HH:MM — שם" ממוין לפי שעה; תאריכים תמיד "יום שלישי 14.7" ולעולם לא YYYY-MM-DD; סכומים במספרים מדויקים מהנתונים; אם אין נתון — כתוב שאין, אל תנחש ואל תמציא. '
+      + 'שים לב להבדל: "כמה נכנס" = מה ששולם; "כמה עוד אמור להיכנס / כמה צריך להכניס" = הפתוחים לגבייה. '
       + 'אם זה סתם פתק אישי שלא מבקש ממך כלום (רשימת קניות, מחשבה) — החזר action="note" בלי reply. שדות לא רלוונטיים השמט.';
     // Two independent brains, either one is enough:
     //   1. Workers AI — lives INSIDE Cloudflare, free allocation, no
