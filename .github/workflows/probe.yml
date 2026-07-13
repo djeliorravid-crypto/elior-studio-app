@@ -1,0 +1,39 @@
+# Self-serve diagnostics: the dev sandbox can't reach Firebase, but a
+# GitHub runner can. Triggered manually, prints the same open (no-auth)
+# debug endpoints the user otherwise screenshots by hand:
+#   /whatsapp/diag.json  — worker trace (shape / ai-ok / ai-fail / cmd-reply)
+#   /studio_data/schedule.json — the cloud schedule the worker writes into
+#   /whatsapp/push.json  — APNs device token (null = push never registered)
+name: Probe cloud state
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch debug endpoints
+        run: |
+          DB="https://elior-studio-default-rtdb.firebaseio.com"
+          echo "===== DIAG (last 30) ====="
+          curl -sS "$DB/whatsapp/diag.json?orderBy=%22ts%22&limitToLast=30" | python3 -c '
+          import json,sys,datetime
+          d=json.load(sys.stdin) or {}
+          for k,v in sorted(d.items(), key=lambda kv: kv[1].get("ts",0)):
+              t=datetime.datetime.utcfromtimestamp(v.get("ts",0)/1000).strftime("%m-%d %H:%M:%S")
+              print(t, v.get("tag"), v.get("data",""))
+          '
+          echo "===== SCHEDULE (last 15) ====="
+          curl -sS "$DB/studio_data/schedule.json" | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin) or []
+          arr=d if isinstance(d,list) else list(d.values())
+          for e in arr[-15:]:
+              if e: print(e.get("date"), e.get("time"), repr(e.get("title")), e.get("id"), e.get("createdAt",""))
+          print("total:", len(arr))
+          '
+          echo "===== PUSH TOKEN ====="
+          curl -sS "$DB/whatsapp/push.json" | head -c 300; echo
+          echo "===== CMDQUEUE ====="
+          curl -sS "$DB/whatsapp/cmdqueue.json" | head -c 1500; echo
