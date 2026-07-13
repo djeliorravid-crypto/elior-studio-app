@@ -13,6 +13,10 @@ on:
         description: "Send a test APNs push and print Apple's reply"
         required: false
         default: "no"
+      tgsetup:
+        description: "Register the Telegram bot webhook on the worker"
+        required: false
+        default: "no"
 
 jobs:
   probe:
@@ -47,6 +51,15 @@ jobs:
           curl -sS "$DB/whatsapp/push.json" | head -c 300; echo
           echo "===== CMDQUEUE ====="
           curl -sS "$DB/whatsapp/cmdqueue.json" | head -c 1500; echo
+      - name: Register Telegram webhook
+        if: ${{ github.event.inputs.tgsetup == 'yes' }}
+        env:
+          SEND_SECRET: ${{ secrets.SEND_SECRET }}
+        run: |
+          jq -n --arg s "$SEND_SECRET" '{secret: ($s | gsub("\\s";""))}' \
+          | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/tg-setup" \
+              -H 'Content-Type: application/json' -d @-
+          echo
       - name: Test APNs push
         if: ${{ github.event.inputs.testpush == 'yes' }}
         env:

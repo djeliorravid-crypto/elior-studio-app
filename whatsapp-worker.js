@@ -107,6 +107,62 @@ export default {
       return json({ error: (j.error && j.error.message) || ('graph ' + r.status), code: j.error && j.error.code });
     }
 
+    // ── /tg — Telegram assistant webhook. A bot that ACTUALLY answers
+    // him in a real chat TODAY, while Meta's onboarding block sits on
+    // the WhatsApp assistant number. Free-form commands, freeMode=true.
+    if (url.pathname === '/tg') {
+      if (!env.TELEGRAM_TOKEN) return json({ ok: true });
+      // Telegram echoes back the secret registered via setWebhook
+      if (request.headers.get('x-telegram-bot-api-secret-token') !== sendSecret(env)) {
+        return json({ error: 'forbidden' }, 403);
+      }
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ ok: true }); }
+      const msg = b && (b.message || b.edited_message);
+      const text = msg && msg.text;
+      const chat = msg && msg.chat && msg.chat.id;
+      if (!text || !chat) return json({ ok: true });
+      // First person to write claims the bot as owner; anyone else is ignored.
+      let ownerChat = await fetch(FIREBASE + '/tgchat.json').then(r => r.json()).catch(() => null);
+      if (!ownerChat) {
+        ownerChat = chat;
+        await fetch(FIREBASE + '/tgchat.json', { method: 'PUT', body: JSON.stringify(chat) });
+      }
+      if (String(chat) !== String(ownerChat)) return json({ ok: true });
+      const tgReply = async (m) => {
+        try {
+          await fetch('https://api.telegram.org/bot' + env.TELEGRAM_TOKEN + '/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chat, text: String(m).slice(0, 4000) })
+          });
+        } catch (_) {}
+      };
+      await handleOwnerCmd(text, env, ownerDigits(env), true, tgReply);
+      return json({ ok: true });
+    }
+
+    // ── /tg-setup — register this worker as the bot's webhook (run
+    // once after TELEGRAM_TOKEN lands in secrets, via the probe CI) ──
+    if (url.pathname === '/tg-setup') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) {
+        return json({ error: 'forbidden' }, 403);
+      }
+      if (!env.TELEGRAM_TOKEN) return json({ error: 'TELEGRAM_TOKEN not set' }, 500);
+      const r = await fetch('https://api.telegram.org/bot' + env.TELEGRAM_TOKEN + '/setWebhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://ravid-whatsapp.djeliorravid.workers.dev/tg',
+          secret_token: sendSecret(env),
+          allowed_updates: ['message']
+        })
+      });
+      return json(await r.json().catch(() => ({})));
+    }
+
     // ── /testpush — fire one APNs alert and return Apple's verdict,
     // so push problems are diagnosed with a curl instead of guesswork ──
     if (url.pathname === '/testpush') {
@@ -405,9 +461,11 @@ function ownerDigits(env) {
   if (d.startsWith('0')) return '972' + d.slice(1);
   return d;
 }
-async function handleOwnerCmd(raw, env, replyTo, freeMode) {
+async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
   // freeMode: a DEDICATED assistant chat — every message is for the
   // bot. false = the self-chat, which doubles as his notepad.
+  // replyOverride: a channel that CAN answer directly (Telegram) —
+  // replaces the WhatsApp/APNs/cmdreply fanout entirely.
   const t = String(raw || '').trim();
   const owner = String(replyTo || '').replace(/\D/g, '') || ownerDigits(env);
   // Meta hard-blocks number→itself (#100), so replies go out from the
@@ -424,7 +482,7 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode) {
   //   2. APNs push to his iPhone (lights up the moment the Apple
   //      checklist is done — no Meta involved)
   //   3. /whatsapp/cmdreply → the app toasts it on next open (always)
-  const reply = async (msg) => {
+  const reply = replyOverride || (async (msg) => {
     const body = String(msg).slice(0, 3500);
     try {
       const r = await fetch('https://graph.facebook.com/v21.0/' + fromId + '/messages', {
@@ -439,7 +497,7 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode) {
     }
     try { await sendApns(env, '🤖 העוזר של האולפן', body); } catch (_) {}
     try { await fetch(FIREBASE + '/cmdreply.json', { method: 'POST', body: JSON.stringify({ msg: body, ts: Date.now() }) }); } catch (_) {}
-  };
+  });
   const getData = (p) => fetch(ROOT_DB + '/studio_data/' + p + '.json').then(r => r.json()).catch(() => null);
   const ils = (n) => (Math.round(Number(n) || 0)).toLocaleString('en-US') + ' ₪';
   try {

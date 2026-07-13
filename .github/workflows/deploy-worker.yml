@@ -42,8 +42,9 @@ jobs:
           APNS_KEY: ${{ secrets.APNS_KEY }}
           APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
           APNS_TEAM_ID: ${{ secrets.APNS_TEAM_ID }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
         run: |
-          for k in WHATSAPP_TOKEN SEND_SECRET GEMINI_KEY OWNER_PHONE ASSISTANT_PHONE_ID ASSISTANT_TOKEN APNS_KEY APNS_KEY_ID APNS_TEAM_ID; do
+          for k in WHATSAPP_TOKEN SEND_SECRET GEMINI_KEY OWNER_PHONE ASSISTANT_PHONE_ID ASSISTANT_TOKEN APNS_KEY APNS_KEY_ID APNS_TEAM_ID TELEGRAM_TOKEN; do
             v="${!k}"
             if [ -n "$v" ]; then
               printf '%s' "$v" | npx wrangler@3.90.0 secret put "$k" && echo "✓ $k installed"
