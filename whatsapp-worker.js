@@ -527,6 +527,11 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode) {
     if (addressed && env.GEMINI_KEY) {
       const done = await aiCommand(t, env, reply);
       if (done) return;
+      // AI failed on a message that was CLEARLY for the assistant —
+      // say so out loud instead of leaving him talking to a wall.
+      const strong = freeMode === true || /\?\s*$/.test(t)
+        || /^(עוזר|תרשום|תוסיף|תקבע|תזכיר|רשום|קבע|הוסף|שים|תשים|להוסיף|לקבוע|לרשום|תעשה|צור|תיצור|תבטל)(?![א-ת])/.test(t);
+      if (strong) { await reply('🤖 משהו נתקע לי רגע בעיבוד — שלח שוב או נסח קצת אחרת.'); return; }
     }
     if (!addressed) { await diag(env, 'skipped', { t: t.slice(0, 40) }); return; }
     if (/^(עזרה|עוזר|פקודות|מה קורה|מה המצב|היי)(?![א-ת])/.test(t)) {
@@ -585,6 +590,11 @@ async function aiCommand(t, env, reply) {
       })
     });
     const gj = await g.json().catch(() => ({}));
+    if (!g.ok) {
+      // Never fail SILENTLY again — trace it and tell him.
+      await diag(env, 'ai-fail', { status: g.status, err: gj && gj.error && gj.error.message });
+      return false;
+    }
     const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
     let raw = parts ? parts.map(p => p.text || '').join('').trim() : '';
     raw = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
@@ -593,7 +603,8 @@ async function aiCommand(t, env, reply) {
       const mjs = raw.match(/\{[\s\S]*\}/);
       if (mjs) { try { out = JSON.parse(mjs[0]); } catch (__) {} }
     }
-    if (!out) return false;
+    if (!out) { await diag(env, 'ai-fail', { parse: raw.slice(0, 200) }); return false; }
+    await diag(env, 'ai-ok', { action: out.action, date: out.date, time: out.time });
     if (out.action === 'note') return true;   // his notepad — stay silent
     // execute the action through the same queue the exact commands use
     const post = (obj) => fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify(Object.assign({ ts: Date.now() }, obj)) });
