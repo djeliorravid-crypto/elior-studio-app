@@ -107,6 +107,19 @@ export default {
       return json({ error: (j.error && j.error.message) || ('graph ' + r.status), code: j.error && j.error.code });
     }
 
+    // ── /testpush — fire one APNs alert and return Apple's verdict,
+    // so push problems are diagnosed with a curl instead of guesswork ──
+    if (url.pathname === '/testpush') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) {
+        return json({ error: 'forbidden' }, 403);
+      }
+      const r = await sendApns(env, '🤖 בדיקת התראות', String(b.text || 'אם אתה רואה את זה — ההתראות מהעוזר עובדות! ✅'));
+      if (!r) return json({ ok: false, why: 'no APNS secrets or no device token in /whatsapp/push.json' });
+      return json({ ok: r.ok, status: r.status, apple: await r.text() });
+    }
+
     // ── /send-voice — recorded audio reply from the app ──
     if (url.pathname === '/send-voice') {
       let b = null;
@@ -297,7 +310,7 @@ async function sendApns(env, title, body) {
   const push = await fetch(FIREBASE + '/push.json').then(r => r.json()).catch(() => null);
   if (!push || !push.token) return null;
   const jwt = await apnsJwt(env);
-  return fetch('https://api.push.apple.com/3/device/' + push.token, {
+  const r = await fetch('https://api.push.apple.com/3/device/' + push.token, {
     method: 'POST',
     headers: {
       'authorization': 'bearer ' + jwt,
@@ -309,6 +322,12 @@ async function sendApns(env, title, body) {
       aps: { alert: { title, body }, sound: 'default', 'thread-id': 'wa-waiting' }
     })
   });
+  // Read Apple's answer once, trace it, and hand callers a Response-
+  // compatible shim ({ok,status,text()}) — a silent BadDeviceToken/
+  // InvalidProviderToken cost us days of "לא הגיעה התראה".
+  const txt = await r.text().catch(() => '');
+  await diag(env, 'apns', { ok: r.ok, status: r.status, apple: txt.slice(0, 200) });
+  return { ok: r.ok, status: r.status, text: () => Promise.resolve(txt) };
 }
 
 // ES256 JWT for APNs, signed with the .p8 auth key (WebCrypto).
