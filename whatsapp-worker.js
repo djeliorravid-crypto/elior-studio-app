@@ -411,8 +411,9 @@ async function handleOwnerCmd(raw, env, replyTo) {
       await reply('✓ נרשמה הכנסה פתוחה: ' + ils(m[1]) + (m[2] ? ' — ' + m[2].trim() : ''));
       return;
     }
-    // כמה נכנס / מצב
-    if (/כמה נכנס|^מצב\b|כמה עשיתי/.test(t)) {
+    // כמה נכנס / מצב  (NOTE: never use \b next to Hebrew — JS word
+    // boundaries only know ASCII, so \b after א-ת never matches)
+    if (/כמה נכנס|^מצב(?![א-ת])|כמה עשיתי/.test(t)) {
       const inc = (await getData('income')) || [];
       const now = new Date();
       const mk = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
@@ -456,7 +457,7 @@ async function handleOwnerCmd(raw, env, replyTo) {
     // Unrecognized text: reply with the menu ONLY when he clearly
     // addressed the assistant — the self-chat is also his personal
     // notepad, and spamming help after every note would be hell.
-    if (/^(עזרה|עוזר|פקודות|מה קורה|היי)\b/.test(t)) {
+    if (/^(עזרה|עוזר|פקודות|מה קורה|מה המצב|היי)(?![א-ת])/.test(t)) {
       await reply('היי אליאור 👋 אני העוזר של האפליקציה. אפשר לכתוב לי:\n'
         + '· הוצאה 200 דלק\n· הכנסה 500 מוקי\n· כמה נכנס\n· לוז / לוז מחר\n· מי מחכה');
     }
