@@ -17,6 +17,10 @@ on:
         description: "Register the Telegram bot webhook on the worker"
         required: false
         default: "no"
+      testcmd:
+        description: "Run one assistant command end-to-end and print the reply"
+        required: false
+        default: ""
 
 jobs:
   probe:
@@ -51,6 +55,15 @@ jobs:
           curl -sS "$DB/whatsapp/push.json" | head -c 300; echo
           echo "===== CMDQUEUE ====="
           curl -sS "$DB/whatsapp/cmdqueue.json" | head -c 1500; echo
+      - name: Test assistant command
+        if: ${{ github.event.inputs.testcmd != '' }}
+        env:
+          SEND_SECRET: ${{ secrets.SEND_SECRET }}
+          CMD: ${{ github.event.inputs.testcmd }}
+        run: |
+          jq -n --arg s "$SEND_SECRET" --arg t "$CMD" '{secret: ($s | gsub("\\s";"")), text: $t}' \
+          | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/testcmd" \
+              -H 'Content-Type: application/json' -d @- | python3 -m json.tool
       - name: Register Telegram webhook
         if: ${{ github.event.inputs.tgsetup == 'yes' }}
         env:

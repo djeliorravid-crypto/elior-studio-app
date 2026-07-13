@@ -163,6 +163,19 @@ export default {
       return json(await r.json().catch(() => ({})));
     }
 
+    // ── /testcmd — run one assistant command end-to-end (real brain,
+    // real data) and return the reply, for CI-driven verification ──
+    if (url.pathname === '/testcmd') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) {
+        return json({ error: 'forbidden' }, 403);
+      }
+      const replies = [];
+      await handleOwnerCmd(String(b.text || ''), env, ownerDigits(env), true, async (m) => { replies.push(String(m)); });
+      return json({ ok: true, replies });
+    }
+
     // ── /testpush — fire one APNs alert and return Apple's verdict,
     // so push problems are diagnosed with a curl instead of guesswork ──
     if (url.pathname === '/testpush') {
@@ -622,7 +635,7 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
       || /\?\s*$/.test(t)
       || timeSignal
       || /^(עוזר|מה|כמה|מתי|מי|איך|תרשום|תוסיף|תקבע|תזכיר|רשום|קבע|הוסף|שים|תשים|להוסיף|לקבוע|לרשום|תעשה|צור|תיצור|תבטל)(?![א-ת])/.test(t);
-    if (addressed && env.GEMINI_KEY) {
+    if (addressed && (env.AI || env.GEMINI_KEY)) {
       const done = await aiCommand(t, env, reply);
       if (done) return;
       // AI failed on a message that was CLEARLY for the assistant —
@@ -679,29 +692,51 @@ async function aiCommand(t, env, reply) {
       + '{"action":"expense|income|event|task|done|snooze|answer","amount":מספר,"desc":"","date":"YYYY-MM-DD","time":"HH:MM","title":"","name":"","when":"שעה|הערב|מחר","reply":"תשובה קצרה בעברית בטון חברי"}\n'
       + 'השתמש ב-action מתאים רק אם הוא ביקש פעולה; לשאלות מידע החזר action="answer" עם reply מלא ומספרים אמיתיים מהנתונים. '
       + 'אם זה סתם פתק אישי שלא מבקש ממך כלום (רשימת קניות, מחשבה) — החזר action="note" בלי reply. שדות לא רלוונטיים השמט.';
-    // Each model has its OWN free-tier quota pool, so when one comes
-    // back 429 ("limit: 0" — the key's project has no allocation for
-    // it) the next may still work. Diag every failure per model.
-    const models = ['gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
-    let g = null, gj = {};
-    for (const model of models) {
-      g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + env.GEMINI_KEY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: sys + '\n\nההודעה: "' + t + '"' }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
-        })
-      });
-      gj = await g.json().catch(() => ({}));
-      if (g.ok) break;
-      // Never fail SILENTLY again — trace it and tell him.
-      await diag(env, 'ai-fail', { model, status: g.status, err: gj && gj.error && gj.error.message });
-      if (![429, 404, 503].includes(g.status)) break;   // key/req broken — retrying models won't help
+    // Two independent brains, either one is enough:
+    //   1. Workers AI — lives INSIDE Cloudflare, free allocation, no
+    //      API key to expire (his Gemini key came back "limit: 0").
+    //   2. Gemini — tried when a key exists; each model has its own
+    //      free-tier quota pool, so 429 on one may spare the next.
+    let raw = '';
+    if (env.AI) {
+      try {
+        const a = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
+          messages: [
+            { role: 'system', content: sys },
+            { role: 'user', content: 'ההודעה: "' + t + '"' }
+          ],
+          max_tokens: 500,
+          temperature: 0.2
+        });
+        raw = String((a && a.response) || '').trim();
+        await diag(env, 'ai-cf', { len: raw.length });
+      } catch (e) {
+        await diag(env, 'ai-fail', { model: 'workers-ai', err: String(e && e.message).slice(0, 200) });
+      }
     }
-    if (!g || !g.ok) return false;
-    const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
-    let raw = parts ? parts.map(p => p.text || '').join('').trim() : '';
+    if (!raw && env.GEMINI_KEY) {
+      const models = ['gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+      for (const model of models) {
+        const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + env.GEMINI_KEY, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: sys + '\n\nההודעה: "' + t + '"' }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+          })
+        });
+        const gj = await g.json().catch(() => ({}));
+        if (g.ok) {
+          const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
+          raw = parts ? parts.map(p => p.text || '').join('').trim() : '';
+          break;
+        }
+        // Never fail SILENTLY again — trace it and tell him.
+        await diag(env, 'ai-fail', { model, status: g.status, err: gj && gj.error && gj.error.message });
+        if (![429, 404, 503].includes(g.status)) break;   // key/req broken — retrying models won't help
+      }
+    }
+    if (!raw) return false;
     raw = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
     let out = null;
     try { out = JSON.parse(raw); } catch (_) {

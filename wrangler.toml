@@ -16,3 +16,8 @@ workers_dev = true
 # Every minute: due scheduled messages go out on the minute; the
 # hourly "X מחכים לתשובה" push fires only at minute 0.
 crons = ["* * * * *"]
+
+# Workers AI — the assistant's built-in brain (free allocation, no
+# API key). Used as the primary/fallback LLM when GEMINI_KEY is dead.
+[ai]
+binding = "AI"
