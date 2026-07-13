@@ -382,11 +382,19 @@ function ownerDigits(env) {
 async function handleOwnerCmd(raw, env, replyTo) {
   const t = String(raw || '').trim();
   const owner = String(replyTo || '').replace(/\D/g, '') || ownerDigits(env);
-  const reply = (msg) => fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messaging_product: 'whatsapp', to: owner, type: 'text', text: { body: String(msg).slice(0, 3500) } })
-  }).catch(() => {});
+  const reply = async (msg) => {
+    try {
+      const r = await fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: owner, type: 'text', text: { body: String(msg).slice(0, 3500) } })
+      });
+      const j = await r.json().catch(() => ({}));
+      await diag(env, 'cmd-reply', { to: owner, ok: r.ok, status: r.status, err: j.error && j.error.message });
+    } catch (e) {
+      await diag(env, 'cmd-reply', { to: owner, err: String(e && e.message) });
+    }
+  };
   const getData = (p) => fetch(ROOT_DB + '/studio_data/' + p + '.json').then(r => r.json()).catch(() => null);
   const ils = (n) => (Math.round(Number(n) || 0)).toLocaleString('en-US') + ' ₪';
   try {
@@ -457,11 +465,35 @@ async function handleOwnerCmd(raw, env, replyTo) {
   }
 }
 
+// Compact diagnostic trace — answers "what shape does a self-chat
+// message actually arrive in?" without dumping full payloads.
+async function diag(env, tag, data) {
+  try {
+    await fetch(FIREBASE + '/diag.json', {
+      method: 'POST',
+      body: JSON.stringify({ ts: Date.now(), tag, data: JSON.stringify(data).slice(0, 900) })
+    });
+  } catch (_) {}
+}
 async function processWebhook(body, env) {
     let stored = 0;
     const names = {};   // phone → name, PATCHed once at the end
     const nowWaiting = {};   // phone → ts — set when a customer writes
     const answered = {};     // phone → true — cleared when Elior replies
+    // DIAG: one-line shape summary per webhook
+    try {
+      for (const e0 of (body && body.entry) || []) for (const ch of e0.changes || []) {
+        const v0 = ch.value || {};
+        await diag(env, 'shape', {
+          field: ch.field,
+          meta: v0.metadata && v0.metadata.display_phone_number,
+          msgs: (v0.messages || []).map(m => ({ from: m.from, type: m.type, txt: (m.text && m.text.body || '').slice(0, 30) })),
+          echoes: (v0.message_echoes || v0.smb_message_echoes || []).map(m => ({ to: m.to || m.recipient_id, from: m.from, type: m.type, txt: (m.text && m.text.body || '').slice(0, 30) })),
+          statuses: (v0.statuses || []).length,
+          otherKeys: Object.keys(v0).filter(k => !['metadata','contacts','messages','message_echoes','smb_message_echoes','statuses','messaging_product'].includes(k))
+        });
+      }
+    } catch (_) {}
     try {
       for (const entry of (body && body.entry) || []) {
         for (const change of entry.changes || []) {
