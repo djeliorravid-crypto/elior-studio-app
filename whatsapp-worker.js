@@ -389,23 +389,71 @@ async function handleOwnerCmd(raw, env, replyTo) {
   const viaAssistant = !!(env.ASSISTANT_PHONE_ID && env.ASSISTANT_TOKEN);
   const fromId = viaAssistant ? env.ASSISTANT_PHONE_ID : PHONE_ID;
   const fromTok = viaAssistant ? env.ASSISTANT_TOKEN : env.WHATSAPP_TOKEN;
+  // Answers fan out through EVERY channel we have — whichever is
+  // alive delivers:
+  //   1. WhatsApp (assistant number once Meta unblocks; self-send is
+  //      Meta-blocked so the main number only works to a 2nd phone)
+  //   2. APNs push to his iPhone (lights up the moment the Apple
+  //      checklist is done — no Meta involved)
+  //   3. /whatsapp/cmdreply → the app toasts it on next open (always)
   const reply = async (msg) => {
+    const body = String(msg).slice(0, 3500);
     try {
       const r = await fetch('https://graph.facebook.com/v21.0/' + fromId + '/messages', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + fromTok, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messaging_product: 'whatsapp', to: ownerDigits(env) || owner, type: 'text', text: { body: String(msg).slice(0, 3500) } })
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: ownerDigits(env) || owner, type: 'text', text: { body } })
       });
       const j = await r.json().catch(() => ({}));
-      await diag(env, 'cmd-reply', { via: viaAssistant ? 'assistant' : 'main', to: ownerDigits(env) || owner, ok: r.ok, status: r.status, err: j.error && j.error.message });
+      await diag(env, 'cmd-reply', { via: viaAssistant ? 'assistant' : 'main', ok: r.ok, status: r.status, err: j.error && j.error.message });
     } catch (e) {
       await diag(env, 'cmd-reply', { err: String(e && e.message) });
     }
+    try { await sendApns(env, '🤖 העוזר של האולפן', body); } catch (_) {}
+    try { await fetch(FIREBASE + '/cmdreply.json', { method: 'POST', body: JSON.stringify({ msg: body, ts: Date.now() }) }); } catch (_) {}
   };
   const getData = (p) => fetch(ROOT_DB + '/studio_data/' + p + '.json').then(r => r.json()).catch(() => null);
   const ils = (n) => (Math.round(Number(n) || 0)).toLocaleString('en-US') + ' ₪';
   try {
     let m;
+    // ── ACTION COMMANDS — the assistant changes things in the app ──
+    // טופל מוקי / סגור מוקי
+    if ((m = t.match(/^(?:טופל|סגור)\s+(.+)$/))) {
+      await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'done', name: m[1].trim(), ts: Date.now() }) });
+      await reply('✓ מסמן טופל את ' + m[1].trim());
+      return;
+    }
+    // נודניק מוקי / נודניק מוקי הערב / נודניק מוקי מחר / נודניק מוקי שעה
+    if ((m = t.match(/^נודניק\s+(.+?)(?:\s+(שעה|3 שעות|הערב|מחר))?$/))) {
+      const when = m[2] || '3 שעות';
+      await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'snooze', name: m[1].trim(), when, ts: Date.now() }) });
+      await reply('😴 ' + m[1].trim() + ' בנודניק (' + when + ') — יחזור עם התראה.');
+      return;
+    }
+    // קבע מחר 16:00 פגישה עם מוקי  /  קבע 14.7 ב-10 מיקס לגל
+    if ((m = t.match(/^קבע\s+(.+)$/))) {
+      const rest = m[1];
+      const now = new Date();
+      let d = new Date(now);
+      if (/מחרתיים/.test(rest)) d.setDate(d.getDate() + 2);
+      else if (/מחר/.test(rest)) d.setDate(d.getDate() + 1);
+      const dm = rest.match(/(\d{1,2})[./](\d{1,2})/);
+      if (dm) d = new Date(now.getFullYear(), +dm[2] - 1, +dm[1]);
+      const tm = rest.match(/(\d{1,2}):(\d{2})/) || rest.match(/ב-?\s*(\d{1,2})(?![:.\d])/);
+      const hh = tm ? String(+tm[1]).padStart(2, '0') : '12';
+      const mm2 = (tm && tm[2]) ? tm[2] : '00';
+      const title = rest.replace(/מחרתיים|מחר|היום/g, '').replace(/(\d{1,2})[./](\d{1,2})/, '').replace(/(\d{1,2}):(\d{2})/, '').replace(/ב-?\s*\d{1,2}(?![:.\d])/, '').replace(/\s+/g, ' ').trim() || 'פגישה';
+      const dateKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'event', date: dateKey, time: hh + ':' + mm2, title, ts: Date.now() }) });
+      await reply('📅 נקבע: ' + title + ' — ' + String(d.getDate()) + '.' + (d.getMonth() + 1) + ' בשעה ' + hh + ':' + mm2 + ' (נכנס ללוז וליומן)');
+      return;
+    }
+    // משימה לסדר את האולפן / תזכורת להוציא חשבונית
+    if ((m = t.match(/^(?:משימה|תזכורת)\s+(.+)$/))) {
+      await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'task', text: m[1].trim(), ts: Date.now() }) });
+      await reply('✓ נוספה משימה: ' + m[1].trim());
+      return;
+    }
     // הוצאה 200 דלק
     if ((m = t.match(/^הוצאה\s+(\d+(?:\.\d+)?)\s*(.*)$/))) {
       await fetch(FIREBASE + '/cmdqueue.json', { method: 'POST', body: JSON.stringify({ type: 'expense', amount: +m[1], desc: (m[2] || '').trim(), ts: Date.now() }) });
@@ -465,8 +513,11 @@ async function handleOwnerCmd(raw, env, replyTo) {
     // addressed the assistant — the self-chat is also his personal
     // notepad, and spamming help after every note would be hell.
     if (/^(עזרה|עוזר|פקודות|מה קורה|מה המצב|היי)(?![א-ת])/.test(t)) {
-      await reply('היי אליאור 👋 אני העוזר של האפליקציה. אפשר לכתוב לי:\n'
-        + '· הוצאה 200 דלק\n· הכנסה 500 מוקי\n· כמה נכנס\n· לוז / לוז מחר\n· מי מחכה');
+      await reply('היי אליאור 👋 אני העוזר של האולפן. אפשר לכתוב לי:\n'
+        + '💰 הוצאה 200 דלק · הכנסה 500 מוקי · כמה נכנס\n'
+        + '📅 לוז / לוז מחר · קבע מחר 16:00 פגישה עם מוקי\n'
+        + '💬 מי מחכה · טופל מוקי · נודניק מוקי הערב\n'
+        + '📝 משימה להוציא חשבונית לגל');
     }
   } catch (_) {
     try { await reply('⚠️ משהו השתבש בפקודה — נסה שוב.'); } catch (__) {}

@@ -6667,7 +6667,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v423</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v424</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17046,6 +17046,14 @@ function _waListen() {
     firebaseDB.ref('booking').on('child_changed', s => { try { _waBookPicked(s.key, s.val()); } catch (_) {} });
     // Remote commands he texted to his own business number.
     firebaseDB.ref('whatsapp/cmdqueue').on('child_added', s => { try { _waCmdApply(s.key, s.val()); } catch (_) {} });
+    // Assistant answers — surface in-app too (recent ones only).
+    firebaseDB.ref('whatsapp/cmdreply').limitToLast(3).on('child_added', s => {
+      try {
+        const r = s.val();
+        if (r && r.ts && Date.now() - r.ts < 90000) toast('🤖 ' + String(r.msg || '').split('\n')[0]);
+        setTimeout(() => { try { s.ref.remove(); } catch (_) {} }, 5000);
+      } catch (_) {}
+    });
     // Async delivery FAILURES from Meta (rejected media etc.) — the
     // worker records them; here they become a visible toast instead
     // of a silent black hole.
@@ -17922,9 +17930,49 @@ function _waBookPicked(key, b) {
 // ══════════════ REMOTE COMMANDS — expenses/income sent from WhatsApp ══════════════
 // The worker queues owner commands under /whatsapp/cmdqueue; the app
 // applies them through the normal save() pipeline and clears the queue.
+// Find a phone by the name he typed in a command — searches renames,
+// client cards, cloud names and conversation push-names.
+function _waCmdFindPhone(name) {
+  const n = String(name || '').trim().toLowerCase();
+  if (!n) return null;
+  const hit = s => String(s || '').toLowerCase().includes(n);
+  for (const p in _waRenames) if (hit(_waRenames[p])) return p;
+  const cl = (load('clients') || []).find(x => hit(x.name) && x.phone);
+  if (cl) return _waPhone(cl.phone);
+  for (const p in _waNames) if (hit(_waNames[p])) return p;
+  const c = (_waConvs || []).find(x => hit(x.name) || hit(x.client));
+  return c ? c.phone : null;
+}
 function _waCmdApply(key, c) {
   try {
-    if (c && c.type === 'expense') {
+    if (c && c.type === 'done') {
+      const ph = _waCmdFindPhone(c.name);
+      if (ph) { waDismiss(ph); toast('✓ (מוואטסאפ) טופל: ' + _waName({ phone: ph })); }
+      else toast('🤖 לא מצאתי את "' + (c.name || '') + '" לסימון טופל');
+    } else if (c && c.type === 'snooze') {
+      const ph = _waCmdFindPhone(c.name);
+      if (ph) {
+        const now = new Date();
+        let until;
+        if (c.when === 'שעה') until = Date.now() + 3600e3;
+        else if (c.when === 'הערב') { const d = new Date(now); d.setHours(19, 0, 0, 0); if (d <= now) d.setDate(d.getDate() + 1); until = d.getTime(); }
+        else if (c.when === 'מחר') { const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); until = d.getTime(); }
+        else until = Date.now() + 3 * 3600e3;
+        const mp = _waSnoozeMap(); mp[ph] = { until, setAt: Date.now() }; _waSnoozeSave(mp);
+        _waPaint();
+        toast('😴 (מוואטסאפ) ' + _waName({ phone: ph }) + ' בנודניק');
+      } else toast('🤖 לא מצאתי את "' + (c.name || '') + '" לנודניק');
+    } else if (c && c.type === 'event') {
+      const item = { id: genId(), date: c.date, time: c.time, title: c.title || 'פגישה', notes: 'נקבע מרחוק דרך וואטסאפ', createdAt: new Date().toISOString() };
+      const all = load('schedule'); all.push(item); save('schedule', all);
+      (async () => { try { const gid = await gcalWriteCreateEvent(item); if (gid) { const cur = load('schedule'); const sv = cur.find(x => x.id === item.id); if (sv) { sv.gcalEventId = gid; save('schedule', cur); } } } catch (_) {} })();
+      toast('📅 (מוואטסאפ) נקבע: ' + (c.title || '') + ' ' + c.date + ' ' + c.time);
+    } else if (c && c.type === 'task') {
+      const all = load('daily_tasks');
+      all.push({ id: genId(), date: _mpbDayKey(new Date()), text: c.text || '', done: false, createdAt: new Date().toISOString() });
+      save('daily_tasks', all);
+      toast('✓ (מוואטסאפ) משימה: ' + (c.text || ''));
+    } else if (c && c.type === 'expense') {
       const all = load('expenses');
       all.push({ id: genId(), date: _mpbDayKey(new Date(Number(c.ts) || Date.now())), amount: Number(c.amount) || 0, desc: c.desc || 'מוואטסאפ', cat: 'אחר', notes: 'נרשם מרחוק דרך וואטסאפ' });
       save('expenses', all);
