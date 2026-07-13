@@ -554,6 +554,9 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
         .replace(/(\d{1,2}):(\d{2})/, '')
         .replace(/(?:בשעה|לשעה|ב-?)\s*\d{1,2}(?![:.\d])/, '')
         .replace(/בשעה|לשעה/g, '')
+        // "ב22:00" leaves an orphan "ב" after the HH:MM strip — drop
+        // a standalone ב token (never a word that starts with ב)
+        .replace(/(^|\s)ב-?(?=\s|$)/g, ' ')
         .replace(/^\s*לי(?![א-ת])\s*/, '')
         .replace(/\s+/g, ' ').trim() || 'פגישה';
       const dateKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -708,8 +711,12 @@ async function aiCommand(t, env, reply) {
           max_tokens: 500,
           temperature: 0.2
         });
-        raw = String((a && a.response) || '').trim();
-        await diag(env, 'ai-cf', { len: raw.length });
+        // Workers AI sometimes hands back the model's JSON already
+        // parsed (an object) instead of text — stringify it back so
+        // the shared JSON-extract below handles both shapes.
+        let out0 = a && (a.response !== undefined ? a.response : a.result);
+        raw = (out0 && typeof out0 === 'object') ? JSON.stringify(out0) : String(out0 || '').trim();
+        await diag(env, 'ai-cf', { len: raw.length, shape: typeof out0 });
       } catch (e) {
         await diag(env, 'ai-fail', { model: 'workers-ai', err: String(e && e.message).slice(0, 200) });
       }
