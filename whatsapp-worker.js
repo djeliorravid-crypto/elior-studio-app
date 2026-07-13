@@ -107,6 +107,26 @@ export default {
       return json({ error: (j.error && j.error.message) || ('graph ' + r.status), code: j.error && j.error.code });
     }
 
+    // ── /twilio — Twilio WhatsApp sandbox webhook. A REAL WhatsApp
+    // chat that answers him TODAY, no Meta onboarding: the reply rides
+    // back on the TwiML response, so no Twilio credentials are needed.
+    if (url.pathname === '/twilio') {
+      const twiml = (s) => new Response(s, { headers: { 'Content-Type': 'text/xml' } });
+      const xml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      let form = null;
+      try { form = await request.formData(); } catch (_) { return twiml('<Response/>'); }
+      const from = String(form.get('From') || '').replace(/\D/g, '');
+      const text = String(form.get('Body') || '').trim();
+      // Only Elior's number gets the assistant — anyone else who joins
+      // the sandbox is ignored silently.
+      if (!text || !from || from !== ownerDigits(env)) return twiml('<Response/>');
+      const replies = [];
+      await handleOwnerCmd(text, env, from, true, async (m) => { replies.push(String(m)); });
+      return twiml(replies.length
+        ? '<Response><Message>' + xml(replies.join('\n\n')) + '</Message></Response>'
+        : '<Response/>');
+    }
+
     // ── /tg — Telegram assistant webhook. A bot that ACTUALLY answers
     // him in a real chat TODAY, while Meta's onboarding block sits on
     // the WhatsApp assistant number. Free-form commands, freeMode=true.
