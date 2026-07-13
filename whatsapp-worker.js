@@ -487,13 +487,20 @@ async function transcribe(mediaId, env) {
 const ROOT_DB = FIREBASE.replace(/\/whatsapp$/, '');
 // Accept the owner number in ANY format he pasted it — 052…, 972…,
 // +972…, with dashes — and normalize to WhatsApp's international form.
-function ownerDigits(env) {
-  let d = String((env && env.OWNER_PHONE) || '').replace(/\D/g, '');
+function numDigits(v) {
+  let d = String(v || '').replace(/\D/g, '');
   if (!d) return '';
   if (d.startsWith('972')) return d;
   if (d.startsWith('0')) return '972' + d.slice(1);
   return d;
 }
+function ownerDigits(env) { return numDigits(env && env.OWNER_PHONE); }
+// A SECOND number Elior owns (cheap eSIM on the same iPhone, regular
+// WhatsApp next to the Business app). Meta blocks number→itself, but
+// business→personal is a normal customer chat — so with this set, the
+// business number becomes an assistant that ACTUALLY ANSWERS him,
+// no Meta onboarding and no assistant app needed.
+function personalDigits(env) { return numDigits(env && env.OWNER_PERSONAL); }
 async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
   // freeMode: a DEDICATED assistant chat — every message is for the
   // bot. false = the self-chat, which doubles as his notepad.
@@ -521,7 +528,7 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
       const r = await fetch('https://graph.facebook.com/v21.0/' + fromId + '/messages', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + fromTok, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messaging_product: 'whatsapp', to: ownerDigits(env) || owner, type: 'text', text: { body } })
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: owner || ownerDigits(env), type: 'text', text: { body } })
       });
       const j = await r.json().catch(() => ({}));
       await diag(env, 'cmd-reply', { via: viaAssistant ? 'assistant' : 'main', ok: r.ok, status: r.status, err: j.error && j.error.message });
@@ -906,6 +913,15 @@ async function processWebhook(body, env) {
             }
             // Owner remote control: a message from HIS personal number
             // is a command, not a customer conversation.
+            // OWNER_PERSONAL (second eSIM) is a DEDICATED assistant chat
+            // → freeMode, and the reply goes back to that number — a
+            // real WhatsApp answer, since it isn't a self-send.
+            const personalPh = personalDigits(env);
+            if (personalPh && ph === personalPh) {
+              stored++;
+              await handleOwnerCmd((m.text && m.text.body) || text, env, ph, true);
+              continue;
+            }
             const ownerPh = ownerDigits(env);
             if (ownerPh && ph === ownerPh) {
               stored++;
@@ -941,6 +957,9 @@ async function processWebhook(body, env) {
               await handleOwnerCmd((m.text && m.text.body) || '', env, toPh);
               continue;
             }
+            // The assistant chat with his personal eSIM number is not a
+            // customer conversation — keep it out of the inbox.
+            if (toPh && toPh === personalDigits(env)) { stored++; continue; }
             const rec = {
               dir: 'out',
               phone: toPh,
