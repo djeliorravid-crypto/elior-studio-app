@@ -17,10 +17,15 @@ jobs:
         run: |
           DB="https://elior-studio-default-rtdb.firebaseio.com"
           echo "===== DIAG (last 30) ====="
-          curl -sS "$DB/whatsapp/diag.json?orderBy=%22ts%22&limitToLast=30" | python3 -c '
+          # order by $key (push keys are chronological, needs no index —
+          # orderBy "ts" returns an index-error object instead of data)
+          curl -sS "$DB/whatsapp/diag.json?orderBy=%22%24key%22&limitToLast=40" | python3 -c '
           import json,sys,datetime
           d=json.load(sys.stdin) or {}
-          for k,v in sorted(d.items(), key=lambda kv: kv[1].get("ts",0)):
+          if not isinstance(d, dict): print("UNEXPECTED:", d); sys.exit(0)
+          for k in sorted(d):
+              v = d[k]
+              if not isinstance(v, dict): print(k, v); continue
               t=datetime.datetime.utcfromtimestamp(v.get("ts",0)/1000).strftime("%m-%d %H:%M:%S")
               print(t, v.get("tag"), v.get("data",""))
           '
