@@ -379,9 +379,9 @@ function ownerDigits(env) {
   if (d.startsWith('0')) return '972' + d.slice(1);
   return d;
 }
-async function handleOwnerCmd(raw, env) {
+async function handleOwnerCmd(raw, env, replyTo) {
   const t = String(raw || '').trim();
-  const owner = ownerDigits(env);
+  const owner = String(replyTo || '').replace(/\D/g, '') || ownerDigits(env);
   const reply = (msg) => fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
     method: 'POST',
     headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
@@ -445,9 +445,13 @@ async function handleOwnerCmd(raw, env) {
         : '🎉 אף אחד לא מחכה לתשובה.');
       return;
     }
-    // anything else → the menu
-    await reply('היי אליאור 👋 אני העוזר של האפליקציה. אפשר לכתוב לי:\n'
-      + '· הוצאה 200 דלק\n· הכנסה 500 מוקי\n· כמה נכנס\n· לוז / לוז מחר\n· מי מחכה');
+    // Unrecognized text: reply with the menu ONLY when he clearly
+    // addressed the assistant — the self-chat is also his personal
+    // notepad, and spamming help after every note would be hell.
+    if (/^(עזרה|עוזר|פקודות|מה קורה|היי)\b/.test(t)) {
+      await reply('היי אליאור 👋 אני העוזר של האפליקציה. אפשר לכתוב לי:\n'
+        + '· הוצאה 200 דלק\n· הכנסה 500 מוקי\n· כמה נכנס\n· לוז / לוז מחר\n· מי מחכה');
+    }
   } catch (_) {
     try { await reply('⚠️ משהו השתבש בפקודה — נסה שוב.'); } catch (__) {}
   }
@@ -537,9 +541,21 @@ async function processWebhook(body, env) {
           // Echoes of messages sent from the WhatsApp Business app
           // (field name differs across doc versions — accept both)
           for (const m of v.message_echoes || v.smb_message_echoes || []) {
+            const toPh = String(m.to || m.recipient_id || '').replace(/\D/g, '');
+            // ONE-PHONE remote control: he has no second number, so
+            // commands are typed in WhatsApp's message-yourself chat.
+            // A self-chat message arrives as an ECHO whose `to` equals
+            // his own number (the business display number / OWNER_PHONE).
+            const selfNum = String((v.metadata && v.metadata.display_phone_number) || '').replace(/\D/g, '');
+            const ownEcho = ownerDigits(env);
+            if (toPh && ((ownEcho && toPh === ownEcho) || (selfNum && toPh === selfNum))) {
+              stored++;
+              await handleOwnerCmd((m.text && m.text.body) || '', env, toPh);
+              continue;
+            }
             const rec = {
               dir: 'out',
-              phone: String(m.to || m.recipient_id || '').replace(/\D/g, ''),
+              phone: toPh,
               type: m.type || '',
               text: (m.text && m.text.body) || '',
               ts: (Number(m.timestamp || 0) * 1000) || Date.now()
