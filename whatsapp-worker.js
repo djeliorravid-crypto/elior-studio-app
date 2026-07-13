@@ -382,17 +382,24 @@ function ownerDigits(env) {
 async function handleOwnerCmd(raw, env, replyTo) {
   const t = String(raw || '').trim();
   const owner = String(replyTo || '').replace(/\D/g, '') || ownerDigits(env);
+  // Meta hard-blocks number→itself (#100), so replies go out from the
+  // ASSISTANT number (Meta's free test number, its own secrets) when
+  // configured — a real WhatsApp chat named "העוזר". Falls back to the
+  // business number for the day a second personal number exists.
+  const viaAssistant = !!(env.ASSISTANT_PHONE_ID && env.ASSISTANT_TOKEN);
+  const fromId = viaAssistant ? env.ASSISTANT_PHONE_ID : PHONE_ID;
+  const fromTok = viaAssistant ? env.ASSISTANT_TOKEN : env.WHATSAPP_TOKEN;
   const reply = async (msg) => {
     try {
-      const r = await fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
+      const r = await fetch('https://graph.facebook.com/v21.0/' + fromId + '/messages', {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messaging_product: 'whatsapp', to: owner, type: 'text', text: { body: String(msg).slice(0, 3500) } })
+        headers: { 'Authorization': 'Bearer ' + fromTok, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: ownerDigits(env) || owner, type: 'text', text: { body: String(msg).slice(0, 3500) } })
       });
       const j = await r.json().catch(() => ({}));
-      await diag(env, 'cmd-reply', { to: owner, ok: r.ok, status: r.status, err: j.error && j.error.message });
+      await diag(env, 'cmd-reply', { via: viaAssistant ? 'assistant' : 'main', to: ownerDigits(env) || owner, ok: r.ok, status: r.status, err: j.error && j.error.message });
     } catch (e) {
-      await diag(env, 'cmd-reply', { to: owner, err: String(e && e.message) });
+      await diag(env, 'cmd-reply', { err: String(e && e.message) });
     }
   };
   const getData = (p) => fetch(ROOT_DB + '/studio_data/' + p + '.json').then(r => r.json()).catch(() => null);
@@ -499,6 +506,22 @@ async function processWebhook(body, env) {
       for (const entry of (body && body.entry) || []) {
         for (const change of entry.changes || []) {
           const v = change.value || {};
+          // ── ASSISTANT NUMBER: its own app posts to this same worker.
+          // Anything Elior writes to the assistant chat is a command;
+          // anyone else gets a polite brush-off. Never mixes with the
+          // business inbox. ──
+          const metaId = String((v.metadata && v.metadata.phone_number_id) || '');
+          if (env.ASSISTANT_PHONE_ID && metaId === String(env.ASSISTANT_PHONE_ID)) {
+            for (const m of v.messages || []) {
+              const fromPh = String(m.from || '').replace(/\D/g, '');
+              stored++;
+              if (fromPh === ownerDigits(env)) {
+                await handleOwnerCmd((m.text && m.text.body) || '', env, fromPh);
+              }
+            }
+            stored++;   // statuses etc. on the assistant line are noise
+            continue;
+          }
           // Contact-directory sync (coexistence app-state/history):
           // these carry HIS address-book names — keep them all.
           if (Array.isArray(v.contacts)) {
