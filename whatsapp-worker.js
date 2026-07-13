@@ -432,19 +432,33 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode) {
       await reply('😴 ' + m[1].trim() + ' בנודניק (' + when + ') — יחזור עם התראה.');
       return;
     }
-    // קבע מחר 16:00 פגישה עם מוקי  /  קבע 14.7 ב-10 מיקס לגל
-    if ((m = t.match(/^קבע\s+(.+)$/))) {
-      const rest = m[1];
-      const now = new Date();
+    // קבע מחר 16:00 פגישה עם מוקי / קבע 14.7 ב-10 מיקס לגל /
+    // תוסיף ליומן היום בשעה 18:00 דרי רביד — deterministic, zero AI.
+    // תוסיף/הוסף fire only with a calendar word or a time signal, so
+    // notepad lines like "תוסיף חלב לרשימה" never become events.
+    const evm = t.match(/^(?:קבע|תקבע|לקבוע|תוסיף|הוסף|להוסיף)(?:\s+לי)?(?:\s+(?:ליומן|ביומן|ללוז|בלוז))?(?:\s+לי)?\s+(.+)$/);
+    if (evm && (/^(?:קבע|תקבע|לקבוע)/.test(t) || /ליומן|ביומן|ללוז|בלוז/.test(t) || /\d{1,2}:\d{2}|בשעה|לשעה/.test(t))) {
+      const rest = evm[1];
+      // Worker clock is UTC — compute "today/tomorrow" in Israel time
+      // so a 00:30 command doesn't book yesterday.
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }));
       let d = new Date(now);
       if (/מחרתיים/.test(rest)) d.setDate(d.getDate() + 2);
       else if (/מחר/.test(rest)) d.setDate(d.getDate() + 1);
       const dm = rest.match(/(\d{1,2})[./](\d{1,2})/);
       if (dm) d = new Date(now.getFullYear(), +dm[2] - 1, +dm[1]);
-      const tm = rest.match(/(\d{1,2}):(\d{2})/) || rest.match(/ב-?\s*(\d{1,2})(?![:.\d])/);
+      const tm = rest.match(/(\d{1,2}):(\d{2})/) || rest.match(/(?:בשעה|לשעה|ב-?)\s*(\d{1,2})(?![:.\d])/);
       const hh = tm ? String(+tm[1]).padStart(2, '0') : '12';
       const mm2 = (tm && tm[2]) ? tm[2] : '00';
-      const title = rest.replace(/מחרתיים|מחר|היום/g, '').replace(/(\d{1,2})[./](\d{1,2})/, '').replace(/(\d{1,2}):(\d{2})/, '').replace(/ב-?\s*\d{1,2}(?![:.\d])/, '').replace(/\s+/g, ' ').trim() || 'פגישה';
+      const title = rest
+        .replace(/מחרתיים|מחר|היום|הערב/g, '')
+        .replace(/ליומן|ביומן|ללוז|בלוז/g, '')
+        .replace(/(\d{1,2})[./](\d{1,2})/, '')
+        .replace(/(\d{1,2}):(\d{2})/, '')
+        .replace(/(?:בשעה|לשעה|ב-?)\s*\d{1,2}(?![:.\d])/, '')
+        .replace(/בשעה|לשעה/g, '')
+        .replace(/^\s*לי(?![א-ת])\s*/, '')
+        .replace(/\s+/g, ' ').trim() || 'פגישה';
       const dateKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       await addEventDirect(env, dateKey, hh + ':' + mm2, title);
       await reply('סגור אחי 📅 קבעתי: ' + title + ' — ' + String(d.getDate()) + '.' + (d.getMonth() + 1) + ' בשעה ' + hh + ':' + mm2 + '. כבר יושב לך בלוז.');
@@ -581,20 +595,27 @@ async function aiCommand(t, env, reply) {
       + '{"action":"expense|income|event|task|done|snooze|answer","amount":מספר,"desc":"","date":"YYYY-MM-DD","time":"HH:MM","title":"","name":"","when":"שעה|הערב|מחר","reply":"תשובה קצרה בעברית בטון חברי"}\n'
       + 'השתמש ב-action מתאים רק אם הוא ביקש פעולה; לשאלות מידע החזר action="answer" עם reply מלא ומספרים אמיתיים מהנתונים. '
       + 'אם זה סתם פתק אישי שלא מבקש ממך כלום (רשימת קניות, מחשבה) — החזר action="note" בלי reply. שדות לא רלוונטיים השמט.';
-    const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + env.GEMINI_KEY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: sys + '\n\nההודעה: "' + t + '"' }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
-      })
-    });
-    const gj = await g.json().catch(() => ({}));
-    if (!g.ok) {
+    // Each model has its OWN free-tier quota pool, so when one comes
+    // back 429 ("limit: 0" — the key's project has no allocation for
+    // it) the next may still work. Diag every failure per model.
+    const models = ['gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+    let g = null, gj = {};
+    for (const model of models) {
+      g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + env.GEMINI_KEY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: sys + '\n\nההודעה: "' + t + '"' }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+        })
+      });
+      gj = await g.json().catch(() => ({}));
+      if (g.ok) break;
       // Never fail SILENTLY again — trace it and tell him.
-      await diag(env, 'ai-fail', { status: g.status, err: gj && gj.error && gj.error.message });
-      return false;
+      await diag(env, 'ai-fail', { model, status: g.status, err: gj && gj.error && gj.error.message });
+      if (![429, 404, 503].includes(g.status)) break;   // key/req broken — retrying models won't help
     }
+    if (!g || !g.ok) return false;
     const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
     let raw = parts ? parts.map(p => p.text || '').join('').trim() : '';
     raw = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
