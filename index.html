@@ -6667,7 +6667,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v428</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v429</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17405,6 +17405,41 @@ function _waRow(c, isWaiting) {
 }
 // ── Conversation history: a few recent messages for context, so a
 //    cold "מה מדברים בכלל?" message has its backstory one tap away. ──
+// Play a WhatsApp voice note inside the app — the worker streams the
+// audio (Meta media URLs need the API token and expire in minutes).
+window._waPlayAudio = function(mediaId, btn) {
+  try {
+    if (window._waAud && window._waAudId === mediaId) {   // toggle off
+      try { window._waAud.pause(); } catch (_) {}
+      window._waAud = null;
+      if (btn) btn.textContent = '▶ נגן הקלטה';
+      return;
+    }
+    if (window._waAud) {   // switching to another note
+      try { window._waAud.pause(); } catch (_) {}
+      if (window._waAudBtn) window._waAudBtn.textContent = '▶ נגן הקלטה';
+      window._waAud = null;
+    }
+    const sec = localStorage.getItem('wa_send_secret') || '';
+    if (!sec) { toast('חסר קוד שליחה (🔑 בעמוד הוואטסאפ) כדי לנגן הקלטות'); return; }
+    const src = 'https://ravid-whatsapp.djeliorravid.workers.dev/media?sec=' + encodeURIComponent(sec) + '&id=' + encodeURIComponent(mediaId);
+    const a = new Audio(src);
+    window._waAud = a; window._waAudId = mediaId; window._waAudBtn = btn;
+    if (btn) btn.textContent = '⏳ טוען...';
+    a.onplaying = () => { if (btn) btn.textContent = '⏸ עצור'; };
+    a.onended = () => { if (btn) btn.textContent = '▶ נגן הקלטה'; window._waAud = null; };
+    a.onerror = () => {
+      if (btn) btn.textContent = '▶ נגן הקלטה';
+      window._waAud = null;
+      toast('לא הצלחתי לנגן — ההקלטה ישנה (מטא שומרת ~30 יום) או פורמט לא נתמך');
+    };
+    a.play().catch(() => {
+      if (btn) btn.textContent = '▶ נגן הקלטה';
+      window._waAud = null;
+      toast('הנגינה נכשלה — נסה שוב');
+    });
+  } catch (_) {}
+};
 window.waHistory = function(phone) {
   const ph = String(phone);
   const all = Object.keys(_waRaw || {}).map(k => _waRaw[k])
@@ -17424,8 +17459,13 @@ window.waHistory = function(phone) {
       // WhatsApp-authentic: time (+ blue double-check on outgoing)
       // lives INSIDE the bubble, bottom corner.
       const meta = '<span class="wa-th-meta">' + time + (dir === 'out' ? ' <span class="wa-ticks">✓✓</span>' : '') + '</span>';
+      // Voice notes carry their WhatsApp media id — playable in-bubble
+      const audioBtn = (m.mediaId && m.type === 'audio')
+        ? '<button onclick="_waPlayAudio(\'' + _escape(String(m.mediaId).replace(/[^\w.-]/g, '')) + '\', this)" '
+          + 'style="display:block;background:#00A884;color:#fff;border:none;border-radius:16px;padding:6px 14px;font-size:14px;font-weight:600;margin-bottom:5px;cursor:pointer">▶ נגן הקלטה</button>'
+        : '';
       return '<div class="wa-th-row ' + dir + '">'
-        + '<div class="wa-th-msg">' + _escape(String(m.text || '')) + meta + '</div></div>';
+        + '<div class="wa-th-msg">' + audioBtn + _escape(String(m.text || '')) + meta + '</div></div>';
     }).join('') : '<div class="mp-empty" style="padding:18px 0">אין היסטוריה זמינה עדיין לשיחה הזו.</div>';
   }
   openModal('waconvo');

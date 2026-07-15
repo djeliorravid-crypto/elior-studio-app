@@ -60,6 +60,28 @@ export default {
           url.searchParams.get('hub.verify_token') === VERIFY_TOKEN) {
         return new Response(url.searchParams.get('hub.challenge') || '', { status: 200 });
       }
+      // ── /media — stream a WhatsApp voice note (or any media) to the
+      // app. Meta media URLs need the API token and expire in minutes,
+      // so the app can't fetch them itself; this proxies with auth. ──
+      if (url.pathname === '/media') {
+        const sec = String(url.searchParams.get('sec') || '').trim();
+        if (!env || !sendSecret(env) || sec !== sendSecret(env)) return new Response('forbidden', { status: 403 });
+        const id = String(url.searchParams.get('id') || '').replace(/[^\w.-]/g, '');
+        if (!id || !env.WHATSAPP_TOKEN) return new Response('missing id/token', { status: 400 });
+        const meta = await fetch('https://graph.facebook.com/v21.0/' + id, {
+          headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN }
+        }).then(r => r.json()).catch(() => null);
+        if (!meta || !meta.url) return new Response('media expired or not found', { status: 404 });
+        const media = await fetch(meta.url, { headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN } });
+        if (!media.ok) return new Response('media fetch failed', { status: 502 });
+        return new Response(media.body, {
+          headers: {
+            'Content-Type': meta.mime_type || 'application/octet-stream',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'private, max-age=1800'
+          }
+        });
+      }
       return new Response('ravid-studio-whatsapp-webhook', { status: 200 });
     }
 
@@ -471,7 +493,7 @@ async function apnsJwt(env) {
 // Transcribe an incoming WhatsApp voice note with Gemini (needs the
 // GEMINI_KEY secret; silently skipped without it).
 async function transcribe(mediaId, env) {
-  if (!env || !env.GEMINI_KEY || !env.WHATSAPP_TOKEN) return '';
+  if (!env || !env.WHATSAPP_TOKEN || (!env.AI && !env.GEMINI_KEY)) return '';
   try {
     const metaRes = await fetch('https://graph.facebook.com/v21.0/' + mediaId, {
       headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN }
@@ -486,6 +508,18 @@ async function transcribe(mediaId, env) {
     const CH = 0x8000;
     for (let i = 0; i < buf.length; i += CH) bin += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
     const b64 = btoa(bin);
+    // Whisper on Workers AI — free, no key to expire (Gemini died on
+    // quota once already). Gemini stays as fallback when a key exists.
+    if (env.AI) {
+      try {
+        const w = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio: b64 });
+        const tr = String((w && (w.text || (w.result && w.result.text))) || '').trim();
+        if (tr) return tr.slice(0, 1500);
+      } catch (e) {
+        await diag(env, 'whisper-fail', { err: String(e && e.message).slice(0, 150) });
+      }
+    }
+    if (!env.GEMINI_KEY) return '';
     const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + env.GEMINI_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1061,6 +1095,7 @@ async function processWebhook(body, env) {
               || (m.edited && m.edited.text && m.edited.text.body)
               || (m.text_edited && m.text_edited.body)
               || '';
+            let mediaId = '';
             if (!text) {
               const t = m.type;
               if (t === 'text')           text = '✏️ ' + ((m.text && m.text.body) || '(עריכה)');
@@ -1068,8 +1103,10 @@ async function processWebhook(body, env) {
               else if (t === 'image')     text = '📷 תמונה' + (m.image && m.image.caption ? ' — ' + m.image.caption : '');
               else if (t === 'video')     text = '🎬 סרטון' + (m.video && m.video.caption ? ' — ' + m.video.caption : '');
               else if (t === 'audio') {
-                // Voice note → automatic transcription (Gemini)
-                const tr = (m.audio && m.audio.id) ? await transcribe(m.audio.id, env) : '';
+                // Voice note → keep the media id so the app can PLAY it
+                // (streamed through /media), plus automatic transcription.
+                mediaId = (m.audio && m.audio.id) || '';
+                const tr = mediaId ? await transcribe(mediaId, env) : '';
                 text = tr ? ('🎤 תמלול: ' + tr) : '🎤 הודעה קולית';
               }
               else if (t === 'document')  text = '📄 קובץ' + (m.document && m.document.filename ? ' — ' + m.document.filename : '');
@@ -1116,6 +1153,7 @@ async function processWebhook(body, env) {
               text,
               ts: (Number(m.timestamp || 0) * 1000) || Date.now()
             };
+            if (mediaId) rec.mediaId = mediaId;
             if (rec.name && ph) names[ph] = names[ph] || rec.name;
             await fetch(FIREBASE + '/msgs.json', { method: 'POST', body: JSON.stringify(rec) });
             if (ph) { nowWaiting[ph] = rec.ts; delete answered[ph]; }
