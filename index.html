@@ -6667,7 +6667,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v429</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v430</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17035,12 +17035,63 @@ async function _waPullREST() {
       if (data && typeof data === 'object') {
         _waRaw = data;
         _waLastEvt = Date.now();
+        _waSyncKey();
         _waProcess(_waRaw);
       }
     }
   } catch (_) {}
   clearTimeout(guard); done();
 }
+// ── REAL-TIME HEARTBEAT ──
+// The SDK socket freezes whenever iOS blinks, so live child_added
+// pushes can silently stop while he's LOOKING at the page (messages
+// arrived 5 minutes late). This polls a DELTA over plain REST every
+// few seconds — startAt the newest known key, so the response is a
+// few hundred bytes, not the whole inbox.
+let _waLastKey = '';
+let _waDeltaBusy = false;
+let _waTick = 0;
+function _waSyncKey() {
+  try {
+    const ks = Object.keys(_waRaw || {});
+    if (ks.length) { ks.sort(); const top = ks[ks.length - 1]; if (top > _waLastKey) _waLastKey = top; }
+  } catch (_) {}
+}
+async function _waPullDelta() {
+  if (_waDeltaBusy || _waRestInFlight) return;
+  if (!_waLastKey) { _waPullREST(); return; }
+  _waDeltaBusy = true;
+  try {
+    const url = WA_RTDB + '/whatsapp/msgs.json?orderBy=%22%24key%22&startAt=%22' + encodeURIComponent(_waLastKey) + '%22';
+    const r = await fetch(url, { cache: 'no-store' });
+    if (r.ok) {
+      const data = await r.json();
+      if (data && typeof data === 'object') {
+        const keys = Object.keys(data).filter(k => k > _waLastKey);
+        if (keys.length) {
+          keys.forEach(k => { _waRaw[k] = data[k]; });
+          keys.sort();
+          _waLastKey = keys[keys.length - 1];
+          _waLastEvt = Date.now();
+          _waProcess(_waRaw);
+          _waPaintIfVisible();
+        }
+      }
+    }
+  } catch (_) {}
+  _waDeltaBusy = false;
+}
+setInterval(() => {
+  try {
+    if (document.visibilityState !== 'visible') return;
+    _waTick++;
+    const page = document.getElementById('page-whatsapp');
+    const onPage = page && page.classList.contains('active');
+    // on the WhatsApp page: every 4s. Elsewhere in the app: every 16s
+    // (keeps the lobby badge honest without burning data).
+    if (onPage || _waTick % 4 === 0) _waPullDelta();
+  } catch (_) {}
+}, 4000);
 function _waListen() {
   if (_waListening || !firebaseDB) return;
   _waListening = true;
@@ -17066,11 +17117,13 @@ function _waListen() {
       _waRaw = s.val() || {};
       boot = false;
       _waLastPull = Date.now();   // boot read counts as a pull
+      _waSyncKey();
       _waProcess(_waRaw);
       _waPaintIfVisible();
     });
     q.on('child_added', s => {
       _waRaw[s.key] = s.val();
+      if (s.key > _waLastKey) _waLastKey = s.key;
       _waLastEvt = Date.now();
       if (!boot) { _waProcess(_waRaw); _waPaintIfVisible(); }
     });
