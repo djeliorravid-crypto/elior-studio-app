@@ -512,7 +512,13 @@ async function transcribe(mediaId, env) {
     // quota once already). Gemini stays as fallback when a key exists.
     if (env.AI) {
       try {
-        const w = await env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio: b64 });
+        // language pinned — auto-detect once heard Hebrew and wrote
+        // back Russian. His studio speaks Hebrew.
+        const w = await env.AI.run('@cf/openai/whisper-large-v3-turbo', {
+          audio: b64,
+          language: 'he',
+          initial_prompt: 'שיחה בעברית על מוזיקה, אולפן הקלטות, פגישות ותשלומים.'
+        });
         const tr = String((w && (w.text || (w.result && w.result.text))) || '').trim();
         if (tr) return tr.slice(0, 1500);
       } catch (e) {
