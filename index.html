@@ -6654,6 +6654,101 @@
   </div>
 </div>
 
+<!-- ═══ LOBBY 2026 — visual facelift layer. Overrides colors, shape
+     and typography ONLY. NEVER touch position/z-index/display of
+     #mode-screen here (v418 lesson: layout overrides broke the app). ═══ -->
+<style id="lobby-2026">
+  #mode-screen {
+    background:
+      radial-gradient(ellipse 85% 60% at 78% 6%, rgba(255,166,77,.15), transparent 62%),
+      radial-gradient(ellipse 70% 55% at 12% 94%, rgba(155,110,255,.11), transparent 60%),
+      linear-gradient(168deg, #14100b 0%, #1d140d 42%, #26180f 100%);
+  }
+  #mode-screen::before {
+    background:
+      radial-gradient(circle at 22% 26%, rgba(255,170,90,.17), transparent 44%),
+      radial-gradient(circle at 82% 18%, rgba(255,205,140,.13), transparent 42%),
+      radial-gradient(circle at 55% 85%, rgba(150,105,255,.11), transparent 45%);
+  }
+  #lobby-greet {
+    font-family: 'Heebo', -apple-system, sans-serif;
+    font-weight: 900;
+    font-size: 34px;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #ffe3b3 10%, #f0b566 45%, #ffd89a 80%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;   /* transparent fill + shadow = dark smear */
+  }
+  #lobby-sub { font-family: 'Heebo', sans-serif; font-weight: 600; color: rgba(255,238,214,.55); }
+  #mode-screen .lobby-icon, #lobby-icon {
+    color: #f5bd72;
+    filter: drop-shadow(0 0 16px rgba(245,189,114,.5));
+  }
+  #lobby-version {
+    font-family: 'Heebo', sans-serif !important;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 999px;
+    padding: 3px 12px;
+    width: max-content;
+    margin: 10px auto 0 !important;
+    letter-spacing: .05em;
+  }
+  /* squircles instead of 2016 circles; each world gets its own hue */
+  .mode-card {
+    border-radius: 44px;
+    background: linear-gradient(155deg, rgba(255,255,255,.09), rgba(255,255,255,.02) 60%);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 28px 70px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.10);
+  }
+  .mode-card-icon {
+    width: 66px; height: 66px; border-radius: 22px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+  }
+  .mode-card-icon svg { width: 40px; height: 40px; }
+  .mode-card.business { border-color: rgba(255,178,84,.30); }
+  .mode-card.business .mode-card-icon { background: rgba(255,178,84,.13); box-shadow: inset 0 0 0 1px rgba(255,178,84,.28); }
+  .mode-card.business .mode-card-icon svg { stroke: #ffc87d; }
+  .mode-card.music { border-color: rgba(185,138,255,.28); }
+  .mode-card.music .mode-card-icon { background: rgba(185,138,255,.12); box-shadow: inset 0 0 0 1px rgba(185,138,255,.26); }
+  .mode-card.music .mode-card-icon svg { stroke: #cda9ff; }
+  .mode-card.path { border-color: rgba(110,220,170,.28); }
+  .mode-card.path .mode-card-icon { background: rgba(110,220,170,.11); box-shadow: inset 0 0 0 1px rgba(110,220,170,.26); }
+  .mode-card.path .mode-card-icon svg { stroke: #7fe0b2; }
+  .mode-card-title { font-family: 'Heebo', sans-serif; font-weight: 800; font-size: 18px; letter-spacing: -0.01em; }
+  .mode-card-sub { color: rgba(255,240,220,.55); font-weight: 600; font-size: 12px; }
+  /* today card → glass */
+  .lobby-tasks {
+    background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.11);
+    border-radius: 26px;
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  }
+  .lobby-tasks-title { font-family: 'Heebo', sans-serif; font-weight: 800; color: #ffe0b0; }
+  .lobby-task-add input {
+    background: rgba(0,0,0,.28);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 14px;
+    color: #fff;
+  }
+  .lobby-task-add input::placeholder { color: rgba(255,240,220,.35); }
+  .lobby-task-add button {
+    background: linear-gradient(135deg, #f6c377 0%, #dd9440 100%);
+    border: none; border-radius: 14px;
+    color: #241505; font-weight: 900;
+    box-shadow: 0 8px 22px rgba(221,148,64,.35);
+  }
+  /* gentle entrance — scoped strictly under #mode-screen */
+  @keyframes lobbyRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  #mode-screen:not(.hidden) .mode-screen-title { animation: lobbyRise .5s cubic-bezier(.2,.7,.3,1) both; }
+  #mode-screen:not(.hidden) .mode-cards-row .mode-circle-wrap:nth-child(1) { animation: lobbyRise .55s .05s cubic-bezier(.2,.7,.3,1) both; }
+  #mode-screen:not(.hidden) .mode-cards-row .mode-circle-wrap:nth-child(2) { animation: lobbyRise .55s .12s cubic-bezier(.2,.7,.3,1) both; }
+  #mode-screen:not(.hidden) .mode-cards-row .mode-circle-wrap:nth-child(3) { animation: lobbyRise .55s .19s cubic-bezier(.2,.7,.3,1) both; }
+  #mode-screen:not(.hidden) .lobby-tasks { animation: lobbyRise .55s .26s cubic-bezier(.2,.7,.3,1) both; }
+</style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
   <div class="bsd-mark">בס״ד</div>
@@ -6667,7 +6762,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v430</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v431</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7214,6 +7309,8 @@
       <div class="wa-hero-label" id="wa-hero-label">טוען…</div>
       <div class="wa-hero-stats" id="wa-hero-stats"></div>
     </div>
+    <!-- Label filter chips — appear only once at least one label is set -->
+    <div id="wa-label-bar" style="display:none;gap:7px;flex-wrap:wrap;margin:2px 2px 12px"></div>
     <!-- Top box: CLIENTS — anyone the system knows is a client -->
     <div class="table-card mp-card wa-box" id="wa-clients-card">
       <div class="wa-box-head">
@@ -17039,6 +17136,17 @@ async function _waPullREST() {
         _waProcess(_waRaw);
       }
     }
+    // labels: cloud copy restores a fresh install; the device stays
+    // the source of truth otherwise (one phone).
+    if (!Object.keys(_waLabels || {}).length) {
+      try {
+        const lv = await fetch(WA_RTDB + '/whatsapp/labels.json', { cache: 'no-store' }).then(x => x.json());
+        if (lv && typeof lv === 'object' && Object.keys(lv).length) {
+          _waLabels = lv;
+          localStorage.setItem('wa_labels', JSON.stringify(lv));
+        }
+      } catch (_) {}
+    }
   } catch (_) {}
   clearTimeout(guard); done();
 }
@@ -17248,6 +17356,7 @@ window.waActOpen = function(phone) {
   html += B('📅 שלח קישור לקביעת סשן', 'book');
   if (c.waiting) html += B('😴 הזכר לי לענות מאוחר יותר', 'snooze');
   html += B(_waPins[phone] ? '📌 הסר נעיצה' : '📌 נעץ למעלה', 'pin');
+  html += B('🏷️ תווית' + (_waLabels[phone] && WA_LABELS[_waLabels[phone]] ? ' — ' + WA_LABELS[_waLabels[phone]].name : ''), 'label');
   html += B('✏️ שנה שם', 'rename');
   html += B('⏰ תזמן הודעה', 'sched');
   if (c.waiting) html += B('✓ סמן טופל', 'done');
@@ -17268,6 +17377,7 @@ window.waActDo = function(phone, act) {
   else if (act === 'snooze') waSnoozeOpen(phone);
   else if (act === 'book') waBookOpen(phone);
   else if (act === 'pin') waPinToggle(phone);
+  else if (act === 'label') { setTimeout(() => waLabelOpen(phone), 180); return; }
   else if (act === 'open') window.open('https://wa.me/' + phone, '_blank');
 };
 // ── Scheduled messages: queued to /whatsapp/outbox, sent by the
@@ -17412,6 +17522,13 @@ function _waUrgency(ts) {
   if (min < 180) return '#e0662f';
   return '#d64545';
 }
+function _waLabelChip(phone) {
+  const k = _waLabels[phone];
+  const L = k && WA_LABELS[k];
+  if (!L) return '';
+  return '<span style="flex-shrink:0;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:9px;'
+    + 'background:' + L.color + '22;color:' + L.color + ';border:1px solid ' + L.color + '55">' + L.name + '</span>';
+}
 function _waRow(c, isWaiting) {
   const nm = _escape(_waName(c));
   const phoneEsc = String(c.phone).replace(/[^0-9]/g, '');
@@ -17422,7 +17539,7 @@ function _waRow(c, isWaiting) {
       + '<div class="wa-card2-head">'
       +   _waAvatarHtml(c, phoneEsc, false)
       +   '<div class="wa-card2-id" ' + _waLPAttrs(phoneEsc) + ' style="cursor:pointer">'
-      +     '<div class="wa-card2-name"><span class="nm">' + nm + '</span></div>'
+      +     '<div class="wa-card2-name"><span class="nm">' + nm + '</span>' + _waLabelChip(c.phone) + '</div>'
       +     '<div class="wa-card2-sub"><span class="nm">' + msg + '</span><span class="wa-dot2"></span>לפני ' + _waAgo(c.lastTs) + '</div>'
       +   '</div>'
       +   histBtn
@@ -17432,6 +17549,7 @@ function _waRow(c, isWaiting) {
   const texts = (c.freshTexts && c.freshTexts.length) ? c.freshTexts.slice(-3) : [c.lastText || ''];
   const bubbles = texts.map(t => '<div class="wa-bub">' + _escape(String(t).slice(0, 300)) + '</div>').join('');
   const leadChip = (c.cls === 'lead' ? '<span class="wa-chip-lead">ליד חדש</span>' : '')
+    + _waLabelChip(c.phone)
     + (_waPins[c.phone] ? '<span style="flex-shrink:0">📌</span>' : '');
   const urg = _waUrgency(c.lastInTs);
   const sub = '<span class="wa-wait2" style="color:' + urg + '">● מחכה ' + _waAgo(c.lastInTs) + '</span>'
@@ -17870,6 +17988,67 @@ function _waPaintSnooze() {
 // ══════════════ PIN — the important one stays on top ══════════════
 let _waPins = {};
 try { _waPins = JSON.parse(localStorage.getItem('wa_pins') || '{}') || {}; } catch (_) {}
+// ── Conversation labels — "מה צריך לעשות עם השיחה הזאת" at a glance.
+// One label per conversation; chips on the card + a filter bar on top.
+// Mirrored to the cloud so a reinstall doesn't lose the sorting work.
+const WA_LABELS = {
+  collect: { name: 'לגבייה',       color: '#d64545' },
+  file:    { name: 'ממתין לקובץ', color: '#3b82c4' },
+  newlead: { name: 'ליד חדש',     color: '#2ea05a' },
+  vip:     { name: 'VIP',          color: '#a86add' }
+};
+let _waLabels = {};
+try { _waLabels = JSON.parse(localStorage.getItem('wa_labels') || '{}') || {}; } catch (_) {}
+let _waLabelFilter = '';
+window.waLabelOpen = function(phone) {
+  const nEl = document.getElementById('waact-name');
+  const pEl = document.getElementById('waact-phone');
+  if (nEl) nEl.textContent = '🏷️ תווית — ' + _waName({ phone });
+  if (pEl) pEl.textContent = 'התווית מופיעה על הכרטיס ומאפשרת סינון למעלה';
+  const cur = _waLabels[phone];
+  let html = '';
+  Object.keys(WA_LABELS).forEach(k => {
+    const L = WA_LABELS[k];
+    html += '<button class="btn btn-ghost" style="width:100%;text-align:right;justify-content:flex-start;color:' + L.color + ';font-weight:800" '
+      + 'onclick="waLabelSet(\'' + phone + '\',\'' + k + '\')">' + (cur === k ? '✓ ' : '') + L.name + '</button>';
+  });
+  if (cur) html += '<button class="btn btn-ghost" style="width:100%;text-align:right;justify-content:flex-start" onclick="waLabelSet(\'' + phone + '\',null)">🗑️ הסר תווית</button>';
+  const bEl = document.getElementById('waact-btns');
+  if (bEl) bEl.innerHTML = html;
+  openModal('waact');
+};
+window.waLabelSet = function(phone, key) {
+  closeModal('waact');
+  if (key) _waLabels[phone] = key; else delete _waLabels[phone];
+  try { localStorage.setItem('wa_labels', JSON.stringify(_waLabels)); } catch (_) {}
+  // PATCH with null deletes the key server-side — exactly what we want
+  try { fetch(_DB_REST + '/whatsapp/labels.json', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [phone]: key || null }) }); } catch (_) {}
+  toast(key ? '🏷️ ' + WA_LABELS[key].name : 'התווית הוסרה');
+  if (!key && _waLabelFilter && !Object.values(_waLabels).includes(_waLabelFilter)) _waLabelFilter = '';
+  _waPaintIfVisible();
+};
+window.waLabelFilter = function(key) {
+  _waLabelFilter = (_waLabelFilter === key) ? '' : key;
+  _waPaintIfVisible();
+};
+function _waLabelBarPaint() {
+  const bar = document.getElementById('wa-label-bar');
+  if (!bar) return;
+  const used = {};
+  Object.keys(_waLabels).forEach(p => { const k = _waLabels[p]; if (WA_LABELS[k]) used[k] = (used[k] || 0) + 1; });
+  const keys = Object.keys(used);
+  if (!keys.length) { bar.style.display = 'none'; if (_waLabelFilter) _waLabelFilter = ''; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = keys.map(k => {
+    const L = WA_LABELS[k];
+    const on = _waLabelFilter === k;
+    return '<button onclick="waLabelFilter(\'' + k + '\')" style="border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:800;cursor:pointer;'
+      + 'border:1.5px solid ' + L.color + (on ? ';background:' + L.color + ';color:#fff' : ';background:' + L.color + '1a;color:' + L.color) + '">'
+      + L.name + ' · ' + used[k] + '</button>';
+  }).join('') + (_waLabelFilter
+    ? '<button onclick="waLabelFilter(\'' + _waLabelFilter + '\')" style="border:none;background:none;color:var(--text-muted);font-size:12.5px;font-weight:800;cursor:pointer">✕ נקה סינון</button>'
+    : '');
+}
 window.waPinToggle = function(phone) {
   if (_waPins[phone]) delete _waPins[phone]; else _waPins[phone] = true;
   try { localStorage.setItem('wa_pins', JSON.stringify(_waPins)); } catch (_) {}
@@ -18613,8 +18792,10 @@ function _waPaint() {
     caret = (typeof ae.selectionStart === 'number') ? ae.selectionStart : (ae.value || '').length;
   }
   const showAll = (() => { try { return localStorage.getItem('wa_show_all') === '1'; } catch (_) { return false; } })();
+  try { _waLabelBarPaint(); } catch (_) {}
   const waiting = _waConvs
     .filter(c => c.waiting && (showAll || c.cls === 'client' || c.cls === 'lead') && !_waSnoozeActive(c))
+    .filter(c => !_waLabelFilter || _waLabels[c.phone] === _waLabelFilter)
     .sort((a, b) => ((_waPins[b.phone] ? 1 : 0) - (_waPins[a.phone] ? 1 : 0)) || (a.lastInTs - b.lastInTs));
   const topWait = waiting.filter(c => c.cls === 'client');
   const newWait = waiting.filter(c => c.cls !== 'client');
@@ -18673,7 +18854,9 @@ function _waPaint() {
   // "כל הלקוחות" fold: answered client conversations + marked clients
   // with no recent messages. The <details> open state lives in static
   // HTML, so repainting the inside never collapses it.
-  const rest = _waConvs.filter(c => c.cls === 'client' && !c.waiting).sort((a, b) => b.lastTs - a.lastTs);
+  const rest = _waConvs.filter(c => c.cls === 'client' && !c.waiting)
+    .filter(c => !_waLabelFilter || _waLabels[c.phone] === _waLabelFilter)
+    .sort((a, b) => b.lastTs - a.lastTs);
   const inList = {};
   _waConvs.forEach(c => { if (c.cls === 'client') inList[c.phone] = true; });
   const extra = Object.keys(_waCliMarks).filter(p => _waCliMarks[p] === true && !inList[p]);
