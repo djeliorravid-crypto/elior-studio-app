@@ -6748,6 +6748,50 @@
   #mode-screen:not(.hidden) .mode-cards-row .mode-circle-wrap:nth-child(2) { animation: lobbyRise .55s .12s cubic-bezier(.2,.7,.3,1) both; }
   #mode-screen:not(.hidden) .mode-cards-row .mode-circle-wrap:nth-child(3) { animation: lobbyRise .55s .19s cubic-bezier(.2,.7,.3,1) both; }
   #mode-screen:not(.hidden) .lobby-tasks { animation: lobbyRise .55s .26s cubic-bezier(.2,.7,.3,1) both; }
+
+  /* ═══ APP 2026 — the same language carried into the inner pages.
+     Visual only (colors/radius/shadow/type). No positioning, no
+     .sidebar background overrides (cream-dock lesson), and the
+     WhatsApp send button keeps its WhatsApp green. ═══ */
+  [data-theme="dark"] {
+    --bg:       #1d140e;
+    --surface:  #2c2017;
+    --surface2: #382a1e;
+    --surface3: #443426;
+    --border:   #55412f;
+    --accent:   #e8b476;
+    --accent2:  #f4cf9a;
+    --radius:   18px;
+  }
+  [data-theme="dark"] .table-card,
+  [data-theme="dark"] .mp-card {
+    background: linear-gradient(165deg, #2f2218 0%, #261b12 100%);
+    border: 1px solid rgba(255,200,140,.13);
+    box-shadow: 0 14px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  [data-theme="dark"] .page-header h2 {
+    font-family: 'Heebo', sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #ffe3b3 15%, #eeb268 60%, #ffd89a 95%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+  }
+  [data-theme="dark"] .page-header h2 svg { color: #eeb268; -webkit-text-fill-color: initial; }
+  .btn-primary:not(.wa-sendbtn) {
+    background: linear-gradient(135deg, #f2bd74 0%, #d8913c 100%);
+    border: none;
+    color: #2a1808;
+    font-weight: 800;
+    box-shadow: 0 8px 22px rgba(216,145,60,.28);
+  }
+  .btn-primary:not(.wa-sendbtn):active { transform: scale(.97); }
+  [data-theme="dark"] .fab {
+    background: linear-gradient(135deg, #f2bd74 0%, #d8913c 100%);
+    color: #2a1808;
+    box-shadow: 0 12px 32px rgba(216,145,60,.38);
+  }
 </style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
@@ -6762,7 +6806,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v431</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v432</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
