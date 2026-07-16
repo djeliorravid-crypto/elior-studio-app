@@ -6806,7 +6806,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v432</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v433</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9169,8 +9169,28 @@ function save(key, val) {
     localStorage.setItem('s_' + key + '_ts', String(ts));
   } catch (e) {
     console.warn('localStorage write failed for', key, e);
-    if (typeof toast === 'function') toast('⚠️ אחסון מקומי מלא — שמור גיבוי ונקה');
-    return;
+    // EMERGENCY SELF-CLEAN — an income entry must never be lost to a
+    // full disk. Drop the fat regenerable caches and retry the write.
+    try {
+      try { localStorage.removeItem('_local_backup'); } catch (_) {}   // full snapshot — the cloud has daily copies
+      try {
+        const raw = JSON.parse(localStorage.getItem('wa_raw_cache') || '{}');
+        const ks = Object.keys(raw).sort();
+        if (ks.length > 120) {
+          const keep = {};
+          ks.slice(-120).forEach(k => { keep[k] = raw[k]; });
+          localStorage.setItem('wa_raw_cache', JSON.stringify(keep));
+        } else {
+          localStorage.removeItem('wa_raw_cache');
+        }
+      } catch (_) { try { localStorage.removeItem('wa_raw_cache'); } catch (__) {} }
+      localStorage.setItem('s_' + key, JSON.stringify(val));
+      localStorage.setItem('s_' + key + '_ts', String(ts));
+      if (typeof toast === 'function') toast('🧹 האחסון היה מלא — נוקה אוטומטית והנתון נשמר ✓');
+    } catch (e2) {
+      if (typeof toast === 'function') toast('⚠️ אחסון מקומי מלא — שמור גיבוי ונקה');
+      return;
+    }
   }
   // 2. הוסף לתור ושמור בdisk — שורד סגירת אפליקציה
   _pending[key] = { data: val, ts };
@@ -9230,8 +9250,14 @@ function autoBackup() {
     const data = _collectAllData();
     if (!_hasMeaningfulData(data)) return; // לא נדרוס גיבוי טוב במצב ריק
 
-    // עותק מקומי — תמיד, גם בלי אינטרנט
-    try { localStorage.setItem('_local_backup', JSON.stringify({ date: today, ts: Date.now(), data })); } catch(e) {}
+    // עותק מקומי — תמיד, גם בלי אינטרנט. מוגבל ל-1.5MB — מעבר לזה
+    // הוא דוחק את הנתונים החיים החוצה (QuotaExceeded בהוספת הכנסה);
+    // הענן ממילא שומר גיבוי יומי מלא.
+    try {
+      const snap = JSON.stringify({ date: today, ts: Date.now(), data });
+      if (snap.length < 1500000) localStorage.setItem('_local_backup', snap);
+      else localStorage.removeItem('_local_backup');
+    } catch(e) {}
 
     // עותק לענן — מעדכן את גיבוי היום בכל טעינה כך שהוא תמיד עדכני
     if (firebaseDB) {
@@ -16973,14 +16999,19 @@ function _waProcess(raw) {
   // data instantly AND powers the offline conversation-history view.
   // Capped to the most recent 400 records to stay well within quota.
   try {
+    // 250 newest, long texts trimmed FOR THE CACHE ONLY (transcripts
+    // can run 1,500 chars each) — the live view keeps full text; this
+    // cache only feeds the next cold boot. Keeps quota breathing.
     const rk = Object.keys(raw);
-    let store = raw;
-    if (rk.length > 400) {
-      store = {};
-      rk.map(k => [k, Number(raw[k] && raw[k].ts) || 0])
-        .sort((a, b) => b[1] - a[1]).slice(0, 400)
-        .forEach(pair => { store[pair[0]] = raw[pair[0]]; });
-    }
+    const store = {};
+    rk.map(k => [k, Number(raw[k] && raw[k].ts) || 0])
+      .sort((a, b) => b[1] - a[1]).slice(0, 250)
+      .forEach(pair => {
+        const m = raw[pair[0]];
+        if (m && typeof m.text === 'string' && m.text.length > 400) {
+          store[pair[0]] = Object.assign({}, m, { text: m.text.slice(0, 400) + '…' });
+        } else store[pair[0]] = m;
+      });
     localStorage.setItem('wa_raw_cache', JSON.stringify(store));
   } catch (_) {}
   try {
