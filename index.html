@@ -6749,6 +6749,12 @@
   #mode-screen:not(.hidden) .mode-cards-row .mode-circle-wrap:nth-child(3) { animation: lobbyRise .55s .19s cubic-bezier(.2,.7,.3,1) both; }
   #mode-screen:not(.hidden) .lobby-tasks { animation: lobbyRise .55s .26s cubic-bezier(.2,.7,.3,1) both; }
 
+  /* Reserve a bottom lane for the fixed corner buttons (the red
+     "יש הודעות שמחכות" badge + the FAB) so they never sit on top of
+     the task-add input in the היום card. Padding only — the screen's
+     fixed positioning is untouched. */
+  #mode-screen { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px); }
+
   /* ═══ APP 2026 — the same language carried into the inner pages.
      Visual only (colors/radius/shadow/type). No positioning, no
      .sidebar background overrides (cream-dock lesson), and the
@@ -6806,7 +6812,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v433</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v434</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -6825,7 +6831,10 @@
       </div>
       <div class="mode-card-sub">הכנסות · הוצאות · לקוחות · משימות</div>
     </div>
-    <div class="mode-circle-wrap">
+    <!-- דף השירים שמור במערכת אך מוסתר זמנית לבקשת אליאור (16.7.26) —
+         להחזרה: מחק את style="display:none" מהשורה הבאה. הכל נשאר
+         מחובר: chooseMode('music'), הדפים והנתונים לא נגעו. -->
+    <div class="mode-circle-wrap" style="display:none">
       <div class="mode-card music" onclick="chooseMode('music')">
         <div class="mode-card-glow"></div>
         <div class="mode-card-icon">
