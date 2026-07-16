@@ -6812,7 +6812,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v434</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v435</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -26688,13 +26688,24 @@ window._tryBiometricAuth = async function(reason) {
     return false;
   }
 };
+let _faInFlight = false;
 window.tryFaceId = async function() {
-  const ok = await window._tryBiometricAuth('פתח את אליאור רביד');
-  if (ok) {
-    document.documentElement.classList.remove('face-id-locked');
-  } else {
-    document.documentElement.classList.add('face-id-locked');
-  }
+  // Serialize: a resume can fire visibilitychange more than once, and
+  // two parallel LAContext prompts cancel each other ("צריך פעמיים").
+  if (_faInFlight) return;
+  _faInFlight = true;
+  try {
+    const t0 = Date.now();
+    let ok = await window._tryBiometricAuth('פתח את אליאור רביד');
+    // An INSTANT failure (<800ms) means iOS refused because the app
+    // wasn't fully active yet — not that the user failed or canceled.
+    // One silent retry after the scene settles fixes it invisibly.
+    if (!ok && Date.now() - t0 < 800) {
+      await new Promise(r => setTimeout(r, 450));
+      ok = await window._tryBiometricAuth('פתח את אליאור רביד');
+    }
+    document.documentElement.classList.toggle('face-id-locked', !ok);
+  } finally { _faInFlight = false; }
 };
 // ===== Home-screen Widget bridge =====
 // Pushes a single GENERIC payload into the App Group container that
@@ -26947,7 +26958,16 @@ window.addEventListener('app-shortcut', function(ev) {
   // the WebView alive across home-button taps, so without this the
   // user only authenticates once per cold launch.
   document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') armAndAuth();
+    if (!window.getFaceIdEnabled()) return;
+    if (document.visibilityState === 'hidden') {
+      // Cover BEFORE backgrounding: the app-switcher snapshot then
+      // shows the branded lock screen, and on return there is no
+      // blurred-content limbo while the WebView wakes up. Privacy
+      // bonus: business data never appears in the app switcher.
+      document.documentElement.classList.add('face-id-locked');
+    } else {
+      armAndAuth();
+    }
   });
 })();
 
