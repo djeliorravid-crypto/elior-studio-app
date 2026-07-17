@@ -6849,6 +6849,64 @@
   #page-income.active .income-month-grid .stat-card:nth-child(3) { animation: lobbyRise .4s .14s cubic-bezier(.2,.7,.3,1) both; }
   #page-income.active .income-month-grid .stat-card:nth-child(4) { animation: lobbyRise .4s .20s cubic-bezier(.2,.7,.3,1) both; }
   #page-income.active .income-month-grid .stat-card:nth-child(5) { animation: lobbyRise .4s .26s cubic-bezier(.2,.7,.3,1) both; }
+
+  /* ═══ EXPENSES TAB 2026 — category cards go glass, totals glow red ═══ */
+  [data-theme="dark"] .exp-cat-box {
+    background: linear-gradient(160deg, #2f2218 0%, #241a10 100%);
+    border: 1px solid rgba(255,200,140,.14);
+    border-radius: 20px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  [data-theme="dark"] .exp-cat-box.open { border-color: rgba(242,189,116,.5); }
+  [data-theme="dark"] .exp-cat-icon {
+    border-radius: 13px;
+    background: rgba(255,178,84,.13);
+    box-shadow: inset 0 0 0 1px rgba(255,178,84,.25);
+    color: #ffc87d;
+  }
+  [data-theme="dark"] .exp-cat-total {
+    font-size: 17px;
+    background: linear-gradient(120deg, #ffb59d, #e8896a);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* ═══ SCHEDULE / DAILY 2026 — event rows go glass; the inline
+     urgency stripe (border-inline-start) is preserved on purpose ═══ */
+  [data-theme="dark"] .schedule-row {
+    background: linear-gradient(160deg, #2f2218 0%, #241a10 100%) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 10px 26px rgba(0,0,0,.28) !important;
+  }
+  [data-theme="dark"] .lobby-task-add input,
+  [data-theme="dark"] #daily-input {
+    background: rgba(0,0,0,.28);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 14px;
+    color: #fff;
+  }
+
+  /* ═══ PRODUCTIONS TAB 2026 — project cards join the language ═══ */
+  [data-theme="dark"] .prod-card {
+    background: linear-gradient(160deg, #2f2218 0%, #241a10 100%);
+    border: 1px solid rgba(255,200,140,.14);
+    border-radius: 22px;
+    box-shadow: 0 14px 34px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.04);
+    overflow: hidden;
+  }
+  [data-theme="dark"] .prod-card.is-open { border-color: rgba(242,189,116,.5); }
+  [data-theme="dark"] .prod-head-main .prod-card-title {
+    font-family: 'Heebo', sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+  }
+
+  /* month selector pill — shared by income/expenses headers */
+  [data-theme="dark"] .month-selector {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 999px;
+  }
 </style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
@@ -6863,7 +6921,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v440</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v441</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
