@@ -6812,7 +6812,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v436</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v437</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17729,6 +17729,30 @@ function _waRow(c, isWaiting) {
 }
 // ── Conversation history: a few recent messages for context, so a
 //    cold "מה מדברים בכלל?" message has its backstory one tap away. ──
+// Media URL through the worker proxy (Meta media URLs need the API
+// token and expire in minutes — the app can't fetch them directly).
+function _waMediaUrl(mediaId) {
+  const sec = localStorage.getItem('wa_send_secret') || '';
+  return 'https://ravid-whatsapp.djeliorravid.workers.dev/media?sec=' + encodeURIComponent(sec) + '&id=' + encodeURIComponent(mediaId);
+}
+// Fullscreen lightbox for images/videos — tap anywhere to close.
+window._waMediaView = function(mediaId, isVideo) {
+  try {
+    let ov = document.getElementById('wa-media-lightbox');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'wa-media-lightbox';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,.93);display:flex;align-items:center;justify-content:center;padding:16px';
+      ov.onclick = () => { ov.innerHTML = ''; ov.style.display = 'none'; };
+      document.body.appendChild(ov);
+    }
+    const url = _waMediaUrl(mediaId);
+    ov.innerHTML = isVideo
+      ? '<video src="' + url + '" controls autoplay playsinline style="max-width:96vw;max-height:82vh;border-radius:14px"></video>'
+      : '<img src="' + url + '" style="max-width:96vw;max-height:86vh;border-radius:14px;object-fit:contain"/>';
+    ov.style.display = 'flex';
+  } catch (_) {}
+};
 // Play a WhatsApp voice note inside the app — the worker streams the
 // audio (Meta media URLs need the API token and expire in minutes).
 window._waPlayAudio = function(mediaId, btn) {
@@ -17783,13 +17807,25 @@ window.waHistory = function(phone) {
       // WhatsApp-authentic: time (+ blue double-check on outgoing)
       // lives INSIDE the bubble, bottom corner.
       const meta = '<span class="wa-th-meta">' + time + (dir === 'out' ? ' <span class="wa-ticks">✓✓</span>' : '') + '</span>';
-      // Voice notes carry their WhatsApp media id — playable in-bubble
-      const audioBtn = (m.mediaId && m.type === 'audio')
-        ? '<button onclick="_waPlayAudio(\'' + _escape(String(m.mediaId).replace(/[^\w.-]/g, '')) + '\', this)" '
-          + 'style="display:block;background:#00A884;color:#fff;border:none;border-radius:16px;padding:6px 14px;font-size:14px;font-weight:600;margin-bottom:5px;cursor:pointer">▶ נגן הקלטה</button>'
-        : '';
+      // Media carries its WhatsApp id — voice notes play, images/videos
+      // open fullscreen, all streamed through the worker's /media proxy.
+      let mediaHtml = '';
+      if (m.mediaId) {
+        const mid = _escape(String(m.mediaId).replace(/[^\w.-]/g, ''));
+        if (m.type === 'audio') {
+          mediaHtml = '<button onclick="_waPlayAudio(\'' + mid + '\', this)" '
+            + 'style="display:block;background:#00A884;color:#fff;border:none;border-radius:16px;padding:6px 14px;font-size:14px;font-weight:600;margin-bottom:5px;cursor:pointer">▶ נגן הקלטה</button>';
+        } else if (m.type === 'image') {
+          mediaHtml = '<img src="' + _waMediaUrl(mid) + '" loading="lazy" onclick="_waMediaView(\'' + mid + '\', false)" '
+            + 'style="display:block;max-width:100%;max-height:240px;border-radius:12px;margin-bottom:5px;cursor:pointer;object-fit:cover" '
+            + 'onerror="this.outerHTML=\'<div style=&quot;font-size:12px;opacity:.7;margin-bottom:5px&quot;>📷 התמונה כבר לא זמינה (מטא שומרת ~30 יום)</div>\'"/>';
+        } else if (m.type === 'video') {
+          mediaHtml = '<button onclick="_waMediaView(\'' + mid + '\', true)" '
+            + 'style="display:block;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 14px;font-size:14px;font-weight:600;margin-bottom:5px;cursor:pointer">🎬 הצג סרטון</button>';
+        }
+      }
       return '<div class="wa-th-row ' + dir + '">'
-        + '<div class="wa-th-msg">' + audioBtn + _escape(String(m.text || '')) + meta + '</div></div>';
+        + '<div class="wa-th-msg">' + mediaHtml + _escape(String(m.text || '')) + meta + '</div></div>';
     }).join('') : '<div class="mp-empty" style="padding:18px 0">אין היסטוריה זמינה עדיין לשיחה הזו.</div>';
   }
   openModal('waconvo');

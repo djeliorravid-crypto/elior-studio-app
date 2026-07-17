@@ -1106,8 +1106,14 @@ async function processWebhook(body, env) {
               const t = m.type;
               if (t === 'text')           text = '✏️ ' + ((m.text && m.text.body) || '(עריכה)');
               else if (t === 'sticker')   text = '🧩 סטיקר';
-              else if (t === 'image')     text = '📷 תמונה' + (m.image && m.image.caption ? ' — ' + m.image.caption : '');
-              else if (t === 'video')     text = '🎬 סרטון' + (m.video && m.video.caption ? ' — ' + m.video.caption : '');
+              else if (t === 'image') {
+                mediaId = (m.image && m.image.id) || '';
+                text = '📷 תמונה' + (m.image && m.image.caption ? ' — ' + m.image.caption : '');
+              }
+              else if (t === 'video') {
+                mediaId = (m.video && m.video.id) || '';
+                text = '🎬 סרטון' + (m.video && m.video.caption ? ' — ' + m.video.caption : '');
+              }
               else if (t === 'audio') {
                 // Voice note → keep the media id so the app can PLAY it
                 // (streamed through /media), plus automatic transcription.
