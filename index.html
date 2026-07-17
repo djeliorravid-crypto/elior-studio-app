@@ -6812,7 +6812,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v438</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v439</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16985,7 +16985,9 @@ function _waProcess(raw) {
       if (ts >= c.lastTs) { c.lastTs = ts; c.lastDir = m.dir; c.lastText = text; }
       if (m.dir === 'in') {
         if (ts > c.lastInTs) { c.lastInTs = ts; if (m.id) c.lastInId = m.id; }
-        c.ins.push({ ts: ts, text: text });
+        // type+mediaId ride along so card bubbles can render tappable
+        // images / videos / voice notes, not just their text label
+        c.ins.push({ ts: ts, text: text, type: m.type, mediaId: m.mediaId });
       } else if (ts > c.lastOutTs) c.lastOutTs = ts;
     } catch (_) {}
   });
@@ -17011,6 +17013,9 @@ function _waProcess(raw) {
     const fresh = c.ins.filter(m => m.ts > cutoff).sort((a, b) => a.ts - b.ts);
     c.unread = fresh.length;
     c.freshTexts = fresh.slice(-5).map(m => m.text);
+    // media refs ride along so the card bubbles are tappable (image /
+    // video / voice) — not only the history modal
+    c.freshMsgs = fresh.slice(-5).map(m => ({ text: m.text, type: m.type, mediaId: m.mediaId }));
     delete c.ins;
     return c;
    } catch (_) { delete c.ins; c.cls = c.cls || 'lead'; return c; }
@@ -17759,9 +17764,11 @@ function _waRow(c, isWaiting) {
       +   histBtn
       + '</div></div>';
   }
-  // Bubbles: the last up to 3 unanswered incoming messages, each its own.
-  const texts = (c.freshTexts && c.freshTexts.length) ? c.freshTexts.slice(-3) : [c.lastText || ''];
-  const bubbles = texts.map(t => '<div class="wa-bub">' + _escape(String(t).slice(0, 300)) + '</div>').join('');
+  // Bubbles: the last up to 3 unanswered incoming messages, each its
+  // own — media (image/video/voice) is tappable right on the card.
+  const msgs = (c.freshMsgs && c.freshMsgs.length) ? c.freshMsgs.slice(-3)
+    : ((c.freshTexts && c.freshTexts.length) ? c.freshTexts.slice(-3).map(t => ({ text: t })) : [{ text: c.lastText || '' }]);
+  const bubbles = msgs.map(m => '<div class="wa-bub">' + _waMediaHtml(m) + _escape(String(m.text || '').slice(0, 300)) + '</div>').join('');
   const leadChip = (c.cls === 'lead' ? '<span class="wa-chip-lead">ליד חדש</span>' : '')
     + _waLabelChip(c.phone)
     + (_waPins[c.phone] ? '<span style="flex-shrink:0">📌</span>' : '');
@@ -17795,6 +17802,26 @@ function _waRow(c, isWaiting) {
 function _waMediaUrl(mediaId) {
   const sec = localStorage.getItem('wa_send_secret') || '';
   return 'https://ravid-whatsapp.djeliorravid.workers.dev/media?sec=' + encodeURIComponent(sec) + '&id=' + encodeURIComponent(mediaId);
+}
+// Shared media block for a message record — used by BOTH the card
+// bubbles and the history modal, so tapping works everywhere.
+function _waMediaHtml(m) {
+  if (!m || !m.mediaId) return '';
+  const mid = _escape(String(m.mediaId).replace(/[^\w.-]/g, ''));
+  if (m.type === 'audio') {
+    return '<button onclick="event.stopPropagation();_waPlayAudio(\'' + mid + '\', this)" '
+      + 'style="display:block;background:#00A884;color:#fff;border:none;border-radius:16px;padding:6px 14px;font-size:14px;font-weight:600;margin-bottom:5px;cursor:pointer">▶ נגן הקלטה</button>';
+  }
+  if (m.type === 'image') {
+    return '<img src="' + _waMediaUrl(mid) + '" loading="lazy" onclick="event.stopPropagation();_waMediaView(\'' + mid + '\', false)" '
+      + 'style="display:block;max-width:100%;max-height:240px;border-radius:12px;margin-bottom:5px;cursor:pointer;object-fit:cover" '
+      + 'onerror="this.outerHTML=\'<div style=&quot;font-size:12px;opacity:.7;margin-bottom:5px&quot;>📷 התמונה כבר לא זמינה (מטא שומרת ~30 יום)</div>\'"/>';
+  }
+  if (m.type === 'video') {
+    return '<button onclick="event.stopPropagation();_waMediaView(\'' + mid + '\', true)" '
+      + 'style="display:block;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 14px;font-size:14px;font-weight:600;margin-bottom:5px;cursor:pointer">🎬 הצג סרטון</button>';
+  }
+  return '';
 }
 // Fullscreen lightbox for images/videos — tap anywhere to close.
 window._waMediaView = function(mediaId, isVideo) {
@@ -17870,23 +17897,8 @@ window.waHistory = function(phone) {
       const meta = '<span class="wa-th-meta">' + time + (dir === 'out' ? ' <span class="wa-ticks">✓✓</span>' : '') + '</span>';
       // Media carries its WhatsApp id — voice notes play, images/videos
       // open fullscreen, all streamed through the worker's /media proxy.
-      let mediaHtml = '';
-      if (m.mediaId) {
-        const mid = _escape(String(m.mediaId).replace(/[^\w.-]/g, ''));
-        if (m.type === 'audio') {
-          mediaHtml = '<button onclick="_waPlayAudio(\'' + mid + '\', this)" '
-            + 'style="display:block;background:#00A884;color:#fff;border:none;border-radius:16px;padding:6px 14px;font-size:14px;font-weight:600;margin-bottom:5px;cursor:pointer">▶ נגן הקלטה</button>';
-        } else if (m.type === 'image') {
-          mediaHtml = '<img src="' + _waMediaUrl(mid) + '" loading="lazy" onclick="_waMediaView(\'' + mid + '\', false)" '
-            + 'style="display:block;max-width:100%;max-height:240px;border-radius:12px;margin-bottom:5px;cursor:pointer;object-fit:cover" '
-            + 'onerror="this.outerHTML=\'<div style=&quot;font-size:12px;opacity:.7;margin-bottom:5px&quot;>📷 התמונה כבר לא זמינה (מטא שומרת ~30 יום)</div>\'"/>';
-        } else if (m.type === 'video') {
-          mediaHtml = '<button onclick="_waMediaView(\'' + mid + '\', true)" '
-            + 'style="display:block;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:6px 14px;font-size:14px;font-weight:600;margin-bottom:5px;cursor:pointer">🎬 הצג סרטון</button>';
-        }
-      }
       return '<div class="wa-th-row ' + dir + '">'
-        + '<div class="wa-th-msg">' + mediaHtml + _escape(String(m.text || '')) + meta + '</div></div>';
+        + '<div class="wa-th-msg">' + _waMediaHtml(m) + _escape(String(m.text || '')) + meta + '</div></div>';
     }).join('') : '<div class="mp-empty" style="padding:18px 0">אין היסטוריה זמינה עדיין לשיחה הזו.</div>';
   }
   openModal('waconvo');
@@ -19049,7 +19061,9 @@ function _waPaint() {
   const waiting = _waConvs
     .filter(c => c.waiting && (showAll || c.cls === 'client' || c.cls === 'lead') && !_waSnoozeActive(c))
     .filter(c => !_waLabelFilter || _waLabels[c.phone] === _waLabelFilter)
-    .sort((a, b) => ((_waPins[b.phone] ? 1 : 0) - (_waPins[a.phone] ? 1 : 0)) || (a.lastInTs - b.lastInTs));
+    // pins first, then NEWEST incoming message on top — a chat jumps
+    // up the moment a message lands (per Elior; was oldest-wait-first)
+    .sort((a, b) => ((_waPins[b.phone] ? 1 : 0) - (_waPins[a.phone] ? 1 : 0)) || (b.lastInTs - a.lastInTs));
   const topWait = waiting.filter(c => c.cls === 'client');
   const newWait = waiting.filter(c => c.cls !== 'client');
   // Live count pills in the box headers.
