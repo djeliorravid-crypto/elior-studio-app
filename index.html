@@ -6812,7 +6812,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v435</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v436</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7216,6 +7216,20 @@
 </div>
 
 <!-- WhatsApp scheduled message — compose + pending list (body-level) -->
+<!-- Compose a NEW message to any client — initiated from the app -->
+<div class="modal-overlay" id="modal-wacompose">
+  <div class="modal modal-narrow">
+    <h3>✉️ הודעה חדשה</h3>
+    <div class="mp-sub" id="wacompose-to" style="margin:-8px 0 12px"></div>
+    <div class="form-group"><label>ההודעה *</label><textarea id="wacompose-text" rows="4" placeholder="מה לכתוב?"></textarea></div>
+    <div class="mp-sub" style="font-size:11.5px">אם עברו יותר מ-24 שעות מאז שהוא כתב לך — וואטסאפ חוסם שליחה מהמערכת, ואז ייפתח לך הצ'אט עם ההודעה מוכנה לשליחה בלחיצה.</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('wacompose')">סגור</button>
+      <button class="btn btn-primary" style="flex:1" id="wacompose-send" onclick="waComposeSend()">שלח</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-wasched">
   <div class="modal modal-narrow">
     <h3>⏰ הודעה מתוזמנת</h3>
@@ -17436,6 +17450,7 @@ window.waActOpen = function(phone) {
   if (!isClient) html += B('⭐ סמן כלקוח — יעבור לתיבה למעלה', 'client', 'var(--green)');
   if (!isClient) html += B('🚫 לא רלוונטי — הסתר', 'hide');
   if (isClient && !c.client) html += B('הסר סימון לקוח', 'unmark');
+  html += B('✉️ שלח הודעה', 'compose');
   html += B('📜 רקע לשיחה', 'history');
   html += B('📅 שלח קישור לקביעת סשן', 'book');
   if (c.waiting) html += B('😴 הזכר לי לענות מאוחר יותר', 'snooze');
@@ -17462,8 +17477,62 @@ window.waActDo = function(phone, act) {
   else if (act === 'book') waBookOpen(phone);
   else if (act === 'pin') waPinToggle(phone);
   else if (act === 'label') { setTimeout(() => waLabelOpen(phone), 180); return; }
+  else if (act === 'compose') waComposeOpen(phone);
   else if (act === 'open') window.open('https://wa.me/' + phone, '_blank');
 };
+// ── Compose: a message HE initiates, to any client, from the app ──
+let _waComposePhone = '';
+window.waComposeOpen = function(phone) {
+  _waComposePhone = String(phone);
+  const toEl = document.getElementById('wacompose-to');
+  if (toEl) toEl.textContent = 'אל: ' + _waName({ phone }) + ' · ' + _waPhonePretty(phone);
+  const txt = document.getElementById('wacompose-text');
+  if (txt) txt.value = '';
+  openModal('wacompose');
+  setTimeout(() => { if (txt) txt.focus(); }, 150);
+};
+window.waComposeSend = async function() {
+  const phone = _waComposePhone;
+  const txt = document.getElementById('wacompose-text');
+  const text = (txt && txt.value || '').trim();
+  if (!text) { toast('כתוב הודעה קודם'); return; }
+  const sec = _waSecret();
+  if (!sec) return;
+  const btn = document.getElementById('wacompose-send');
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const r = await _mptHttp('POST', WA_WORKER + '/send', { secret: sec, to: phone, text, readId: _waLastInId(phone) });
+    if (r.ok && r.json && r.json.ok) {
+      toast('✓ נשלח בוואטסאפ');
+      if (window.haptic) window.haptic.success();
+      closeModal('wacompose');
+    } else if (_waIs24hBlock(r)) {
+      _wa24hFallback(phone, text);
+      closeModal('wacompose');
+    } else if (r.status === 403) {
+      toast('✗ קוד השליחה לא תואם לענן. לחץ 🔑 למעלה כדי לתקן.');
+    } else {
+      toast('⚠️ ' + ((r.json && r.json.error) || ('שגיאה ' + r.status)));
+    }
+  } catch (e) {
+    toast('⚠️ בעיית רשת: ' + (e && e.message || ''));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'שלח'; }
+  }
+};
+// Meta hard-blocks business-initiated free-form messages 24h after
+// the customer's last message (error 131047). Not our bug, not
+// fixable server-side — so turn the dead end into one tap: open the
+// chat in WhatsApp itself with the text pre-filled.
+function _waIs24hBlock(r) {
+  const msg = String((r && r.json && r.json.error) || '');
+  const code = r && r.json && r.json.code;
+  return code === 131047 || /24 hours|re-?engagement/i.test(msg);
+}
+function _wa24hFallback(phone, text) {
+  toast('⏰ עברו 24 שעות מההודעה האחרונה שלו — וואטסאפ חוסם שליחה מהמערכת. פתחתי לך את הצ\'אט עם ההודעה מוכנה ✍️');
+  try { window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(text), '_blank'); } catch (_) {}
+}
 // ── Scheduled messages: queued to /whatsapp/outbox, sent by the
 //    worker's cron the minute they come due — phone can be off, app
 //    closed. Each item carries a SHA-256 signature derived from the
@@ -18581,6 +18650,9 @@ window.waReply = async function(phone) {
       try { _waApptCheck(phone, text); } catch (_) {}   // sniff for a closed appointment
       // The worker records the outgoing message → the live listener
       // clears the row within a second. No manual bookkeeping needed.
+    } else if (_waIs24hBlock(r)) {
+      // keep the text in the box — it's also pre-filled in WhatsApp
+      _wa24hFallback(phone, text);
     } else if (r.status === 403) {
       // DON'T wipe the code — wiping created an endless re-enter loop.
       // Keep it and point him at the 🔑 button to fix + test it.
