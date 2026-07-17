@@ -6864,11 +6864,47 @@
     box-shadow: inset 0 0 0 1px rgba(255,178,84,.25);
     color: #ffc87d;
   }
+  /* category totals: color follows the TAB — red on expenses, green
+     on income (the cards share one component; per Elior 16.7) */
   [data-theme="dark"] .exp-cat-total {
     font-size: 17px;
     background: linear-gradient(120deg, #ffb59d, #e8896a);
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
+  }
+  [data-theme="dark"] #page-income .exp-cat-total {
+    background: linear-gradient(120deg, #eaffc2 5%, #a8c46a 60%, #d9f29a 95%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  [data-theme="dark"] #page-income .exp-cat-icon {
+    background: rgba(168,196,106,.13);
+    box-shadow: inset 0 0 0 1px rgba(168,196,106,.3);
+    color: #c9e08a;
+  }
+
+  /* ═══ REMAINING TABS — profiles, payment plans, workshops, and every
+     generic list card join the same language ═══ */
+  [data-theme="dark"] .profile-card,
+  [data-theme="dark"] .plan-card,
+  [data-theme="dark"] .wk-card {
+    background: linear-gradient(160deg, #2f2218 0%, #241a10 100%) !important;
+    border: 1px solid rgba(255,200,140,.14) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.04) !important;
+  }
+  [data-theme="dark"] .ftab {
+    border-radius: 999px;
+  }
+  [data-theme="dark"] .ftab.active {
+    background: linear-gradient(135deg, #f2bd74, #d8913c);
+    color: #2a1808;
+    border-color: transparent;
+  }
+  [data-theme="dark"] .search-bar {
+    background: rgba(0,0,0,.25);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 14px;
   }
 
   /* ═══ SCHEDULE / DAILY 2026 — event rows go glass; the inline
@@ -6921,7 +6957,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v441</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v442</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
