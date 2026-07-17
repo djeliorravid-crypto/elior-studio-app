@@ -6798,6 +6798,57 @@
     color: #2a1808;
     box-shadow: 0 12px 32px rgba(216,145,60,.38);
   }
+
+  /* ═══ INCOME TAB 2026 — the money hero. Scoped to the income grid
+     and dark theme only; inline styles beaten with !important, which
+     is safe here because the scope is explicit (cream-dock lesson:
+     never force backgrounds on theme-shared chrome like .sidebar). ═══ */
+  [data-theme="dark"] .income-month-grid .stat-card {
+    background: linear-gradient(160deg, #2f2218 0%, #241a10 100%) !important;
+    border: 1px solid rgba(255,200,140,.16) !important;
+    border-radius: 22px !important;
+    box-shadow: 0 16px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05) !important;
+  }
+  [data-theme="dark"] #stat-income-month {
+    font-size: 38px !important;
+    background: linear-gradient(120deg, #eaffc2 5%, #a8c46a 55%, #d9f29a 95%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  [data-theme="dark"] #pending-income-amt {
+    font-size: 34px !important;
+    background: linear-gradient(120deg, #ffe3b3, #e8a44e);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  [data-theme="dark"] #stat-expenses-month {
+    font-size: 34px !important;
+    background: linear-gradient(120deg, #ffb59d, #e8896a);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  [data-theme="dark"] #pending-expenses-amt { font-size: 30px !important; }
+  [data-theme="dark"] #i-net-profit {
+    font-size: 40px !important;
+    background: linear-gradient(120deg, #ffe3b3 10%, #f0b566 50%, #ffd89a 90%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  [data-theme="dark"] #pending-income-bar {
+    background: linear-gradient(90deg, #e8a44e, #a8c46a) !important;
+    box-shadow: 0 0 10px rgba(168,196,106,.5);
+  }
+  [data-theme="dark"] .income-month-grid .stat-card > div > div[style*="height:5px"],
+  [data-theme="dark"] .income-month-grid .stat-card div[style*="height:5px"] {
+    height: 7px !important;
+    background: rgba(255,255,255,.08) !important;
+  }
+  /* staggered entrance — STRICTLY scoped to the income grid */
+  #page-income.active .income-month-grid .stat-card:nth-child(1) { animation: lobbyRise .4s .02s cubic-bezier(.2,.7,.3,1) both; }
+  #page-income.active .income-month-grid .stat-card:nth-child(2) { animation: lobbyRise .4s .08s cubic-bezier(.2,.7,.3,1) both; }
+  #page-income.active .income-month-grid .stat-card:nth-child(3) { animation: lobbyRise .4s .14s cubic-bezier(.2,.7,.3,1) both; }
+  #page-income.active .income-month-grid .stat-card:nth-child(4) { animation: lobbyRise .4s .20s cubic-bezier(.2,.7,.3,1) both; }
+  #page-income.active .income-month-grid .stat-card:nth-child(5) { animation: lobbyRise .4s .26s cubic-bezier(.2,.7,.3,1) both; }
 </style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
@@ -6812,7 +6863,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v439</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v440</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
