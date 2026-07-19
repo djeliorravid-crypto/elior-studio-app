@@ -1,0 +1,30 @@
+# One-off: restart Elior's weight-loss process in the cloud —
+# archive old weigh-ins, start today at 104kg, day 1. The app's
+# resume-sync pulls it on next open (cloud ts wins). Safe to delete
+# after running.
+name: Reset health process
+
+on:
+  workflow_dispatch:
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Archive weights + restart at 104
+        run: |
+          DB="https://elior-studio-default-rtdb.firebaseio.com"
+          TODAY=$(TZ=Asia/Jerusalem date +%F)
+          curl -sS "$DB/studio_data/my_path.json" -o cur.json
+          test -s cur.json
+          jq --arg d "$TODAY" '
+            .weightsArchive = ((.weightsArchive // []) + (.weights // []))
+            | .weights = [{d: $d, kg: 104}]
+            | .processStart = $d
+            | .startWeight = 104
+          ' cur.json > new.json
+          echo "old weights: $(jq '.weights | length' cur.json) → archived total: $(jq '.weightsArchive | length' new.json)"
+          curl -sS -X PUT --data-binary @new.json "$DB/studio_data/my_path.json" -o /dev/null -w "PUT my_path: %{http_code}\n"
+          NOW_MS=$(date +%s%3N)
+          curl -sS -X PUT -d "$NOW_MS" "$DB/studio_meta/my_path.json" -o /dev/null -w "PUT meta: %{http_code}\n"
+          echo "process restarted: day 1 = $TODAY, 104kg"
