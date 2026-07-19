@@ -6945,6 +6945,36 @@
     border: 1px solid rgba(255,255,255,.12);
     border-radius: 999px;
   }
+
+  /* ═══ HEALTH / כושר ותזונה 2026 — the process gets the language ═══ */
+  [data-theme="dark"] .mpt-tiles-grid .mpt-plan-tile {
+    background: linear-gradient(160deg, #2f2218 0%, #241a10 100%);
+    border: 1px solid rgba(255,200,140,.15);
+    border-radius: 18px;
+    box-shadow: 0 10px 26px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  [data-theme="dark"] .mpt-tiles-grid .mpt-plan-tile .n {
+    font-size: 23px;
+    background: linear-gradient(120deg, #ffe3b3, #eeb268);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  /* the day counter — the hero tile of the journey */
+  [data-theme="dark"] .mpt-tiles-grid .mpt-plan-tile:nth-child(1) {
+    border-color: rgba(242,189,116,.45);
+    box-shadow: 0 12px 30px rgba(216,145,60,.18), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  [data-theme="dark"] .mpt-tiles-grid .mpt-plan-tile:nth-child(1) .n { font-size: 27px; }
+  [data-theme="dark"] .mpt-tiles-grid .mpt-plan-tile.over .n {
+    background: linear-gradient(120deg, #ffb59d, #e8896a);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  [data-theme="dark"] .mpt-plan-text {
+    background: linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,200,140,.12);
+    border-radius: 16px;
+  }
 </style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
@@ -6959,7 +6989,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v443</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v444</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -13174,12 +13204,30 @@ function _mptRenderToday() {
   _mptApplySecs();
 }
 window.mptTileDays = function() {
-  if (!confirm('לאפס את ספירת הימים ולהתחיל את התהליך מהיום?')) return;
+  // FULL restart — the old version reset only the day counter and
+  // left the recent weigh-ins, so "day 1" showed last week's weights.
+  // Now: old weigh-ins are archived (never deleted), the process
+  // starts today from a fresh opening weight.
   const st = _mptState();
-  st.processStart = _mpbToday();
+  const lastKg = st.weights.length ? st.weights[st.weights.length - 1].kg : '';
+  const v = prompt('התחלה חדשה 🚀\nמשקל פתיחה לתהליך (ק״ג):\n(השקילות הישנות נשמרות בארכיון — הגרף מתחיל נקי)', lastKg || '');
+  if (v === null) return;
+  const n = parseFloat(String(v).replace(',', '.'));
+  if (!(n > 25 && n < 350)) { toast('משקל לא תקין'); return; }
+  if (!confirm('לאפס את התהליך? יום 1 = היום · משקל פתיחה ' + n + ' ק״ג')) return;
+  if (st.weights.length) {
+    st.weightsArchive = (Array.isArray(st.weightsArchive) ? st.weightsArchive : []).concat(st.weights);
+    if (st.weightsArchive.length > 800) st.weightsArchive = st.weightsArchive.slice(-800);
+  }
+  const today = _mpbToday();
+  st.processStart = today;
+  st.startWeight = n;
+  st.weights = [{ d: today, kg: n }];
   mpSave(st);
+  if (window.haptic) window.haptic.success();
+  toast('🚀 תהליך חדש — יום 1, פתיחה ' + n + ' ק״ג');
   _mptRenderToday();
-  toast('✓ התהליך מתחיל היום — יום 1');
+  try { _mptRenderWeight(); } catch (_) {}
 };
 window.mptTileSteps = function() {
   if (_mptHK()) _mptHealthSync(true);
