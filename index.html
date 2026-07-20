@@ -6989,7 +6989,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v444</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v445</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9226,6 +9226,27 @@ function fixPaidStatusesMay2026() {
     console.log('✅ תיקון סטטוסי שולם הוחל');
   }
   localStorage.setItem(FIX_KEY, '1');
+}
+
+// תיקון חד-פעמי — התחלה חדשה לתהליך: פתיחה 104 ק"ג, יום 1 (לבקשת
+// אליאור 19.7.26). רץ על המכשיר אחרי סנכרון הענן, כך ששום גרסה ישנה
+// לא יכולה לדרוס אותו (האיפוס הקודם רץ בענן ונדרס ע"י המכשיר).
+function fixProcessRestart104() {
+  const KEY = 'fix_reset104_1907';
+  try {
+    if (localStorage.getItem(KEY)) return;
+    if (typeof _mptState !== 'function' || typeof mpSave !== 'function') return;
+    const st = _mptState();
+    st.weightsArchive = (Array.isArray(st.weightsArchive) ? st.weightsArchive : []).concat(st.weights || []);
+    if (st.weightsArchive.length > 800) st.weightsArchive = st.weightsArchive.slice(-800);
+    const today = _mpbToday();
+    st.processStart = today;
+    st.startWeight = 104;
+    st.weights = [{ d: today, kg: 104 }];
+    mpSave(st);
+    localStorage.setItem(KEY, '1');
+    console.log('✅ תהליך אופס: יום 1, 104 ק"ג');
+  } catch (e) { console.warn('fixProcessRestart104 failed', e); }
 }
 
 function initFirebase() {
@@ -16058,6 +16079,9 @@ function autoMarkOverdue() {
 // ===== STARTUP – sync from cloud then render =====
 initFirebase().then(() => {
   autoMarkOverdue();
+  // runs on EVERY startup path (cloud, cloud-failed, local-only) —
+  // after the cloud merge, so the fix always wins the race.
+  try { fixProcessRestart104(); } catch (_) {}
   refreshAll();
   // Live listener: pick up signed contracts within seconds, no reload needed
   try { _attachContractsListener(); } catch(e){}
