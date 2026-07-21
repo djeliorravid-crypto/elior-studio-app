@@ -7038,7 +7038,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v447</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v448</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -13315,14 +13315,22 @@ function _mptDayActive(st, key) {
   return !!(Number(h.steps) > 0);
 }
 function _mptStreak(st) {
+  // Rules (per Elior, day 2): TODAY always counts — the day is still
+  // open, don't punish a morning with no log yet. The process start
+  // day always counts — starting IS the act. Past days must have a
+  // real log. Capped at days-in-process so old pre-process logs can't
+  // inflate the flame.
+  const today = _mpbToday();
+  const dayN = st.processStart
+    ? Math.max(1, Math.round((new Date(today + 'T12:00:00') - new Date(st.processStart + 'T12:00:00')) / 86400000) + 1)
+    : 400;
   let n = 0;
   for (let k = 0; k < 400; k++) {
     const key = _mpbDayKey(new Date(Date.now() - k * 86400000));
-    if (_mptDayActive(st, key)) n++;
-    else if (k === 0) continue; // morning grace — today still empty
+    if (k === 0 || key === st.processStart || _mptDayActive(st, key)) n++;
     else break;
   }
-  return n;
+  return Math.min(n, dayN);
 }
 const MPT_MEDALS = [
   { id: 'start',   e: '🚀', t: 'יצאנו לדרך',      chk: (st, x) => !!st.processStart },
