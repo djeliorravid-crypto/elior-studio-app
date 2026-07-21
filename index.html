@@ -7038,7 +7038,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v448</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v449</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -12692,7 +12692,11 @@ function _mptRenderWeight() {
   }
   const first = w[0], lastE = w[w.length - 1];
   const goal = Number(st.body.goalWeight) || 0;
-  const lost = first.kg - lastE.kg;
+  // "מאז ההתחלה" measures from the DECLARED start weight (104), not
+  // from the first weigh-in in the chart (Elior 21.7: started 104,
+  // first logged weigh-in was already 103.1 — the drop counts).
+  const baseW = Number(st.startWeight) || first.kg;
+  const lost = baseW - lastE.kg;
   const toGo = goal ? (lastE.kg - goal) : 0;
   const h = Number(st.body.height) || 0;
   const bmi = h ? (lastE.kg / Math.pow(h / 100, 2)) : 0;
@@ -13350,17 +13354,26 @@ function _mptRenderStreak() {
   const st = _mptState();
   if (!st.achievements || typeof st.achievements !== 'object') st.achievements = {};
   const streak = _mptStreak(st);
+  // Stats scoped to THE PROCESS ONLY (>= processStart) — old pre-process
+  // meals/steps must not unlock medals (the 21.7 bug: 8/10 unlocked on
+  // day 2 because history from before the restart was counted).
+  const ps = st.processStart || '0000-00-00';
   let mealDays = 0, maxSteps = 0;
-  Object.keys(st.meals || {}).forEach(k => { if ((st.meals[k] || []).length) mealDays++; });
-  Object.keys(st.health || {}).forEach(k => { const s = Number((st.health[k] || {}).steps) || 0; if (s > maxSteps) maxSteps = s; });
+  Object.keys(st.meals || {}).forEach(k => { if (k >= ps && (st.meals[k] || []).length) mealDays++; });
+  Object.keys(st.health || {}).forEach(k => { if (k >= ps) { const s = Number((st.health[k] || {}).steps) || 0; if (s > maxSteps) maxSteps = s; } });
   const startW = Number(st.startWeight) || (st.weights.length ? st.weights[0].kg : 0);
   const lastW = st.weights.length ? st.weights[st.weights.length - 1].kg : startW;
   const x = { streak, mealDays, maxSteps, lost: Math.max(0, startW - lastW) };
-  let newUnlock = null;
+  // Medals mirror the CURRENT truth: recomputed every render. A stale
+  // unlock (from a bug or an old process) self-heals shut; a real one
+  // fires confetti exactly once.
+  let newUnlock = null, changed = false;
   MPT_MEDALS.forEach(m => {
-    if (m.chk(st, x) && !st.achievements[m.id]) { st.achievements[m.id] = _mpbToday(); newUnlock = m; }
+    const ok = m.chk(st, x);
+    if (ok && !st.achievements[m.id]) { st.achievements[m.id] = _mpbToday(); newUnlock = m; changed = true; }
+    else if (!ok && st.achievements[m.id]) { delete st.achievements[m.id]; changed = true; }
   });
-  if (newUnlock) mpSave(st);
+  if (changed) mpSave(st);
   const got = MPT_MEDALS.filter(m => st.achievements[m.id]).length;
   el.innerHTML =
     '<div class="mpt-streak-card">'
