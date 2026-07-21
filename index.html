@@ -7038,7 +7038,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v446</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v447</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9299,6 +9299,33 @@ function fixProcessRestart104() {
     localStorage.setItem(KEY, '1');
     console.log('✅ תהליך אופס: יום 1, 104 ק"ג');
   } catch (e) { console.warn('fixProcessRestart104 failed', e); }
+}
+
+// תיקון המשך — התהליך התחיל אתמול בפועל (20.7), לא ביום שהמיגרציה
+// רצה: יום 1 = 20.7 (היום = יום 2), והשקילה האמיתית שאליאור רשם
+// אתמול חוזרת מהארכיון. רץ אחרי fixProcessRestart104.
+function fixProcessDay2() {
+  const KEY = 'fix_day2_2107';
+  const DAY1 = '2026-07-20';
+  try {
+    if (localStorage.getItem(KEY)) return;
+    if (typeof _mptState !== 'function' || typeof mpSave !== 'function') return;
+    const st = _mptState();
+    st.processStart = DAY1;
+    st.startWeight = 104;
+    // his real weigh-ins from day 1 onwards — from archive + current,
+    // minus the synthetic 104 seeds the previous fix created
+    const seen = {};
+    (Array.isArray(st.weightsArchive) ? st.weightsArchive : []).concat(st.weights || [])
+      .filter(w => w && w.d >= DAY1 && Number(w.kg) !== 104)
+      .forEach(w => { seen[w.d] = Number(w.kg); });
+    let weights = Object.keys(seen).sort().map(d => ({ d: d, kg: seen[d] }));
+    if (!weights.length) weights = [{ d: DAY1, kg: 104 }];
+    st.weights = weights;
+    mpSave(st);
+    localStorage.setItem(KEY, '1');
+    console.log('✅ יום 2 בתהליך: start=' + DAY1, JSON.stringify(weights));
+  } catch (e) { console.warn('fixProcessDay2 failed', e); }
 }
 
 function initFirebase() {
@@ -16222,6 +16249,7 @@ initFirebase().then(() => {
   // runs on EVERY startup path (cloud, cloud-failed, local-only) —
   // after the cloud merge, so the fix always wins the race.
   try { fixProcessRestart104(); } catch (_) {}
+  try { fixProcessDay2(); } catch (_) {}
   refreshAll();
   // Live listener: pick up signed contracts within seconds, no reload needed
   try { _attachContractsListener(); } catch(e){}
