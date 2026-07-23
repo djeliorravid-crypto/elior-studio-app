@@ -51,6 +51,29 @@ jobs:
               if e: print(e.get("date"), e.get("time"), repr(e.get("title")), e.get("id"), e.get("createdAt",""))
           print("total:", len(arr))
           '
+          echo "===== MY_PATH (process health) ====="
+          curl -sS "$DB/studio_data/my_path.json" | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin) or {}
+          if not isinstance(d, dict): print("UNEXPECTED:", type(d)); sys.exit(0)
+          print("processStart:", d.get("processStart"), "| startWeight:", d.get("startWeight"))
+          w = d.get("weights") or []
+          print("weights:", [(x.get("d"), x.get("kg")) for x in w][-5:], "| total:", len(w))
+          print("archive:", len(d.get("weightsArchive") or []))
+          print("achievements:", sorted((d.get("achievements") or {}).keys()))
+          print("goalWeight:", (d.get("body") or {}).get("goalWeight"))
+          '
+          echo "===== SYNC META (freshness) ====="
+          curl -sS "$DB/studio_meta.json" | python3 -c '
+          import json,sys,datetime
+          d=json.load(sys.stdin) or {}
+          now=datetime.datetime.utcnow()
+          for k in sorted(d):
+              try:
+                  t=datetime.datetime.utcfromtimestamp(d[k]/1000)
+                  print(k.ljust(16), t.strftime("%d.%m %H:%M"), "(", str(now-t).split(".")[0], "ago )")
+              except Exception: print(k, d[k])
+          '
           echo "===== PUSH TOKEN ====="
           curl -sS "$DB/whatsapp/push.json" | head -c 300; echo
           echo "===== CMDQUEUE ====="
