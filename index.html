@@ -7080,6 +7080,16 @@
   }
   [data-theme="dark"] .fx-name-btn { border-color: rgba(242,189,116,.5); color: #ffc87d; }
   .fx-foot { font-size: 10px; font-weight: 600; color: var(--text-muted); padding: 8px 0 4px; text-align: center; }
+  .tx-tag {
+    display: inline-block; margin-inline-start: 6px; padding: 1px 8px;
+    border-radius: 999px; font-size: 9.5px; font-weight: 800; cursor: pointer;
+    background: rgba(242,189,116,.14); color: var(--accent);
+    border: 1px solid rgba(242,189,116,.35);
+  }
+  .tx-tag.personal {
+    background: rgba(120,160,255,.12); color: #8ab0ff;
+    border-color: rgba(120,160,255,.35);
+  }
 </style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
@@ -7094,7 +7104,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v451</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v452</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8003,6 +8013,7 @@
          month: in minus out, always visible (per Elior 23.7: "באפליקציה
          סכומים יפים אבל בבנק אני במינוס"). -->
     <div id="truth-strip" style="display:none"></div>
+    <div id="bank-credits-card"></div>
 
     <!-- Toggle for the secondary data (bank deposit, goal, expense
          stats, net profit, insights). Collapsed by default. -->
@@ -9460,7 +9471,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -10647,6 +10658,7 @@ function renderIncome() {
       <div class="truth-sub">נכנס ${fmtMoney(totalPaid)} · יצא ${fmtMoney(paidExpenses)}${pos ? '' : ' · זה המינוס — לא ההכנסות'}</div>
     </div>`;
   }
+  try { renderBankCredits(); } catch (_) {}
 
   // "רווח נקי עתידי" = הכל צפוי (שולם + ממתין + תשלומים) פחות כל הוצאות החודש
   const monthExpensesTotal = load('expenses').filter(e => inCurMonth(e.date)).reduce((s,e) => s + Number(e.amount), 0);
@@ -12026,7 +12038,9 @@ function _txRenderInbox() {
         <div class="tx-row-cat">${t.icon || '💳'}</div>
         <div class="tx-row-body">
           <div class="tx-row-merchant">${(t.merchant || '').replace(/[<>&]/g, '')}</div>
-          <div class="tx-row-meta">${t.category} · ${t.date.split('-').reverse().slice(0,2).join('.')}</div>
+          <div class="tx-row-meta">${t.category} · ${t.date.split('-').reverse().slice(0,2).join('.')}
+            <span class="tx-tag ${t.tag === 'אישי' ? 'personal' : ''}" onclick="event.stopPropagation();txToggleTag('${idEsc}')">${t.tag === 'אישי' ? '🏠 אישי' : '💼 עסקי'}</span>
+          </div>
         </div>
         <div class="tx-row-amt">${fmtMoney(t.amount)}</div>
         <div class="tx-row-actions" onclick="event.stopPropagation()">
@@ -12077,7 +12091,7 @@ window.txConfirmPending = function() {
   // amount signature so every future charge of this amount self-names.
   const orig = txList().find(x => x.id === id);
   if (orig && _txIsNameless(orig.merchant)) _txLearnRule(amount, desc, category);
-  _txCommitExpense({ amount, date, desc, category });
+  _txCommitExpense({ amount, date, desc, category, tag: (orig && orig.tag) || undefined });
   _txRemoveFromQueue(id);
   closeModal('tx-edit');
   window._txEditTarget = null;
@@ -12095,7 +12109,7 @@ window.txRejectPending = function() {
 
 window.txQuickConfirm = function(id) {
   const t = txList().find(x => x.id === id); if (!t) return;
-  _txCommitExpense({ amount: t.amount, date: t.date, desc: t.merchant, category: t.category });
+  _txCommitExpense({ amount: t.amount, date: t.date, desc: t.merchant, category: t.category, tag: t.tag });
   _txRemoveFromQueue(id);
   if (window.haptic) window.haptic.success();
   toast('✓ נוסף להוצאות');
@@ -12113,14 +12127,14 @@ window.txConfirmAll = function() {
   const arr = txList();
   if (arr.length === 0) return;
   if (!confirm('לאשר את כל ' + arr.length + ' התנועות כהוצאות?')) return;
-  arr.forEach(t => _txCommitExpense({ amount: t.amount, date: t.date, desc: t.merchant, category: t.category }));
+  arr.forEach(t => _txCommitExpense({ amount: t.amount, date: t.date, desc: t.merchant, category: t.category, tag: t.tag }));
   txSaveAll([]);
   if (window.haptic) window.haptic.success();
   toast('✓ ' + arr.length + ' הוצאות נשמרו');
   if (typeof renderExpenses === 'function') renderExpenses();
 };
 
-function _txCommitExpense({ amount, date, desc, category }) {
+function _txCommitExpense({ amount, date, desc, category, tag }) {
   const expenses = load('expenses') || [];
   expenses.push({
     id: genId(),
@@ -12128,6 +12142,7 @@ function _txCommitExpense({ amount, date, desc, category }) {
     date,
     description: desc,
     category,
+    tag: tag || (_TX_PERSONAL_CATS.indexOf(category) !== -1 ? 'אישי' : 'עסקי'),
     notes: 'מ-Apple Wallet',
     paid: true,
     paidAt: new Date().toISOString()
@@ -16561,45 +16576,142 @@ function _syncFromCloud(reason) {
   })();
 }
 
+// Categories that default to a PERSONAL tag on bank debits (Elior
+// 31.7); everything else defaults to business. Always toggleable per
+// transaction via the chip on the row.
+const _TX_PERSONAL_CATS = ['מזון', 'בילוי', 'בגדים', 'בריאות'];
+function bankCreditsList() { try { return load('bank_credits') || []; } catch (_) { return []; } }
+function bankCreditsSave(a) { save('bank_credits', a); }
+
 async function _bankInboxDrain() {
   const q = await fetch(_DB_REST + '/bank_inbox.json', { cache: 'no-store' }).then(r => r.json());
   if (!q || typeof q !== 'object') return;
   let seen = [];
   try { seen = JSON.parse(localStorage.getItem('bank_seen') || '[]'); } catch (_) {}
   const arr = txList();
-  let added = 0;
+  const credits = bankCreditsList();
+  let added = 0, creditsAdded = 0;
   for (const k of Object.keys(q)) {
     const t = q[k] || {};
     if (seen.indexOf(k) === -1 && Number(t.amount) > 0) {
       const name = String(t.name || '').trim();
-      const guess = name ? _txGuessCategory(name) : { cat: 'אחר', icon: '💳' };
-      const item = {
-        id: 'tx_bank_' + k,
-        ts: new Date().toISOString(),
-        amount: Number(t.amount),
-        merchant: name || 'תנועה ללא שם',
-        date: t.date || new Date().toISOString().slice(0, 10),
-        category: guess.cat,
-        icon: '🏦',
-        raw: 'בנק דיסקונט · ' + (name || '')
-      };
-      _txApplyRule(item);
-      if (!arr.some(x => x.id === item.id)) { arr.push(item); added++; }
+      if (t.kind === 'credit') {
+        // money IN — goes to the approval list on the income page
+        if (!credits.some(c => c.id === 'bc_' + k)) {
+          credits.push({ id: 'bc_' + k, date: t.date || new Date().toISOString().slice(0, 10), amount: Number(t.amount), name: name });
+          creditsAdded++;
+        }
+      } else {
+        const guess = name ? _txGuessCategory(name) : { cat: 'אחר', icon: '💳' };
+        const item = {
+          id: 'tx_bank_' + k,
+          ts: new Date().toISOString(),
+          amount: Number(t.amount),
+          merchant: name || 'תנועה ללא שם',
+          date: t.date || new Date().toISOString().slice(0, 10),
+          category: guess.cat,
+          icon: '🏦',
+          raw: 'בנק דיסקונט · ' + (name || '')
+        };
+        _txApplyRule(item);
+        item.tag = _TX_PERSONAL_CATS.indexOf(item.category) !== -1 ? 'אישי' : 'עסקי';
+        if (!arr.some(x => x.id === item.id)) { arr.push(item); added++; }
+      }
       seen.push(k);
     }
     fetch(_DB_REST + '/bank_inbox/' + k + '.json', { method: 'DELETE' }).catch(() => {});
   }
-  if (added) {
-    txSaveAll(arr);
+  if (added || creditsAdded) {
+    if (added) txSaveAll(arr);
+    if (creditsAdded) bankCreditsSave(credits);
     if (seen.length > 800) seen = seen.slice(-800);
     localStorage.setItem('bank_seen', JSON.stringify(seen));
-    toast('🏦 ' + added + ' תנועות חדשות מהבנק — עם שמות');
+    const parts = [];
+    if (added) parts.push(added + ' הוצאות');
+    if (creditsAdded) parts.push(creditsAdded + ' כניסות');
+    toast('🏦 מהבנק: ' + parts.join(' · '));
     if (window.haptic) window.haptic.success();
     if (typeof renderExpenses === 'function') renderExpenses();
+    if (creditsAdded && typeof renderIncome === 'function') { try { renderIncome(); } catch (_) {} }
   } else if (Object.keys(q).length) {
     localStorage.setItem('bank_seen', JSON.stringify(seen));
   }
 }
+
+// ── Bank credits card (income page): exact-amount match to a pending
+//    income → one tap marks it paid; no match → approve as new income.
+function renderBankCredits() {
+  const wrap = document.getElementById('bank-credits-card');
+  if (!wrap) return;
+  const credits = bankCreditsList();
+  if (!credits.length) { wrap.innerHTML = ''; return; }
+  const income = load('income') || [];
+  const rows = credits.map(c => {
+    const match = income.find(i => (i.status || 'pending') !== 'paid' && Math.abs(Number(i.amount) - c.amount) < 0.01);
+    const idEsc = c.id.replace(/'/g, "\\'");
+    const who = (c.name || 'העברה בנקאית').replace(/[<>&]/g, '');
+    const action = match
+      ? `<button class="fx-name-btn" onclick="bankCreditPaid('${idEsc}')">סמן שולם${match.clientName ? ' · ' + match.clientName.replace(/[<>&'"]/g, '') : ''}</button>`
+      : `<button class="fx-name-btn" onclick="bankCreditAdd('${idEsc}')">הוסף כהכנסה</button>`;
+    return `<div class="fx-row">
+      <div class="fx-body">
+        <div class="fx-title">${who}</div>
+        <div class="fx-meta">${c.date.split('-').reverse().slice(0, 2).join('.')}${match ? ' · תואם להכנסה ממתינה' : ' · אין התאמה'}</div>
+      </div>
+      ${action}
+      <button class="tx-mini-btn reject" onclick="bankCreditDismiss('${idEsc}')" title="הסר">×</button>
+      <div class="fx-amt" style="color:var(--green)">+${fmtMoney(c.amount)}</div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = `<div class="fx-card">
+    <div class="fx-head"><div class="fx-head-title">🏦 נכנס לבנק — לאישור שלך</div></div>
+    ${rows}
+  </div>`;
+}
+window.bankCreditPaid = function(cid) {
+  const credits = bankCreditsList();
+  const c = credits.find(x => x.id === cid); if (!c) return;
+  const income = load('income') || [];
+  const match = income.find(i => (i.status || 'pending') !== 'paid' && Math.abs(Number(i.amount) - c.amount) < 0.01);
+  if (!match) { toast('ההכנסה התואמת כבר לא ממתינה'); return; }
+  match.status = 'paid';
+  match.paidAt = new Date().toISOString();
+  save('income', income);
+  bankCreditsSave(credits.filter(x => x.id !== cid));
+  if (window.haptic) window.haptic.success();
+  toast('✓ ' + fmtMoney(c.amount) + ' סומן כשולם');
+  refreshAll();
+};
+window.bankCreditAdd = function(cid) {
+  const credits = bankCreditsList();
+  const c = credits.find(x => x.id === cid); if (!c) return;
+  if (!confirm('להוסיף הכנסה של ' + fmtMoney(c.amount) + (c.name ? ' מ-' + c.name : '') + '?')) return;
+  const income = load('income') || [];
+  income.push({
+    id: genId(), date: c.date, amount: c.amount, clientId: '',
+    clientName: c.name || '', description: (c.name || 'העברה בנקאית') + ' · מהבנק',
+    category: 'אחר', notes: 'זוהה אוטומטית מדיסקונט', status: 'paid',
+    paidAt: new Date().toISOString()
+  });
+  income.sort((a, b) => new Date(b.date) - new Date(a.date));
+  save('income', income);
+  bankCreditsSave(credits.filter(x => x.id !== cid));
+  if (window.haptic) window.haptic.success();
+  toast('✓ נוספה הכנסה — ' + fmtMoney(c.amount));
+  refreshAll();
+};
+window.bankCreditDismiss = function(cid) {
+  bankCreditsSave(bankCreditsList().filter(x => x.id !== cid));
+  renderBankCredits();
+};
+window.txToggleTag = function(id) {
+  const arr = txList();
+  const t = arr.find(x => x.id === id); if (!t) return;
+  t.tag = t.tag === 'אישי' ? 'עסקי' : 'אישי';
+  txSaveAll(arr);
+  if (window.haptic) window.haptic.tap();
+  if (typeof renderExpenses === 'function') renderExpenses();
+};
 
 // 1. כשחוזרים לאפליקציה — סנכרן מהענן + בדוק איחורים
 document.addEventListener('visibilitychange', () => {

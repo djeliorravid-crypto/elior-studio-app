@@ -46,9 +46,18 @@ jobs:
               console.log('Add DISCOUNT_ID + DISCOUNT_PASSWORD (+ DISCOUNT_NUM) in repo Settings → Secrets → Actions.');
               return;
             }
+            // "רק מהיום והלאה" (Elior 31.7): the first run stamps
+            // /bank_since = today and nothing older ever imports. A
+            // 3-day scrape buffer still catches late-posting charges
+            // dated on/after the since date.
+            let since = await fetch(DB + '/bank_since.json').then(r => r.json());
+            if (!since) {
+              since = new Date().toISOString().slice(0, 10);
+              await fetch(DB + '/bank_since.json', { method: 'PUT', body: JSON.stringify(since) });
+            }
             const scraper = createScraper({
               companyId: CompanyTypes.discount,
-              startDate: new Date(Date.now() - 30 * 864e5),
+              startDate: new Date(new Date(since).getTime() - 3 * 864e5),
               combineInstallments: false,
               showBrowser: false
             });
@@ -63,15 +72,17 @@ jobs:
               for (const tx of acc.txns || []) {
                 total++;
                 const charged = Number(tx.chargedAmount);
-                if (!(charged < 0)) continue; // debits only
+                if (!charged) continue;
                 const date = String(tx.date).slice(0, 10);
+                if (date < since) continue;
                 const amount = Math.round(Math.abs(charged) * 100) / 100;
                 const name = String(tx.description || '').trim();
-                const sig = tx.identifier ? String(tx.identifier) : date + '|' + amount + '|' + name;
+                const kind = charged < 0 ? 'debit' : 'credit';
+                const sig = tx.identifier ? String(tx.identifier) : date + '|' + charged + '|' + name;
                 const hash = crypto.createHash('md5').update(sig).digest('hex').slice(0, 16);
                 if (seen[hash]) continue;
                 await fetch(DB + '/bank_inbox/' + hash + '.json', {
-                  method: 'PUT', body: JSON.stringify({ date, amount, name })
+                  method: 'PUT', body: JSON.stringify({ date, amount, name, kind })
                 });
                 await fetch(DB + '/bank_seen/' + hash + '.json', {
                   method: 'PUT', body: JSON.stringify(Date.now())
@@ -79,6 +90,6 @@ jobs:
                 sent++;
               }
             }
-            console.log('scraped txns:', total, '| new debits sent to app:', sent);
+            console.log('scraped txns:', total, '| new (debits+credits) sent to app:', sent);
           })().catch(e => { console.log('ERROR:', e.constructor.name, '(message hidden)'); process.exit(1); });
           EOF
