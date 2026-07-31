@@ -13,9 +13,11 @@
 # counts. Data flows straight to Firebase.
 name: Bank sync
 
+# NOTE 31.7.26: nightly cron disabled — Discount challenges the login
+# from foreign (GitHub) IPs with SMS verification a headless robot
+# can't answer. Manual dispatch kept for future retries; the in-app
+# paste-import is the working path meanwhile.
 on:
-  schedule:
-    - cron: "30 3 * * *" # ~06:30 Israel, every morning
   workflow_dispatch:
 
 jobs:

@@ -7104,7 +7104,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v452</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v453</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8080,6 +8080,8 @@
 
     <!-- Auto-detected fixed/recurring charges — "מה יורד לי כל חודש" -->
     <div id="fixed-exp-card" style="margin-bottom:18px"></div>
+
+    <button class="btn btn-ghost" style="width:100%;margin-bottom:18px" onclick="bankPasteOpen()">📥 ייבוא תנועות מהבנק (הדבקה)</button>
 
     <div style="display:none"><span id="e-total-inc"></span><span id="e-total"></span><span id="e-net"></span></div>
 
@@ -16704,6 +16706,102 @@ window.bankCreditDismiss = function(cid) {
   bankCreditsSave(bankCreditsList().filter(x => x.id !== cid));
   renderBankCredits();
 };
+// ══════════ BANK PASTE IMPORT — plan B while Discount blocks the
+// robot with SMS challenges. Copy rows from the Discount app/site
+// export, paste, done: same pipeline (names, tags, rules, credits).
+window.bankPasteOpen = function() {
+  let m = document.getElementById('modal-bank-paste');
+  if (!m) {
+    m = document.createElement('div');
+    m.className = 'modal-overlay';
+    m.id = 'modal-bank-paste';
+    m.innerHTML = `<div class="modal" style="max-width:520px">
+      <div class="modal-header"><h3>📥 ייבוא תנועות מהבנק</h3><button class="modal-close" onclick="closeModal('bank-paste')">×</button></div>
+      <div style="padding:0 20px 20px">
+        <p style="font-size:12.5px;color:var(--text-muted);line-height:1.6;margin-bottom:10px">
+          פתח את אפליקציית/אתר דיסקונט → תנועות בחשבון → סמן והעתק את השורות (או פתח ייצוא אקסל, סמן הכל והעתק) → הדבק כאן.
+          כל שורה עם תאריך + שם + סכום תיקלט. חיובים נכנסים לתור לאישור, זיכויים לכרטיס ההכנסות.</p>
+        <textarea id="bank-paste-text" rows="8" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text);font-size:13px" placeholder="הדבק כאן את התנועות..."></textarea>
+        <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="bankPasteImport()">קלוט תנועות</button>
+      </div></div>`;
+    document.body.appendChild(m);
+  }
+  m.classList.add('open');
+  setTimeout(() => { try { document.getElementById('bank-paste-text').focus(); } catch (_) {} }, 150);
+};
+// Tolerant Hebrew bank-row parser: finds a date (dd/mm/yy, dd.mm.yyyy,
+// yyyy-mm-dd), an amount (last money-looking number; ‎- or זכות marks
+// direction), and treats the longest text chunk as the merchant name.
+function _bankParseLine(line) {
+  const raw = String(line || '').trim();
+  if (!raw || raw.length < 6) return null;
+  let dm = raw.match(/(\d{4})-(\d{2})-(\d{2})/);
+  let date = null;
+  if (dm) date = dm[1] + '-' + dm[2] + '-' + dm[3];
+  else {
+    dm = raw.match(/(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})/);
+    if (!dm) return null;
+    let y = dm[3]; if (y.length === 2) y = '20' + y;
+    date = y + '-' + String(dm[2]).padStart(2, '0') + '-' + String(dm[1]).padStart(2, '0');
+  }
+  // amounts: strip the date, find money numbers
+  const rest = raw.replace(dm[0], ' ');
+  const nums = rest.match(/-?\s?₪?\s?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?(?!\d)/g);
+  if (!nums || !nums.length) return null;
+  const amtRaw = nums[nums.length - 1].replace(/[₪,\s]/g, '');
+  const amount = Math.abs(parseFloat(amtRaw));
+  if (!(amount > 0)) return null;
+  const credit = /זכות|הפקדה|משכורת|העברה אליך|\+/.test(raw) ? true : parseFloat(amtRaw) > 0 && /זיכוי/.test(raw);
+  const debit = parseFloat(amtRaw) < 0 || !credit;
+  // name = longest run of letters left after removing date + numbers
+  let name = rest;
+  nums.forEach(n => { name = name.split(n).join(' '); });
+  name = name.replace(/[\t|;,]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = name.split(' ').filter(w => /[א-תA-Za-z]/.test(w) && !/^(זכות|חובה|זיכוי|חיוב)$/.test(w));
+  name = words.join(' ').slice(0, 40).trim();
+  return { date: date, amount: Math.round(amount * 100) / 100, name: name, kind: debit ? 'debit' : 'credit' };
+}
+window.bankPasteImport = function() {
+  const txt = (document.getElementById('bank-paste-text') || {}).value || '';
+  const lines = txt.split(/\n+/);
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem('bank_seen') || '[]'); } catch (_) {}
+  const arr = txList();
+  const credits = bankCreditsList();
+  let added = 0, creditsAdded = 0, skipped = 0;
+  lines.forEach(line => {
+    const t = _bankParseLine(line);
+    if (!t) return;
+    const key = 'p_' + t.date + '_' + t.amount + '_' + t.name.slice(0, 12);
+    if (seen.indexOf(key) !== -1) { skipped++; return; }
+    if (t.kind === 'credit') {
+      credits.push({ id: 'bc_' + key, date: t.date, amount: t.amount, name: t.name });
+      creditsAdded++;
+    } else {
+      const guess = t.name ? _txGuessCategory(t.name) : { cat: 'אחר', icon: '💳' };
+      const item = {
+        id: 'tx_' + key, ts: new Date().toISOString(),
+        amount: t.amount, merchant: t.name || 'תנועה ללא שם', date: t.date,
+        category: guess.cat, icon: '🏦', raw: 'ייבוא ידני · ' + line.slice(0, 120)
+      };
+      _txApplyRule(item);
+      item.tag = _TX_PERSONAL_CATS.indexOf(item.category) !== -1 ? 'אישי' : 'עסקי';
+      arr.push(item); added++;
+    }
+    seen.push(key);
+  });
+  if (!added && !creditsAdded) { toast(skipped ? 'הכל כבר נקלט קודם' : 'לא זוהו תנועות — נסה להעתיק שורות מלאות'); return; }
+  txSaveAll(arr);
+  if (creditsAdded) bankCreditsSave(credits);
+  if (seen.length > 800) seen = seen.slice(-800);
+  localStorage.setItem('bank_seen', JSON.stringify(seen));
+  closeModal('bank-paste');
+  if (window.haptic) window.haptic.success();
+  toast('🏦 נקלטו ' + (added + creditsAdded) + ' תנועות' + (skipped ? ' (' + skipped + ' כפולות דולגו)' : ''));
+  if (typeof renderExpenses === 'function') renderExpenses();
+  if (creditsAdded && typeof renderIncome === 'function') { try { renderIncome(); } catch (_) {} }
+};
+
 window.txToggleTag = function(id) {
   const arr = txList();
   const t = arr.find(x => x.id === id); if (!t) return;
