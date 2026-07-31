@@ -7024,6 +7024,62 @@
   @keyframes mptConfFall {
     to { transform: translateY(105vh) rotate(340deg); opacity: .9; }
   }
+
+  /* ═══ MONEY TRUTH — the strip + fixed-expenses card ═══ */
+  .truth-card {
+    border-radius: 20px; padding: 14px 18px; margin-bottom: 16px;
+    border: 1px solid var(--border); background: var(--surface);
+  }
+  [data-theme="dark"] .truth-card.pos {
+    background: linear-gradient(160deg, rgba(168,196,106,.14), rgba(168,196,106,.04));
+    border-color: rgba(168,196,106,.35);
+  }
+  [data-theme="dark"] .truth-card.neg {
+    background: linear-gradient(160deg, rgba(232,137,106,.16), rgba(232,137,106,.05));
+    border-color: rgba(232,137,106,.4);
+    box-shadow: 0 8px 24px rgba(184,68,46,.12);
+  }
+  .truth-main { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .truth-label { font-size: 13px; font-weight: 900; color: var(--text); }
+  .truth-num { font-size: 26px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .truth-card.pos .truth-num { color: var(--green); }
+  .truth-card.neg .truth-num { color: var(--red); }
+  [data-theme="dark"] .truth-card.pos .truth-num { color: #c9e08a; }
+  [data-theme="dark"] .truth-card.neg .truth-num { color: #ffb59d; }
+  .truth-sub { font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-top: 3px; }
+
+  .fx-card {
+    border-radius: 20px; border: 1px solid var(--border); background: var(--surface);
+    padding: 14px 16px 10px;
+  }
+  [data-theme="dark"] .fx-card {
+    background: linear-gradient(160deg, #2f2218 0%, #241a10 100%);
+    border-color: rgba(255,200,140,.16);
+    box-shadow: 0 12px 30px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .fx-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .fx-head-title { font-size: 14px; font-weight: 900; color: var(--text); }
+  .fx-head-total { font-size: 20px; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--text); }
+  [data-theme="dark"] .fx-head-total {
+    background: linear-gradient(120deg, #ffe3b3, #eeb268);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .fx-head-total small { font-size: 11px; font-weight: 800; -webkit-text-fill-color: initial; color: var(--text-muted); }
+  .fx-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); }
+  [data-theme="dark"] .fx-row { border-top-color: rgba(255,255,255,.07); }
+  .fx-body { flex: 1; min-width: 0; }
+  .fx-title { font-size: 13.5px; font-weight: 800; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fx-unknown { color: var(--orange); }
+  .fx-meta { font-size: 10.5px; font-weight: 700; color: var(--text-muted); margin-top: 1px; }
+  .fx-amt { font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; color: var(--text); flex-shrink: 0; }
+  .fx-name-btn {
+    flex-shrink: 0; border: 1px solid var(--accent); background: transparent; color: var(--accent);
+    font-family: 'Heebo', sans-serif; font-size: 11.5px; font-weight: 800;
+    padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  }
+  [data-theme="dark"] .fx-name-btn { border-color: rgba(242,189,116,.5); color: #ffc87d; }
+  .fx-foot { font-size: 10px; font-weight: 600; color: var(--text-muted); padding: 8px 0 4px; text-align: center; }
 </style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
@@ -7038,7 +7094,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v449</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v450</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7943,6 +7999,11 @@
       </div>
     </div>
 
+    <!-- The truth strip — what ACTUALLY happened to the money this
+         month: in minus out, always visible (per Elior 23.7: "באפליקציה
+         סכומים יפים אבל בבנק אני במינוס"). -->
+    <div id="truth-strip" style="display:none"></div>
+
     <!-- Toggle for the secondary data (bank deposit, goal, expense
          stats, net profit, insights). Collapsed by default. -->
     <button class="income-extra-toggle" id="income-extra-btn" onclick="toggleIncomeExtra()">
@@ -8005,6 +8066,9 @@
          Shortcut sends new transactions via ravidstudio:// URL scheme.
          Hidden until at least one pending item exists. -->
     <div id="tx-inbox" style="margin-bottom:18px"></div>
+
+    <!-- Auto-detected fixed/recurring charges — "מה יורד לי כל חודש" -->
+    <div id="fixed-exp-card" style="margin-bottom:18px"></div>
 
     <div style="display:none"><span id="e-total-inc"></span><span id="e-total"></span><span id="e-net"></span></div>
 
@@ -9396,7 +9460,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -10569,6 +10633,21 @@ function renderIncome() {
   const bankSub = document.getElementById('i-net-profit-sub');
   if (bankSub) bankSub.textContent = `${fmtMoney(totalPaid)} נכנס − ${fmtMoney(paidExpenses)} יצא`;
 
+  // The always-visible truth strip: in − out = what the bank actually
+  // sees. The one number that must never hide behind a toggle.
+  const truthEl = document.getElementById('truth-strip');
+  if (truthEl) {
+    const pos = bankBalance >= 0;
+    truthEl.style.display = 'block';
+    truthEl.innerHTML = `<div class="truth-card ${pos ? 'pos' : 'neg'}">
+      <div class="truth-main">
+        <span class="truth-label">נטו אמיתי החודש</span>
+        <span class="truth-num">${pos ? '+' : '−'}${fmtMoney(Math.abs(bankBalance))}</span>
+      </div>
+      <div class="truth-sub">נכנס ${fmtMoney(totalPaid)} · יצא ${fmtMoney(paidExpenses)}${pos ? '' : ' · זה המינוס — לא ההכנסות'}</div>
+    </div>`;
+  }
+
   // "רווח נקי עתידי" = הכל צפוי (שולם + ממתין + תשלומים) פחות כל הוצאות החודש
   const monthExpensesTotal = load('expenses').filter(e => inCurMonth(e.date)).reduce((s,e) => s + Number(e.amount), 0);
   const futureProfit = totalAllExpected - monthExpensesTotal;
@@ -11681,6 +11760,131 @@ function _txParseNotification(text) {
 function txList()        { try { return load('pending_tx') || []; } catch (_) { return []; } }
 function txSaveAll(arr)  { save('pending_tx', arr); }
 
+// ══════════ AMOUNT-SIGNATURE NAMING RULES ══════════
+// Wallet charges arrive with no merchant name. When Elior names one,
+// we remember amount→name, and every future (and queued) nameless
+// charge with that exact amount is named automatically.
+function _txIsNameless(m) {
+  const s = String(m || '').trim();
+  return !s || s === 'תנועה ללא שם' || s.indexOf('לא זוהה') !== -1;
+}
+function _txRules()      { try { return load('tx_rules') || []; } catch (_) { return []; } }
+function _txRulesSave(a) { save('tx_rules', a); }
+function _txLearnRule(amount, desc, cat) {
+  if (!(amount > 0) || !desc || _txIsNameless(desc)) return;
+  const rules = _txRules().filter(r => Math.abs(r.amt - amount) >= 0.01);
+  rules.push({ amt: amount, desc: desc, cat: cat || 'אחר', at: new Date().toISOString() });
+  if (rules.length > 300) rules.splice(0, rules.length - 300);
+  _txRulesSave(rules);
+  toast('🧠 נזכור: ' + fmtMoney(amount) + ' = ' + desc);
+}
+function _txApplyRule(item) {
+  if (!_txIsNameless(item.merchant) || !(item.amount > 0)) return false;
+  const r = _txRules().find(x => Math.abs(x.amt - item.amount) < 0.01);
+  if (!r) return false;
+  item.merchant = r.desc;
+  item.category = r.cat;
+  item.icon = '🧠';
+  return true;
+}
+
+// ══════════ FIXED-EXPENSE DETECTOR ══════════
+// Scans committed expenses (last ~7 months): a charge that repeats in
+// 2+ distinct months with a stable amount (±15%) and roughly monthly
+// cadence is "fixed". Nameless groups are keyed by exact amount so
+// even unnamed subscriptions surface — with a "name it" button that
+// renames the whole history AND teaches the rule engine.
+function detectFixedExpenses() {
+  const cutoff = new Date(Date.now() - 210 * 86400000).toISOString().slice(0, 10);
+  const exp = (load('expenses') || []).filter(e => e && e.date >= cutoff && Number(e.amount) > 0);
+  const groups = {};
+  exp.forEach(e => {
+    const name = String(e.description || '').trim();
+    const key = _txIsNameless(name)
+      ? 'AMT::' + (Math.round(Number(e.amount) * 100) / 100)
+      : 'NAME::' + name.toLowerCase().replace(/\s+/g, ' ');
+    (groups[key] = groups[key] || []).push(e);
+  });
+  const out = [];
+  Object.keys(groups).forEach(key => {
+    const g = groups[key];
+    const amts = g.map(e => Number(e.amount)).sort((a, b) => a - b);
+    const med = amts[Math.floor(amts.length / 2)];
+    const stable = g.filter(e => med && Math.abs(Number(e.amount) - med) / med <= 0.15);
+    const months = {};
+    stable.forEach(e => { months[e.date.slice(0, 7)] = true; });
+    const nMonths = Object.keys(months).length;
+    if (nMonths < 2) return;                       // must repeat across months
+    if (stable.length / nMonths > 1.6) return;     // too frequent = variable (fuel, food)
+    const days = stable.map(e => Number(e.date.slice(8, 10))).sort((a, b) => a - b);
+    const dayMed = days[Math.floor(days.length / 2)];
+    const nameless = key.indexOf('AMT::') === 0;
+    out.push({
+      key: key,
+      name: nameless ? null : g[0].description,
+      category: g[0].category || 'אחר',
+      amount: med,
+      day: dayMed,
+      months: nMonths,
+      count: stable.length,
+      nameless: nameless
+    });
+  });
+  out.sort((a, b) => b.amount - a.amount);
+  return out;
+}
+function renderFixedExpenses() {
+  const wrap = document.getElementById('fixed-exp-card');
+  if (!wrap) return;
+  let fixed = [];
+  try { fixed = detectFixedExpenses(); } catch (_) { fixed = []; }
+  if (!fixed.length) { wrap.innerHTML = ''; return; }
+  const total = fixed.reduce((s, f) => s + f.amount, 0);
+  const rows = fixed.slice(0, 12).map(f => {
+    const keyEsc = f.key.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const title = f.nameless
+      ? '<span class="fx-unknown">חיוב לא מזוהה</span>'
+      : String(f.name).replace(/[<>&]/g, '');
+    const nameBtn = f.nameless
+      ? `<button class="fx-name-btn" onclick="fxNameGroup('${keyEsc}', ${f.amount})">תן שם</button>`
+      : '';
+    return `<div class="fx-row">
+      <div class="fx-body">
+        <div class="fx-title">${title}</div>
+        <div class="fx-meta">בערך ב-${f.day} לחודש · נראה ${f.count} פעמים ב-${f.months} חודשים</div>
+      </div>
+      ${nameBtn}
+      <div class="fx-amt">${fmtMoney(f.amount)}</div>
+    </div>`;
+  }).join('');
+  wrap.innerHTML = `<div class="fx-card">
+    <div class="fx-head">
+      <div class="fx-head-title">הוצאות קבועות שזוהו</div>
+      <div class="fx-head-total">${fmtMoney(total)}<small> / חודש</small></div>
+    </div>
+    ${rows}
+    <div class="fx-foot">מזוהה אוטומטית מחיובים שחוזרים כל חודש · שם שאתה נותן נשמר להיסטוריה ולחיובים הבאים</div>
+  </div>`;
+}
+window.fxNameGroup = function(key, amount) {
+  const name = prompt('מה החיוב הזה של ' + fmtMoney(amount) + ' שיורד כל חודש?\n(למשל: ספוטיפיי, ביטוח רכב, חדר כושר)');
+  if (!name || !name.trim()) return;
+  const clean = name.trim();
+  const amt = Number(key.slice(5));
+  const expenses = load('expenses') || [];
+  let renamed = 0;
+  expenses.forEach(e => {
+    if (_txIsNameless(e.description) && Math.abs(Number(e.amount) - amt) < 0.01) {
+      e.description = clean; renamed++;
+    }
+  });
+  save('expenses', expenses);
+  _txLearnRule(amt, clean, 'אחר');
+  if (window.haptic) window.haptic.success();
+  toast('✓ ' + renamed + ' חיובים קיבלו שם: ' + clean);
+  if (typeof renderExpenses === 'function') renderExpenses();
+};
+
 // Parse iOS Wallet's locale-formatted amount text like "₪45.00",
 // "$1,234.56", "€1.234,56". Strips currency symbols and resolves the
 // decimal separator heuristically: if both . and , present, the
@@ -11731,12 +11935,14 @@ function txIngestStructured(parsed) {
     raw:      parsed.raw || (parsed.amount + ' · ' + cleanMerchant),
     needsAmount: !(cleanAmount > 0)
   };
+  const autoNamed = _txApplyRule(item);
   const arr = txList();
   arr.push(item);
   txSaveAll(arr);
   if (window.haptic) window.haptic.success();
-  if (cleanAmount > 0) toast('+ ' + fmtMoney(cleanAmount) + ' מ-' + merchant);
-  else                 toast(merchant + ' — הוסף סכום');
+  if (autoNamed)           toast('🧠 ' + fmtMoney(item.amount) + ' — ' + item.merchant);
+  else if (cleanAmount > 0) toast('+ ' + fmtMoney(cleanAmount) + ' מ-' + merchant);
+  else                      toast(merchant + ' — הוסף סכום');
   if (typeof renderExpenses === 'function') renderExpenses();
   return true;
 }
@@ -11778,11 +11984,14 @@ function txIngest(raw) {
     raw:      parsed.raw,
     needsAmount: !!parsed.needsAmount
   };
+  const autoNamed = _txApplyRule(item);
   const arr = txList();
   arr.push(item);
   txSaveAll(arr);
   if (window.haptic) window.haptic.success();
-  if (parsed.needsAmount) {
+  if (autoNamed) {
+    toast('🧠 ' + fmtMoney(item.amount) + ' — ' + item.merchant);
+  } else if (parsed.needsAmount) {
     toast(parsed.merchant + ' — הוסף סכום');
   } else {
     toast('+ ' + fmtMoney(item.amount) + ' מ-' + item.merchant);
@@ -11800,12 +12009,15 @@ function _txRenderInbox() {
   const arr = txList();
   let _reclassed = false;
   arr.forEach(t => {
+    // amount-signature rules first — names queued nameless charges
+    if (_txApplyRule(t)) { _reclassed = true; return; }
     if (t.category === 'אחר' && t.merchant && t.merchant !== 'תנועה ללא שם') {
       const g = _txGuessCategory(t.merchant);
       if (g.cat !== 'אחר') { t.category = g.cat; t.icon = g.icon; _reclassed = true; }
     }
   });
   if (_reclassed) txSaveAll(arr);
+  try { renderFixedExpenses(); } catch (_) {}
   if (arr.length === 0) { wrap.innerHTML = ''; return; }
   const rows = arr.slice().reverse().map(t => {
     const idEsc = String(t.id).replace(/'/g, "\\'");
@@ -11861,6 +12073,10 @@ window.txConfirmPending = function() {
   // belongs in this category". Next time we see the same merchant
   // we'll classify it automatically without asking.
   _txLearnMerchantCategory(desc, category);
+  // If the charge arrived nameless and he just named it — remember the
+  // amount signature so every future charge of this amount self-names.
+  const orig = txList().find(x => x.id === id);
+  if (orig && _txIsNameless(orig.merchant)) _txLearnRule(amount, desc, category);
   _txCommitExpense({ amount, date, desc, category });
   _txRemoveFromQueue(id);
   closeModal('tx-edit');
