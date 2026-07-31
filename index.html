@@ -7094,7 +7094,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v450</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v451</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11313,7 +11313,7 @@ function _renameCategoryInRecords(kind, oldName, newName) {
 
 // ───────── Custom categories (user-created, per kind) ─────────
 // Stored in localStorage as JSON array of {name, icon}. Kind = 'expense' | 'income'.
-const _DEFAULT_EXP_CATS = ['ציוד','שכירות','חשמל/מים','תוכנות','מנויים','שיווק','תחבורה','מזון','בגדים','משלוחים','בילוי','בריאות','רשויות','תקשורת','אחר'];
+const _DEFAULT_EXP_CATS = ['נגנים','ציוד','שכירות','חשמל/מים','תוכנות','מנויים','שיווק','תחבורה','מזון','בגדים','משלוחים','בילוי','בריאות','רשויות','תקשורת','אחר'];
 const _DEFAULT_INC_CATS = ['הקלטה','מיקס ומאסטרינג','הפקה מוזיקלית','עריכה','פרויקט מיוחד','אחר'];
 const _CAT_ICON_CHOICES = [
   'ic-cat-mic','ic-cat-mix','ic-cat-gear','ic-cat-edit',
@@ -11574,7 +11574,7 @@ window.saveManageCategories = function() {
 // an `icon` emoji directly in the record). Render path now prefers
 // _txCatSvg for visual consistency.
 const _TX_CAT_ICONS = {
-  'מזון': '🛒', 'תוכנות': '💾', 'ציוד': '🎚️', 'תחבורה': '⛽',
+  'מזון': '🛒', 'תוכנות': '💾', 'ציוד': '🎚️', 'תחבורה': '⛽', 'נגנים': '🎻',
   'שכירות': '🏠', 'חשמל/מים': '💡', 'בגדים': '👕', 'תקשורת': '📡',
   'משלוחים': '🛵', 'בריאות': '💊', 'בילוי': '🎬', 'רשויות': '🏛️',
   'שיווק': '📣', 'מנויים': '💾', 'אחר': '💳'
@@ -16551,9 +16551,54 @@ function _syncFromCloud(reason) {
           for (const k of Object.keys(q)) { try { _waCmdApply(k, q[k]); } catch (_) {} }
         }
       } catch (_) {}
+      // Drain the bank inbox — the nightly Discount scraper (GitHub
+      // Action) drops REAL-NAMED transactions into /bank_inbox; pull
+      // them into the pending-tx queue with names + categories, then
+      // delete from the cloud. One toast for the whole batch.
+      try { await _bankInboxDrain(); } catch (_) {}
     } catch (_) {}
     _syncRestBusy = false;
   })();
+}
+
+async function _bankInboxDrain() {
+  const q = await fetch(_DB_REST + '/bank_inbox.json', { cache: 'no-store' }).then(r => r.json());
+  if (!q || typeof q !== 'object') return;
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem('bank_seen') || '[]'); } catch (_) {}
+  const arr = txList();
+  let added = 0;
+  for (const k of Object.keys(q)) {
+    const t = q[k] || {};
+    if (seen.indexOf(k) === -1 && Number(t.amount) > 0) {
+      const name = String(t.name || '').trim();
+      const guess = name ? _txGuessCategory(name) : { cat: 'אחר', icon: '💳' };
+      const item = {
+        id: 'tx_bank_' + k,
+        ts: new Date().toISOString(),
+        amount: Number(t.amount),
+        merchant: name || 'תנועה ללא שם',
+        date: t.date || new Date().toISOString().slice(0, 10),
+        category: guess.cat,
+        icon: '🏦',
+        raw: 'בנק דיסקונט · ' + (name || '')
+      };
+      _txApplyRule(item);
+      if (!arr.some(x => x.id === item.id)) { arr.push(item); added++; }
+      seen.push(k);
+    }
+    fetch(_DB_REST + '/bank_inbox/' + k + '.json', { method: 'DELETE' }).catch(() => {});
+  }
+  if (added) {
+    txSaveAll(arr);
+    if (seen.length > 800) seen = seen.slice(-800);
+    localStorage.setItem('bank_seen', JSON.stringify(seen));
+    toast('🏦 ' + added + ' תנועות חדשות מהבנק — עם שמות');
+    if (window.haptic) window.haptic.success();
+    if (typeof renderExpenses === 'function') renderExpenses();
+  } else if (Object.keys(q).length) {
+    localStorage.setItem('bank_seen', JSON.stringify(seen));
+  }
 }
 
 // 1. כשחוזרים לאפליקציה — סנכרן מהענן + בדוק איחורים
