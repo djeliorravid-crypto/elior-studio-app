@@ -62,7 +62,8 @@ jobs:
               companyId: CompanyTypes.discount,
               startDate: new Date(new Date(since).getTime() - 3 * 864e5),
               combineInstallments: false,
-              showBrowser: false
+              showBrowser: false,
+              args: ['--no-sandbox', '--disable-setuid-sandbox']
             });
             const res = await scraper.scrape({ id, password: pw, num });
             if (!res.success) {
