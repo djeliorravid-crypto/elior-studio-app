@@ -67,7 +67,9 @@ jobs:
             });
             const res = await scraper.scrape({ id, password: pw, num });
             if (!res.success) {
-              console.log('SCRAPE FAILED:', res.errorType || '', '(no details printed on purpose)');
+              const scrub = s => ['DISCOUNT_ID', 'DISCOUNT_PASSWORD', 'DISCOUNT_NUM']
+                .reduce((t, k) => process.env[k] ? t.split(process.env[k]).join('***') : t, String(s || ''));
+              console.log('SCRAPE FAILED:', res.errorType || '', '|', scrub(res.errorMessage).slice(0, 400));
               process.exit(1);
             }
             const seen = await fetch(DB + '/bank_seen.json').then(r => r.json()) || {};
