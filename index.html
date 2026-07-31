@@ -7090,6 +7090,16 @@
     background: rgba(120,160,255,.12); color: #8ab0ff;
     border-color: rgba(120,160,255,.35);
   }
+  .prod-mini-status {
+    flex-shrink: 0; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid transparent; font-size: 11px; font-weight: 800;
+    white-space: nowrap;
+  }
+  .prod-mini-days {
+    flex-shrink: 0; font-size: 11px; font-weight: 700;
+    color: var(--text-muted); font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
 </style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
@@ -7104,7 +7114,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v453</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v454</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -20561,7 +20571,7 @@ function renderProductions() {
   // Active count in the page subtitle (replaces the old stats card)
   const sub = document.getElementById('prod-page-sub');
   if (sub) sub.textContent = active.length
-    ? active.length + ' פעילות · השיר, השלב, התשלום'
+    ? active.length + ' פעילות · השיר, השלב, הימים'
     : 'אין הפקות פעילות';
 
   // Sort: by deadline ASC (closest first), no deadline at the bottom.
@@ -20721,22 +20731,13 @@ function _prodCardHtml(p) {
       </div>`;
   }
 
-  // ── Collapsed-header payment summary (compact) ──
-  let payMini;
-  if (price > 0) {
-    payMini = paidTotal > 0
-      ? `<span class="prod-mini-paid ${payState}">${fmtMoney(paidTotal)}</span><span class="prod-mini-sep">/</span><span class="prod-mini-price">${fmtMoney(price)}</span>`
-      : `<span class="prod-mini-price">${fmtMoney(price)}</span>`;
-  } else {
-    payMini = `<span class="prod-mini-noprice">ללא מחיר</span>`;
-  }
-  // Tiny deadline flag in the collapsed header — only when it actually
-  // matters (today / overdue / ≤3 days), so the row stays clean.
-  let miniDeadline = '';
-  if (du !== null && du <= 3) {
-    const dlTxt = du < 0 ? `איחור ${-du}י׳` : (du === 0 ? 'היום' : `${du}י׳`);
-    miniDeadline = `<span class="prod-mini-deadline">${dlTxt}</span>`;
-  }
+  // ── Collapsed header: NO money, NO overdue (Elior 1.8) — just the
+  //    production status in his words + how many days it's been alive.
+  const bucket = p.stage === 'sketch' ? { t: 'עוד לא התחלתי', c: '#9aa0aa' }
+    : p.stage === 'prod'   ? { t: 'בעבודה',       c: '#f0a830' }
+    : p.stage === 'sent'   ? { t: 'נמסר',          c: '#34c759' }
+    :                        { t: 'לקראת סיום',   c: '#4aa3ff' };
+  const daysIn = Math.max(1, _prodDaysBetween(p.createdAt || new Date(), new Date()) + 1);
 
   return `
     <div class="prod-card ${p.priority === 'high' ? 'priority-high' : ''} ${expanded ? 'is-open' : ''}" id="prod-card-${id}">
@@ -20746,8 +20747,8 @@ function _prodCardHtml(p) {
           <span class="prod-card-title">${_escape(p.title)}</span>
           <span class="prod-card-artist">${_escape(p.artist || 'ללא אמן')}</span>
         </span>
-        <span class="prod-head-pay">${payMini}</span>
-        ${miniDeadline}
+        <span class="prod-mini-status" style="background:${bucket.c}1f;border-color:${bucket.c}66;color:${bucket.c}">${bucket.t}</span>
+        <span class="prod-mini-days">${daysIn === 1 ? 'יום 1' : daysIn + ' ימים'}</span>
         <span class="prod-head-chevron">${expanded ? '▴' : '▾'}</span>
       </button>
 
