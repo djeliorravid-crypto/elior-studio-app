@@ -1,0 +1,84 @@
+# Nightly Discount bank sync — pulls the last 30 days of debits with
+# their REAL merchant names via israeli-bank-scrapers and drops new
+# ones into /bank_inbox for the app to ingest (the app deletes each
+# entry after import; /bank_seen holds dedup hashes).
+#
+# Requires repo secrets (Settings → Secrets and variables → Actions):
+#   DISCOUNT_ID        — תעודת זהות
+#   DISCOUNT_PASSWORD  — סיסמת האתר/אפליקציה של דיסקונט
+#   DISCOUNT_NUM       — קוד מזהה (אם אין — להשאיר ריק)
+# Without them the run exits quietly with instructions.
+#
+# Privacy: transaction details are NEVER printed to the log — only
+# counts. Data flows straight to Firebase.
+name: Bank sync
+
+on:
+  schedule:
+    - cron: "30 3 * * *" # ~06:30 Israel, every morning
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install scraper
+        run: npm i --no-audit --no-fund israeli-bank-scrapers
+      - name: Scrape + push new transactions
+        env:
+          DISCOUNT_ID: ${{ secrets.DISCOUNT_ID }}
+          DISCOUNT_PASSWORD: ${{ secrets.DISCOUNT_PASSWORD }}
+          DISCOUNT_NUM: ${{ secrets.DISCOUNT_NUM }}
+        run: |
+          node - <<'EOF'
+          const { createScraper, CompanyTypes } = require('israeli-bank-scrapers');
+          const crypto = require('crypto');
+          const DB = 'https://elior-studio-default-rtdb.firebaseio.com';
+          (async () => {
+            const id = process.env.DISCOUNT_ID, pw = process.env.DISCOUNT_PASSWORD;
+            const num = process.env.DISCOUNT_NUM || '';
+            if (!id || !pw) {
+              console.log('DISCOUNT_* secrets not set — skipping.');
+              console.log('Add DISCOUNT_ID + DISCOUNT_PASSWORD (+ DISCOUNT_NUM) in repo Settings → Secrets → Actions.');
+              return;
+            }
+            const scraper = createScraper({
+              companyId: CompanyTypes.discount,
+              startDate: new Date(Date.now() - 30 * 864e5),
+              combineInstallments: false,
+              showBrowser: false
+            });
+            const res = await scraper.scrape({ id, password: pw, num });
+            if (!res.success) {
+              console.log('SCRAPE FAILED:', res.errorType || '', '(no details printed on purpose)');
+              process.exit(1);
+            }
+            const seen = await fetch(DB + '/bank_seen.json').then(r => r.json()) || {};
+            let sent = 0, total = 0;
+            for (const acc of res.accounts || []) {
+              for (const tx of acc.txns || []) {
+                total++;
+                const charged = Number(tx.chargedAmount);
+                if (!(charged < 0)) continue; // debits only
+                const date = String(tx.date).slice(0, 10);
+                const amount = Math.round(Math.abs(charged) * 100) / 100;
+                const name = String(tx.description || '').trim();
+                const sig = tx.identifier ? String(tx.identifier) : date + '|' + amount + '|' + name;
+                const hash = crypto.createHash('md5').update(sig).digest('hex').slice(0, 16);
+                if (seen[hash]) continue;
+                await fetch(DB + '/bank_inbox/' + hash + '.json', {
+                  method: 'PUT', body: JSON.stringify({ date, amount, name })
+                });
+                await fetch(DB + '/bank_seen/' + hash + '.json', {
+                  method: 'PUT', body: JSON.stringify(Date.now())
+                });
+                sent++;
+              }
+            }
+            console.log('scraped txns:', total, '| new debits sent to app:', sent);
+          })().catch(e => { console.log('ERROR:', e.constructor.name, '(message hidden)'); process.exit(1); });
+          EOF
