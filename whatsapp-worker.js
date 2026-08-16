@@ -48,6 +48,33 @@ function json(obj, status) {
   });
 }
 
+// ── appsecret_proof: Meta now requires HMAC-SHA256(token, app_secret)
+// on Graph API calls ("appsecret_proof is required but not provided",
+// 1.8.26). Computed only when META_APP_SECRET is set; without it the
+// calls go out unsigned exactly as before.
+const _proofCache = {};
+async function graphProof(token, env) {
+  const secret = env && env.META_APP_SECRET;
+  if (!secret || !token) return '';
+  const ck = token.slice(-12);
+  if (_proofCache[ck]) return _proofCache[ck];
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(String(secret).trim()),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(token));
+  const hex = [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('');
+  _proofCache[ck] = hex;
+  return hex;
+}
+async function graphFetch(path, token, env, init) {
+  let u = 'https://graph.facebook.com/v21.0/' + path;
+  const proof = await graphProof(token, env);
+  if (proof) u += (u.indexOf('?') === -1 ? '?' : '&') + 'appsecret_proof=' + proof;
+  init = init || {};
+  init.headers = Object.assign({ 'Authorization': 'Bearer ' + token }, init.headers || {});
+  return fetch(u, init);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -68,9 +95,8 @@ export default {
         if (!env || !sendSecret(env) || sec !== sendSecret(env)) return new Response('forbidden', { status: 403 });
         const id = String(url.searchParams.get('id') || '').replace(/[^\w.-]/g, '');
         if (!id || !env.WHATSAPP_TOKEN) return new Response('missing id/token', { status: 400 });
-        const meta = await fetch('https://graph.facebook.com/v21.0/' + id, {
-          headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN }
-        }).then(r => r.json()).catch(() => null);
+        const meta = await graphFetch(id, env.WHATSAPP_TOKEN, env)
+          .then(r => r.json()).catch(() => null);
         if (!meta || !meta.url) return new Response('media expired or not found', { status: 404 });
         const media = await fetch(meta.url, { headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN } });
         if (!media.ok) return new Response('media fetch failed', { status: 502 });
@@ -88,9 +114,9 @@ export default {
     if (request.method !== 'POST') return new Response('ok', { status: 200 });
 
     // ── shared bits for the app-facing endpoints ──
-    const graphMsg = (body) => fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
+    const graphMsg = (body) => graphFetch(PHONE_ID + '/messages', env.WHATSAPP_TOKEN, env, {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     const markRead = async (id) => {
@@ -277,9 +303,8 @@ export default {
       fd.append('messaging_product', 'whatsapp');
       fd.append('type', mime);
       fd.append('file', new Blob([bytes], { type: mime }), 'voice.m4a');
-      const up = await fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/media', {
+      const up = await graphFetch(PHONE_ID + '/media', env.WHATSAPP_TOKEN, env, {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN },
         body: fd
       });
       const uj = await up.json().catch(() => ({}));
@@ -370,9 +395,9 @@ async function flushOutbox(env) {
         await mark({ status: 'failed', err: 'חתימה לא תקינה', doneTs: now });
         continue;
       }
-      const r = await fetch('https://graph.facebook.com/v21.0/' + PHONE_ID + '/messages', {
+      const r = await graphFetch(PHONE_ID + '/messages', env.WHATSAPP_TOKEN, env, {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text } })
       });
       const j = await r.json().catch(() => ({}));
@@ -495,9 +520,7 @@ async function apnsJwt(env) {
 async function transcribe(mediaId, env) {
   if (!env || !env.WHATSAPP_TOKEN || (!env.AI && !env.GEMINI_KEY)) return '';
   try {
-    const metaRes = await fetch('https://graph.facebook.com/v21.0/' + mediaId, {
-      headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN }
-    });
+    const metaRes = await graphFetch(mediaId, env.WHATSAPP_TOKEN, env);
     const meta = await metaRes.json().catch(() => ({}));
     if (!meta || !meta.url) return '';
     const audRes = await fetch(meta.url, { headers: { 'Authorization': 'Bearer ' + env.WHATSAPP_TOKEN } });
@@ -594,9 +617,9 @@ async function handleOwnerCmd(raw, env, replyTo, freeMode, replyOverride) {
   const reply = replyOverride || (async (msg) => {
     const body = String(msg).slice(0, 3500);
     try {
-      const r = await fetch('https://graph.facebook.com/v21.0/' + fromId + '/messages', {
+      const r = await graphFetch(fromId + '/messages', fromTok, env, {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + fromTok, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messaging_product: 'whatsapp', to: owner || ownerDigits(env), type: 'text', text: { body } })
       });
       const j = await r.json().catch(() => ({}));
