@@ -27,7 +27,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch debug endpoints
+        env:
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
         run: |
+          echo "===== META APP (id only, token never printed) ====="
+          curl -sS "https://graph.facebook.com/v21.0/app?access_token=$WHATSAPP_TOKEN" | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)
+          err=(d.get("error") or {}).get("message","")
+          print("app id:", d.get("id","-"), "| name:", d.get("name","-"), ("| ERROR: "+err[:140]) if err else "")
+          '
           DB="https://elior-studio-default-rtdb.firebaseio.com"
           echo "===== DIAG (last 30) ====="
           # order by $key (push keys are chronological, needs no index —
