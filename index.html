@@ -7100,6 +7100,19 @@
     color: var(--text-muted); font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
+  /* ═══ MODALS 2026 — every dialog joins the glass-gold language ═══ */
+  [data-theme="dark"] .modal {
+    background: linear-gradient(165deg, #2d2115 0%, #211810 100%);
+    border: 1px solid rgba(255,200,140,.18);
+    border-radius: 24px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  [data-theme="dark"] .modal input,
+  [data-theme="dark"] .modal select,
+  [data-theme="dark"] .modal textarea {
+    background: rgba(0,0,0,.28);
+    border-color: rgba(255,255,255,.12);
+  }
 </style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
@@ -7114,7 +7127,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v454</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v455</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -10483,6 +10496,10 @@ function setIncomeStatus(id, status) {
     entry.paidAt = new Date().toISOString();
     if (entry.date > new Date().toISOString().slice(0,10))
       entry.date = new Date().toISOString().slice(0,10);
+    // כסף נכנס = חגיגה. גשם זהב על כל גבייה (מתעוררים, 24.8)
+    try { mptConfetti(['💰', '🪙', '✨', '⭐']); } catch (_) {}
+    try { if (window.haptic) window.haptic.success(); } catch (_) {}
+    try { toast('💰 ' + fmtMoney(entry.amount) + ' נגבה — כל הכבוד!'); } catch (_) {}
   }
   save('income', income);
 
@@ -13538,7 +13555,13 @@ function _mptRenderToday() {
   put('mpt-sum-meal', items.length
     ? ('נאכל ' + eaten.toLocaleString('he-IL') + ' · נשארו ' + Math.max(0, tCal - eaten).toLocaleString('he-IL') + ' קק״ל')
     : 'עוד לא תיעדת היום');
-  put('mpt-sum-weight', lastW ? (lastW.toFixed(1) + ' ק״ג' + (goalW ? ' · יעד ' + goalW : '')) : 'הזן משקל ויעד');
+  let wStale = '';
+  if (w.length) {
+    const lastD = w[w.length - 1].d;
+    const gap = Math.round((new Date(today + 'T12:00:00') - new Date(lastD + 'T12:00:00')) / 86400000);
+    if (gap >= 5) wStale = ' · לא נשקלת ' + gap + ' ימים ⚖️';
+  }
+  put('mpt-sum-weight', lastW ? (lastW.toFixed(1) + ' ק״ג' + (goalW ? ' · יעד ' + goalW : '') + wStale) : 'הזן משקל ויעד');
   put('mpt-sum-plan', tCal.toLocaleString('he-IL') + ' קק״ל · ' + tSteps.toLocaleString('he-IL') + ' צעדים · ' + tW + ' אימונים');
   let passDays = 0, loggedDays = 0;
   for (let k = 0; k < 7; k++) {
@@ -13637,11 +13660,11 @@ function _mptRenderStreak() {
     mptConfetti();
   }
 }
-window.mptConfetti = function() {
+window.mptConfetti = function(glyphSet) {
   try {
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99999;overflow:hidden';
-    const glyphs = ['🎉', '✨', '🏅', '⭐', '🔥'];
+    const glyphs = glyphSet || ['🎉', '✨', '🏅', '⭐', '🔥'];
     for (let i = 0; i < 26; i++) {
       const s = document.createElement('span');
       s.textContent = glyphs[i % glyphs.length];
@@ -16691,7 +16714,8 @@ window.bankCreditPaid = function(cid) {
   save('income', income);
   bankCreditsSave(credits.filter(x => x.id !== cid));
   if (window.haptic) window.haptic.success();
-  toast('✓ ' + fmtMoney(c.amount) + ' סומן כשולם');
+  try { mptConfetti(['💰', '🪙', '✨', '⭐']); } catch (_) {}
+  toast('💰 ' + fmtMoney(c.amount) + ' נגבה — כל הכבוד!');
   refreshAll();
 };
 window.bankCreditAdd = function(cid) {
