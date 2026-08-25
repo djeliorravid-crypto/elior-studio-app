@@ -25,6 +25,10 @@ on:
         description: "Send a real WhatsApp text to the owner via /send (verifies signed Graph sends)"
         required: false
         default: "no"
+      diagproof:
+        description: "Diagnose which Meta app the stored secret + WhatsApp token belong to"
+        required: false
+        default: "no"
 
 jobs:
   probe:
@@ -110,6 +114,40 @@ jobs:
             '{secret: ($s | gsub("\\s";"")), to: $to, text: "בדיקת מערכת — אם ההודעה הזאת הגיעה, השליחה מהאפליקציה חזרה לעבוד ✅"}' \
           | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/send" \
               -H 'Content-Type: application/json' -d @- | python3 -m json.tool
+      - name: Diagnose app/secret/token ownership
+        if: ${{ github.event.inputs.diagproof == 'yes' }}
+        env:
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+        run: |
+          python3 - <<'PYEOF'
+          import hmac, hashlib, os, json, urllib.request, urllib.parse
+          sec = (os.environ.get('META_APP_SECRET') or '').strip()
+          tok = (os.environ.get('WHATSAPP_TOKEN') or '').strip()
+          print('secret set:', bool(sec), '| len:', len(sec), '| token len:', len(tok))
+          def call(url):
+              try:
+                  with urllib.request.urlopen(url, timeout=15) as r:
+                      return json.load(r)
+              except urllib.error.HTTPError as e:
+                  try: return json.load(e)
+                  except Exception: return {'error': {'message': 'http ' + str(e.code)}}
+              except Exception as e:
+                  return {'error': {'message': type(e).__name__}}
+          def proof(msg):
+              return hmac.new(sec.encode(), msg.encode(), hashlib.sha256).hexdigest()
+          for appid in ['1589380639568364', '1413358097281114']:
+              apptok = appid + '|' + sec
+              q = urllib.parse.urlencode({'access_token': apptok, 'appsecret_proof': proof(apptok)})
+              d = call('https://graph.facebook.com/v21.0/' + appid + '?' + q)
+              err = (d.get('error') or {}).get('message', '')
+              print('app', appid, '→', d.get('name', '-'), ('| ERROR: ' + err[:100]) if err else '(secret MATCHES this app)')
+              q2 = urllib.parse.urlencode({'input_token': tok, 'access_token': apptok, 'appsecret_proof': proof(apptok)})
+              t = call('https://graph.facebook.com/v21.0/debug_token?' + q2)
+              td = t.get('data') or {}
+              terr = (t.get('error') or {}).get('message', '') or (td.get('error') or {}).get('message', '')
+              print('   token check →', 'app_id:', td.get('app_id', '-'), '| valid:', td.get('is_valid', '-'), ('| ERR: ' + terr[:100]) if terr else '')
+          PYEOF
       - name: Register Telegram webhook
         if: ${{ github.event.inputs.tgsetup == 'yes' }}
         env:
