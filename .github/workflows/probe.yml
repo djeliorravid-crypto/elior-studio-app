@@ -21,6 +21,10 @@ on:
         description: "Run one assistant command end-to-end and print the reply"
         required: false
         default: ""
+      testsend:
+        description: "Send a real WhatsApp text to the owner via /send (verifies signed Graph sends)"
+        required: false
+        default: "no"
 
 jobs:
   probe:
@@ -95,6 +99,16 @@ jobs:
         run: |
           jq -n --arg s "$SEND_SECRET" --arg t "$CMD" '{secret: ($s | gsub("\\s";"")), text: $t}' \
           | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/testcmd" \
+              -H 'Content-Type: application/json' -d @- | python3 -m json.tool
+      - name: Test real WhatsApp send (signed)
+        if: ${{ github.event.inputs.testsend == 'yes' }}
+        env:
+          SEND_SECRET: ${{ secrets.SEND_SECRET }}
+          OWNER_PHONE: ${{ secrets.OWNER_PHONE }}
+        run: |
+          jq -n --arg s "$SEND_SECRET" --arg to "$OWNER_PHONE" \
+            '{secret: ($s | gsub("\\s";"")), to: $to, text: "בדיקת מערכת — אם ההודעה הזאת הגיעה, השליחה מהאפליקציה חזרה לעבוד ✅"}' \
+          | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/send" \
               -H 'Content-Type: application/json' -d @- | python3 -m json.tool
       - name: Register Telegram webhook
         if: ${{ github.event.inputs.tgsetup == 'yes' }}
