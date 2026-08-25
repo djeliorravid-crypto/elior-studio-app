@@ -67,6 +67,10 @@ async function graphProof(token, env) {
   return hex;
 }
 async function graphFetch(path, token, env, init) {
+  // trim BOTH sides of the token: the HMAC runs over the exact bytes,
+  // so a stray newline pasted with the secret years ago silently makes
+  // every proof invalid while the Bearer header still authenticates.
+  token = String(token || '').trim();
   let u = 'https://graph.facebook.com/v21.0/' + path;
   const proof = await graphProof(token, env);
   if (proof) u += (u.indexOf('?') === -1 ? '?' : '&') + 'appsecret_proof=' + proof;
