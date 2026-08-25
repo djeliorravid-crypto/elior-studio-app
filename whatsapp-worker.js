@@ -54,7 +54,14 @@ function json(obj, status) {
 // calls go out unsigned exactly as before.
 const _proofCache = {};
 async function graphProof(token, env) {
-  const secret = env && env.META_APP_SECRET;
+  // two Meta apps, two secrets: the assistant number lives in its own
+  // app ("Ravid Assistant"), the business number in the main app —
+  // each token must be signed with ITS OWN app secret (diag 25.8).
+  const isAssistant = env && env.ASSISTANT_TOKEN
+    && token === String(env.ASSISTANT_TOKEN).trim();
+  const secret = env && (isAssistant
+    ? (env.META_APP_SECRET_ASSISTANT || env.META_APP_SECRET)
+    : env.META_APP_SECRET);
   if (!secret || !token) return '';
   const ck = token.slice(-12);
   if (_proofCache[ck]) return _proofCache[ck];
