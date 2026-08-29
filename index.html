@@ -7046,6 +7046,20 @@
   .mb-total-bar b { font-size: 17px; font-variant-numeric: tabular-nums; }
   [data-theme="dark"] .mb-total-bar b { color: #ffc87d; }
   .mb-tips { margin-top: 10px; font-size: 10.5px; font-weight: 600; color: var(--text-muted); line-height: 1.6; }
+  .mpt-food-divider {
+    margin: 18px 0 2px; padding-top: 14px; border-top: 1px dashed var(--border);
+    font-size: 12px; font-weight: 900; color: var(--accent); letter-spacing: .02em;
+  }
+  [data-theme="dark"] .mpt-food-divider { color: #ffc87d; border-top-color: rgba(255,255,255,.1); }
+  [data-theme="dark"] .mp-card.mpt-sec {
+    background: linear-gradient(160deg, #2f2218 0%, #241a10 100%) !important;
+    border: 1px solid rgba(255,200,140,.15) !important;
+    border-radius: 22px !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.04) !important;
+  }
+  [data-theme="dark"] .mp-card.mpt-sec.open { border-color: rgba(242,189,116,.45) !important; }
+  .mpt-sec-head .t { font-size: 15px; }
+  [data-theme="dark"] .mpt-sec-head .s { color: #d8c3a5; }
 
   /* ═══ MONEY TRUTH — the strip + fixed-expenses card ═══ */
   .truth-card {
@@ -7149,7 +7163,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v456</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v457</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7344,7 +7358,7 @@
 
       <!-- Weekly body photo — album with date + weight burned in -->
       <div class="table-card mp-card mpt-sec" id="mpt-sec-photo">
-        <button class="mpt-sec-head" onclick="mptSecToggle('photo')"><span class="t">תמונת גוף שבועית</span><span class="s" id="mpt-sum-photo"></span><span class="ch">▾</span></button>
+        <button class="mpt-sec-head" onclick="mptSecToggle('photo')"><span class="t">📸 תמונת גוף שבועית</span><span class="s" id="mpt-sum-photo"></span><span class="ch">▾</span></button>
         <div class="mpt-sec-body">
           <div id="mpt-photo-body"></div>
           <!-- No `capture` attr on purpose: with it, WKWebView opens the
@@ -7357,22 +7371,16 @@
 
       <!-- Manual meal logging — the daily diary -->
       <div class="table-card mp-card mpt-food-card mpt-sec" id="mpt-sec-meal">
-        <button class="mpt-sec-head" onclick="mptSecToggle('meal')"><span class="t">הוספת ארוחה</span><span class="s" id="mpt-sum-meal"></span><span class="ch">▾</span></button>
+        <button class="mpt-sec-head" onclick="mptSecToggle('meal')"><span class="t">🍽️ אוכל היום</span><span class="s" id="mpt-sum-meal"></span><span class="ch">▾</span></button>
         <div class="mpt-sec-body">
           <div id="mpt-food-body"></div>
-        </div>
-      </div>
-
-      <!-- Personal calorie menu → meal builder (Elior's menu, 26.8) -->
-      <div class="table-card mp-card mpt-sec" id="mpt-sec-builder">
-        <button class="mpt-sec-head" onclick="mptSecToggle('builder')"><span class="t">בונה ארוחות — התפריט שלי</span><span class="s" id="mpt-sum-builder">לפי משקל מוכן · קנולה</span><span class="ch">▾</span></button>
-        <div class="mpt-sec-body">
+          <div class="mpt-food-divider">התפריט שלי — בנייה לפי גרמים · משקל מוכן · קנולה</div>
           <div id="mpt-builder-body"></div>
         </div>
       </div>
 
       <div class="table-card mp-card mpt-accent-card mpt-sec" id="mpt-sec-weight">
-        <button class="mpt-sec-head" onclick="mptSecToggle('weight')"><span class="t">הגוף שלי — משקל ויעד</span><span class="s" id="mpt-sum-weight"></span><span class="ch">▾</span></button>
+        <button class="mpt-sec-head" onclick="mptSecToggle('weight')"><span class="t">⚖️ הגוף שלי — משקל ויעד</span><span class="s" id="mpt-sum-weight"></span><span class="ch">▾</span></button>
         <div class="mpt-sec-body">
         <div class="mp-target-row">
           <div class="form-group" style="margin-bottom:0">
@@ -7394,36 +7402,6 @@
         </div>
       </div>
 
-      <div class="table-card mp-card mpt-plan-card mpt-sec" id="mpt-sec-plan">
-        <button class="mpt-sec-head" onclick="mptSecToggle('plan')"><span class="t">התוכנית מהמאמן</span><span class="s" id="mpt-sum-plan"></span><span class="ch">▾</span></button>
-        <div class="mpt-sec-body">
-          <div id="mpt-plan-body"></div>
-        </div>
-      </div>
-
-      <div class="table-card mp-card mpt-sec" id="mpt-sec-week">
-        <button class="mpt-sec-head" onclick="mptSecToggle('week')"><span class="t">השבוע שלי — מעקב יומי</span><span class="s" id="mpt-sum-week"></span><span class="ch">▾</span></button>
-        <div class="mpt-sec-body">
-          <div id="mpt-week-chips"></div>
-        </div>
-      </div>
-
-      <div class="table-card mp-card mpt-coach-card mpt-sec" id="mpt-sec-coach">
-        <button class="mpt-sec-head" onclick="mptSecToggle('coach')"><span class="t">המאמן האישי (AI)</span><span class="s" id="mpt-sum-coach"></span><span class="ch">▾</span></button>
-        <div class="mpt-sec-body">
-        <div class="mp-sub">מכיר את הגובה, המשקלים, הארוחות, הצעדים והיעד שלך — תתייעץ איתו על הכל.</div>
-        <div id="mpt-coach-thread" class="mpt-coach-thread"></div>
-        <div id="mpt-coach-suggest" class="mpt-coach-suggest"></div>
-        <div class="mpt-coach-inputrow" id="mpt-coach-inputrow">
-          <textarea id="mpt-coach-input" rows="1" placeholder="שאל את המאמן…"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();mptCoachSend();}"></textarea>
-          <button id="mpt-coach-send" onclick="mptCoachSend()" aria-label="שלח">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(180deg)"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-        </div>
-        <div id="mpt-coach-nokey"></div>
-        </div>
-      </div>
     </div>
 
     <!-- ═══ TAB: יעד בודד (מתרנדר לפי הבחירה) ═══ -->
@@ -9434,6 +9412,28 @@ function fixProcessRestart104() {
 // תיקון המשך — התהליך התחיל אתמול בפועל (20.7), לא ביום שהמיגרציה
 // רצה: יום 1 = 20.7 (היום = יום 2), והשקילה האמיתית שאליאור רשם
 // אתמול חוזרת מהארכיון. רץ אחרי fixProcessRestart104.
+// פרק ב' — אליאור התחיל את התהליך מחדש (30.8) אבל ההישגים והרצף
+// המשיכו מהפרק הקודם. איפוס נקי חד-פעמי: יום 1 = היום, שקילות ישנות
+// לארכיון, פתיחה = המשקל האחרון הידוע, קיר מדליות ריק.
+function fixFreshChapter308() {
+  const KEY = 'fix_chapter2_308';
+  try {
+    if (localStorage.getItem(KEY)) return;
+    if (typeof _mptState !== 'function' || typeof mpSave !== 'function') return;
+    const st = _mptState();
+    const lastKg = st.weights.length ? st.weights[st.weights.length - 1].kg : (Number(st.startWeight) || 103);
+    st.weightsArchive = (Array.isArray(st.weightsArchive) ? st.weightsArchive : []).concat(st.weights || []);
+    if (st.weightsArchive.length > 800) st.weightsArchive = st.weightsArchive.slice(-800);
+    st.processStart = _mpbToday();
+    st.startWeight = lastKg;
+    st.weights = [];
+    st.achievements = {};
+    mpSave(st);
+    localStorage.setItem(KEY, '1');
+    console.log('✅ פרק ב: יום 1, פתיחה ' + lastKg);
+  } catch (e) { console.warn('fixFreshChapter308 failed', e); }
+}
+
 function fixProcessDay2() {
   const KEY = 'fix_day2_2107';
   const DAY1 = '2026-07-20';
@@ -13522,13 +13522,13 @@ try {
 // One always-open "today" card with the numbers that matter right now;
 // everything else is a section with a summary line, closed by default
 // (same collapse pattern as productions / recurring expenses).
-const MPT_SECS = ['photo', 'meal', 'builder', 'weight', 'plan', 'week', 'coach'];
+const MPT_SECS = ['photo', 'meal', 'weight'];
 function _mptSecIsOpen(k) {
   try {
     const v = localStorage.getItem('_mpt_sec_' + k);
     if (v !== null) return v === '1';
   } catch (_) {}
-  return false;
+  return k === 'meal'; // the food section is the daily driver — open by default
 }
 window.mptSecToggle = function(k) {
   const open = !_mptSecIsOpen(k);
@@ -13846,6 +13846,7 @@ window.mptTileDays = function() {
   st.processStart = today;
   st.startWeight = n;
   st.weights = [{ d: today, kg: n }];
+  st.achievements = {}; // פרק חדש = קיר מדליות נקי (אליאור 30.8)
   mpSave(st);
   if (window.haptic) window.haptic.success();
   toast('🚀 תהליך חדש — יום 1, פתיחה ' + n + ' ק״ג');
@@ -16685,6 +16686,7 @@ initFirebase().then(() => {
   // after the cloud merge, so the fix always wins the race.
   try { fixProcessRestart104(); } catch (_) {}
   try { fixProcessDay2(); } catch (_) {}
+  try { fixFreshChapter308(); } catch (_) {}
   refreshAll();
   // Live listener: pick up signed contracts within seconds, no reload needed
   try { _attachContractsListener(); } catch(e){}
