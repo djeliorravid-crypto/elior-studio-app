@@ -7024,6 +7024,28 @@
   @keyframes mptConfFall {
     to { transform: translateY(105vh) rotate(340deg); opacity: .9; }
   }
+  /* meal builder */
+  .mb-cat { font-size: 11px; font-weight: 900; color: var(--accent); letter-spacing: .04em; margin: 14px 0 4px; }
+  [data-theme="dark"] .mb-cat { color: #ffc87d; }
+  .mb-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  [data-theme="dark"] .mb-row { border-bottom-color: rgba(255,255,255,.06); }
+  .mb-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--text); }
+  .mb-hint { display: block; font-size: 10px; font-weight: 600; color: var(--text-muted); }
+  .mb-qty { width: 72px; padding: 7px 8px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 14px; font-weight: 800; text-align: center; }
+  [data-theme="dark"] .mb-qty { background: rgba(0,0,0,.28); border-color: rgba(255,255,255,.12); }
+  .mb-cal { width: 44px; text-align: left; font-size: 13px; font-weight: 900; color: var(--green); font-variant-numeric: tabular-nums; }
+  [data-theme="dark"] .mb-cal { color: #c9e08a; }
+  .mb-total-bar { display: flex; align-items: center; gap: 8px; margin-top: 12px;
+    padding: 10px 12px; border-radius: 14px; background: var(--surface2); }
+  [data-theme="dark"] .mb-total-bar {
+    background: linear-gradient(160deg, rgba(242,189,116,.14), rgba(216,145,60,.05));
+    border: 1px solid rgba(242,189,116,.35);
+  }
+  .mb-total-bar span { flex: 1; font-size: 13px; font-weight: 800; color: var(--text); }
+  .mb-total-bar b { font-size: 17px; font-variant-numeric: tabular-nums; }
+  [data-theme="dark"] .mb-total-bar b { color: #ffc87d; }
+  .mb-tips { margin-top: 10px; font-size: 10.5px; font-weight: 600; color: var(--text-muted); line-height: 1.6; }
 
   /* ═══ MONEY TRUTH — the strip + fixed-expenses card ═══ */
   .truth-card {
@@ -7127,7 +7149,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v455</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v456</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7338,6 +7360,14 @@
         <button class="mpt-sec-head" onclick="mptSecToggle('meal')"><span class="t">הוספת ארוחה</span><span class="s" id="mpt-sum-meal"></span><span class="ch">▾</span></button>
         <div class="mpt-sec-body">
           <div id="mpt-food-body"></div>
+        </div>
+      </div>
+
+      <!-- Personal calorie menu → meal builder (Elior's menu, 26.8) -->
+      <div class="table-card mp-card mpt-sec" id="mpt-sec-builder">
+        <button class="mpt-sec-head" onclick="mptSecToggle('builder')"><span class="t">בונה ארוחות — התפריט שלי</span><span class="s" id="mpt-sum-builder">לפי משקל מוכן · קנולה</span><span class="ch">▾</span></button>
+        <div class="mpt-sec-body">
+          <div id="mpt-builder-body"></div>
         </div>
       </div>
 
@@ -12904,6 +12934,7 @@ function _mptRenderHealth() {
   fill('mpt-goal-wdate', st.body.goalDate || '');
   _mptRenderToday();
   try { _mptRenderStreak(); } catch (_) {}
+  try { _mptRenderBuilder(); } catch (_) {}
   _mptRenderPhotos();
   _mptRenderWeight();
   _mptRenderPlan();
@@ -13491,7 +13522,7 @@ try {
 // One always-open "today" card with the numbers that matter right now;
 // everything else is a section with a summary line, closed by default
 // (same collapse pattern as productions / recurring expenses).
-const MPT_SECS = ['photo', 'meal', 'weight', 'plan', 'week', 'coach'];
+const MPT_SECS = ['photo', 'meal', 'builder', 'weight', 'plan', 'week', 'coach'];
 function _mptSecIsOpen(k) {
   try {
     const v = localStorage.getItem('_mpt_sec_' + k);
@@ -13676,6 +13707,123 @@ window.mptConfetti = function(glyphSet) {
     document.body.appendChild(wrap);
     setTimeout(() => wrap.remove(), 2600);
   } catch (_) {}
+};
+
+// ══════════ MEAL BUILDER — his personal calorie menu ══════════
+// Values by COOKED weight, canola oil, from Elior's menu (26.8).
+const MPT_MENU = [
+  { cat: 'חלבון', items: [
+    { k: 'chicken',  n: 'חזה עוף בנינג׳ה',        cal: 175, per: 100, u: 'גרם' },
+    { k: 'schnitzel',n: 'שניצל בנינג׳ה',           cal: 180, per: 100, u: 'גרם' },
+    { k: 'egg',      n: 'ביצה קשה/מקושקשת',        cal: 70,  per: 1,   u: 'יח׳' } ] },
+  { cat: 'תוספות', items: [
+    { k: 'rice',     n: 'אורז לבן מבושל',          cal: 130, per: 100, u: 'גרם' },
+    { k: 'couscous', n: 'קוסקוס (השיטה שלך)',      cal: 145, per: 100, u: 'גרם' },
+    { k: 'potato',   n: 'תפוח אדמה בתנור',         cal: 90,  per: 100, u: 'גרם' },
+    { k: 'sweetpot', n: 'בטטה בתנור',              cal: 110, per: 100, u: 'גרם' } ] },
+  { cat: 'לחם', items: [
+    { k: 'pita_s',   n: 'פיתה קטנה (50ג)',         cal: 140, per: 1, u: 'יח׳' },
+    { k: 'pita_m',   n: 'פיתה רגילה (70ג)',        cal: 190, per: 1, u: 'יח׳' },
+    { k: 'pita_l',   n: 'פיתה עיראקית (100ג)',     cal: 270, per: 1, u: 'יח׳' },
+    { k: 'roll',     n: 'לחמנייה (60ג)',           cal: 175, per: 1, u: 'יח׳' },
+    { k: 'bread',    n: 'פרוסת לחם אחידה',         cal: 75,  per: 1, u: 'יח׳' } ] },
+  { cat: 'מה שמצטבר בלי לשים לב', items: [
+    { k: 'oil_tsp',  n: 'כפית שמן קנולה',          cal: 40,  per: 1, u: 'כפית' },
+    { k: 'oil_tbsp', n: 'כף שמן קנולה',            cal: 120, per: 1, u: 'כף' },
+    { k: 'spray',    n: 'ריסוס שמן (שנייה)',       cal: 25,  per: 1, u: 'ריסוס' },
+    { k: 'hummus',   n: 'כף חומוס',                cal: 60,  per: 1, u: 'כף' },
+    { k: 'tahini',   n: 'כף טחינה',                cal: 90,  per: 1, u: 'כף' },
+    { k: 'mayo',     n: 'כף מיונז',                cal: 100, per: 1, u: 'כף' },
+    { k: 'ketchup',  n: 'כף קטשופ',                cal: 20,  per: 1, u: 'כף' },
+    { k: 'salad',    n: 'סלט ירקות בלי רוטב',      cal: 30,  per: 1, u: 'קערה' } ] },
+  { cat: 'חטיפים', items: [
+    { k: 'chips',    n: 'תפוצ׳יפס (שקית)',         cal: 280, per: 1, u: 'שקית' },
+    { k: 'cookie',   n: 'עוגיית שוקולד צ׳יפס',     cal: 140, per: 1, u: 'יח׳' } ] }
+];
+const MPT_MENU_PRESETS = [
+  { n: '200ג שניצל + 200ג אורז', cal: 620 },
+  { n: '200ג חזה עוף + 200ג קוסקוס', cal: 640 },
+  { n: 'פיתה רגילה + 150ג חזה + סלט', cal: 485 },
+  { n: '200ג חזה + 200ג אורז', cal: 610 }
+];
+function _mptRenderBuilder() {
+  const el = document.getElementById('mpt-builder-body');
+  if (!el || el.dataset.built) return; // build once — keeps input focus alive
+  el.dataset.built = '1';
+  let html = '<div class="mpt-recents" style="margin-bottom:4px"><span class="cap">ארוחות מוכנות — נגיעה אחת</span>'
+    + MPT_MENU_PRESETS.map((p, i) => '<button class="mpt-chip" onclick="mptBuilderPreset(' + i + ')">' + p.n + ' · ' + p.cal + '</button>').join('')
+    + '</div>';
+  MPT_MENU.forEach(c => {
+    html += '<div class="mb-cat">' + c.cat + '</div>';
+    c.items.forEach(it => {
+      const hint = it.per === 100 ? (it.cal + ' קק״ל ל-100 גרם') : (it.cal + ' קק״ל ל' + it.u);
+      html += '<div class="mb-row">'
+        + '<div class="mb-name">' + it.n + '<span class="mb-hint">' + hint + '</span></div>'
+        + '<input class="mb-qty" id="mb-' + it.k + '" type="number" inputmode="decimal" min="0" placeholder="' + (it.per === 100 ? 'גרם' : it.u) + '" oninput="mptBuilderCalc()"/>'
+        + '<span class="mb-cal" id="mbv-' + it.k + '"></span>'
+        + '</div>';
+    });
+  });
+  html += '<div class="mb-total-bar">'
+    + '<span>סה״כ: <b id="mb-total">0</b> קק״ל</span>'
+    + '<button class="btn btn-ghost btn-sm" onclick="mptBuilderClear()">נקה</button>'
+    + '<button class="btn btn-primary btn-sm" id="mb-add-btn" onclick="mptBuilderAdd()" disabled>הוסף לארוחות היום</button>'
+    + '</div>'
+    + '<div class="mb-tips">טיפים מהתפריט: מעבר מכף לכפית שמן בקוסקוס = ‎-80 קק״ל בלי הבדל בטעם · אורז שקורר וחומם שוב נספג פחות · ניעור החזה אחרי הביצה מוריד ציפוי מיותר</div>';
+  el.innerHTML = html;
+}
+function _mptBuilderCollect() {
+  const parts = []; let total = 0;
+  MPT_MENU.forEach(c => c.items.forEach(it => {
+    const el = document.getElementById('mb-' + it.k);
+    const q = el ? (parseFloat(el.value) || 0) : 0;
+    if (q > 0) {
+      const cal = Math.round(q * it.cal / it.per);
+      total += cal;
+      parts.push({ it: it, q: q, cal: cal });
+    }
+  }));
+  return { parts: parts, total: total };
+}
+window.mptBuilderCalc = function() {
+  const c = _mptBuilderCollect();
+  MPT_MENU.forEach(cat => cat.items.forEach(it => {
+    const v = document.getElementById('mbv-' + it.k);
+    if (!v) return;
+    const p = c.parts.find(x => x.it.k === it.k);
+    v.textContent = p ? p.cal : '';
+  }));
+  const t = document.getElementById('mb-total'); if (t) t.textContent = c.total;
+  const btn = document.getElementById('mb-add-btn'); if (btn) btn.disabled = !c.total;
+};
+window.mptBuilderClear = function() {
+  MPT_MENU.forEach(c => c.items.forEach(it => { const el = document.getElementById('mb-' + it.k); if (el) el.value = ''; }));
+  mptBuilderCalc();
+};
+function _mptBuilderMealSlot() {
+  const h = new Date().getHours();
+  return h < 11 ? 'b' : h < 16 ? 'l' : h < 21 ? 'd' : 's';
+}
+window.mptBuilderAdd = function() {
+  const c = _mptBuilderCollect();
+  if (!c.total) { toast('בחר כמויות קודם'); return; }
+  const desc = c.parts.map(p => p.it.per === 100 ? (p.it.n + ' ' + p.q + 'ג') : (p.q !== 1 ? p.it.n + ' ×' + p.q : p.it.n)).join(' + ');
+  if (!confirm('להוסיף לארוחות של היום?\n' + desc + '\nסה״כ ' + c.total + ' קק״ל')) return;
+  _mptFoodMeal = _mptBuilderMealSlot();
+  _mptFoodDate = null;
+  _mptFoodPush(_mptState(), [{ name: desc.slice(0, 60), cal: c.total }]);
+  mptBuilderClear();
+  try { _mptRenderToday(); } catch (_) {}
+  try { _mptRenderStreak(); } catch (_) {}
+};
+window.mptBuilderPreset = function(i) {
+  const p = MPT_MENU_PRESETS[i]; if (!p) return;
+  if (!confirm('להוסיף: ' + p.n + ' (' + p.cal + ' קק״ל)?')) return;
+  _mptFoodMeal = _mptBuilderMealSlot();
+  _mptFoodDate = null;
+  _mptFoodPush(_mptState(), [{ name: p.n, cal: p.cal }]);
+  try { _mptRenderToday(); } catch (_) {}
+  try { _mptRenderStreak(); } catch (_) {}
 };
 
 window.mptTileDays = function() {
