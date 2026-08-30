@@ -7046,6 +7046,22 @@
   .mb-total-bar b { font-size: 17px; font-variant-numeric: tabular-nums; }
   [data-theme="dark"] .mb-total-bar b { color: #ffc87d; }
   .mb-tips { margin-top: 10px; font-size: 10.5px; font-weight: 600; color: var(--text-muted); line-height: 1.6; }
+  .mpt-daynav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .mpt-daynav-btn {
+    width: 34px; height: 34px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 17px; font-weight: 900; cursor: pointer;
+  }
+  .mpt-daynav-btn:disabled { opacity: .3; }
+  [data-theme="dark"] .mpt-daynav-btn { background: rgba(0,0,0,.28); border-color: rgba(255,255,255,.12); }
+  .mpt-daynav-lbl { flex: 1; text-align: center; font-size: 14px; font-weight: 900; color: var(--text); }
+  .mpt-daynav-lbl.past { color: var(--accent); }
+  [data-theme="dark"] .mpt-daynav-lbl.past { color: #ffc87d; }
+  .mpt-daynav-today {
+    border: 1px solid var(--accent); background: transparent; color: var(--accent);
+    font-family: 'Heebo', sans-serif; font-size: 11px; font-weight: 800;
+    padding: 6px 10px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  }
+  [data-theme="dark"] .mpt-daynav-today { border-color: rgba(242,189,116,.5); color: #ffc87d; }
   .mpt-food-divider {
     margin: 18px 0 2px; padding-top: 14px; border-top: 1px dashed var(--border);
     font-size: 12px; font-weight: 900; color: var(--accent); letter-spacing: .02em;
@@ -7163,7 +7179,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v459</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v460</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -13178,15 +13194,27 @@ function _mptRenderFood() {
   if (!el) return;
   const st = _mptState();
   const today = _mpbToday();
-  const items = st.meals[today] || [];
+  // The diary is date-aware: ‹ › browse past days (mptFoodNav was
+  // wired but had no buttons — "אין דרך לראות מה אכלתי אתמול", 29.8)
+  const key = _mptFoodKey();
+  const isToday = key === today;
+  const items = st.meals[key] || [];
   const tCal = Number(st.healthTargets.cal) || 2200;
   const eaten = items.reduce((s, i) => s + (Number(i.cal) || 0), 0);
   const h = new Date().getHours();
   const autoMeal = h < 11 ? 'b' : h < 16 ? 'l' : h < 21 ? 'd' : 's';
-  const rec = st.foodRecents;
+  const dayLbl = isToday ? 'היום'
+    : new Date(key + 'T12:00:00').toLocaleDateString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit' });
+
+  let html = '<div class="mpt-daynav">'
+    + '<button class="mpt-daynav-btn" onclick="mptFoodNav(-1)">‹</button>'
+    + '<span class="mpt-daynav-lbl' + (isToday ? '' : ' past') + '">' + dayLbl + '</span>'
+    + '<button class="mpt-daynav-btn" onclick="mptFoodNav(1)"' + (isToday ? ' disabled' : '') + '>›</button>'
+    + (isToday ? '' : '<button class="mpt-daynav-today" onclick="_mptFoodDate=null;_mptRenderFood()">חזרה להיום</button>')
+    + '</div>';
 
   // Manual-first: meal picker + name + calories (+ optional protein).
-  let html = '<div class="mpt-addrow">'
+  html += '<div class="mpt-addrow">'
     + '<select id="mpt-meal-sel">' + MPT_MEALS.map(m => '<option value="' + m[0] + '"' + (m[0] === autoMeal ? ' selected' : '') + '>' + m[1] + '</option>').join('') + '</select>'
     + '<input id="mpt-meal-name" placeholder="מה אכלת?"/>'
     + '</div>'
@@ -13210,9 +13238,9 @@ function _mptRenderFood() {
           + '<button class="rm" onclick="mptFoodDel(\'' + String(i.id).replace(/'/g, "\\'") + '\')" aria-label="מחק">×</button></div>'
         ).join('');
     });
-    html += '<div class="mpt-week-sum">סה״כ היום <strong>' + eaten.toLocaleString('he-IL') + '</strong> מתוך ' + tCal.toLocaleString('he-IL') + ' קק״ל</div></div>';
+    html += '<div class="mpt-week-sum">סה״כ ' + dayLbl + ' <strong>' + eaten.toLocaleString('he-IL') + '</strong> מתוך ' + tCal.toLocaleString('he-IL') + ' קק״ל</div></div>';
   } else {
-    html += '<div class="mp-empty" style="padding:12px 0 2px">מה שתאכל היום יופיע כאן.</div>';
+    html += '<div class="mp-empty" style="padding:12px 0 2px">' + (isToday ? 'מה שתאכל היום יופיע כאן.' : 'לא נרשמו ארוחות ביום הזה.') + '</div>';
   }
   html += '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:12px" onclick="mptFoodOpenAdd(document.getElementById(\'mpt-meal-sel\') ? document.getElementById(\'mpt-meal-sel\').value : \'' + autoMeal + '\')">לא בא לך לחשב? ניתוח AI מתמונה או טקסט</button>';
   el.innerHTML = html;
