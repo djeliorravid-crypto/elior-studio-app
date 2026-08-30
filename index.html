@@ -7056,6 +7056,12 @@
   .mpt-daynav-lbl { flex: 1; text-align: center; font-size: 14px; font-weight: 900; color: var(--text); }
   .mpt-daynav-lbl.past { color: var(--accent); }
   [data-theme="dark"] .mpt-daynav-lbl.past { color: #ffc87d; }
+  .mpt-daystats {
+    display: flex; justify-content: center; gap: 18px; margin-bottom: 12px;
+    font-size: 12.5px; font-weight: 800; color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  [data-theme="dark"] .mpt-daystats { color: #d8c3a5; }
   .mpt-daynav-today {
     border: 1px solid var(--accent); background: transparent; color: var(--accent);
     font-family: 'Heebo', sans-serif; font-size: 11px; font-weight: 800;
@@ -7179,7 +7185,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v460</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v461</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -13211,6 +13217,12 @@ function _mptRenderFood() {
     + '<span class="mpt-daynav-lbl' + (isToday ? '' : ' past') + '">' + dayLbl + '</span>'
     + '<button class="mpt-daynav-btn" onclick="mptFoodNav(1)"' + (isToday ? ' disabled' : '') + '>›</button>'
     + (isToday ? '' : '<button class="mpt-daynav-today" onclick="_mptFoodDate=null;_mptRenderFood()">חזרה להיום</button>')
+    + '</div>';
+  // the viewed day at a glance: steps (Apple Health) + calories
+  const daySteps = Number((st.health[key] || {}).steps) || 0;
+  html += '<div class="mpt-daystats">'
+    + '<span>👟 ' + (daySteps ? daySteps.toLocaleString('he-IL') : '—') + ' צעדים</span>'
+    + '<span>🔥 ' + eaten.toLocaleString('he-IL') + ' / ' + tCal.toLocaleString('he-IL') + ' קק״ל</span>'
     + '</div>';
 
   // Manual-first: meal picker + name + calories (+ optional protein).
