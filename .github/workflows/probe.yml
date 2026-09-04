@@ -29,6 +29,10 @@ on:
         description: "Diagnose which Meta app the stored secret + WhatsApp token belong to"
         required: false
         default: "no"
+      whoami:
+        description: "Ask each token which Meta app owns it (no secret needed)"
+        required: false
+        default: "no"
 
 jobs:
   probe:
@@ -147,6 +151,37 @@ jobs:
               td = t.get('data') or {}
               terr = (t.get('error') or {}).get('message', '') or (td.get('error') or {}).get('message', '')
               print('   token check →', 'app_id:', td.get('app_id', '-'), '| valid:', td.get('is_valid', '-'), ('| ERR: ' + terr[:100]) if terr else '')
+          PYEOF
+      - name: Which app owns the WhatsApp token
+        if: ${{ github.event.inputs.whoami == 'yes' }}
+        env:
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          ASSISTANT_TOKEN: ${{ secrets.ASSISTANT_TOKEN }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, urllib.request, urllib.parse
+          def call(url):
+              try:
+                  with urllib.request.urlopen(url, timeout=15) as r: return json.load(r)
+              except urllib.error.HTTPError as e:
+                  try: return json.load(e)
+                  except Exception: return {'error':{'message':'http '+str(e.code)}}
+              except Exception as e: return {'error':{'message':type(e).__name__}}
+          for label,tok in [('WHATSAPP_TOKEN', os.environ.get('WHATSAPP_TOKEN','')),
+                            ('ASSISTANT_TOKEN', os.environ.get('ASSISTANT_TOKEN',''))]:
+              tok=(tok or '').strip()
+              if not tok:
+                  print(label, '-> not set'); continue
+              # a token can debug ITSELF: input_token=access_token=tok reveals app_id
+              q=urllib.parse.urlencode({'input_token':tok,'access_token':tok})
+              d=call('https://graph.facebook.com/v21.0/debug_token?'+q)
+              data=d.get('data') or {}
+              err=(d.get('error') or {}).get('message','') or (data.get('error') or {}).get('message','')
+              print(label, '-> app_id:', data.get('app_id','-'),
+                    '| app:', data.get('application','-'),
+                    '| type:', data.get('type','-'),
+                    '| valid:', data.get('is_valid','-'),
+                    ('| ERR: '+err[:120]) if err else '')
           PYEOF
       - name: Register Telegram webhook
         if: ${{ github.event.inputs.tgsetup == 'yes' }}
