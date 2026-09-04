@@ -54,20 +54,10 @@ function json(obj, status) {
 // calls go out unsigned exactly as before.
 const _proofCache = {};
 async function graphProof(token, env) {
-  // DISABLED 4.9.26: both Meta apps have "Require app secret proof for
-  // API calls" turned OFF, so Meta no longer wants a proof — and an
-  // unmatched one is rejected ("Invalid appsecret_proof"). Sending no
-  // proof is exactly the setup that worked for a year. Flip this back
-  // only if a require-proof toggle is ever turned back on.
-  return '';
-  // two Meta apps, two secrets: the assistant number lives in its own
-  // app ("Ravid Assistant"), the business number in the main app —
-  // each token must be signed with ITS OWN app secret (diag 25.8).
-  const isAssistant = env && env.ASSISTANT_TOKEN
-    && token === String(env.ASSISTANT_TOKEN).trim();
-  const secret = env && (isAssistant
-    ? (env.META_APP_SECRET_ASSISTANT || env.META_APP_SECRET)
-    : env.META_APP_SECRET);
+  // Meta DOES require appsecret_proof on this System-User token
+  // (confirmed 4.9.26: no proof -> "required"). Sign every call with
+  // META_APP_SECRET — the secret of the app that owns the token.
+  const secret = env && env.META_APP_SECRET;
   if (!secret || !token) return '';
   const ck = token.slice(-12);
   if (_proofCache[ck]) return _proofCache[ck];
