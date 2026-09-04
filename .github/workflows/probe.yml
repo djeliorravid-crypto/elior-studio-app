@@ -33,6 +33,10 @@ on:
         description: "Ask each token which Meta app owns it (no secret needed)"
         required: false
         default: "no"
+      whichsecret:
+        description: "Test the WhatsApp token against both stored secrets, report which is valid"
+        required: false
+        default: "no"
 
 jobs:
   probe:
@@ -182,6 +186,34 @@ jobs:
                     '| type:', data.get('type','-'),
                     '| valid:', data.get('is_valid','-'),
                     ('| ERR: '+err[:120]) if err else '')
+          PYEOF
+      - name: Which secret matches the token
+        if: ${{ github.event.inputs.whichsecret == 'yes' }}
+        env:
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          META_APP_SECRET_ASSISTANT: ${{ secrets.META_APP_SECRET_ASSISTANT }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, hmac, hashlib, json, urllib.request, urllib.parse
+          tok=(os.environ.get('WHATSAPP_TOKEN') or '').strip()
+          def call(url):
+              try:
+                  with urllib.request.urlopen(url, timeout=15) as r: return json.load(r)
+              except urllib.error.HTTPError as e:
+                  try: return json.load(e)
+                  except Exception: return {'error':{'message':'http '+str(e.code)}}
+              except Exception as e: return {'error':{'message':type(e).__name__}}
+          for label in ['META_APP_SECRET','META_APP_SECRET_ASSISTANT']:
+              sec=(os.environ.get(label) or '').strip()
+              if not sec:
+                  print(label,'-> not set'); continue
+              proof=hmac.new(sec.encode(), tok.encode(), hashlib.sha256).hexdigest()
+              q=urllib.parse.urlencode({'access_token':tok,'appsecret_proof':proof,'fields':'id,name'})
+              d=call('https://graph.facebook.com/v21.0/me?'+q)
+              err=(d.get('error') or {}).get('message','')
+              if err: print(label,'-> ✗', err[:90])
+              else:   print(label,'-> ✓ VALID (id:', d.get('id','-'), 'name:', d.get('name','-'), ')')
           PYEOF
       - name: Register Telegram webhook
         if: ${{ github.event.inputs.tgsetup == 'yes' }}
