@@ -2019,6 +2019,34 @@
 
     .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
+    /* ===== COMFORT PASS (5.9) — bigger tap targets, calmer density ===== */
+    .inc-head-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; }
+    .inc-head-row h3 { margin: 0; }
+    .inc-tools { display: flex; gap: 8px; align-items: center; width: 100%; }
+    .inc-tools .search-bar { flex: 1; min-width: 0; }
+    .inc-tools .search-bar input { width: 100%; min-height: 42px; font-size: 14px; }
+    .inc-tools select { flex: 0 1 44%; min-height: 42px; max-width: 46%; }
+    .inc-dun { min-height: 38px; padding: 7px 14px; font-size: 13px; white-space: nowrap; }
+    .mpt-hero { padding: 16px 18px 14px; border-radius: 18px; margin-bottom: 12px; }
+    .mpt-hero-title { font-size: 26px; margin: 3px 0 4px; }
+    .mpt-hero-line { font-size: 12.5px; }
+    .mpt-sec-head { padding: 16px 18px; min-height: 56px; }
+    .mpt-sec-head .t { font-size: 15.5px; }
+    .mpt-sec-head .s { font-size: 12.5px; }
+    .mpt-food-item { font-size: 14px; padding: 9px 2px 0; }
+    .mpt-food-item .pr { font-size: 11.5px; }
+    .mpt-food-item .rm, .mpt-ai-row .rm { width: 32px; height: 32px; font-size: 17px; border-radius: 9px; }
+    .mpt-food-item .rm:active, .mpt-ai-row .rm:active { background: var(--surface3); }
+    .mpt-meal-add { width: 36px; height: 36px; border-radius: 11px; font-size: 20px; }
+    .mpt-meal-name { font-size: 14px; }
+    .mpt-meal-kcal { font-size: 12.5px; }
+    .mpt-daynav-btn { width: 40px; height: 40px; }
+    .mpt-daynav-lbl { font-size: 15px; }
+    .mpt-daynav-today { min-height: 36px; font-size: 12px; }
+    .mpt-daystats { font-size: 13.5px; }
+    .mpt-plan-tile .l { font-size: 11.5px; }
+    .mpt-food-note, .mb-tips { font-size: 11.5px; }
+
     /* ===== SEARCH BAR ===== */
     .search-bar { position: relative; }
 
@@ -2708,9 +2736,10 @@
         align-items: center;
         justify-content: center;
         padding: 10px 10px 8px;
-        gap: 3px;
-        font-size: 11.5px;
-        font-weight: 700;
+        gap: 4px;
+        min-height: 58px;
+        font-size: 12.5px;
+        font-weight: 800;
         border-right: none;
         border-top: none;
         text-align: center;
@@ -2792,8 +2821,8 @@
       .card-sub { font-size: 11px; }
 
       /* ===== כפתורים ===== */
-      .btn { padding: 10px 14px; font-size: 13px; min-height: 40px; border-radius: 10px; }
-      .btn-sm { padding: 7px 12px; font-size: 12px; }
+      .btn { padding: 10px 14px; font-size: 13px; min-height: 44px; border-radius: 10px; }
+      .btn-sm { padding: 8px 12px; font-size: 12.5px; min-height: 40px; }
 
       /* ===== טבלאות → כרטיסי שורה ===== */
       .table-card {
@@ -2812,6 +2841,9 @@
       .table-header > div { width: 100%; flex-direction: column; gap: 8px; }
       .search-bar { width: 100% !important; }
       .table-header select { width: 100%; padding: 9px 12px; }
+      .inc-head > div { flex-direction: row; }
+      .inc-tools select { width: auto; }
+      .inc-head .search-bar { width: auto !important; }
 
       /* הסתר כותרות עמודה */
       table thead { display: none; }
@@ -7185,7 +7217,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v464</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v465</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7378,19 +7410,6 @@
       <!-- Streaks + achievements — the game layer of the process -->
       <div id="mpt-streak"></div>
 
-      <!-- Weekly body photo — album with date + weight burned in -->
-      <div class="table-card mp-card mpt-sec" id="mpt-sec-photo">
-        <button class="mpt-sec-head" onclick="mptSecToggle('photo')"><span class="t">📸 תמונת גוף שבועית</span><span class="s" id="mpt-sum-photo"></span><span class="ch">▾</span></button>
-        <div class="mpt-sec-body">
-          <div id="mpt-photo-body"></div>
-          <!-- No `capture` attr on purpose: with it, WKWebView opens the
-               camera DIRECTLY, and a build without NSCameraUsageDescription
-               gets TCC-killed on the spot (the v371 crash). The plain
-               picker sheet offers camera + library and never crashes. -->
-          <input type="file" id="mpt-bodyphoto-file" accept="image/*" style="display:none" onchange="mptBodyPhotoPicked(event)"/>
-        </div>
-      </div>
-
       <!-- Manual meal logging — the daily diary -->
       <div class="table-card mp-card mpt-food-card mpt-sec" id="mpt-sec-meal">
         <button class="mpt-sec-head" onclick="mptSecToggle('meal')"><span class="t">🍽️ אוכל היום</span><span class="s" id="mpt-sum-meal"></span><span class="ch">▾</span></button>
@@ -7421,6 +7440,19 @@
         <div id="mpt-weight-stats"></div>
         <div id="mpt-weight-chart"></div>
         <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="mptLogWeight()">עדכן משקל היום</button>
+        </div>
+      </div>
+
+      <!-- Weekly body photo — album with date + weight burned in -->
+      <div class="table-card mp-card mpt-sec" id="mpt-sec-photo">
+        <button class="mpt-sec-head" onclick="mptSecToggle('photo')"><span class="t">📸 תמונת גוף שבועית</span><span class="s" id="mpt-sum-photo"></span><span class="ch">▾</span></button>
+        <div class="mpt-sec-body">
+          <div id="mpt-photo-body"></div>
+          <!-- No `capture` attr on purpose: with it, WKWebView opens the
+               camera DIRECTLY, and a build without NSCameraUsageDescription
+               gets TCC-killed on the spot (the v371 crash). The plain
+               picker sheet offers camera + library and never crashes. -->
+          <input type="file" id="mpt-bodyphoto-file" accept="image/*" style="display:none" onchange="mptBodyPhotoPicked(event)"/>
         </div>
       </div>
 
@@ -8076,10 +8108,12 @@
     </button>
 
     <div>
-      <div class="table-header" style="background:transparent;border:0;padding:0 4px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-        <h3 style="font-size:20px;font-weight:900">רשימת הכנסות</h3>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" onclick="openDunningModal()">גבייה</button>
+      <div class="table-header inc-head" style="background:transparent;border:0;padding:0 4px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div class="inc-head-row">
+          <h3 style="font-size:20px;font-weight:900">רשימת הכנסות</h3>
+          <button class="btn btn-ghost btn-sm inc-dun" onclick="openDunningModal()">💸 גבייה</button>
+        </div>
+        <div class="inc-tools">
           <div class="search-bar"><svg class="si" viewBox="0 0 24 24"><use href="#ic-search"/></svg><input type="text" placeholder="חיפוש..." id="i-search" oninput="renderIncome()"/></div>
           <select style="background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:7px 12px;font-size:13px;color:var(--text);outline:none;" id="i-client-filter" onchange="renderIncome()">
             <option value="">כל הלקוחות</option>
@@ -13720,11 +13754,28 @@ function _mptRenderStreak() {
     + '</div>'
     + '<div class="mpt-medal-count">' + got + '/' + MPT_MEDALS.length + ' הישגים</div>'
     + '</div>';
-  if (newUnlock) {
-    toast('🏅 הישג חדש: ' + newUnlock.t + '!');
+  // A medal unlocked while the user was in the lobby / a business page
+  // (cloud sync re-renders everything) used to rain confetti over
+  // income screens (5.9). Park it and fire only when the health page
+  // is actually on screen.
+  if (newUnlock) _mptPendingUnlock = newUnlock;
+  if (_mptPendingUnlock && _mptHealthVisible()) {
+    const u = _mptPendingUnlock; _mptPendingUnlock = null;
+    toast('🏅 הישג חדש: ' + u.t + '!');
     if (window.haptic) window.haptic.success();
     mptConfetti();
   }
+}
+let _mptPendingUnlock = null;
+function _mptHealthVisible() {
+  try {
+    const pm = document.getElementById('path-main');
+    const ms = document.getElementById('mode-screen');
+    const ls = document.getElementById('login-screen');
+    const gone = el => !el || getComputedStyle(el).display === 'none';
+    return !!pm && pm.style.display !== 'none' && gone(ms) && gone(ls)
+      && document.visibilityState !== 'hidden';
+  } catch (_) { return false; }
 }
 window.mptConfetti = function(glyphSet) {
   try {
@@ -26615,6 +26666,15 @@ function renderScheduleGcalBar() {
               '<button onclick="gcalWriteEnable()" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:Heebo,sans-serif;white-space:nowrap">הפעל</button>' +
             '</div>')
       : '';
+    // "לא עכשיו" (5.9): the big dashed box sat above the events on
+    // every visit. Once dismissed it folds into a one-line link.
+    if (localStorage.getItem('gcal_bar_dismissed') === '1') {
+      bar.innerHTML =
+        '<button onclick="localStorage.removeItem(\'gcal_bar_dismissed\');renderScheduleGcalBar()" ' +
+          'style="display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed var(--border);border-radius:999px;padding:7px 12px;color:var(--text-muted);font-size:12px;font-weight:800;cursor:pointer;font-family:Heebo,sans-serif;min-height:36px">' +
+          '<span>📅</span><span>חבר יומן גוגל</span></button>' + writeBlock;
+      return;
+    }
     bar.innerHTML =
       '<div style="background:var(--surface);border:1.5px dashed var(--border);border-radius:14px;padding:14px 16px">' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
@@ -26628,6 +26688,8 @@ function renderScheduleGcalBar() {
             '<div style="font-size:13.5px;font-weight:800;color:var(--text)">חבר את Google Calendar</div>' +
             '<div style="font-size:11px;color:var(--text-muted);margin-top:1px">אירועים מהיומן יופיעו כאן יחד עם הפעילויות הידניות</div>' +
           '</div>' +
+          '<button onclick="localStorage.setItem(\'gcal_bar_dismissed\',\'1\');renderScheduleGcalBar()" title="לא עכשיו" ' +
+            'style="background:transparent;border:1px solid var(--border);border-radius:10px;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);flex-shrink:0;font-size:14px">✕</button>' +
         '</div>' +
         '<div style="display:flex;gap:6px">' +
           '<input id="schedule-gcal-client-id" type="text" placeholder="ICS URL מ-Google Calendar..." value="' + _escHtml(savedUrl) + '" ' +
