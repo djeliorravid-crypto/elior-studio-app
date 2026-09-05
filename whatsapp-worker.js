@@ -70,6 +70,19 @@ async function graphProof(token, env) {
   return hex;
 }
 async function graphFetch(path, token, env, init) {
+  init = init || {};
+  // ── DualHook outbound (5.9.26) — the WhatsApp number was onboarded
+  // via DualHook coexistence, so the Meta app + secret live on their
+  // side and no appsecret_proof we can compute is valid. DualHook
+  // exposes a Graph-compatible endpoint that signs to Meta for us:
+  // same path + body, only the host and the auth key change. Their
+  // Meta credentials stay encrypted on their end. Routes every Graph
+  // call (send / media / mark-read) when DUALHOOK_KEY is set.
+  const dh = env && env.DUALHOOK_KEY && String(env.DUALHOOK_KEY).trim();
+  if (dh) {
+    init.headers = Object.assign({ 'Authorization': 'Bearer ' + dh }, init.headers || {});
+    return fetch('https://api.dualhook.com/v25.0/' + path, init);
+  }
   // trim BOTH sides of the token: the HMAC runs over the exact bytes,
   // so a stray newline pasted with the secret years ago silently makes
   // every proof invalid while the Bearer header still authenticates.
@@ -77,7 +90,6 @@ async function graphFetch(path, token, env, init) {
   let u = 'https://graph.facebook.com/v21.0/' + path;
   const proof = await graphProof(token, env);
   if (proof) u += (u.indexOf('?') === -1 ? '?' : '&') + 'appsecret_proof=' + proof;
-  init = init || {};
   init.headers = Object.assign({ 'Authorization': 'Bearer ' + token }, init.headers || {});
   return fetch(u, init);
 }
