@@ -3514,6 +3514,99 @@
       box-sizing: border-box;
     }
 
+    /* ===== NEW-YEAR GOALS (תשפ״ז) — lobby card + page (20.9) ===== */
+    .lobby-year-card {
+      position: relative; z-index: 1; width: 100%; max-width: 580px;
+      display: flex; align-items: center; gap: 14px; box-sizing: border-box;
+      padding: 14px 18px; border-radius: 20px; cursor: pointer; text-align: right;
+      background: linear-gradient(135deg, rgba(242,212,168,0.20), rgba(255,255,255,0.06));
+      border: 1.5px solid rgba(242,212,168,0.42);
+      box-shadow: 0 16px 50px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.18);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      animation: cardsIn 1s cubic-bezier(.4,0,.2,1) 0.3s both;
+      color: #fff; font-family: inherit;
+      transition: transform .25s, box-shadow .25s;
+    }
+    .lobby-year-card:active { transform: scale(.985); }
+    .lobby-year-card .ic { font-size: 30px; flex-shrink: 0; filter: drop-shadow(0 4px 12px rgba(0,0,0,.3)); }
+    .lobby-year-card .tx { flex: 1; min-width: 0; }
+    .lobby-year-card .t { font-family: 'Frank Ruhl Libre', serif; font-size: 18px; font-weight: 900; letter-spacing: .01em; }
+    .lobby-year-card .s { font-size: 12px; color: rgba(255,255,255,.7); font-weight: 600; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lobby-year-card .bar { height: 5px; border-radius: 3px; background: rgba(0,0,0,.3); margin-top: 8px; overflow: hidden; }
+    .lobby-year-card .bar span { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #f2d4a8, #d4a574); transition: width .6s; }
+    .lobby-year-card .ar { font-size: 20px; color: rgba(255,255,255,.55); flex-shrink: 0; }
+    #mode-screen.density-tight .lobby-year-card { padding: 10px 14px; }
+    #mode-screen.density-tight .lobby-year-card .bar { display: none; }
+    #mode-screen.density-tight .lobby-year-card .ic { font-size: 24px; }
+
+    #goals-main {
+      max-width: 860px; margin: 0 auto;
+      padding: calc(env(safe-area-inset-top, 0px) + 64px) 16px 140px;
+      min-height: 100vh;
+    }
+    .yg-hero {
+      border-radius: 18px; padding: 16px 18px 14px; margin-bottom: 12px; position: relative; overflow: hidden;
+      background: linear-gradient(140deg, var(--accent) 0%, var(--accent2) 55%, #5c3a28 130%);
+      box-shadow: 0 14px 40px var(--accent-glow); color: #fff;
+    }
+    .yg-hero::after { content: ''; position: absolute; top: -60%; left: -20%; width: 70%; height: 220%;
+      background: radial-gradient(circle, rgba(255,255,255,0.14), transparent 60%); pointer-events: none; }
+    .yg-kicker { font-size: 10.5px; font-weight: 900; letter-spacing: .2em; color: rgba(255,255,255,.75); }
+    .yg-title { font-family: 'Frank Ruhl Libre', 'Heebo', serif; font-size: 27px; font-weight: 900; line-height: 1.1; margin: 4px 0 6px; }
+    .yg-line { font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,.85); }
+    .yg-yearbar { height: 6px; border-radius: 3px; background: rgba(0,0,0,.25); margin-top: 12px; overflow: hidden; }
+    .yg-yearbar span { display: block; height: 100%; background: rgba(255,255,255,.85); border-radius: 3px; }
+    .yg-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .yg-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; }
+    .yg-stat .n { display: block; font-size: 22px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+    .yg-stat .l { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
+    [data-theme="dark"] .yg-stat { background: linear-gradient(160deg, rgba(242,189,116,.10), rgba(0,0,0,.18)); border-color: rgba(242,189,116,.22); }
+    [data-theme="dark"] .yg-stat .n { color: #ffc87d; }
+    .yg-vision { width: 100%; box-sizing: border-box; min-height: 74px; margin-top: 4px; }
+    .yg-areas { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .yg-areas::-webkit-scrollbar { display: none; }
+    .yg-area {
+      flex-shrink: 0; min-height: 38px; padding: 7px 13px; border-radius: 999px; cursor: pointer;
+      border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted);
+      font-family: inherit; font-size: 13px; font-weight: 800; white-space: nowrap;
+    }
+    .yg-area.on { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-color: transparent; }
+    .yg-goal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; }
+    [data-theme="dark"] .yg-goal { background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(0,0,0,.14)); border-color: rgba(255,255,255,.10); }
+    .yg-goal.done { opacity: .62; }
+    .yg-goal-head { display: flex; align-items: center; gap: 10px; }
+    .yg-check {
+      flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--border);
+      background: transparent; cursor: pointer; font-size: 15px; color: #fff; display: inline-flex; align-items: center; justify-content: center;
+      font-family: inherit; padding: 0;
+    }
+    .yg-goal.done .yg-check { background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; }
+    .yg-goal-title { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 900; color: var(--text); line-height: 1.3; }
+    .yg-goal.done .yg-goal-title { text-decoration: line-through; }
+    .yg-goal-area { flex-shrink: 0; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: var(--surface2); color: var(--text-muted); }
+    .yg-goal-del { flex-shrink: 0; width: 32px; height: 32px; border: none; background: none; color: var(--text-muted); font-size: 16px; cursor: pointer; border-radius: 9px; font-family: inherit; }
+    .yg-goal-del:active { background: var(--surface3); }
+    .yg-prog { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .yg-prog .bar { flex: 1; height: 6px; border-radius: 3px; background: var(--surface3); overflow: hidden; }
+    .yg-prog .bar span { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .5s; }
+    .yg-prog .pct { font-size: 12px; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 34px; text-align: left; }
+    .yg-steps { margin-top: 8px; }
+    .yg-step { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 3px 0; font-size: 14px; color: var(--text); font-weight: 600; }
+    .yg-step input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); margin: 0; flex-shrink: 0; }
+    .yg-step .t { flex: 1; min-width: 0; }
+    .yg-step.done .t { text-decoration: line-through; color: var(--text-muted); }
+    .yg-step .x { width: 30px; height: 30px; border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 14px; border-radius: 8px; font-family: inherit; flex-shrink: 0; }
+    .yg-step-add { display: flex; gap: 6px; margin-top: 6px; }
+    .yg-step-add input { flex: 1; min-width: 0; min-height: 40px; padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 14px; outline: none; }
+    .yg-step-add button { min-width: 44px; min-height: 40px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--accent); font-weight: 900; font-size: 18px; cursor: pointer; font-family: inherit; }
+    .yg-add { background: var(--surface); border: 1.5px dashed var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; }
+    .yg-add-row { display: flex; gap: 8px; margin-top: 8px; }
+    .yg-add-row input, .yg-add-row select { min-height: 44px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 15px; padding: 8px 12px; outline: none; }
+    .yg-add-row input { flex: 1; min-width: 0; }
+    .yg-add-row select { flex: 0 0 auto; max-width: 42%; }
+    .yg-empty { text-align: center; color: var(--text-muted); font-size: 13.5px; font-weight: 700; padding: 26px 10px; line-height: 1.7; }
+    .yg-note { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-top: 10px; line-height: 1.6; }
+
     /* ===== MY PATH — standalone mode container ===== */
     #path-main {
       max-width: 860px; margin: 0 auto;
@@ -6781,7 +6874,8 @@
   #mode-screen:not(.hidden) .mode-cards-row .mode-circle-wrap:nth-child(1) { animation: lobbyRise .55s .05s cubic-bezier(.2,.7,.3,1) both; }
   #mode-screen:not(.hidden) .mode-cards-row .mode-circle-wrap:nth-child(2) { animation: lobbyRise .55s .12s cubic-bezier(.2,.7,.3,1) both; }
   #mode-screen:not(.hidden) .mode-cards-row .mode-circle-wrap:nth-child(3) { animation: lobbyRise .55s .19s cubic-bezier(.2,.7,.3,1) both; }
-  #mode-screen:not(.hidden) .lobby-tasks { animation: lobbyRise .55s .26s cubic-bezier(.2,.7,.3,1) both; }
+  #mode-screen:not(.hidden) .lobby-year-card { animation: lobbyRise .55s .22s cubic-bezier(.2,.7,.3,1) both; }
+  #mode-screen:not(.hidden) .lobby-tasks { animation: lobbyRise .55s .30s cubic-bezier(.2,.7,.3,1) both; }
 
   /* Reserve a bottom lane for the fixed corner buttons (the red
      "יש הודעות שמחכות" badge + the FAB) so they never sit on top of
@@ -7217,7 +7311,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v465</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v466</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7271,6 +7365,17 @@
       <div class="mode-card-sub">משקל · תזונה · מאמן</div>
     </div>
   </div>
+
+  <!-- ===== New-year goals — a wide card that opens its own page (20.9) ===== -->
+  <button type="button" class="lobby-year-card" id="lobby-year-card" onclick="chooseMode('goals')">
+    <span class="ic">🎯</span>
+    <span class="tx">
+      <span class="t" style="display:block">מטרות לשנה החדשה</span>
+      <span class="s" id="lobby-year-sub">תשפ״ז · מה אני רוצה שיקרה השנה</span>
+      <span class="bar"><span id="lobby-year-bar" style="width:0%"></span></span>
+    </span>
+    <span class="ar">←</span>
+  </button>
 
   <!-- ===== Lobby tasks: visible BEFORE you pick a mode ===== -->
   <div class="lobby-tasks" id="lobby-tasks">
@@ -7552,6 +7657,32 @@
 
   </div>
 
+</main>
+
+<main id="goals-main" style="display:none">
+  <!-- ===== NEW-YEAR GOALS (תשפ״ז) — everything renders from yearGoalsRender() ===== -->
+  <div class="page active" id="page-yeargoals">
+    <div id="yg-hero"></div>
+    <div id="yg-stats"></div>
+    <div class="table-card mp-card" style="margin-bottom:12px">
+      <div class="mp-section-title">✨ החזון שלי לשנה</div>
+      <div class="mp-sub" style="margin-bottom:0">משפט אחד. איך ייראו החיים שלי בערב ראש השנה הבא?</div>
+      <textarea class="mp-textarea yg-vision" id="yg-vision" rows="2" placeholder="למשל: אולפן מלא כל שבוע, 90 קילו, ושקט בבנק." oninput="yearGoalsVision(this.value)"></textarea>
+    </div>
+    <div class="yg-add">
+      <div class="mp-section-title" style="font-size:15px">➕ מטרה חדשה</div>
+      <div class="yg-add-row">
+        <input type="text" id="yg-new-title" placeholder="מה אני רוצה להשיג השנה?" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();yearGoalsAdd();}"/>
+        <select id="yg-new-area"></select>
+      </div>
+      <div class="yg-add-row">
+        <button class="btn btn-primary" style="flex:1;min-height:44px" onclick="yearGoalsAdd()">הוסף מטרה</button>
+      </div>
+    </div>
+    <div class="yg-areas" id="yg-areas"></div>
+    <div id="yg-list"></div>
+    <div class="yg-note">💡 מטרה טובה היא כזו שאפשר לפרק לצעדים. כל צעד שמסומן מזיז את הפס, וכשהמטרה מושלמת — חוגגים.</div>
+  </div>
 </main>
 
 <!-- ===== FOOD DIARY — add a meal (AI photo/text analysis or manual).
@@ -9582,7 +9713,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -13777,6 +13908,158 @@ function _mptHealthVisible() {
       && document.visibilityState !== 'hidden';
   } catch (_) { return false; }
 }
+// ══════════ NEW-YEAR GOALS (תשפ״ז) — lobby page (20.9) ══════════
+// Data lives in `year_goals` (cloud-synced via ALL_KEYS):
+//   { vision, goals:[{ id, title, area, done, doneAt, createdAt,
+//     steps:[{ id, t, done }] }] }
+const YG_YEAR = { label: 'תשפ״ז', start: '2026-09-12', end: '2027-10-02' };
+const YG_AREAS = [
+  { k: 'business', e: '🎛️', n: 'סטודיו ועסק' },
+  { k: 'money',    e: '💰', n: 'כסף' },
+  { k: 'health',   e: '🏃', n: 'גוף ובריאות' },
+  { k: 'music',    e: '🎵', n: 'מוזיקה שלי' },
+  { k: 'family',   e: '❤️', n: 'משפחה ואהבה' },
+  { k: 'soul',     e: '🕊️', n: 'נשמה' }
+];
+let _ygFilter = 'all';
+function _ygState() {
+  const st = loadObj('year_goals');
+  if (!Array.isArray(st.goals)) st.goals = [];
+  if (typeof st.vision !== 'string') st.vision = '';
+  st.goals.forEach(g => { if (!Array.isArray(g.steps)) g.steps = []; });
+  return st;
+}
+function _ygSave(st) { save('year_goals', st); }
+function _ygArea(k) { return YG_AREAS.find(a => a.k === k) || { e: '🎯', n: 'כללי' }; }
+function _ygPct(g) {
+  if (g.done) return 100;
+  if (!g.steps.length) return 0;
+  return Math.round(100 * g.steps.filter(s => s.done).length / g.steps.length);
+}
+function _ygYearInfo() {
+  const ms = 864e5, today = new Date(_mpbToday() + 'T12:00:00');
+  const a = new Date(YG_YEAR.start + 'T12:00:00'), b = new Date(YG_YEAR.end + 'T12:00:00');
+  const total = Math.round((b - a) / ms);
+  const day = Math.min(total, Math.max(0, Math.round((today - a) / ms)));
+  return { day, total, left: Math.max(0, total - day), pct: Math.round(100 * day / total) };
+}
+window.yearGoalsLobby = function() {
+  const st = _ygState();
+  const sub = document.getElementById('lobby-year-sub'), bar = document.getElementById('lobby-year-bar');
+  if (!sub || !bar) return;
+  const n = st.goals.length, d = st.goals.filter(g => g.done).length;
+  const pct = n ? Math.round(st.goals.reduce((t, g) => t + _ygPct(g), 0) / n) : 0;
+  const yi = _ygYearInfo();
+  sub.textContent = n
+    ? YG_YEAR.label + ' · ' + d + '/' + n + ' הושגו · ' + pct + '% בדרך · נשארו ' + yi.left + ' ימים'
+    : YG_YEAR.label + ' · מה אני רוצה שיקרה השנה?';
+  bar.style.width = pct + '%';
+};
+window.yearGoalsRender = function() {
+  const st = _ygState();
+  const hero = document.getElementById('yg-hero'); if (!hero) return;
+  const yi = _ygYearInfo();
+  hero.innerHTML =
+    '<div class="yg-hero"><div class="yg-kicker">שנה טובה · ' + YG_YEAR.label + '</div>' +
+    '<div class="yg-title">מטרות לשנה החדשה</div>' +
+    '<div class="yg-line">יום ' + yi.day + ' מתוך ' + yi.total + ' · נשארו ' + yi.left + ' ימים עד ראש השנה הבא</div>' +
+    '<div class="yg-yearbar"><span style="width:' + yi.pct + '%"></span></div></div>';
+  const n = st.goals.length, d = st.goals.filter(g => g.done).length;
+  const steps = st.goals.reduce((t, g) => t + g.steps.length, 0);
+  const stepsDone = st.goals.reduce((t, g) => t + g.steps.filter(s => s.done).length, 0);
+  const pct = n ? Math.round(st.goals.reduce((t, g) => t + _ygPct(g), 0) / n) : 0;
+  document.getElementById('yg-stats').innerHTML =
+    '<div class="yg-stats">' +
+    '<div class="yg-stat"><span class="n">' + d + '<small style="font-size:12px;color:var(--text-muted)">/' + n + '</small></span><span class="l">מטרות הושגו</span></div>' +
+    '<div class="yg-stat"><span class="n">' + pct + '%</span><span class="l">התקדמות כללית</span></div>' +
+    '<div class="yg-stat"><span class="n">' + stepsDone + '<small style="font-size:12px;color:var(--text-muted)">/' + steps + '</small></span><span class="l">צעדים בוצעו</span></div>' +
+    '</div>';
+  const vis = document.getElementById('yg-vision');
+  if (vis && document.activeElement !== vis) vis.value = st.vision;
+  const sel = document.getElementById('yg-new-area');
+  if (sel && !sel.options.length) sel.innerHTML = YG_AREAS.map(a => '<option value="' + a.k + '">' + a.e + ' ' + a.n + '</option>').join('');
+  const counts = {}; st.goals.forEach(g => { counts[g.area] = (counts[g.area] || 0) + 1; });
+  document.getElementById('yg-areas').innerHTML =
+    '<button class="yg-area' + (_ygFilter === 'all' ? ' on' : '') + '" onclick="yearGoalsFilter(\'all\')">הכל · ' + n + '</button>' +
+    YG_AREAS.filter(a => counts[a.k]).map(a =>
+      '<button class="yg-area' + (_ygFilter === a.k ? ' on' : '') + '" onclick="yearGoalsFilter(\'' + a.k + '\')">' + a.e + ' ' + a.n + ' · ' + counts[a.k] + '</button>').join('');
+  const list = document.getElementById('yg-list');
+  const shown = st.goals.filter(g => _ygFilter === 'all' || g.area === _ygFilter)
+    .sort((a, b) => (a.done - b.done) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+  if (!shown.length) {
+    list.innerHTML = '<div class="yg-empty">' + (n ? 'אין מטרות בתחום הזה עדיין.' : 'עוד אין מטרות לשנה.<br>תכתוב למעלה את הראשונה — משהו שבסוף השנה תהיה גאה בו.') + '</div>';
+    return;
+  }
+  list.innerHTML = shown.map(g => {
+    const a = _ygArea(g.area), pctG = _ygPct(g);
+    return '<div class="yg-goal' + (g.done ? ' done' : '') + '" id="yg-' + g.id + '">' +
+      '<div class="yg-goal-head">' +
+        '<button class="yg-check" onclick="yearGoalsToggle(\'' + g.id + '\')" title="' + (g.done ? 'החזר לפעיל' : 'סמן כהושג') + '">' + (g.done ? '✓' : '') + '</button>' +
+        '<div class="yg-goal-title">' + _escHtml(g.title) + '</div>' +
+        '<span class="yg-goal-area">' + a.e + ' ' + a.n + '</span>' +
+        '<button class="yg-goal-del" onclick="yearGoalsDelete(\'' + g.id + '\')" title="מחק">🗑</button>' +
+      '</div>' +
+      '<div class="yg-prog"><div class="bar"><span style="width:' + pctG + '%"></span></div><span class="pct">' + pctG + '%</span></div>' +
+      '<div class="yg-steps">' +
+        g.steps.map(s => '<div class="yg-step' + (s.done ? ' done' : '') + '">' +
+          '<input type="checkbox"' + (s.done ? ' checked' : '') + ' onchange="yearGoalsStepToggle(\'' + g.id + '\',\'' + s.id + '\')"/>' +
+          '<span class="t">' + _escHtml(s.t) + '</span>' +
+          '<button class="x" onclick="yearGoalsStepDelete(\'' + g.id + '\',\'' + s.id + '\')" title="מחק צעד">✕</button></div>').join('') +
+        (g.done ? '' :
+          '<div class="yg-step-add"><input type="text" placeholder="צעד קטן בדרך…" autocomplete="off" id="yg-step-' + g.id + '" ' +
+            'onkeydown="if(event.key===\'Enter\'){event.preventDefault();yearGoalsStepAdd(\'' + g.id + '\');}"/>' +
+          '<button onclick="yearGoalsStepAdd(\'' + g.id + '\')">+</button></div>') +
+      '</div></div>';
+  }).join('');
+};
+window.yearGoalsFilter = function(k) { _ygFilter = k; yearGoalsRender(); };
+window.yearGoalsVision = function(v) { const st = _ygState(); st.vision = String(v || ''); _ygSave(st); };
+window.yearGoalsAdd = function() {
+  const inp = document.getElementById('yg-new-title'), sel = document.getElementById('yg-new-area');
+  const title = (inp.value || '').trim(); if (!title) { inp.focus(); return; }
+  const st = _ygState();
+  st.goals.push({ id: genId(), title, area: sel.value || 'business', done: false, createdAt: new Date().toISOString(), steps: [] });
+  _ygSave(st); inp.value = '';
+  if (_ygFilter !== 'all' && _ygFilter !== sel.value) _ygFilter = 'all';
+  yearGoalsRender(); if (window.haptic) window.haptic.tap();
+  toast('🎯 מטרה נוספה לשנה');
+};
+window.yearGoalsToggle = function(id) {
+  const st = _ygState(); const g = st.goals.find(x => x.id === id); if (!g) return;
+  g.done = !g.done; g.doneAt = g.done ? new Date().toISOString() : null;
+  if (g.done) g.steps.forEach(s => { s.done = true; });
+  _ygSave(st); yearGoalsRender();
+  if (g.done) {
+    try { mptConfetti(['🎯', '✨', '🏆', '⭐', '🎉']); } catch (_) {}
+    if (window.haptic) window.haptic.success();
+    toast('🏆 מטרה הושגה: ' + g.title);
+  }
+};
+window.yearGoalsDelete = function(id) {
+  const st = _ygState(); const g = st.goals.find(x => x.id === id); if (!g) return;
+  if (!confirm('למחוק את המטרה "' + g.title + '"?')) return;
+  st.goals = st.goals.filter(x => x.id !== id); _ygSave(st); yearGoalsRender();
+};
+window.yearGoalsStepAdd = function(gid) {
+  const inp = document.getElementById('yg-step-' + gid); const t = (inp && inp.value || '').trim(); if (!t) return;
+  const st = _ygState(); const g = st.goals.find(x => x.id === gid); if (!g) return;
+  g.steps.push({ id: genId(), t, done: false }); _ygSave(st); yearGoalsRender();
+  const again = document.getElementById('yg-step-' + gid); if (again) again.focus();
+};
+window.yearGoalsStepToggle = function(gid, sid) {
+  const st = _ygState(); const g = st.goals.find(x => x.id === gid); if (!g) return;
+  const s = g.steps.find(x => x.id === sid); if (!s) return;
+  s.done = !s.done;
+  const allDone = g.steps.length && g.steps.every(x => x.done);
+  _ygSave(st); yearGoalsRender();
+  if (s.done && window.haptic) window.haptic.tap();
+  if (allDone && !g.done) toast('כל הצעדים בוצעו — אפשר לסמן את המטרה כהושגה ✓');
+};
+window.yearGoalsStepDelete = function(gid, sid) {
+  const st = _ygState(); const g = st.goals.find(x => x.id === gid); if (!g) return;
+  g.steps = g.steps.filter(x => x.id !== sid); _ygSave(st); yearGoalsRender();
+};
+
 window.mptConfetti = function(glyphSet) {
   try {
     const wrap = document.createElement('div');
@@ -17630,6 +17913,7 @@ function doLogin() {
     document.getElementById('mode-screen').classList.remove('hidden');
     try { renderLobbyTasks(); } catch(e) {}
     try { refreshLobbyGreeting(); } catch(e) {}
+    try { yearGoalsLobby(); } catch(e) {}
   } else {
     const err = document.getElementById('login-err');
     err.textContent = '❌ סיסמא שגויה';
@@ -17654,6 +17938,7 @@ function doLogin() {
     mode.classList.remove('hidden');
     try { renderLobbyTasks(); } catch(e) {}
     try { refreshLobbyGreeting(); } catch(e) {}
+    try { yearGoalsLobby(); } catch(e) {}
   };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', skip);
@@ -19249,7 +19534,7 @@ function _waApptCheck(phone, text) {
       ? 'זיהיתי שסגרת תור עם ' + nm + '. לבדוק שהפרטים נכונים ולהוסיף ליומן?'
       : 'זיהיתי ' + guesses.length + ' מועדים עם ' + nm + '. בדוק, תקן במידת הצורך — והכל ייכנס ליומן.';
     openModal('waappt');
-    if (window.haptic) window.haptic.light && window.haptic.light();
+    if (window.haptic) window.haptic.light && window.haptic.tap();
   } catch (_) {}
 }
 window.waApptSave = async function() {
@@ -20509,7 +20794,7 @@ function chooseMode(mode) {
 }
 
 function switchMode() {
-  ['business-sidebar','business-main','music-sidebar','music-main','path-main'].forEach(id => {
+  ['business-sidebar','business-main','music-sidebar','music-main','path-main','goals-main'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -20517,10 +20802,14 @@ function switchMode() {
   try { renderLobbyTasks(); } catch(e) {}
   try { refreshLobbyGreeting(); } catch(e) {}
   try { _waLobbyBadge(); } catch(e) {}
+  try { yearGoalsLobby(); } catch(e) {}
 }
 
 function showMode(mode) {
-  const biz = mode === 'business', music = mode === 'music', path = mode === 'path';
+  const biz = mode === 'business', music = mode === 'music', path = mode === 'path', goals = mode === 'goals';
+  const goalsMain = document.getElementById('goals-main');
+  if (goalsMain) goalsMain.style.display = goals ? 'block' : 'none';
+  if (goals) { try { yearGoalsRender(); } catch (e) {} window.scrollTo(0, 0); }
   document.getElementById('business-sidebar').style.display = biz   ? 'flex'  : 'none';
   document.getElementById('business-main').style.display    = biz   ? 'block' : 'none';
   document.getElementById('music-sidebar').style.display    = music ? 'flex'  : 'none';
