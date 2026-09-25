@@ -3531,6 +3531,7 @@
     .gl-card-u { margin-top: 12px; font-size: 11.5px; color: rgba(255,255,255,.6); direction: ltr; word-break: break-all; }
     .gl-static { margin: 4px 0 8px; border: 1px dashed var(--border); border-radius: 12px; padding: 8px 12px; }
     .gl-static summary { font-size: 13px; font-weight: 800; color: var(--text-muted); cursor: pointer; list-style: none; }
+    .gl-lbl { display: block; font-size: 12px; font-weight: 800; color: var(--text-muted); margin-top: 8px; }
     .gl-static summary::-webkit-details-marker { display: none; }
     .gl-static input { width: 100%; box-sizing: border-box; margin-top: 8px; min-height: 42px; padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 14px; direction: ltr; outline: none; }
     .gl-static.has summary { color: var(--accent); }
@@ -7337,7 +7338,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v475</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v476</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9246,9 +9247,12 @@
       <div class="form-group" id="gl-n-wrap" style="display:none"><label id="gl-n-label">עד כמה תשלומים</label><select id="gl-n"></select></div>
       <label class="gl-check"><input type="checkbox" id="gl-landing" checked/> עמוד מעוצב של הסטודיו לפני התשלום</label>
       <details class="gl-static" id="gl-static-wrap">
-        <summary>🔗 דף התשלום הקבוע שלי ב-Grow</summary>
-        <input type="url" id="gl-static" placeholder="הדבק כאן את הלינק שאתה שולח ללקוחות היום" autocomplete="off" oninput="glStaticSave(this.value)"/>
-        <div class="ses-hint">כשאין גישת API, האפליקציה תשתמש בדף הזה: הלקוח יראה את הסכום בעמוד המעוצב ויעבור לשלם בדף שלך.</div>
+        <summary>🔗 לינק מ-Grow</summary>
+        <label class="gl-lbl">לינק לבקשת התשלום הזאת (יצרת ב-Grow עם הסכום)</label>
+        <input type="url" id="gl-once-url" placeholder="הדבק כאן את הלינק שקיבלת ב-Grow לבקשה הזאת" autocomplete="off"/>
+        <label class="gl-lbl" style="margin-top:10px">או דף תשלום קבוע (נשמר לתמיד, אם יש לך כזה)</label>
+        <input type="url" id="gl-static" placeholder="לינק לדף תשלום ללא סכום" autocomplete="off" oninput="glStaticSave(this.value)"/>
+        <div class="ses-hint">האפליקציה עוטפת את הלינק בעמוד מעוצב של הסטודיו עם הסכום והשם, ושולחת בוואטסאפ. כשהלקוח משלם, ההכנסה נסגרת לבד.</div>
       </details>
       <div class="ses-hint" id="gl-hint"></div>
       <div class="modal-actions">
@@ -14012,8 +14016,10 @@ window.glStaticSave = function(v) {
 // No API identifiers? Build the record ourselves: the branded page shows
 // the amount and hands the client to his fixed Grow payment page.
 async function _glManualLink(ref, sum, title, name, kind, n) {
-  const url = _glStaticUrl(); if (!url) return null;
-  const rec = { id: ref, url, title, sum, name, kind, payments: n, created: Date.now(), paid: false, manual: true };
+  const once = String((document.getElementById('gl-once-url') || {}).value || '').trim();
+  const url = /^https?:\/\//.test(once) ? once : _glStaticUrl(); if (!url) return null;
+  // a per-request link already carries the sum → no "enter amount" note
+  const rec = { id: ref, url, title, sum, name, kind, payments: n, created: Date.now(), paid: false, manual: !once };
   try {
     const r = await fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) });
     if (!r.ok) return null;
@@ -14024,7 +14030,8 @@ window.glOpenFor = function(incomeId) {
   const i = (load('income') || []).find(x => x.id === incomeId); if (!i) return;
   _glIncomeId = incomeId; _glLast = null;
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
-  const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !su; }
+  const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
+  const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = true; }
   const c = i.clientId ? (load('clients') || []).find(x => x.id === i.clientId) : null;
   document.getElementById('gl-sum').value = Number(i.amount) || '';
   document.getElementById('gl-title').value = i.description || i.category || '';
@@ -14059,7 +14066,8 @@ window.glCreate = async function() {
   // Grow's API insists on a two-word name + a valid mobile; the
   // fixed-page fallback doesn't care, so only block when there's no fallback.
   const apiReady = name.split(/\s+/).filter(Boolean).length >= 2 && /^05\d{8}$/.test(phone.replace(/\D/g, '').replace(/^972/, '0'));
-  if (!apiReady && !_glStaticUrl()) {
+  const onceUrl = String((document.getElementById('gl-once-url') || {}).value || '').trim();
+  if (!apiReady && !_glStaticUrl() && !onceUrl) {
     toast(name.split(/\s+/).filter(Boolean).length < 2 ? 'Grow דורש שם מלא: שם + משפחה' : 'טלפון לא תקין (05X-XXXXXXX)'); return;
   }
   const sec = apiReady ? (localStorage.getItem('wa_send_secret') || '') : '';
@@ -14077,11 +14085,12 @@ window.glCreate = async function() {
         if (r.ok && r.json && r.json.ok) j = r.json; else j = { error: (r.json && r.json.error) || ('שגיאה ' + r.status) };
       } catch (e) { j = { error: (e && e.message) || 'שגיאת רשת' }; }
     }
+    if (onceUrl) j = null;   // he pasted a specific request link — that wins
     if (!j || !j.ok) {
-      // API not available → the fixed Grow page, wrapped in our branded page
+      // API not available → the pasted / fixed Grow page, wrapped in our branded page
       const m = await _glManualLink(ref, sum, title || 'תשלום לרביד סטודיו', name, _glKind, n);
       if (!m) {
-        toast(_glStaticUrl() ? '✗ לא הצלחתי לשמור את הלינק — נסה שוב' : 'אין גישת API — הדבק למטה את דף התשלום הקבוע שלך מ-Grow');
+        toast((_glStaticUrl() || onceUrl) ? '✗ לא הצלחתי לשמור את הלינק — נסה שוב' : 'הדבק למטה את הלינק שקיבלת מ-Grow');
         const sw = document.getElementById('gl-static-wrap'); if (sw) sw.open = true;
         btn.disabled = false; btn.textContent = '✨ צור לינק'; return;
       }
