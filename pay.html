@@ -73,11 +73,14 @@
   } catch (e) {}
   if (!d || !d.url) return fail('הקישור לא נמצא או שפג תוקפו. אנא בקשו קישור חדש.');
   const date = d.created ? new Date(d.created).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-  const hasPicker = !!(d.urls && Object.keys(d.urls).filter(k => d.urls[k]).length > 1);
+  const hasPicker = !!(d.urls && Object.keys(d.urls).filter(k => d.urls[k]).length > 1) || !!(d.live && d.kind === 'installments' && Number(d.payments) > 1);
   const terms = d.kind === 'installments' ? (hasPicker ? 'תשלום אחד או עד ' + d.payments + ' תשלומים, לבחירתך' : 'עד ' + d.payments + ' תשלומים — הבחירה בדף התשלום') : d.kind === 'recurring' ? 'הוראת קבע · ' + d.payments + ' חודשים' : 'תשלום אחד';
   const refShort = String(id).replace(/^inc_/, '').slice(-6).toUpperCase();
   const hasFee = Number(d.cardSum) > Number(d.sum);
-  const counts = d.urls ? Object.keys(d.urls).map(Number).filter(k => k > 0).sort((a, b) => a - b) : [];
+  const GO = 'https://ravid-whatsapp.djeliorravid.workers.dev/pay/go?id=' + encodeURIComponent(id);
+  const counts = d.urls ? Object.keys(d.urls).map(Number).filter(k => k > 0 && d.urls[k]).sort((a, b) => a - b)
+    : (d.live && d.kind === 'installments' && Number(d.payments) > 1) ? Array.from({ length: Number(d.payments) }, (_, i) => i + 1) : [];
+  const linkFor = k => d.urls ? (d.urls[k] || d.url) : d.live ? (GO + '&n=' + k) : d.url;
   const chargeSum = hasFee ? Number(d.cardSum) : Number(d.sum);
   el.innerHTML =
     '<div class="top"><div><div class="brand">Ravid Studio</div><div class="name">אליאור רביד</div><div class="sub">הפקה מוזיקלית · הקלטה · מיקס</div></div><div class="badge">בקשת תשלום</div></div>' +
@@ -92,7 +95,7 @@
     (d.paid ? '<div class="paid">התשלום התקבל. תודה רבה.</div>' : failed ? '<div class="failed">התשלום לא הושלם. ניתן לנסות שוב.</div>' : '') +
     (counts.length > 1 && !d.paid ? '<div class="pick"><div class="lbl">מספר תשלומים באשראי</div><div class="opts">' + counts.map(k => '<button type="button" data-k="' + k + '"' + (k === 1 ? ' class="on"' : '') + '>' + k + '</button>').join('') + '</div><div class="each" id="each"></div></div>' : '') +
     '<div class="cta-wrap">' +
-      (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" id="cta" href="' + esc(d.url) + '">' + (hasFee ? 'לתשלום באשראי · ' + money(d.cardSum) + ' ₪' : 'המשך לתשלום מאובטח') + '</a>') +
+      (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" id="cta" href="' + esc(linkFor(1)) + '">' + (hasFee ? 'לתשלום באשראי · ' + money(d.cardSum) + ' ₪' : 'המשך לתשלום מאובטח') + '</a>') +
       (d.manual && !d.paid ? '<div class="methods">בדף התשלום יש להזין את הסכום ' + money(hasFee ? d.cardSum : d.sum) + ' ₪</div>' : '<div class="methods">כרטיס אשראי · תשלומים · דף תשלום מאובטח (PCI)</div>') +
     '</div>' +
     ((d.bitLink || d.bitPhone) && !d.paid ? '<div class="alt"><div class="t"><b style="font-weight:600">תשלום ב-bit</b></div>' +
@@ -103,7 +106,7 @@
   const pickBtns = Array.from(document.querySelectorAll('.pick button'));
   const setPick = k => {
     pickBtns.forEach(b => b.classList.toggle('on', Number(b.dataset.k) === k));
-    const cta = document.getElementById('cta'); if (cta && d.urls && d.urls[k]) cta.href = d.urls[k];
+    const cta = document.getElementById('cta'); if (cta) cta.href = linkFor(k);
     const each = document.getElementById('each');
     if (each) each.textContent = k > 1 ? k + ' תשלומים של ' + money(chargeSum / k) + ' ₪' : 'תשלום אחד של ' + money(chargeSum) + ' ₪';
     if (cta) cta.textContent = (hasFee ? 'לתשלום באשראי · ' + money(chargeSum) + ' ₪' : 'המשך לתשלום מאובטח') + (k > 1 ? ' · ' + k + ' תשלומים' : '');

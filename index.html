@@ -7346,7 +7346,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v486</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v487</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -14029,7 +14029,7 @@ window.glKind = function(k) {
   }
   document.getElementById('gl-hint').innerHTML = k === 'recurring'
     ? '🔁 הוראת קבע דורשת דף תשלום ייעודי ב-Grow (GROW_PAGE_CODE_RECURRING). אם עוד לא הוגדר, Grow יחזיר שגיאה ברורה.'
-    : k === 'installments' ? '🔢 הלקוח יבחר בעצמו בעמוד התשלום שלנו: 1 עד המספר שבחרת. (נוצר דף תשלום לכל אפשרות, לוקח כמה שניות.)' : '💳 אשראי · bit · Apple Pay · Google Pay. הכסף מגיע ל-Grow שלך כרגיל.';
+    : k === 'installments' ? '🔢 הלקוח יבחר בעצמו בעמוד התשלום שלנו: 1 עד המספר שבחרת.' : '💳 אשראי · bit · Apple Pay · Google Pay. הכסף מגיע ל-Grow שלך כרגיל.';
 };
 function _glStaticUrl() { try { return String((loadObj('producer_settings') || {}).growPageUrl || '').trim(); } catch (_) { return ''; } }
 function _glBit() { try { return String((loadObj('producer_settings') || {}).bitLink || '').trim(); } catch (_) { return ''; } }
@@ -14207,10 +14207,11 @@ window.glCreate = async function() {
     }
     if (onceUrl) j = null;   // he pasted a specific request link — that wins
     if ((!j || !j.ok) && !onceUrl && window.morningConnected && morningConnected() && morningPluginId()) {
-      btn.textContent = _glKind === 'installments' ? 'יוצר ' + n + ' אפשרויות תשלום ב-Morning…' : 'יוצר דף תשלום ב-Morning…';
+      btn.textContent = 'שומר את הלינק…';
       const email = ((load('clients') || []).find(x => x.id === (((load('income') || []).find(y => y.id === _glIncomeId) || {}).clientId || _glNewClient)) || {}).email || '';
       const m = await _glMorningLink(ref, cardSum, title || 'תשלום לרביד סטודיו', name, phone, email, _glKind, n);
-      if (m && m.ok) j = m; else if (m && m.error) { toast('✗ ' + m.error); }
+      if (m && m.ok) { j = m; try { fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PATCH', body: JSON.stringify({ cardSum, feePct: _glFee().pct, feeFix: _glFee().fix }) }); } catch (_) {} }
+      else if (m && m.error) { toast('✗ ' + m.error); }
     }
     if (!j || !j.ok) {
       // API not available → the pasted / fixed Grow page, wrapped in our branded page
@@ -27628,43 +27629,20 @@ window.morningFindPlugin = async function() {
   toast('✓ נשמר תוסף סליקה: ' + (p.name || id));
 };
 async function _glMorningLink(ref, sum, title, name, phone, email, kind, n) {
-  const t = await morningGetToken(); if (!t) return { error: 'Morning לא מחובר' };
   const pluginId = morningPluginId(); if (!pluginId) return { error: 'חסר מזהה סליקה של Morning (הגדרות → Morning → מצא אוטומטית)' };
-  let notifyUrl = '';
+  // Live mode (25.9): the Grow form behind a Morning payment page
+  // expires in ~10 minutes, so nothing is minted now. The record holds
+  // everything; the worker mints a fresh form when the CLIENT clicks,
+  // with the installment count they picked on our page.
+  const go = WA_WORKER + '/pay/go?id=' + encodeURIComponent(ref);
+  const rec = Object.assign({ id: ref, url: go, live: true, pluginId, title, sum, name, phone: String(phone || '').replace(/\D/g, '').replace(/^972/, '0'), email: email || '',
+    kind, payments: kind === 'installments' ? Math.max(1, n) : kind === 'recurring' ? Math.max(1, n) : 1, docType: Number(window.MORNING_DOC_TYPE) || 400,
+    created: Date.now(), paid: false, via: 'morning-live' }, _glExtras());
   try {
-    const sec = localStorage.getItem('wa_send_secret') || '';
-    if (sec && window.crypto && crypto.subtle) {
-      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('grow|' + sec));
-      notifyUrl = WA_WORKER + '/grow/notify?k=' + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 24) + '&src=morning';
-    }
-  } catch (_) {}
-  const body = {
-    description: title, type: Number(window.MORNING_DOC_TYPE) || 400, lang: 'he', currency: 'ILS', vatType: 0,
-    amount: sum, maxPayments: kind === 'installments' ? Math.max(1, n) : 1, pluginId,
-    client: { name: name || 'לקוח', emails: email ? [email] : [], phone: phone || '', add: true },
-    income: [{ description: title, quantity: 1, price: sum, currency: 'ILS', vatType: 0 }],
-    remarks: 'Ravid Studio', custom: ref,
-    successUrl: WA_WORKER + '/grow/thanks', failureUrl: _glBase() + 'pay.html?id=' + encodeURIComponent(ref) + '&failed=1'
-  };
-  if (notifyUrl) body.notifyUrl = notifyUrl;
-  // Morning locks the installment count per form ("עד 5" isn't a
-  // thing there), so for "תשלומים" we create one form per count and let
-  // the client pick on OUR page (25.9).
-  const counts = kind === 'installments' ? Array.from({ length: Math.max(1, n) }, (_, i) => i + 1) : [kind === 'recurring' ? Math.max(1, n) : 1];
-  const urls = {};
-  try {
-    for (const k of counts) {
-      const b2 = Object.assign({}, body, { maxPayments: k, custom: ref });
-      const r = await _morningCall('POST', '/payments/form', b2, t);
-      const j = r.json;
-      if (r.ok && j && j.url) urls[k] = j.url;
-      else return { error: 'Morning ' + r.status + ': ' + ((j && (j.errorMessage || j.message || JSON.stringify(j).slice(0, 160))) || r.text || '') };
-    }
-    const first = urls[counts[0]];
-    const rec = Object.assign({ id: ref, url: first, urls: counts.length > 1 ? urls : undefined, title, sum, name, kind, payments: n, created: Date.now(), paid: false, via: 'morning' }, _glExtras());
-    try { await fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) }); } catch (_) {}
-    return { ok: true, id: ref, url: first };
-  } catch (e) { return { error: 'Morning: ' + ((e && e.message) || 'שגיאת רשת') }; }
+    const r = await fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) });
+    if (!r.ok) return { error: 'לא הצלחתי לשמור את הלינק בענן' };
+  } catch (e) { return { error: 'שגיאת רשת בשמירת הלינק' }; }
+  return { ok: true, id: ref, url: go };
 }
 window.morningDeepDiagnose = async function() {
   const c = morningCreds();

@@ -110,6 +110,45 @@ export default {
       // ── /media — stream a WhatsApp voice note (or any media) to the
       // app. Meta media URLs need the API token and expire in minutes,
       // so the app can't fetch them itself; this proxies with auth. ──
+      // ── /pay/go?id=<ref>&n=<installments> — the client's click. The
+      // Morning/Grow form URL dies after ~10 minutes, so the branded page
+      // never links to it directly: it comes here, we mint a fresh form
+      // NOW (with the installment count the client picked) and redirect.
+      // Needs MORNING_API_ID + MORNING_API_SECRET (GitHub secrets).
+      if (url.pathname === '/pay/go') {
+        const id = String(url.searchParams.get('id') || '').replace(/[^A-Za-z0-9_-]/g, '');
+        const nReq = Math.max(1, Math.min(12, Number(url.searchParams.get('n')) || 1));
+        const back = 'https://djeliorravid-crypto.github.io/elior-studio-app/pay.html?id=' + encodeURIComponent(id);
+        const fail = msg => new Response('<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:Heebo,system-ui,sans-serif;background:#f6f3ee;color:#1c1713;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;text-align:center"><div><p style="font-size:16px;line-height:1.7">' + msg + '</p><a href="' + back + '" style="color:#8a6d3b">חזרה</a></div></body></html>', { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        if (!id) return fail('קישור לא תקין.');
+        let rec = null;
+        try { rec = await fetch(DB_ROOT + '/grow_links/' + id + '.json').then(r => r.json()); } catch (_) {}
+        if (!rec) return fail('הקישור לא נמצא. אנא בקשו קישור חדש.');
+        if (rec.paid) return Response.redirect(back, 302);
+        if (rec.urls && rec.urls[nReq]) return Response.redirect(rec.urls[nReq], 302);   // pre-made Grow links (pasted)
+        if (!env.MORNING_API_ID || !env.MORNING_API_SECRET) return rec.url ? Response.redirect(rec.url, 302) : fail('דף התשלום אינו זמין כרגע. אנא פנו לאליאור.');
+        const pluginId = rec.pluginId || env.MORNING_PLUGIN_ID || '';
+        if (!pluginId) return rec.url ? Response.redirect(rec.url, 302) : fail('דף התשלום אינו מוגדר. אנא פנו לאליאור.');
+        const n = Math.min(nReq, Math.max(1, Number(rec.payments) || 1));
+        try {
+          const tk = await fetch('https://api.greeninvoice.co.il/api/v1/account/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: String(env.MORNING_API_ID).trim(), secret: String(env.MORNING_API_SECRET).trim() }) }).then(r => r.json()).catch(() => null);
+          if (!tk || !tk.token) { await diag(env, 'pay-go-token-fail', { id }); return fail('לא ניתן לפתוח את דף התשלום כרגע. נסו שוב בעוד רגע.'); }
+          const amount = Number(rec.cardSum) > Number(rec.sum) ? Number(rec.cardSum) : Number(rec.sum);
+          const notifyKey = (await sha256hex('grow|' + sendSecret(env))).slice(0, 24);
+          const body = {
+            description: rec.title || 'תשלום לרביד סטודיו', type: Number(rec.docType) || 400, lang: 'he', currency: 'ILS', vatType: 0,
+            amount, maxPayments: n, pluginId,
+            client: { name: rec.name || 'לקוח', emails: rec.email ? [rec.email] : [], phone: rec.phone || '', add: true },
+            income: [{ description: rec.title || 'שירותי אולפן', quantity: 1, price: amount, currency: 'ILS', vatType: 0 }],
+            remarks: 'Ravid Studio', custom: id,
+            successUrl: url.origin + '/grow/thanks', failureUrl: back + '&failed=1', notifyUrl: url.origin + '/grow/notify?k=' + notifyKey + '&src=morning'
+          };
+          const r = await fetch('https://api.greeninvoice.co.il/api/v1/payments/form', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tk.token }, body: JSON.stringify(body) });
+          const j = await r.json().catch(() => null);
+          if (!r.ok || !j || !j.url) { await diag(env, 'pay-go-form-fail', { id, status: r.status, msg: j && (j.errorMessage || j.message) }); return fail('דף התשלום לא נפתח: ' + ((j && (j.errorMessage || j.message)) || ('שגיאה ' + r.status)) + '. אנא פנו לאליאור.'); }
+          return Response.redirect(j.url, 302);
+        } catch (e) { await diag(env, 'pay-go-error', { id, msg: String(e && e.message).slice(0, 120) }); return fail('תקלה זמנית. נסו שוב בעוד רגע.'); }
+      }
       if (url.pathname === '/grow/thanks') {
         return new Response('<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>תודה</title></head>'
           + '<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#2a1810,#5c3a28);color:#fff;font-family:Heebo,system-ui,sans-serif;text-align:center;padding:24px">'
