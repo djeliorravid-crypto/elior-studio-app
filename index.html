@@ -3514,6 +3514,26 @@
       box-sizing: border-box;
     }
 
+    /* ===== GROW PAYMENT LINKS (25.9) ===== */
+    .gl-kinds { display: flex; gap: 6px; flex-wrap: wrap; }
+    .gl-kind { flex: 1; min-height: 42px; padding: 8px 10px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+    .gl-kind.on { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-color: transparent; }
+    .gl-check { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--text); margin: 4px 0 6px; cursor: pointer; }
+    .gl-check input { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; }
+    .gl-card { border-radius: 18px; padding: 18px 18px 16px; color: #fff; position: relative; overflow: hidden;
+      background: linear-gradient(150deg, #2a1810 0%, #4d2e1f 60%, #5c3a28 100%); border: 1.5px solid rgba(242,212,168,.4);
+      box-shadow: 0 14px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.14); text-align: center; }
+    .gl-card::after { content: ''; position: absolute; top: -60%; left: -20%; width: 70%; height: 220%; background: radial-gradient(circle, rgba(255,255,255,.12), transparent 60%); pointer-events: none; }
+    .gl-card-k { font-size: 10.5px; font-weight: 900; letter-spacing: .22em; color: rgba(255,255,255,.7); }
+    .gl-card-t { font-family: 'Frank Ruhl Libre', 'Heebo', serif; font-size: 22px; font-weight: 900; margin: 8px 0 2px; }
+    .gl-card-s { font-size: 34px; font-weight: 900; color: #f2d4a8; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+    .gl-card-m { font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,.75); margin-top: 4px; }
+    .gl-card-u { margin-top: 12px; font-size: 11.5px; color: rgba(255,255,255,.6); direction: ltr; word-break: break-all; }
+    .row-morning-btn.grow { background: rgba(212,165,116,.16); border: 1px solid rgba(212,165,116,.5); color: var(--accent); font-weight: 800; border-style: solid; }
+    [data-theme="dark"] .row-morning-btn.grow { color: #ffc87d; }
+    .ses-hint { font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.6; margin-top: 8px; }
+    .ses-hint b { color: var(--text); }
+
     /* ===== NEW-YEAR GOALS (תשפ״ז) — lobby card + page (20.9) ===== */
     .lobby-year-card {
       position: relative; z-index: 1; width: 100%; max-width: 580px;
@@ -7311,7 +7331,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v473</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v474</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9193,6 +9213,54 @@
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="saveIncome()">שמירה</button>
       <button class="btn btn-ghost" onclick="closeModal('income')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GROW PAYMENT LINK MODAL (25.9) ===== -->
+<div class="modal-overlay" id="modal-growlink">
+  <div class="modal">
+    <h3>💳 לינק לתשלום</h3>
+    <div id="gl-form">
+      <div class="form-row">
+        <div class="form-group"><label>סכום (₪) *</label><input type="number" id="gl-sum" min="1" inputmode="decimal" placeholder="0"/></div>
+        <div class="form-group"><label>על מה</label><input type="text" id="gl-title" placeholder="הפקה · שם השיר"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>שם מלא של הלקוח *</label><input type="text" id="gl-name" placeholder="שם ושם משפחה"/></div>
+        <div class="form-group"><label>טלפון *</label><input type="tel" id="gl-phone" placeholder="05X-XXXXXXX"/></div>
+      </div>
+      <div class="form-group"><label>סוג</label>
+        <div class="gl-kinds">
+          <button type="button" class="gl-kind on" data-k="once" onclick="glKind('once')">💳 חד פעמי</button>
+          <button type="button" class="gl-kind" data-k="installments" onclick="glKind('installments')">🔢 תשלומים</button>
+          <button type="button" class="gl-kind" data-k="recurring" onclick="glKind('recurring')">🔁 הוראת קבע</button>
+        </div>
+      </div>
+      <div class="form-group" id="gl-n-wrap" style="display:none"><label id="gl-n-label">עד כמה תשלומים</label><select id="gl-n"></select></div>
+      <label class="gl-check"><input type="checkbox" id="gl-landing" checked/> עמוד מעוצב של הסטודיו לפני התשלום</label>
+      <div class="ses-hint" id="gl-hint"></div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" style="flex:1;min-height:46px" id="gl-go" onclick="glCreate()">✨ צור לינק</button>
+        <button class="btn btn-ghost" onclick="closeModal('growlink')">ביטול</button>
+      </div>
+    </div>
+    <div id="gl-result" style="display:none">
+      <div class="gl-card">
+        <div class="gl-card-k">RAVID STUDIO · לינק לתשלום</div>
+        <div class="gl-card-t" id="gl-r-title"></div>
+        <div class="gl-card-s" id="gl-r-sum"></div>
+        <div class="gl-card-m" id="gl-r-meta"></div>
+        <div class="gl-card-u" id="gl-r-url"></div>
+      </div>
+      <div class="modal-actions" style="flex-direction:column;gap:8px">
+        <button class="btn btn-primary" style="width:100%;min-height:46px" onclick="glShare()">📲 שלח בוואטסאפ</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="flex:1" onclick="glCopy()">📋 העתק</button>
+          <button class="btn btn-ghost" style="flex:1" onclick="glOpen()">🔗 פתח</button>
+        </div>
+        <button class="btn btn-ghost" style="width:100%;opacity:.8" onclick="closeModal('growlink');refreshAll()">סגור</button>
+      </div>
     </div>
   </div>
 </div>
@@ -11167,7 +11235,7 @@ function _renderIncomeCatGrid(entries, planRows) {
               </button>
             `}
           </div>
-          ${(() => { const mb = _incomeMorningBtns(i); return mb ? `<div class="exp-cat-row-morning">${mb}</div>` : ''; })()}
+          ${(() => { const mb = (_incomeMorningBtns(i) || '') + (_incomeGrowBtns(i) || ''); return mb ? `<div class="exp-cat-row-morning">${mb}</div>` : ''; })()}
         </div>`;
     }).join('');
     return `
@@ -13897,6 +13965,150 @@ function _mptHealthVisible() {
       && document.visibilityState !== 'hidden';
   } catch (_) { return false; }
 }
+// ══════════ GROW (משולם) PAYMENT LINKS — from an income row to a
+// branded link in the client's WhatsApp (25.9, approved by Elior:
+// "מאשר את חיבור Grow באפליקציה"). The worker holds the Grow
+// identifiers; the app authorizes with the same send-code it already
+// uses for WhatsApp sends. ══════════
+let _glIncomeId = null, _glKind = 'once', _glLast = null;
+function _glBase() { return location.origin + location.pathname.replace(/[^/]+$/, ''); }
+function _glPretty(id) { return _glBase() + 'pay.html?id=' + encodeURIComponent(id); }
+function _incomeGrowBtns(i) {
+  if ((i.status || 'pending') === 'paid') return '';
+  const idEsc = String(i.id).replace(/'/g, "\\'");
+  if (i.growUrl) return '<button class="row-morning-btn grow" onclick="glReopen(\'' + idEsc + '\')" title="הלינק שנוצר">💳 לינק נוצר · שלח שוב</button>';
+  return '<button class="row-morning-btn grow" onclick="glOpenFor(\'' + idEsc + '\')" title="צור לינק לתשלום ב-Grow">💳 לינק לתשלום</button>';
+}
+window.glKind = function(k) {
+  _glKind = k;
+  document.querySelectorAll('#modal-growlink .gl-kind').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  const wrap = document.getElementById('gl-n-wrap'), sel = document.getElementById('gl-n'), lbl = document.getElementById('gl-n-label');
+  if (k === 'once') wrap.style.display = 'none';
+  else {
+    wrap.style.display = '';
+    if (k === 'installments') { lbl.textContent = 'עד כמה תשלומים (הלקוח בוחר)'; sel.innerHTML = [2,3,4,5,6,8,10,12].map(n => '<option value="' + n + '"' + (n === 3 ? ' selected' : '') + '>עד ' + n + ' תשלומים</option>').join(''); }
+    else { lbl.textContent = 'כמה חודשים'; sel.innerHTML = [3,6,12,24].map(n => '<option value="' + n + '"' + (n === 12 ? ' selected' : '') + '>' + n + ' חודשים</option>').join(''); }
+  }
+  document.getElementById('gl-hint').innerHTML = k === 'recurring'
+    ? '🔁 הוראת קבע דורשת דף תשלום ייעודי ב-Grow (GROW_PAGE_CODE_RECURRING). אם עוד לא הוגדר, Grow יחזיר שגיאה ברורה.'
+    : k === 'installments' ? '🔢 הלקוח יבחר בעצמו בכמה תשלומים לשלם, עד המספר שבחרת.' : '💳 אשראי · bit · Apple Pay · Google Pay. הכסף מגיע ל-Grow שלך כרגיל.';
+};
+window.glOpenFor = function(incomeId) {
+  const i = (load('income') || []).find(x => x.id === incomeId); if (!i) return;
+  _glIncomeId = incomeId; _glLast = null;
+  const c = i.clientId ? (load('clients') || []).find(x => x.id === i.clientId) : null;
+  document.getElementById('gl-sum').value = Number(i.amount) || '';
+  document.getElementById('gl-title').value = i.description || i.category || '';
+  document.getElementById('gl-name').value = (c && c.name) || i.clientName || '';
+  document.getElementById('gl-phone').value = (c && c.phone) || '';
+  document.getElementById('gl-landing').checked = true;
+  glKind('once');
+  document.getElementById('gl-form').style.display = ''; document.getElementById('gl-result').style.display = 'none';
+  const go = document.getElementById('gl-go'); go.disabled = false; go.textContent = '✨ צור לינק';
+  document.getElementById('modal-growlink').classList.add('open');
+  if (!localStorage.getItem('wa_send_secret')) toast('חסר קוד השליחה — וואטסאפ → קוד');
+};
+window.glReopen = function(incomeId) {
+  const i = (load('income') || []).find(x => x.id === incomeId); if (!i || !i.growUrl) return;
+  _glIncomeId = incomeId;
+  const c = i.clientId ? (load('clients') || []).find(x => x.id === i.clientId) : null;
+  _glLast = { url: i.growUrl, pretty: i.growPretty || i.growUrl, title: i.description || '', sum: Number(i.amount) || 0, name: i.clientName || '', kind: i.growKind || 'once', n: i.growN || 1, phone: (c && c.phone) || '' };
+  _glShowResult(); document.getElementById('modal-growlink').classList.add('open');
+};
+function _glShowResult() {
+  const r = _glLast; if (!r) return;
+  document.getElementById('gl-form').style.display = 'none'; document.getElementById('gl-result').style.display = '';
+  document.getElementById('gl-r-title').textContent = r.title || 'תשלום';
+  document.getElementById('gl-r-sum').textContent = fmtMoney(r.sum);
+  document.getElementById('gl-r-meta').textContent = (r.name ? r.name + ' · ' : '') + (r.kind === 'installments' ? 'עד ' + r.n + ' תשלומים' : r.kind === 'recurring' ? 'הוראת קבע · ' + r.n + ' חודשים' : 'תשלום אחד');
+  document.getElementById('gl-r-url').textContent = r.pretty;
+}
+window.glCreate = async function() {
+  const sum = parseFloat(document.getElementById('gl-sum').value), title = document.getElementById('gl-title').value.trim();
+  const name = document.getElementById('gl-name').value.trim(), phone = document.getElementById('gl-phone').value.trim();
+  if (!sum || sum <= 0) { toast('תכתוב סכום'); return; }
+  if (name.split(/\s+/).filter(Boolean).length < 2) { toast('Grow דורש שם מלא: שם + משפחה'); return; }
+  if (!/^05\d{8}$/.test(phone.replace(/\D/g, '').replace(/^972/, '0'))) { toast('טלפון לא תקין (05X-XXXXXXX)'); return; }
+  const sec = localStorage.getItem('wa_send_secret') || '';
+  if (!sec) { toast('חסר קוד השליחה — וואטסאפ → קוד'); return; }
+  const n = Number((document.getElementById('gl-n') || {}).value) || 1;
+  const ref = 'inc_' + String(_glIncomeId || Date.now()).replace(/[^A-Za-z0-9_-]/g, '');
+  const btn = document.getElementById('gl-go'); btn.disabled = true; btn.textContent = 'יוצר לינק ב-Grow…';
+  try {
+    const r = await _mptHttp('POST', WA_WORKER + '/grow/link', {
+      secret: sec, kind: _glKind, sum, title: title || 'תשלום לרביד סטודיו', fullName: name, phone, ref,
+      paymentNum: _glKind === 'recurring' ? n : 1, maxPaymentNum: _glKind === 'installments' ? n : 1
+    });
+    const j = r.json || {};
+    if (!r.ok || !j.ok) { toast('✗ ' + (j.error || ('שגיאה ' + r.status))); btn.disabled = false; btn.textContent = '✨ צור לינק'; return; }
+    const pretty = document.getElementById('gl-landing').checked ? _glPretty(j.id) : j.url;
+    _glLast = { url: j.url, pretty, title, sum, name, kind: _glKind, n, phone };
+    const income = load('income') || []; const i = income.find(x => x.id === _glIncomeId);
+    if (i) { i.growUrl = j.url; i.growPretty = pretty; i.growId = j.id; i.growKind = _glKind; i.growN = n; i.growAt = new Date().toISOString(); save('income', income); }
+    _glShowResult();
+    if (window.haptic) window.haptic.success();
+    toast('✓ הלינק מוכן');
+  } catch (e) { toast('✗ ' + ((e && e.message) || 'שגיאה')); btn.disabled = false; btn.textContent = '✨ צור לינק'; }
+};
+function _glMsg() {
+  const r = _glLast; if (!r) return '';
+  const first = (r.name || '').split(/\s+/)[0];
+  const how = r.kind === 'installments' ? ' (אפשר לחלק עד ' + r.n + ' תשלומים)' : r.kind === 'recurring' ? ' (הוראת קבע ל-' + r.n + ' חודשים)' : '';
+  return 'היי' + (first ? ' ' + first : '') + ' 👋 הנה לינק לתשלום מאובטח על ' + (r.title || 'העבודה') + ' — ' + _ilsFmt(r.sum) + how + ':\n' + r.pretty + '\nאשראי / bit / Apple Pay. תודה! 🙏 אליאור · Ravid Studio';
+}
+window.glShare = function() {
+  const r = _glLast; if (!r) return;
+  const ph = r.phone ? _waPhone(r.phone) : '';
+  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(_glMsg()), '_blank');
+};
+window.glCopy = async function() {
+  try { await navigator.clipboard.writeText(_glLast ? _glLast.pretty : ''); toast('✓ הועתק'); } catch (_) { prompt('העתק:', _glLast ? _glLast.pretty : ''); }
+};
+window.glOpen = function() { if (_glLast) window.open(_glLast.pretty, '_blank'); };
+// Cloud drain: the worker writes /grow_paid/<txId> for every payment
+// Grow reports (our links carry a ref; dashboard webhooks don't).
+// Match by ref, else by exact amount + a name that shares a word with
+// the client. One clear match → paid with gold rain. Otherwise it
+// lands in the "כסף שנכנס" approval list on the income page.
+async function _growPaidDrain() {
+  const q = await fetch(_DB_REST + '/grow_paid.json', { cache: 'no-store' }).then(r => r.json());
+  if (!q || typeof q !== 'object') return;
+  let seen = []; try { seen = JSON.parse(localStorage.getItem('grow_seen') || '[]'); } catch (_) {}
+  const norm = v => String(v || '').trim().toLowerCase();
+  for (const k of Object.keys(q)) {
+    const t = q[k] || {};
+    if (seen.indexOf(k) === -1) {
+      const sum = Number(t.sum) || 0;
+      const income = load('income') || [];
+      let i = null;
+      const incId = String(t.ref || '').replace(/^inc_/, '');
+      if (incId) i = income.find(x => x.id === incId) || null;
+      if (!i && sum > 0) {
+        const words = norm(t.name).split(/\s+/).filter(w => w.length > 1);
+        const cands = income.filter(x => (x.status || 'pending') !== 'paid' && Math.abs(Number(x.amount) - sum) < 1
+          && (!words.length || words.some(w => norm(x.clientName).indexOf(w) !== -1)));
+        if (cands.length === 1) i = cands[0];
+      }
+      const later = Number(t.allPaymentsNum) > 1 && Number(t.paymentsNum) > 1;   // 2nd+ installment of a known deal
+      if (i && (i.status || 'pending') !== 'paid') {
+        i.growPaidAt = new Date().toISOString(); i.growAsmachta = t.asmachta || ''; save('income', income);
+        try { setIncomeStatus(i.id, 'paid'); } catch (_) {}
+        toast('💳 ' + (t.name || 'לקוח') + ' שילם דרך Grow · ' + _ilsFmt(sum));
+      } else if (!i && !later && sum > 0) {
+        const credits = bankCreditsList();
+        if (!credits.some(c => c.id === 'grow_' + k)) {
+          credits.push({ id: 'grow_' + k, date: new Date().toISOString().slice(0, 10), amount: sum, name: 'Grow · ' + (t.name || '') + (t.description ? ' · ' + t.description : '') });
+          bankCreditsSave(credits);
+          toast('💳 תשלום ב-Grow · ' + _ilsFmt(sum) + ' — מחכה לאישור בהכנסות');
+        }
+      }
+      seen.push(k);
+    }
+    fetch(_DB_REST + '/grow_paid/' + k + '.json', { method: 'DELETE' }).catch(() => {});
+  }
+  try { localStorage.setItem('grow_seen', JSON.stringify(seen.slice(-300))); } catch (_) {}
+}
+
 // ══════════ NEW-YEAR GOALS (תשפ״ז) — lobby page (20.9) ══════════
 // Data lives in `year_goals` (cloud-synced via ALL_KEYS):
 //   { vision, goals:[{ id, title, area, done, doneAt, createdAt,
@@ -17118,6 +17330,7 @@ function _syncFromCloud(reason) {
       // them into the pending-tx queue with names + categories, then
       // delete from the cloud. One toast for the whole batch.
       try { await _bankInboxDrain(); } catch (_) {}
+      try { await _growPaidDrain(); } catch (_) {}
     } catch (_) {}
     _syncRestBusy = false;
   })();
