@@ -272,9 +272,14 @@ jobs:
                           if re.search(r'id|code|user|business|token|hash|key|merchant|customer|company', key) and not re.search(r'errors?\.|messages|translations|dictionary', key):
                               sv = str(o)
                               if 2 <= len(sv) <= 80 and not sv.startswith('http'): print('NEXT', path[-90:], '=', sv)
-                  walk(nd.get('props', {}), 'props')
                   pp = nd.get('props', {}).get('pageProps', {})
                   print('pageProps keys:', list(pp.keys())[:40] if isinstance(pp, dict) else type(pp))
+                  try:
+                      eps = pp['initialState']['generalSettings']['apiEndpoints']
+                      for name, ep in eps.items():
+                          if re.search(r'PaymentLink|Purchase|Page|Link|Process|Business(?!Users)', name):
+                              print('EP', name, ep.get('methodType'), (ep.get('apiHost') or '') + (ep.get('methodName') or ''), 'key=' + str(ep.get('x-api-key', ''))[:8])
+                  except Exception as e: print('eps fail', e)
               else: print('no __NEXT_DATA__')
           except Exception as e: print('nextdata fail', e)
           # Deeper: the page's JS config + the API calls it makes
@@ -285,17 +290,21 @@ jobs:
                       a, b = max(0, m.start() - 160), min(len(body), m.end() + 240)
                       print('--- ctx[%s]: %s' % (kw, re.sub(r'\s+', ' ', body[a:b])))
               scripts = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', body)
-              print('scripts:', scripts[:20])
-              for sc in scripts[:12]:
+              scripts = [x for x in scripts if 'Incapsula' not in x]
+              scripts.sort(key=lambda x: 0 if 'h%5D' in x or '...h' in x else 1)   # the route chunk first
+              for sc in scripts[:16]:
                   if sc.startswith('//'): sc = 'https:' + sc
                   if not sc.startswith('http'): sc = 'https://pay.grow.link' + (sc if sc.startswith('/') else '/' + sc)
                   try:
                       _, js = get(sc)
                   except Exception as e: print('js fail', sc[:80], e); continue
-                  hits = [m.start() for m in re.finditer(r'userId|pageCode|api/biz/web|api/light', js)]
+                  hits = [m.start() for m in re.finditer(r'userId|pageCode|user_id|page_code|api/light|GetPaymentLink|PaymentLinkData|paymentLinkProcessToken|getPaymentLink|linkData|apiHost', js)]
                   print('=== js', sc[:100], 'len', len(js), 'hits', len(hits))
-                  for h in hits[:8]:
-                      print('   …', re.sub(r'\s+', ' ', js[max(0, h - 140):h + 200]))
+                  last = -1000
+                  for h in hits[:40]:
+                      if h - last < 250: continue
+                      last = h
+                      print('   …', re.sub(r'\s+', ' ', js[max(0, h - 220):h + 320]))
           except Exception as e: print('deep fail', e)
           PYEOF
       - name: Grow API — which ids does Grow accept
