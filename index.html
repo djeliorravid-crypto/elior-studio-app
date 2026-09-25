@@ -3536,6 +3536,7 @@
     .gl-static summary { font-size: 13px; font-weight: 800; color: var(--text-muted); cursor: pointer; list-style: none; }
     .gl-lbl { display: block; font-size: 12px; font-weight: 800; color: var(--text-muted); margin-top: 8px; }
     .gl-static summary::-webkit-details-marker { display: none; }
+    .gl-static textarea { width: 100%; box-sizing: border-box; margin-top: 8px; min-height: 64px; padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 13px; outline: none; }
     .gl-static input { width: 100%; box-sizing: border-box; margin-top: 8px; min-height: 42px; padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 14px; direction: ltr; outline: none; }
     .gl-static.has summary { color: var(--accent); }
     [data-theme="dark"] .gl-static.has summary { color: #ffc87d; }
@@ -7345,7 +7346,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v484</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v485</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9266,7 +9267,8 @@
       <details class="gl-static" id="gl-static-wrap">
         <summary>🔗 לינק מ-Grow</summary>
         <label class="gl-lbl">לינק לבקשת התשלום הזאת (יצרת ב-Grow עם הסכום)</label>
-        <div style="display:flex;gap:6px"><input type="url" id="gl-once-url" placeholder="הדבק כאן את הלינק שקיבלת ב-Grow לבקשה הזאת" autocomplete="off" style="flex:1;min-width:0"/><button type="button" class="btn btn-ghost btn-sm" style="min-height:42px;white-space:nowrap" onclick="glPasteClipboard(true)">📋 מהלוח</button></div>
+        <div style="display:flex;gap:6px;align-items:flex-start"><textarea id="gl-once-url" rows="2" placeholder="הדבק כאן את הלינק מ-Grow. רוצה שהלקוח יבחר מספר תשלומים? צור ב-Grow לינק לכל אפשרות (1, 2, 3…) והדבק את כולם, אחד בכל שורה" autocomplete="off" oninput="glOnceCount()" style="flex:1;min-width:0;resize:vertical;direction:ltr;text-align:left"></textarea><button type="button" class="btn btn-ghost btn-sm" style="min-height:42px;white-space:nowrap" onclick="glPasteClipboard(true)">📋 מהלוח</button></div>
+        <div class="ses-hint" id="gl-once-count" style="margin-top:4px"></div>
         <label class="gl-lbl" style="margin-top:10px">bit — הקישור האישי שלי (bit → פרופיל → "הקישור שלי") או מספר הטלפון</label>
         <input type="text" id="gl-bit" placeholder="https://www.bitpay.co.il/app/me/… או 05X-XXXXXXX" autocomplete="off" oninput="glBitSave(this.value)"/>
         <label class="gl-lbl" style="margin-top:10px">המספר שלי לשאלות בוואטסאפ (מופיע בתחתית העמוד)</label>
@@ -14051,14 +14053,23 @@ window.glFeePreview = function() {
 };
 // A Grow link copied in the Grow app is usually still on the clipboard
 // when the modal opens — pull it in without a single tap.
+function _glOnceLinks() {
+  const raw = String((document.getElementById('gl-once-url') || {}).value || '');
+  const out = []; (raw.match(/https?:\/\/[^\s<>"']+/g) || []).forEach(u => { if (out.indexOf(u) === -1) out.push(u); });
+  return out;
+}
+window.glOnceCount = function() {
+  const n = _glOnceLinks().length, el = document.getElementById('gl-once-count'); if (!el) return;
+  el.textContent = n === 0 ? '' : n === 1 ? '🔗 לינק אחד — מספר התשלומים כפי שהוגדר ב-Grow' : '🔗 ' + n + ' לינקים — הלקוח יבחר אצלנו: 1 עד ' + n + ' תשלומים (לפי סדר ההדבקה)';
+};
 window.glPasteClipboard = async function(manual) {
   try {
     const txt = (await navigator.clipboard.readText() || '').trim();
     const m = txt.match(/https?:\/\/\S+/);
     if (m && /grow|meshulam|greeninvoice|pay|link/i.test(m[0])) {
-      const inp = document.getElementById('gl-once-url'); if (inp) { inp.value = m[0]; }
+      const inp = document.getElementById('gl-once-url');
+      if (inp && inp.value.indexOf(m[0]) === -1) { inp.value = (inp.value.trim() ? inp.value.trim() + '\n' : '') + m[0]; glOnceCount(); toast('📋 לינק מ-Grow נכנס מהלוח' + (_glOnceLinks().length > 1 ? ' (' + _glOnceLinks().length + ')' : '')); }
       const sw = document.getElementById('gl-static-wrap'); if (sw) sw.open = true;
-      toast('📋 הלינק מ-Grow נכנס מהלוח');
     } else if (manual) toast('אין לינק בלוח — תעתיק אותו קודם באפליקציית Grow');
   } catch (_) { if (manual) toast('אין גישה ללוח — הדבק ידנית'); }
 };
@@ -14078,10 +14089,12 @@ window.glStaticSave = function(v) {
 // No API identifiers? Build the record ourselves: the branded page shows
 // the amount and hands the client to his fixed Grow payment page.
 async function _glManualLink(ref, sum, title, name, kind, n) {
-  const once = String((document.getElementById('gl-once-url') || {}).value || '').trim();
-  const url = /^https?:\/\//.test(once) ? once : _glStaticUrl(); if (!url) return null;
-  // a per-request link already carries the sum → no "enter amount" note
-  const rec = Object.assign({ id: ref, url, title, sum, name, kind, payments: n, created: Date.now(), paid: false, manual: !once }, _glExtras());
+  const links = _glOnceLinks(); const once = links[0] || '';
+  const url = once || _glStaticUrl(); if (!url) return null;
+  // several pasted links = one per installment count → the page shows a picker
+  const urls = {}; links.forEach((u, i) => { urls[i + 1] = u; });
+  const rec = Object.assign({ id: ref, url, urls: links.length > 1 ? urls : undefined, title, sum, name,
+    kind: links.length > 1 ? 'installments' : kind, payments: links.length > 1 ? links.length : n, created: Date.now(), paid: false, manual: !once }, _glExtras());
   try {
     const r = await fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) });
     if (!r.ok) return null;
@@ -14100,7 +14113,7 @@ window.glOpenNew = function() {
   const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
   { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
-  const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
+  const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = ''; glOnceCount();
   setTimeout(() => glPasteClipboard(false), 350);
   const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
   const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !viaMorning; }
@@ -14125,7 +14138,7 @@ window.glOpenFor = function(incomeId) {
   const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
   { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
-  const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
+  const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = ''; glOnceCount();
   setTimeout(() => glPasteClipboard(false), 350);
   const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
   const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !viaMorning; }
@@ -14164,7 +14177,7 @@ window.glCreate = async function() {
   // Grow's API insists on a two-word name + a valid mobile; the
   // fixed-page fallback doesn't care, so only block when there's no fallback.
   const apiReady = name.split(/\s+/).filter(Boolean).length >= 2 && /^05\d{8}$/.test(phone.replace(/\D/g, '').replace(/^972/, '0'));
-  const onceUrl = String((document.getElementById('gl-once-url') || {}).value || '').trim();
+  const onceUrl = _glOnceLinks()[0] || '';
   if (!apiReady && !_glStaticUrl() && !onceUrl) {
     toast(name.split(/\s+/).filter(Boolean).length < 2 ? 'Grow דורש שם מלא: שם + משפחה' : 'טלפון לא תקין (05X-XXXXXXX)'); return;
   }

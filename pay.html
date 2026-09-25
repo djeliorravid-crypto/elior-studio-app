@@ -73,7 +73,8 @@
   } catch (e) {}
   if (!d || !d.url) return fail('הקישור לא נמצא או שפג תוקפו. אנא בקשו קישור חדש.');
   const date = d.created ? new Date(d.created).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-  const terms = d.kind === 'installments' ? 'תשלום אחד או עד ' + d.payments + ' תשלומים, לבחירתך' : d.kind === 'recurring' ? 'הוראת קבע · ' + d.payments + ' חודשים' : 'תשלום אחד';
+  const hasPicker = !!(d.urls && Object.keys(d.urls).filter(k => d.urls[k]).length > 1);
+  const terms = d.kind === 'installments' ? (hasPicker ? 'תשלום אחד או עד ' + d.payments + ' תשלומים, לבחירתך' : 'עד ' + d.payments + ' תשלומים — הבחירה בדף התשלום') : d.kind === 'recurring' ? 'הוראת קבע · ' + d.payments + ' חודשים' : 'תשלום אחד';
   const refShort = String(id).replace(/^inc_/, '').slice(-6).toUpperCase();
   const hasFee = Number(d.cardSum) > Number(d.sum);
   const counts = d.urls ? Object.keys(d.urls).map(Number).filter(k => k > 0).sort((a, b) => a - b) : [];
