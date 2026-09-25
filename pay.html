@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>תשלום · Ravid Studio</title>
+<meta name="theme-color" content="#2a1810">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Heebo', system-ui, sans-serif; color: #fff; -webkit-font-smoothing: antialiased;
+    background: radial-gradient(ellipse 70% 50% at 75% 15%, rgba(255,200,130,0.18), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 85%, rgba(212,165,116,0.16), transparent 60%), linear-gradient(160deg, #2a1810 0%, #3e2820 38%, #4d2e1f 68%, #5c3a28 100%); }
+  body { display: flex; align-items: center; justify-content: center; padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .card { width: 100%; max-width: 440px; background: rgba(255,255,255,0.07); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(242,212,168,0.42); border-radius: 26px; padding: 30px 24px 24px; text-align: center;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15); position: relative; overflow: hidden; }
+  .card::after { content: ''; position: absolute; top: -60%; left: -20%; width: 70%; height: 220%; background: radial-gradient(circle, rgba(255,255,255,0.12), transparent 60%); pointer-events: none; }
+  .k { font-size: 11px; font-weight: 900; letter-spacing: .26em; color: rgba(255,255,255,.7); }
+  .logo { font-family: 'Frank Ruhl Libre', serif; font-size: 30px; font-weight: 900; margin: 6px 0 18px; color: #f2d4a8; letter-spacing: .02em; }
+  .hi { font-size: 15px; color: rgba(255,255,255,.85); font-weight: 600; }
+  .title { font-family: 'Frank Ruhl Libre', 'Heebo', serif; font-size: 24px; font-weight: 900; margin: 10px 0 4px; line-height: 1.2; }
+  .sum { font-size: 46px; font-weight: 900; color: #f2d4a8; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .meta { font-size: 13px; color: rgba(255,255,255,.7); font-weight: 700; margin-top: 6px; }
+  .btn { display: block; width: 100%; margin-top: 22px; padding: 17px 20px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,.28);
+    background: linear-gradient(135deg, #f2d4a8, #d4a574); color: #2a1810; font-size: 18px; font-weight: 900; text-decoration: none; font-family: inherit;
+    box-shadow: 0 12px 30px rgba(212,165,116,.35); position: relative; z-index: 1; }
+  .btn:active { transform: scale(.985); }
+  .pay { display: flex; justify-content: center; gap: 10px; margin-top: 14px; font-size: 12px; color: rgba(255,255,255,.65); font-weight: 700; flex-wrap: wrap; }
+  .pay span { padding: 4px 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; }
+  .foot { margin-top: 18px; font-size: 11.5px; color: rgba(255,255,255,.55); line-height: 1.6; }
+  .paid { margin-top: 18px; padding: 12px; border-radius: 14px; background: rgba(90,160,90,.18); border: 1px solid rgba(150,220,150,.4); font-weight: 800; font-size: 14px; }
+  .err { font-size: 14px; color: rgba(255,255,255,.8); line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="k">RAVID STUDIO</div>
+  <div class="logo">אליאור רביד</div>
+  <div class="err" id="loading">טוען…</div>
+</div>
+<script>
+(async function () {
+  const id = new URLSearchParams(location.search).get('id') || '';
+  const el = document.getElementById('card');
+  const esc = s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const money = n => '₪' + Math.abs(Number(n) || 0).toLocaleString('he-IL', { maximumFractionDigits: 0 });
+  const fail = msg => { document.getElementById('loading').textContent = msg; };
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return fail('הלינק לא תקין. תבקש מאליאור לינק חדש 🙏');
+  let d = null;
+  try {
+    const r = await fetch('https://elior-studio-default-rtdb.firebaseio.com/grow_links/' + encodeURIComponent(id) + '.json?ts=' + Date.now(), { cache: 'no-store' });
+    d = await r.json();
+  } catch (e) {}
+  if (!d || !d.url) return fail('הלינק לא נמצא או שפג תוקפו. תבקש מאליאור לינק חדש 🙏');
+  const first = String(d.name || '').split(/\s+/)[0];
+  const how = d.kind === 'installments' ? 'אפשר לחלק עד ' + d.payments + ' תשלומים' : d.kind === 'recurring' ? 'הוראת קבע · ' + d.payments + ' חודשים' : 'תשלום אחד';
+  el.innerHTML =
+    '<div class="k">RAVID STUDIO</div><div class="logo">אליאור רביד</div>' +
+    '<div class="hi">' + (first ? 'היי ' + esc(first) + ' 👋' : 'שלום 👋') + '</div>' +
+    '<div class="title">' + esc(d.title || 'תשלום') + '</div>' +
+    '<div class="sum">' + money(d.sum) + '</div>' +
+    '<div class="meta">' + how + '</div>' +
+    (d.paid ? '<div class="paid">✅ התשלום התקבל — תודה!</div>' : '<a class="btn" href="' + esc(d.url) + '">לתשלום מאובטח ←</a>') +
+    '<div class="pay"><span>💳 אשראי</span><span>bit</span><span>Apple Pay</span><span>Google Pay</span></div>' +
+    '<div class="foot">הסליקה מאובטחת ע״י Grow (משולם). פרטי האשראי לא עוברים דרכנו.<br>שאלות? כתבו לאליאור בוואטסאפ.</div>';
+})();
+</script>
+</body>
+</html>

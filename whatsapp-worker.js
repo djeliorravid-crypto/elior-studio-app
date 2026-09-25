@@ -30,6 +30,7 @@
 
 const VERIFY_TOKEN = 'ravid-studio-whatsapp-2026';
 const FIREBASE = 'https://elior-studio-default-rtdb.firebaseio.com/whatsapp';
+const DB_ROOT = 'https://elior-studio-default-rtdb.firebaseio.com';
 const PHONE_ID = '1246363738550836';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -109,6 +110,12 @@ export default {
       // ── /media — stream a WhatsApp voice note (or any media) to the
       // app. Meta media URLs need the API token and expire in minutes,
       // so the app can't fetch them itself; this proxies with auth. ──
+      if (url.pathname === '/grow/thanks') {
+        return new Response('<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>תודה</title></head>'
+          + '<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#2a1810,#5c3a28);color:#fff;font-family:Heebo,system-ui,sans-serif;text-align:center;padding:24px">'
+          + '<div><div style="font-size:54px">🎉</div><h1 style="font-size:30px;margin:10px 0 6px">תודה רבה!</h1><p style="font-size:16px;color:rgba(255,255,255,.8);margin:0">התשלום התקבל. נתראה באולפן 🎹<br>אליאור רביד · Ravid Studio</p></div></body></html>',
+          { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+      }
       if (url.pathname === '/media') {
         const sec = String(url.searchParams.get('sec') || '').trim();
         if (!env || !sendSecret(env) || sec !== sendSecret(env)) return new Response('forbidden', { status: 403 });
@@ -347,6 +354,117 @@ export default {
         return json({ ok: true });
       }
       return json({ error: (j.error && j.error.message) || ('graph ' + r.status), code: j.error && j.error.code });
+    }
+
+    // ══════════ GROW (משולם) — payment links from the app (25.9) ══════════
+    // Secrets (GitHub → deploy syncs them): GROW_USER_ID, GROW_PAGE_CODE,
+    // optional GROW_PAGE_CODE_RECURRING (dedicated הוראת-קבע page),
+    // GROW_API_KEY (CreatePaymentLink header; docs' production value is
+    // the default), GROW_HOST (default secure.meshulam.co.il),
+    // GROW_VAT_TYPE (1 = עוסק מורשה, 3 = פטור ממע"מ).
+    if (url.pathname === '/grow/status') {
+      let b = null; try { b = await request.json(); } catch (_) { b = {}; }
+      if (!env || !sendSecret(env) || String((b && b.secret) || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
+      return json({ ok: true, configured: !!(env.GROW_USER_ID && env.GROW_PAGE_CODE), recurring: !!env.GROW_PAGE_CODE_RECURRING });
+    }
+    if (url.pathname === '/grow/link') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
+      if (!env.GROW_USER_ID || !env.GROW_PAGE_CODE) return json({ error: 'GROW_USER_ID / GROW_PAGE_CODE חסרים ב-GitHub Secrets' }, 500);
+      const kind = String(b.kind || 'once');            // once | installments | recurring
+      const sum = Math.round(Number(b.sum) * 100) / 100;
+      const title = String(b.title || 'תשלום לרביד סטודיו').replace(/[<>"'&]/g, ' ').slice(0, 80);
+      const fullName = String(b.fullName || '').replace(/[<>"'&]/g, ' ').trim();
+      const phone = String(b.phone || '').replace(/\D/g, '').replace(/^972/, '0');
+      const email = String(b.email || '').trim();
+      const ref = String(b.ref || ('g' + Date.now().toString(36))).replace(/[^A-Za-z0-9_-]/g, '');
+      if (!sum || sum <= 0) return json({ error: 'סכום חסר' }, 400);
+      if (fullName.split(/\s+/).filter(Boolean).length < 2) return json({ error: 'Grow דורש שם מלא (שם + משפחה)' }, 400);
+      if (!/^05\d{8}$/.test(phone)) return json({ error: 'Grow דורש טלפון ישראלי תקין (05X…)' }, 400);
+      const host = String(env.GROW_HOST || 'https://secure.meshulam.co.il').replace(/\/$/, '');
+      const pageCode = (kind === 'recurring' && env.GROW_PAGE_CODE_RECURRING) ? env.GROW_PAGE_CODE_RECURRING : env.GROW_PAGE_CODE;
+      const self = url.origin;
+      const notifyKey = (await sha256hex('grow|' + sendSecret(env))).slice(0, 24);
+      const fd = new FormData();
+      const put = (k, v) => { if (v !== undefined && v !== null && v !== '') fd.append(k, String(v)); };
+      put('userId', String(env.GROW_USER_ID).trim());
+      put('pageCode', String(pageCode).trim());
+      put('paymentLinkType', 1);
+      put('isActive', 1);
+      put('chargeType', 1);
+      put('title', title);
+      put('successUrl', String(b.successUrl || (self + '/grow/thanks')));
+      put('notifyUrl', self + '/grow/notify?k=' + notifyKey);
+      put('customText[thankPageTitle]', 'תודה רבה');
+      put('customText[thankPageDescription]', 'התשלום התקבל. נתראה באולפן');
+      if (kind === 'recurring') {
+        put('paymentTypes[0][type]', 'recurring');
+        put('paymentTypes[0][recurring][recurringPaymentNum]', Math.max(1, Math.min(48, Number(b.paymentNum) || 12)));
+      } else {
+        put('paymentTypes[0][type]', 'payments');
+        if (kind === 'installments' && Number(b.maxPaymentNum) >= 2) put('paymentTypes[0][payments][paymentsMaxPaymentNum]', Math.min(12, Number(b.maxPaymentNum)));
+        else put('paymentTypes[0][payments][paymentsPaymentNum]', Math.max(1, Math.min(12, Number(b.paymentNum) || 1)));
+      }
+      put('pageFieldSettings[fullName][value]', fullName);
+      put('pageFieldSettings[phone][value]', phone);
+      put('pageFieldSettings[email][value]', email);
+      put('products[data][0][name]', title);
+      put('products[data][0][price]', sum);
+      put('products[data][0][quantity]', 1);
+      put('products[data][0][vatType]', Number(env.GROW_VAT_TYPE) || 1);
+      // credit card · bit · Apple Pay · Google Pay
+      put('transactionType[0]', 1); put('transactionType[1]', 6); put('transactionType[2]', 13); put('transactionType[3]', 14);
+      put('cField1', ref);
+      put('cField2', kind);
+      // the studio look on Grow's own page
+      put('backgroundColor', '#2A1810');
+      put('buttonColor', '#D4A574');
+      put('paymentButtonText', 'לתשלום');
+      let r, j;
+      try {
+        r = await fetch(host + '/api/light/server/1.0/CreatePaymentLink', {
+          method: 'POST', body: fd,
+          headers: { 'x-api-key': String(env.GROW_API_KEY || 'WqnMS3npu9IOxLc2lRfz8Ny9teEN87AACzSUma80').trim() }
+        });
+        j = await r.json().catch(() => null);
+      } catch (e) { return json({ error: 'Grow לא זמין: ' + (e && e.message) }, 502); }
+      if (!j || String(j.status) !== '1' || !j.data || !j.data.url) {
+        const msg = (j && j.err && (j.err.message || j.err)) || ('Grow HTTP ' + (r && r.status));
+        await diag(env, 'grow-link-fail', { status: r && r.status, msg: String(msg).slice(0, 200), kind });
+        return json({ error: String(msg).slice(0, 300) });
+      }
+      const rec = { id: ref, url: j.data.url, title, sum, name: fullName, kind, payments: Number(b.maxPaymentNum || b.paymentNum) || 1, created: Date.now(), paid: false };
+      await fetch(DB_ROOT + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) }).catch(() => {});
+      return json({ ok: true, id: ref, url: j.data.url });
+    }
+    // Grow → us: server-to-server payment update (form-encoded, NOT json)
+    if (url.pathname === '/grow/notify') {
+      const expect = (await sha256hex('grow|' + sendSecret(env))).slice(0, 24);
+      if (!sendSecret(env) || url.searchParams.get('k') !== expect) return new Response('forbidden', { status: 403 });
+      let f = {};
+      try {
+        const ct = request.headers.get('content-type') || '';
+        if (ct.indexOf('json') !== -1) f = await request.json();
+        else { const fdIn = await request.formData(); fdIn.forEach((v, k) => { f[k] = String(v); }); }
+      } catch (_) { return new Response('ok', { status: 200 }); }
+      const ref = f.cField1 || (f['customFields[cField1]']) || '';
+      const txId = String(f.transactionId || Date.now());
+      const rec = { ref, sum: Number(f.sum) || 0, name: f.fullName || '', phone: f.payerPhone || '', asmachta: f.asmachta || '',
+        paymentsNum: Number(f.paymentsNum) || 1, allPaymentsNum: Number(f.allPaymentsNum) || 1, paymentDate: f.paymentDate || '', description: f.description || '', ts: Date.now() };
+      await fetch(DB_ROOT + '/grow_paid/' + txId + '.json', { method: 'PUT', body: JSON.stringify(rec) }).catch(() => {});
+      if (ref) await fetch(DB_ROOT + '/grow_links/' + ref + '/paid.json', { method: 'PUT', body: 'true' }).catch(() => {});
+      // ApproveTransaction — echo every field Grow sent us, plus our ids
+      try {
+        const host = String(env.GROW_HOST || 'https://secure.meshulam.co.il').replace(/\/$/, '');
+        const fd2 = new FormData();
+        Object.keys(f).forEach(k => fd2.append(k, String(f[k])));
+        if (!f.pageCode) fd2.append('pageCode', String(env.GROW_PAGE_CODE || ''));
+        if (!f.userId) fd2.append('userId', String(env.GROW_USER_ID || ''));
+        const ar = await fetch(host + '/api/light/server/1.0/approveTransaction', { method: 'POST', body: fd2 });
+        await diag(env, 'grow-paid', { ref, sum: rec.sum, approve: ar.status });
+      } catch (e) { await diag(env, 'grow-approve-fail', { ref, msg: String(e && e.message).slice(0, 120) }); }
+      return new Response('ok', { status: 200 });
     }
 
     let body = null;
