@@ -284,6 +284,7 @@ jobs:
                   body += ('--%s\r\nContent-Disposition: form-data; name="%s"\r\n\r\n%s\r\n' % (b, k, v)).encode('utf-8')
               body += ('--%s--\r\n' % b).encode()
               return body, 'multipart/form-data; boundary=' + b
+          if len([u for u in users.split(',') if u.strip()]) > 3: variants = [v for v in variants if v[0] == 'sum=10']
           for host in hosts:
            for vname, extra in variants:
             for uid in [u.strip() for u in users.split(',') if u.strip()]:
