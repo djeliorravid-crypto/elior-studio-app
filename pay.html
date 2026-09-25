@@ -61,6 +61,7 @@
     '<div class="sum">' + money(d.sum) + '</div>' +
     '<div class="meta">' + how + '</div>' +
     (d.paid ? '<div class="paid">✅ התשלום התקבל — תודה!</div>' : '<a class="btn" href="' + esc(d.url) + '">לתשלום מאובטח ←</a>') +
+    (d.manual && !d.paid ? '<div class="meta" style="margin-top:12px;color:#f2d4a8">בדף התשלום יש להזין את הסכום: <b>' + money(d.sum) + '</b>' + (d.kind === 'installments' ? ' · ניתן לבחור עד ' + d.payments + ' תשלומים' : '') + '</div>' : '') +
     '<div class="pay"><span>💳 אשראי</span><span>bit</span><span>Apple Pay</span><span>Google Pay</span></div>' +
     '<div class="foot">הסליקה מאובטחת ע״י Grow (משולם). פרטי האשראי לא עוברים דרכנו.<br>שאלות? כתבו לאליאור בוואטסאפ.</div>';
 })();

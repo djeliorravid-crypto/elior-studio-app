@@ -3529,6 +3529,12 @@
     .gl-card-s { font-size: 34px; font-weight: 900; color: #f2d4a8; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
     .gl-card-m { font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,.75); margin-top: 4px; }
     .gl-card-u { margin-top: 12px; font-size: 11.5px; color: rgba(255,255,255,.6); direction: ltr; word-break: break-all; }
+    .gl-static { margin: 4px 0 8px; border: 1px dashed var(--border); border-radius: 12px; padding: 8px 12px; }
+    .gl-static summary { font-size: 13px; font-weight: 800; color: var(--text-muted); cursor: pointer; list-style: none; }
+    .gl-static summary::-webkit-details-marker { display: none; }
+    .gl-static input { width: 100%; box-sizing: border-box; margin-top: 8px; min-height: 42px; padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 14px; direction: ltr; outline: none; }
+    .gl-static.has summary { color: var(--accent); }
+    [data-theme="dark"] .gl-static.has summary { color: #ffc87d; }
     .row-morning-btn.grow { background: rgba(212,165,116,.16); border: 1px solid rgba(212,165,116,.5); color: var(--accent); font-weight: 800; border-style: solid; }
     [data-theme="dark"] .row-morning-btn.grow { color: #ffc87d; }
     .ses-hint { font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.6; margin-top: 8px; }
@@ -7331,7 +7337,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v474</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v475</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9239,6 +9245,11 @@
       </div>
       <div class="form-group" id="gl-n-wrap" style="display:none"><label id="gl-n-label">עד כמה תשלומים</label><select id="gl-n"></select></div>
       <label class="gl-check"><input type="checkbox" id="gl-landing" checked/> עמוד מעוצב של הסטודיו לפני התשלום</label>
+      <details class="gl-static" id="gl-static-wrap">
+        <summary>🔗 דף התשלום הקבוע שלי ב-Grow</summary>
+        <input type="url" id="gl-static" placeholder="הדבק כאן את הלינק שאתה שולח ללקוחות היום" autocomplete="off" oninput="glStaticSave(this.value)"/>
+        <div class="ses-hint">כשאין גישת API, האפליקציה תשתמש בדף הזה: הלקוח יראה את הסכום בעמוד המעוצב ויעבור לשלם בדף שלך.</div>
+      </details>
       <div class="ses-hint" id="gl-hint"></div>
       <div class="modal-actions">
         <button class="btn btn-primary" style="flex:1;min-height:46px" id="gl-go" onclick="glCreate()">✨ צור לינק</button>
@@ -13993,9 +14004,27 @@ window.glKind = function(k) {
     ? '🔁 הוראת קבע דורשת דף תשלום ייעודי ב-Grow (GROW_PAGE_CODE_RECURRING). אם עוד לא הוגדר, Grow יחזיר שגיאה ברורה.'
     : k === 'installments' ? '🔢 הלקוח יבחר בעצמו בכמה תשלומים לשלם, עד המספר שבחרת.' : '💳 אשראי · bit · Apple Pay · Google Pay. הכסף מגיע ל-Grow שלך כרגיל.';
 };
+function _glStaticUrl() { try { return String((loadObj('producer_settings') || {}).growPageUrl || '').trim(); } catch (_) { return ''; } }
+window.glStaticSave = function(v) {
+  const st = loadObj('producer_settings') || {}; st.growPageUrl = String(v || '').trim(); save('producer_settings', st);
+  const w = document.getElementById('gl-static-wrap'); if (w) w.classList.toggle('has', !!st.growPageUrl);
+};
+// No API identifiers? Build the record ourselves: the branded page shows
+// the amount and hands the client to his fixed Grow payment page.
+async function _glManualLink(ref, sum, title, name, kind, n) {
+  const url = _glStaticUrl(); if (!url) return null;
+  const rec = { id: ref, url, title, sum, name, kind, payments: n, created: Date.now(), paid: false, manual: true };
+  try {
+    const r = await fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) });
+    if (!r.ok) return null;
+  } catch (_) { return null; }
+  return { ok: true, id: ref, url, manual: true };
+}
 window.glOpenFor = function(incomeId) {
   const i = (load('income') || []).find(x => x.id === incomeId); if (!i) return;
   _glIncomeId = incomeId; _glLast = null;
+  const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
+  const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !su; }
   const c = i.clientId ? (load('clients') || []).find(x => x.id === i.clientId) : null;
   document.getElementById('gl-sum').value = Number(i.amount) || '';
   document.getElementById('gl-title').value = i.description || i.category || '';
@@ -14027,20 +14056,37 @@ window.glCreate = async function() {
   const sum = parseFloat(document.getElementById('gl-sum').value), title = document.getElementById('gl-title').value.trim();
   const name = document.getElementById('gl-name').value.trim(), phone = document.getElementById('gl-phone').value.trim();
   if (!sum || sum <= 0) { toast('תכתוב סכום'); return; }
-  if (name.split(/\s+/).filter(Boolean).length < 2) { toast('Grow דורש שם מלא: שם + משפחה'); return; }
-  if (!/^05\d{8}$/.test(phone.replace(/\D/g, '').replace(/^972/, '0'))) { toast('טלפון לא תקין (05X-XXXXXXX)'); return; }
-  const sec = localStorage.getItem('wa_send_secret') || '';
-  if (!sec) { toast('חסר קוד השליחה — וואטסאפ → קוד'); return; }
+  // Grow's API insists on a two-word name + a valid mobile; the
+  // fixed-page fallback doesn't care, so only block when there's no fallback.
+  const apiReady = name.split(/\s+/).filter(Boolean).length >= 2 && /^05\d{8}$/.test(phone.replace(/\D/g, '').replace(/^972/, '0'));
+  if (!apiReady && !_glStaticUrl()) {
+    toast(name.split(/\s+/).filter(Boolean).length < 2 ? 'Grow דורש שם מלא: שם + משפחה' : 'טלפון לא תקין (05X-XXXXXXX)'); return;
+  }
+  const sec = apiReady ? (localStorage.getItem('wa_send_secret') || '') : '';
   const n = Number((document.getElementById('gl-n') || {}).value) || 1;
   const ref = 'inc_' + String(_glIncomeId || Date.now()).replace(/[^A-Za-z0-9_-]/g, '');
-  const btn = document.getElementById('gl-go'); btn.disabled = true; btn.textContent = 'יוצר לינק ב-Grow…';
+  const btn = document.getElementById('gl-go'); btn.disabled = true; btn.textContent = 'יוצר לינק…';
   try {
-    const r = await _mptHttp('POST', WA_WORKER + '/grow/link', {
-      secret: sec, kind: _glKind, sum, title: title || 'תשלום לרביד סטודיו', fullName: name, phone, ref,
-      paymentNum: _glKind === 'recurring' ? n : 1, maxPaymentNum: _glKind === 'installments' ? n : 1
-    });
-    const j = r.json || {};
-    if (!r.ok || !j.ok) { toast('✗ ' + (j.error || ('שגיאה ' + r.status))); btn.disabled = false; btn.textContent = '✨ צור לינק'; return; }
+    let j = null;
+    if (sec) {
+      try {
+        const r = await _mptHttp('POST', WA_WORKER + '/grow/link', {
+          secret: sec, kind: _glKind, sum, title: title || 'תשלום לרביד סטודיו', fullName: name, phone, ref,
+          paymentNum: _glKind === 'recurring' ? n : 1, maxPaymentNum: _glKind === 'installments' ? n : 1
+        });
+        if (r.ok && r.json && r.json.ok) j = r.json; else j = { error: (r.json && r.json.error) || ('שגיאה ' + r.status) };
+      } catch (e) { j = { error: (e && e.message) || 'שגיאת רשת' }; }
+    }
+    if (!j || !j.ok) {
+      // API not available → the fixed Grow page, wrapped in our branded page
+      const m = await _glManualLink(ref, sum, title || 'תשלום לרביד סטודיו', name, _glKind, n);
+      if (!m) {
+        toast(_glStaticUrl() ? '✗ לא הצלחתי לשמור את הלינק — נסה שוב' : 'אין גישת API — הדבק למטה את דף התשלום הקבוע שלך מ-Grow');
+        const sw = document.getElementById('gl-static-wrap'); if (sw) sw.open = true;
+        btn.disabled = false; btn.textContent = '✨ צור לינק'; return;
+      }
+      j = m; document.getElementById('gl-landing').checked = true;
+    }
     const pretty = document.getElementById('gl-landing').checked ? _glPretty(j.id) : j.url;
     _glLast = { url: j.url, pretty, title, sum, name, kind: _glKind, n, phone };
     const income = load('income') || []; const i = income.find(x => x.id === _glIncomeId);
