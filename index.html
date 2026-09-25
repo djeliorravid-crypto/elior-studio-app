@@ -7345,7 +7345,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v483</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v484</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9266,7 +9266,7 @@
       <details class="gl-static" id="gl-static-wrap">
         <summary>🔗 לינק מ-Grow</summary>
         <label class="gl-lbl">לינק לבקשת התשלום הזאת (יצרת ב-Grow עם הסכום)</label>
-        <input type="url" id="gl-once-url" placeholder="הדבק כאן את הלינק שקיבלת ב-Grow לבקשה הזאת" autocomplete="off"/>
+        <div style="display:flex;gap:6px"><input type="url" id="gl-once-url" placeholder="הדבק כאן את הלינק שקיבלת ב-Grow לבקשה הזאת" autocomplete="off" style="flex:1;min-width:0"/><button type="button" class="btn btn-ghost btn-sm" style="min-height:42px;white-space:nowrap" onclick="glPasteClipboard(true)">📋 מהלוח</button></div>
         <label class="gl-lbl" style="margin-top:10px">bit — הקישור האישי שלי (bit → פרופיל → "הקישור שלי") או מספר הטלפון</label>
         <input type="text" id="gl-bit" placeholder="https://www.bitpay.co.il/app/me/… או 05X-XXXXXXX" autocomplete="off" oninput="glBitSave(this.value)"/>
         <label class="gl-lbl" style="margin-top:10px">המספר שלי לשאלות בוואטסאפ (מופיע בתחתית העמוד)</label>
@@ -14049,6 +14049,19 @@ window.glFeePreview = function() {
   const card = _glCardSum(base);
   el.innerHTML = card > base ? 'ב-bit / העברה: <b>' + _ilsFmt(base) + '</b> · באשראי: <b>' + _ilsFmt(card) + '</b> (כולל עמלת סליקה ' + _ilsFmt(card - base) + ')' : 'בלי גלגול עמלה — הלקוח משלם <b>' + _ilsFmt(base) + '</b> בכל אמצעי';
 };
+// A Grow link copied in the Grow app is usually still on the clipboard
+// when the modal opens — pull it in without a single tap.
+window.glPasteClipboard = async function(manual) {
+  try {
+    const txt = (await navigator.clipboard.readText() || '').trim();
+    const m = txt.match(/https?:\/\/\S+/);
+    if (m && /grow|meshulam|greeninvoice|pay|link/i.test(m[0])) {
+      const inp = document.getElementById('gl-once-url'); if (inp) { inp.value = m[0]; }
+      const sw = document.getElementById('gl-static-wrap'); if (sw) sw.open = true;
+      toast('📋 הלינק מ-Grow נכנס מהלוח');
+    } else if (manual) toast('אין לינק בלוח — תעתיק אותו קודם באפליקציית Grow');
+  } catch (_) { if (manual) toast('אין גישה ללוח — הדבק ידנית'); }
+};
 window.glOwnerSave = function(v) { const st = loadObj('producer_settings') || {}; st.ownerPhone = String(v || '').trim(); save('producer_settings', st); };
 // Extra fields every link record carries for the public page: bit
 // (free, his personal link/phone) + his WhatsApp for questions.
@@ -14088,6 +14101,7 @@ window.glOpenNew = function() {
   { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
+  setTimeout(() => glPasteClipboard(false), 350);
   const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
   const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !viaMorning; }
   const eng = document.getElementById('gl-engine'); if (eng) eng.textContent = viaMorning ? '⚡ הלינק ייווצר אוטומטית דרך Morning (הסליקה המחוברת שם)' : 'ℹ️ בלי סליקה מחוברת ב-Morning — הדבק לינק מ-Grow למטה';
@@ -14112,6 +14126,7 @@ window.glOpenFor = function(incomeId) {
   { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
+  setTimeout(() => glPasteClipboard(false), 350);
   const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
   const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !viaMorning; }
   const eng = document.getElementById('gl-engine'); if (eng) eng.textContent = viaMorning ? '⚡ הלינק ייווצר אוטומטית דרך Morning (הסליקה המחוברת שם)' : 'ℹ️ בלי סליקה מחוברת ב-Morning — הדבק לינק מ-Grow למטה';
