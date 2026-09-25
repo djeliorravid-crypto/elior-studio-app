@@ -438,6 +438,25 @@ export default {
       await fetch(DB_ROOT + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) }).catch(() => {});
       return json({ ok: true, id: ref, url: j.data.url });
     }
+    // ── /morning/api — relay ONE call to Morning's API from the server
+    // side. The app's direct browser calls die with "Load failed" on
+    // endpoints that answer without CORS headers (25.9). The app sends
+    // its own short-lived Morning token; nothing is stored here. ──
+    if (url.pathname === '/morning/api') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
+      const path = String(b.path || ''); if (!/^\/[A-Za-z0-9_\/\-?=&.]+$/.test(path)) return json({ error: 'bad path' }, 400);
+      const method = String(b.method || 'GET').toUpperCase();
+      try {
+        const r = await fetch('https://api.greeninvoice.co.il/api/v1' + path, {
+          method, headers: Object.assign({ 'Content-Type': 'application/json' }, b.token ? { Authorization: 'Bearer ' + String(b.token) } : {}),
+          body: method === 'GET' ? undefined : JSON.stringify(b.body || {})
+        });
+        const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (_) {}
+        return json({ ok: r.ok, status: r.status, json: j, text: j ? undefined : txt.slice(0, 600) });
+      } catch (e) { return json({ ok: false, status: 0, error: String(e && e.message).slice(0, 200) }); }
+    }
     // Grow → us: server-to-server payment update (form-encoded, NOT json)
     // Two callers land here:
     //  a) notifyUrl of links WE created (form-encoded, carries ?k= a key

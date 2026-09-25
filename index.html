@@ -7341,7 +7341,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v477</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v478</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -27464,21 +27464,38 @@ window.testMorningConnection = async function() {
 // Morning account (Grow / Cardcom / morning pay …) produces a hosted
 // payment URL with the amount baked in. Needs the plugin id once. ──
 window.morningPluginId = function() { return (localStorage.getItem('morning_plugin_id') || '').trim(); };
+// One Morning call, server-side via the worker when the send-code is
+// set (no CORS surprises); direct fetch otherwise.
+async function _morningCall(method, path, body, token) {
+  const sec = localStorage.getItem('wa_send_secret') || '';
+  if (sec) {
+    const r = await _mptHttp('POST', WA_WORKER + '/morning/api', { secret: sec, method, path, body, token });
+    const j = r.json || {};
+    if (r.status === 403) return { ok: false, status: 403, json: null, text: 'קוד השליחה לא תואם לענן' };
+    return { ok: !!j.ok, status: j.status || r.status, json: j.json || null, text: j.text || j.error || '' };
+  }
+  const r = await fetch(window.MORNING_BASE + path, { method, headers: Object.assign({ 'Content-Type': 'application/json' }, token ? { Authorization: 'Bearer ' + token } : {}), body: method === 'GET' ? undefined : JSON.stringify(body || {}) });
+  const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (_) {}
+  return { ok: r.ok, status: r.status, json: j, text: j ? '' : txt.slice(0, 300) };
+}
 window.morningFindPlugin = async function() {
   const t = await morningGetToken(); if (!t) { toast('Morning לא מחובר'); return; }
-  const paths = ['/payments/plugins', '/plugins', '/account/plugins'];
-  let found = [], last = '';
+  const paths = ['/payments/plugins', '/plugins', '/account/plugins', '/payments/settings', '/account/settings', '/account'];
+  let found = [], log = [];
   for (const path of paths) {
     try {
-      const r = await fetch(window.MORNING_BASE + path, { headers: { Authorization: 'Bearer ' + t } });
-      const txt = await r.text(); last = path + ' → ' + r.status + ' ' + txt.slice(0, 200);
-      if (!r.ok) continue;
-      let j = null; try { j = JSON.parse(txt); } catch (_) {}
-      const arr = Array.isArray(j) ? j : (j && (j.items || j.plugins || j.data)) || [];
-      if (arr.length) { found = arr; break; }
-    } catch (e) { last = path + ' → ' + (e && e.message); }
+      const r = await _morningCall('GET', path, null, t);
+      log.push(path + ' → ' + r.status + (r.json ? ' ' + JSON.stringify(r.json).slice(0, 160) : ' ' + (r.text || '')));
+      if (!r.ok || !r.json) continue;
+      const j = r.json;
+      const arr = Array.isArray(j) ? j : (j.items || j.plugins || j.data || j.paymentPlugins || (j.settings && j.settings.plugins) || []);
+      if (Array.isArray(arr) && arr.length && arr.some(x => x && (x.id || x.pluginId))) { found = arr.filter(x => x && (x.id || x.pluginId)); break; }
+    } catch (e) { log.push(path + ' → ' + (e && e.message)); }
   }
-  if (!found.length) { alert('לא מצאתי רשימת תוספי סליקה דרך ה-API.\nתשובה אחרונה: ' + last + '\n\nאפשר להעתיק ידנית: app.greeninvoice.co.il → הגדרות → סליקה / תשלומים → "מזהה תוסף" ולהדביק בשדה.'); return; }
+  if (!found.length) {
+    alert('לא מצאתי רשימת תוספי סליקה דרך ה-API.\n\n' + log.join('\n') + '\n\nאפשר להעתיק ידנית: app.greeninvoice.co.il → הגדרות → סליקה / תשלומים → "מזהה תוסף" ולהדביק בשדה.');
+    return;
+  }
   const lines = found.map((p, i) => (i + 1) + '. ' + (p.name || p.title || p.type || '') + ' — ' + (p.id || p.pluginId || ''));
   const pick = found.length === 1 ? 1 : Number(prompt('נמצאו תוספי סליקה:\n' + lines.join('\n') + '\n\nאיזה מספר לבחור?', '1'));
   const p = found[pick - 1]; if (!p) return;
@@ -27507,14 +27524,14 @@ async function _glMorningLink(ref, sum, title, name, phone, email, kind, n) {
   };
   if (notifyUrl) body.notifyUrl = notifyUrl;
   try {
-    const r = await fetch(window.MORNING_BASE + '/payments/form', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify(body) });
-    const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (_) {}
+    const r = await _morningCall('POST', '/payments/form', body, t);
+    const j = r.json;
     if (r.ok && j && j.url) {
       const rec = { id: ref, url: j.url, title, sum, name, kind, payments: n, created: Date.now(), paid: false, via: 'morning' };
       try { await fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) }); } catch (_) {}
       return { ok: true, id: ref, url: j.url };
     }
-    return { error: 'Morning: ' + ((j && (j.errorMessage || j.message)) || (r.status + ' ' + txt.slice(0, 160))) };
+    return { error: 'Morning ' + r.status + ': ' + ((j && (j.errorMessage || j.message || JSON.stringify(j).slice(0, 160))) || r.text || '') };
   } catch (e) { return { error: 'Morning: ' + ((e && e.message) || 'שגיאת רשת') }; }
 }
 window.morningDeepDiagnose = async function() {
