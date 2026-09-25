@@ -201,7 +201,17 @@ jobs:
           spec = os.environ.get('GROWTRY','')
           users, page = spec.split('|',1)
           page = page.strip()
-          hosts = ['https://secure.meshulam.co.il', 'https://sandbox.meshulam.co.il', 'https://api.grow.link', 'https://secureapi.grow.link']
+          hosts = ['https://secure.meshulam.co.il']
+          # amount-field variants — Grow answered "הסכום אינו תקין" to price=1 (25.9)
+          variants = [
+            ('price=1',              {}),
+            ('price=10',             {'products[data][0][price]': '10'}),
+            ('sum=10',               {'sum': '10'}),
+            ('sum+price=10',         {'sum': '10', 'products[data][0][price]': '10'}),
+            ('amount=10',            {'amount': '10'}),
+            ('price=10 vat=3',       {'products[data][0][price]': '10', 'products[data][0][vatType]': '3'}),
+            ('maxPaymentNum=3',      {'products[data][0][price]': '10', 'paymentTypes[0][payments][paymentsMaxPaymentNum]': '3'}),
+          ]
           def multipart(fields):
               b = uuid.uuid4().hex
               body = b''
@@ -210,12 +220,15 @@ jobs:
               body += ('--%s--\r\n' % b).encode()
               return body, 'multipart/form-data; boundary=' + b
           for host in hosts:
+           for vname, extra in variants:
             for uid in [u.strip() for u in users.split(',') if u.strip()]:
               fields = [('userId', uid), ('pageCode', page), ('paymentLinkType', '1'), ('isActive', '0'), ('chargeType', '1'),
                         ('title', 'בדיקת מערכת'), ('paymentTypes[0][type]', 'payments'), ('paymentTypes[0][payments][paymentsPaymentNum]', '1'),
                         ('pageFieldSettings[fullName][value]', 'בדיקה בדיקה'), ('pageFieldSettings[phone][value]', '0500000000'),
                         ('products[data][0][name]', 'בדיקה'), ('products[data][0][price]', '1'), ('products[data][0][quantity]', '1'), ('products[data][0][vatType]', '1'),
                         ('successUrl', 'https://djeliorravid-crypto.github.io/elior-studio-app/pay.html'), ('notifyUrl', 'https://ravid-whatsapp.djeliorravid.workers.dev/grow/notify')]
+              fields = [(k, v) for k, v in fields if k not in extra] + list(extra.items())
+              if vname == 'maxPaymentNum=3': fields = [(k, v) for k, v in fields if k != 'paymentTypes[0][payments][paymentsPaymentNum]']
               body, ct = multipart(fields)
               req = urllib.request.Request(host + '/api/light/server/1.0/CreatePaymentLink', data=body, method='POST',
                                            headers={'Content-Type': ct, 'x-api-key': 'WqnMS3npu9IOxLc2lRfz8Ny9teEN87AACzSUma80'})
@@ -232,7 +245,7 @@ jobs:
                       j['data']['url'] = j['data']['url'][:40] + '…'
                   txt = json.dumps(j, ensure_ascii=False)
               except Exception: pass
-              print('host=%s userId=%s pageCode=%s… → HTTP %s  %s' % (host, uid, page[:6], code, txt[:300]))
+              print('[%s] userId=%s → HTTP %s  %s' % (vname, uid, code, txt[:260]))
           PYEOF
       - name: Which secret matches the token
         if: ${{ github.event.inputs.whichsecret == 'yes' }}
