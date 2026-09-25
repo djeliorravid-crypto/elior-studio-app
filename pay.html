@@ -83,7 +83,7 @@
       (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" href="' + esc(d.url) + '">המשך לתשלום מאובטח</a>') +
       (d.manual && !d.paid ? '<div class="methods">בדף התשלום יש להזין את הסכום ' + money(d.sum) + ' ₪</div>' : '<div class="methods">כרטיס אשראי · תשלומים · דף תשלום מאובטח (PCI)</div>') +
     '</div>' +
-    ((d.bitLink || d.bitPhone) && !d.paid ? '<div class="alt"><div class="t"><span>תשלום ב-bit</span><span>ללא עמלה</span></div>' +
+    ((d.bitLink || d.bitPhone) && !d.paid ? '<div class="alt"><div class="t"><span>תשלום ב-bit</span></div>' +
       '<div class="d">' + (d.bitPhone ? 'להעברה ב-bit למספר <b dir="ltr">' + esc(d.bitPhone.replace(/^972/, '0').replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')) + '</b>, על סך <b>' + money(d.sum) + ' ₪</b>.' : 'להעברה ב-bit דרך הקישור, על סך <b>' + money(d.sum) + ' ₪</b>.') + '</div>' +
       '<div class="btns">' + (d.bitLink ? '<a href="' + esc(d.bitLink) + '">פתיחת bit</a>' : '<a href="https://www.bitpay.co.il/app/">פתיחת bit</a>') + '<button class="ok" id="claim" type="button">שילמתי ב-bit</button></div></div>' : '') +
     '<div class="foot"><span>סליקה מאובטחת באמצעות Grow</span><a href="https://wa.me/972' + '" id="wa">שאלות? וואטסאפ</a></div>';
