@@ -255,6 +255,28 @@ jobs:
               queue = nxt
           for k, v in out.items(): print(k, '→', sorted(v)[:12])
           print('urls seen:', [u[:110] for u in sorted(seen)])
+          # __NEXT_DATA__ — the server-rendered props: walk it and print every id-ish leaf
+          try:
+              import json as _json
+              final, body = get(url)
+              m = re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', body, re.S)
+              if m:
+                  nd = _json.loads(m.group(1))
+                  def walk(o, path):
+                      if isinstance(o, dict):
+                          for k, v in o.items(): walk(v, path + '.' + str(k))
+                      elif isinstance(o, list):
+                          for i, v in enumerate(o[:20]): walk(v, path + '[%d]' % i)
+                      else:
+                          key = path.lower()
+                          if re.search(r'id|code|user|business|token|hash|key|merchant|customer|company', key) and not re.search(r'errors?\.|messages|translations|dictionary', key):
+                              sv = str(o)
+                              if 2 <= len(sv) <= 80 and not sv.startswith('http'): print('NEXT', path[-90:], '=', sv)
+                  walk(nd.get('props', {}), 'props')
+                  pp = nd.get('props', {}).get('pageProps', {})
+                  print('pageProps keys:', list(pp.keys())[:40] if isinstance(pp, dict) else type(pp))
+              else: print('no __NEXT_DATA__')
+          except Exception as e: print('nextdata fail', e)
           # Deeper: the page's JS config + the API calls it makes
           try:
               final, body = get(url); body = html.unescape(body)
