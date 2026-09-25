@@ -7342,7 +7342,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v479</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v480</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -14157,7 +14157,7 @@ function _glMsg() {
   const r = _glLast; if (!r) return '';
   const first = (r.name || '').split(/\s+/)[0];
   const how = r.kind === 'installments' ? ' (אפשר לחלק עד ' + r.n + ' תשלומים)' : r.kind === 'recurring' ? ' (הוראת קבע ל-' + r.n + ' חודשים)' : '';
-  return 'היי' + (first ? ' ' + first : '') + ' 👋 הנה לינק לתשלום מאובטח על ' + (r.title || 'העבודה') + ' — ' + _ilsFmt(r.sum) + how + ':\n' + r.pretty + '\nאשראי / bit / Apple Pay. תודה! 🙏 אליאור · Ravid Studio';
+  return 'שלום' + (first ? ' ' + first : '') + ',\nמצורפת בקשת תשלום עבור ' + (r.title || 'שירותי אולפן') + ' על סך ' + _ilsFmt(r.sum) + how + '.\nלתשלום מאובטח בכרטיס אשראי:\n' + r.pretty + '\n\nתודה,\nאליאור רביד · Ravid Studio';
 }
 window.glShare = function() {
   const r = _glLast; if (!r) return;

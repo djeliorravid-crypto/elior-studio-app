@@ -3,67 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>תשלום · Ravid Studio</title>
-<meta name="theme-color" content="#2a1810">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<title>בקשת תשלום · Ravid Studio</title>
+<meta name="theme-color" content="#f6f3ee">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Heebo', system-ui, sans-serif; color: #fff; -webkit-font-smoothing: antialiased;
-    background: radial-gradient(ellipse 70% 50% at 75% 15%, rgba(255,200,130,0.18), transparent 60%), radial-gradient(ellipse 60% 50% at 20% 85%, rgba(212,165,116,0.16), transparent 60%), linear-gradient(160deg, #2a1810 0%, #3e2820 38%, #4d2e1f 68%, #5c3a28 100%); }
-  body { display: flex; align-items: center; justify-content: center; padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
-  .card { width: 100%; max-width: 440px; background: rgba(255,255,255,0.07); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid rgba(242,212,168,0.42); border-radius: 26px; padding: 30px 24px 24px; text-align: center;
-    box-shadow: 0 24px 70px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15); position: relative; overflow: hidden; }
-  .card::after { content: ''; position: absolute; top: -60%; left: -20%; width: 70%; height: 220%; background: radial-gradient(circle, rgba(255,255,255,0.12), transparent 60%); pointer-events: none; }
-  .k { font-size: 11px; font-weight: 900; letter-spacing: .26em; color: rgba(255,255,255,.7); }
-  .logo { font-family: 'Frank Ruhl Libre', serif; font-size: 30px; font-weight: 900; margin: 6px 0 18px; color: #f2d4a8; letter-spacing: .02em; }
-  .hi { font-size: 15px; color: rgba(255,255,255,.85); font-weight: 600; }
-  .title { font-family: 'Frank Ruhl Libre', 'Heebo', serif; font-size: 24px; font-weight: 900; margin: 10px 0 4px; line-height: 1.2; }
-  .sum { font-size: 46px; font-weight: 900; color: #f2d4a8; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
-  .meta { font-size: 13px; color: rgba(255,255,255,.7); font-weight: 700; margin-top: 6px; }
-  .btn { display: block; width: 100%; margin-top: 22px; padding: 17px 20px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,.28);
-    background: linear-gradient(135deg, #f2d4a8, #d4a574); color: #2a1810; font-size: 18px; font-weight: 900; text-decoration: none; font-family: inherit;
-    box-shadow: 0 12px 30px rgba(212,165,116,.35); position: relative; z-index: 1; }
-  .btn:active { transform: scale(.985); }
-  .pay { display: flex; justify-content: center; gap: 10px; margin-top: 14px; font-size: 12px; color: rgba(255,255,255,.65); font-weight: 700; flex-wrap: wrap; }
-  .pay span { padding: 4px 10px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; }
-  .foot { margin-top: 18px; font-size: 11.5px; color: rgba(255,255,255,.55); line-height: 1.6; }
-  .paid { margin-top: 18px; padding: 12px; border-radius: 14px; background: rgba(90,160,90,.18); border: 1px solid rgba(150,220,150,.4); font-weight: 800; font-size: 14px; }
-  .err { font-size: 14px; color: rgba(255,255,255,.8); line-height: 1.7; }
+  html, body { margin: 0; padding: 0; min-height: 100vh; font-family: 'Heebo', system-ui, sans-serif; color: #1c1713; background: #f6f3ee; -webkit-font-smoothing: antialiased; }
+  body { display: flex; align-items: center; justify-content: center; padding: 28px 16px calc(28px + env(safe-area-inset-bottom, 0px)); }
+  .doc { width: 100%; max-width: 460px; background: #fff; border: 1px solid #e6dfd4; border-radius: 6px; box-shadow: 0 30px 60px -30px rgba(40,28,16,.25); overflow: hidden; }
+  .top { padding: 28px 28px 22px; border-bottom: 1px solid #ece6dc; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .brand { font-size: 11px; letter-spacing: .32em; font-weight: 600; color: #8a6d3b; text-transform: uppercase; }
+  .name { font-size: 20px; font-weight: 600; margin-top: 6px; letter-spacing: -.01em; }
+  .sub { font-size: 12.5px; color: #7a6e62; margin-top: 2px; font-weight: 400; }
+  .badge { font-size: 11px; font-weight: 500; color: #7a6e62; border: 1px solid #e6dfd4; border-radius: 4px; padding: 6px 10px; white-space: nowrap; letter-spacing: .04em; }
+  .amount-wrap { padding: 30px 28px 8px; text-align: center; }
+  .lbl { font-size: 12px; letter-spacing: .18em; color: #8a6d3b; font-weight: 600; text-transform: uppercase; }
+  .amount { font-size: 52px; font-weight: 300; letter-spacing: -.03em; line-height: 1.05; margin-top: 8px; font-variant-numeric: tabular-nums; color: #1c1713; }
+  .amount small { font-size: 26px; font-weight: 300; margin-left: 4px; color: #4b4037; }
+  .terms { font-size: 13px; color: #7a6e62; margin-top: 8px; font-weight: 400; }
+  .rows { margin: 22px 28px 0; border-top: 1px solid #ece6dc; }
+  .row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #f0ebe3; font-size: 14px; }
+  .row .k { color: #7a6e62; font-weight: 400; flex-shrink: 0; }
+  .row .v { font-weight: 500; text-align: left; min-width: 0; }
+  .cta-wrap { padding: 26px 28px 10px; }
+  .cta { display: block; width: 100%; padding: 17px 20px; border-radius: 6px; background: #1c1713; color: #f2e3c6; text-align: center; text-decoration: none; font-size: 16px; font-weight: 600; letter-spacing: .02em; border: 1px solid #1c1713; }
+  .cta:active { background: #2a221b; }
+  .cta.disabled { background: #efeae2; color: #9a8f83; border-color: #efeae2; pointer-events: none; }
+  .methods { text-align: center; font-size: 12px; color: #9a8f83; margin-top: 12px; font-weight: 400; }
+  .paid { margin: 22px 28px 0; padding: 14px; border: 1px solid #cfe3cf; background: #f2f9f2; color: #23632b; border-radius: 6px; text-align: center; font-weight: 500; font-size: 14px; }
+  .failed { margin: 22px 28px 0; padding: 14px; border: 1px solid #ead5cf; background: #fbf3f1; color: #8a3a2b; border-radius: 6px; text-align: center; font-weight: 500; font-size: 14px; }
+  .foot { padding: 22px 28px 26px; border-top: 1px solid #ece6dc; margin-top: 20px; font-size: 12px; color: #9a8f83; line-height: 1.7; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .foot a { color: #8a6d3b; text-decoration: none; font-weight: 500; }
+  .loading { padding: 40px 28px; text-align: center; color: #9a8f83; font-size: 14px; line-height: 1.7; }
 </style>
 </head>
 <body>
-<div class="card" id="card">
-  <div class="k">RAVID STUDIO</div>
-  <div class="logo">אליאור רביד</div>
-  <div class="err" id="loading">טוען…</div>
+<div class="doc" id="doc">
+  <div class="top"><div><div class="brand">Ravid Studio</div><div class="name">אליאור רביד</div><div class="sub">הפקה מוזיקלית · הקלטה · מיקס</div></div></div>
+  <div class="loading" id="loading">טוען את פרטי התשלום…</div>
 </div>
 <script>
 (async function () {
-  const id = new URLSearchParams(location.search).get('id') || '';
-  const el = document.getElementById('card');
+  const q = new URLSearchParams(location.search);
+  const id = q.get('id') || '';
+  const failed = q.get('failed') === '1';
+  const el = document.getElementById('doc');
   const esc = s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  const money = n => '₪' + Math.abs(Number(n) || 0).toLocaleString('he-IL', { maximumFractionDigits: 0 });
+  const money = n => Math.abs(Number(n) || 0).toLocaleString('he-IL', { maximumFractionDigits: 0 });
   const fail = msg => { document.getElementById('loading').textContent = msg; };
-  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return fail('הלינק לא תקין. תבקש מאליאור לינק חדש 🙏');
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) return fail('הקישור אינו תקין. אנא בקשו קישור חדש.');
   let d = null;
   try {
     const r = await fetch('https://elior-studio-default-rtdb.firebaseio.com/grow_links/' + encodeURIComponent(id) + '.json?ts=' + Date.now(), { cache: 'no-store' });
     d = await r.json();
   } catch (e) {}
-  if (!d || !d.url) return fail('הלינק לא נמצא או שפג תוקפו. תבקש מאליאור לינק חדש 🙏');
-  const first = String(d.name || '').split(/\s+/)[0];
-  const how = d.kind === 'installments' ? 'אפשר לחלק עד ' + d.payments + ' תשלומים' : d.kind === 'recurring' ? 'הוראת קבע · ' + d.payments + ' חודשים' : 'תשלום אחד';
+  if (!d || !d.url) return fail('הקישור לא נמצא או שפג תוקפו. אנא בקשו קישור חדש.');
+  const date = d.created ? new Date(d.created).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const terms = d.kind === 'installments' ? 'תשלום אחד או עד ' + d.payments + ' תשלומים' : d.kind === 'recurring' ? 'הוראת קבע · ' + d.payments + ' חודשים' : 'תשלום אחד';
+  const refShort = String(id).replace(/^inc_/, '').slice(-6).toUpperCase();
   el.innerHTML =
-    '<div class="k">RAVID STUDIO</div><div class="logo">אליאור רביד</div>' +
-    '<div class="hi">' + (first ? 'היי ' + esc(first) + ' 👋' : 'שלום 👋') + '</div>' +
-    '<div class="title">' + esc(d.title || 'תשלום') + '</div>' +
-    '<div class="sum">' + money(d.sum) + '</div>' +
-    '<div class="meta">' + how + '</div>' +
-    (d.paid ? '<div class="paid">✅ התשלום התקבל — תודה!</div>' : '<a class="btn" href="' + esc(d.url) + '">לתשלום מאובטח ←</a>') +
-    (d.manual && !d.paid ? '<div class="meta" style="margin-top:12px;color:#f2d4a8">בדף התשלום יש להזין את הסכום: <b>' + money(d.sum) + '</b>' + (d.kind === 'installments' ? ' · ניתן לבחור עד ' + d.payments + ' תשלומים' : '') + '</div>' : '') +
-    '<div class="pay"><span>💳 אשראי</span><span>bit</span><span>Apple Pay</span><span>Google Pay</span></div>' +
-    '<div class="foot">הסליקה מאובטחת ע״י Grow (משולם). פרטי האשראי לא עוברים דרכנו.<br>שאלות? כתבו לאליאור בוואטסאפ.</div>';
+    '<div class="top"><div><div class="brand">Ravid Studio</div><div class="name">אליאור רביד</div><div class="sub">הפקה מוזיקלית · הקלטה · מיקס</div></div><div class="badge">בקשת תשלום</div></div>' +
+    '<div class="amount-wrap"><div class="lbl">סכום לתשלום</div><div class="amount">' + money(d.sum) + '<small>₪</small></div><div class="terms">' + esc(terms) + '</div></div>' +
+    '<div class="rows">' +
+      (d.name ? '<div class="row"><span class="k">לכבוד</span><span class="v">' + esc(d.name) + '</span></div>' : '') +
+      '<div class="row"><span class="k">עבור</span><span class="v">' + esc(d.title || 'שירותי אולפן') + '</span></div>' +
+      (date ? '<div class="row"><span class="k">תאריך</span><span class="v">' + date + '</span></div>' : '') +
+      '<div class="row"><span class="k">אסמכתא</span><span class="v">' + esc(refShort) + '</span></div>' +
+    '</div>' +
+    (d.paid ? '<div class="paid">התשלום התקבל. תודה רבה.</div>' : failed ? '<div class="failed">התשלום לא הושלם. ניתן לנסות שוב.</div>' : '') +
+    '<div class="cta-wrap">' +
+      (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" href="' + esc(d.url) + '">המשך לתשלום מאובטח</a>') +
+      (d.manual && !d.paid ? '<div class="methods">בדף התשלום יש להזין את הסכום ' + money(d.sum) + ' ₪</div>' : '<div class="methods">כרטיס אשראי · תשלומים · דף תשלום מאובטח (PCI)</div>') +
+    '</div>' +
+    '<div class="foot"><span>סליקה מאובטחת באמצעות Grow</span><a href="https://wa.me/972' + '" id="wa">שאלות? וואטסאפ</a></div>';
+  try { const wa = document.getElementById('wa'); if (wa) wa.href = 'https://wa.me/' + (d.ownerPhone || ''); if (wa && !d.ownerPhone) wa.style.display = 'none'; } catch (e) {}
 })();
 </script>
 </body>
