@@ -7346,7 +7346,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v485</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v486</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -14029,7 +14029,7 @@ window.glKind = function(k) {
   }
   document.getElementById('gl-hint').innerHTML = k === 'recurring'
     ? '🔁 הוראת קבע דורשת דף תשלום ייעודי ב-Grow (GROW_PAGE_CODE_RECURRING). אם עוד לא הוגדר, Grow יחזיר שגיאה ברורה.'
-    : k === 'installments' ? '🔢 הלקוח יבחר בעצמו בכמה תשלומים לשלם, עד המספר שבחרת.' : '💳 אשראי · bit · Apple Pay · Google Pay. הכסף מגיע ל-Grow שלך כרגיל.';
+    : k === 'installments' ? '🔢 הלקוח יבחר בעצמו בעמוד התשלום שלנו: 1 עד המספר שבחרת. (נוצר דף תשלום לכל אפשרות, לוקח כמה שניות.)' : '💳 אשראי · bit · Apple Pay · Google Pay. הכסף מגיע ל-Grow שלך כרגיל.';
 };
 function _glStaticUrl() { try { return String((loadObj('producer_settings') || {}).growPageUrl || '').trim(); } catch (_) { return ''; } }
 function _glBit() { try { return String((loadObj('producer_settings') || {}).bitLink || '').trim(); } catch (_) { return ''; } }
@@ -14167,7 +14167,7 @@ function _glShowResult() {
   document.getElementById('gl-form').style.display = 'none'; document.getElementById('gl-result').style.display = '';
   document.getElementById('gl-r-title').textContent = r.title || 'תשלום';
   document.getElementById('gl-r-sum').textContent = fmtMoney(r.sum) + (r.cardSum && r.cardSum > r.sum ? '  ·  באשראי ' + fmtMoney(r.cardSum) : '');
-  document.getElementById('gl-r-meta').textContent = (r.name ? r.name + ' · ' : '') + (r.kind === 'installments' ? 'עד ' + r.n + ' תשלומים' : r.kind === 'recurring' ? 'הוראת קבע · ' + r.n + ' חודשים' : 'תשלום אחד');
+  document.getElementById('gl-r-meta').textContent = (r.name ? r.name + ' · ' : '') + (r.kind === 'installments' ? 'הלקוח בוחר בעמוד: 1 עד ' + r.n + ' תשלומים' : r.kind === 'recurring' ? 'הוראת קבע · ' + r.n + ' חודשים' : 'תשלום אחד');
   document.getElementById('gl-r-url').textContent = r.pretty;
 }
 window.glCreate = async function() {
