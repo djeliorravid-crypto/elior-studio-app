@@ -6433,6 +6433,7 @@
   <div class="fab-menu" id="fab-menu">
     <button class="fab-item" onclick="fabAction('search')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#6c47f5,#8b6bf7)"><svg class="fab-item-svg" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg></span> חיפוש בכל האפליקציה</button>
     <button class="fab-item" onclick="fabAction('schedule')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#3e6079,#5a86a8)"><svg class="fab-item-svg" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></span> אירוע בלוז</button>
+    <button class="fab-item" onclick="fabAction('paylink')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#8a6d1f,#d4a574)"><svg class="fab-item-svg" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span> לינק לתשלום</button>
     <button class="fab-item" onclick="fabAction('income')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#5a7a2e,#7a9e3e)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-up"/></svg></span> הכנסה</button>
     <button class="fab-item" onclick="fabAction('expense')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#b8442e,#d4644a)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-down"/></svg></span> הוצאה</button>
     <button class="fab-item" onclick="fabAction('meal')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#7a5a9e,#9a7ac2)"><svg class="fab-item-svg" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M17 3c-1.5 0-3 2-3 5s1.5 4 3 4v9"/></svg></span> ארוחה</button>
@@ -7341,7 +7342,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v478</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v479</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9236,6 +9237,7 @@
         <div class="form-group"><label>סכום (₪) *</label><input type="number" id="gl-sum" min="1" inputmode="decimal" placeholder="0"/></div>
         <div class="form-group"><label>על מה</label><input type="text" id="gl-title" placeholder="הפקה · שם השיר"/></div>
       </div>
+      <div class="form-group" id="gl-client-wrap" style="display:none"><label>לקוח קיים (ממלא שם וטלפון)</label><select id="gl-client" onchange="glPickClient(this.value)"></select></div>
       <div class="form-row">
         <div class="form-group"><label>שם מלא של הלקוח *</label><input type="text" id="gl-name" placeholder="שם ושם משפחה"/></div>
         <div class="form-group"><label>טלפון *</label><input type="tel" id="gl-phone" placeholder="05X-XXXXXXX"/></div>
@@ -14030,9 +14032,35 @@ async function _glManualLink(ref, sum, title, name, kind, n) {
   } catch (_) { return null; }
   return { ok: true, id: ref, url, manual: true };
 }
+// A link with no income behind it yet (FAB → לינק לתשלום): the income
+// row is created as "ממתין" the moment the link exists.
+window.glOpenNew = function() {
+  _glIncomeId = null; _glLast = null; _glNewClient = '';
+  ['gl-sum', 'gl-title', 'gl-name', 'gl-phone'].forEach(id => { document.getElementById(id).value = ''; });
+  const cw = document.getElementById('gl-client-wrap'); if (cw) { cw.style.display = ''; populateClientSel('gl-client'); }
+  document.getElementById('gl-landing').checked = true;
+  glKind('once');
+  const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
+  const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
+  const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
+  const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !viaMorning; }
+  const eng = document.getElementById('gl-engine'); if (eng) eng.textContent = viaMorning ? '⚡ הלינק ייווצר אוטומטית דרך Morning (הסליקה המחוברת שם)' : 'ℹ️ בלי סליקה מחוברת ב-Morning — הדבק לינק מ-Grow למטה';
+  document.getElementById('gl-form').style.display = ''; document.getElementById('gl-result').style.display = 'none';
+  const go = document.getElementById('gl-go'); go.disabled = false; go.textContent = '✨ צור לינק';
+  document.getElementById('modal-growlink').classList.add('open');
+  setTimeout(() => document.getElementById('gl-sum').focus(), 200);
+};
+let _glNewClient = '';
+window.glPickClient = function(id) {
+  _glNewClient = id || '';
+  const c = (load('clients') || []).find(x => x.id === id); if (!c) return;
+  document.getElementById('gl-name').value = c.name || '';
+  document.getElementById('gl-phone').value = c.phone || '';
+};
 window.glOpenFor = function(incomeId) {
   const i = (load('income') || []).find(x => x.id === incomeId); if (!i) return;
   _glIncomeId = incomeId; _glLast = null;
+  const cw = document.getElementById('gl-client-wrap'); if (cw) cw.style.display = 'none';
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
   const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
@@ -14078,6 +14106,14 @@ window.glCreate = async function() {
   }
   const sec = apiReady ? (localStorage.getItem('wa_send_secret') || '') : '';
   const n = Number((document.getElementById('gl-n') || {}).value) || 1;
+  if (!_glIncomeId) {
+    const income = load('income') || [];
+    const c = _glNewClient ? (load('clients') || []).find(x => x.id === _glNewClient) : null;
+    const row = { id: genId(), date: new Date().toISOString().slice(0, 10), amount: sum, clientId: c ? c.id : '', clientName: c ? c.name : name,
+      description: title || 'לינק לתשלום', category: 'אחר', notes: 'נוצר מלינק לתשלום', status: 'pending' };
+    income.push(row); income.sort((a, b) => new Date(b.date) - new Date(a.date)); save('income', income);
+    _glIncomeId = row.id;
+  }
   const ref = 'inc_' + String(_glIncomeId || Date.now()).replace(/[^A-Za-z0-9_-]/g, '');
   const btn = document.getElementById('gl-go'); btn.disabled = true; btn.textContent = 'יוצר לינק…';
   try {
@@ -14094,7 +14130,7 @@ window.glCreate = async function() {
     if (onceUrl) j = null;   // he pasted a specific request link — that wins
     if ((!j || !j.ok) && !onceUrl && window.morningConnected && morningConnected() && morningPluginId()) {
       btn.textContent = 'יוצר דף תשלום ב-Morning…';
-      const email = ((load('clients') || []).find(x => x.id === ((load('income') || []).find(y => y.id === _glIncomeId) || {}).clientId) || {}).email || '';
+      const email = ((load('clients') || []).find(x => x.id === (((load('income') || []).find(y => y.id === _glIncomeId) || {}).clientId || _glNewClient)) || {}).email || '';
       const m = await _glMorningLink(ref, sum, title || 'תשלום לרביד סטודיו', name, phone, email, _glKind, n);
       if (m && m.ok) j = m; else if (m && m.error) { toast('✗ ' + m.error); }
     }
@@ -25741,6 +25777,7 @@ function _qaBiz() {
 }
 function quickAction(type) {
   if (type === 'search') { try { gsOpen(); } catch (_) {} return; }
+  if (type === 'paylink') { _qaBiz(); showPage('income'); setTimeout(() => { try { glOpenNew(); } catch (_) {} }, 150); return; }
   if (type === 'meal') {
     chooseMode('path');
     setTimeout(() => {
