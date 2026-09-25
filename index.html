@@ -7311,7 +7311,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v468</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v469</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7377,19 +7377,8 @@
     <span class="ar">←</span>
   </button>
 
-  <!-- ===== Lobby tasks: visible BEFORE you pick a mode ===== -->
-  <div class="lobby-tasks" id="lobby-tasks">
-    <div class="lobby-tasks-head">
-      <div class="lobby-tasks-title"><svg class="icon"><use href="#ic-list"/></svg> היום</div>
-      <div class="lobby-tasks-count" id="lobby-tasks-count"></div>
-    </div>
-    <div id="lobby-tasks-list"></div>
-    <div class="lobby-task-add">
-      <input type="text" id="lobby-task-input" placeholder="הוסף משימה במהירות..." autocomplete="off"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();addLobbyTask();}"/>
-      <button onclick="addLobbyTask()">+</button>
-    </div>
-  </div>
+  <!-- Lobby tasks box removed 25.9 (Elior: "בלובי אתה יכול למחוק את דף המשימות").
+       renderLobbyTasks() bails when #lobby-tasks-list is absent; the daily page keeps the data. -->
 </div>
 
 <!-- ===== STUDIES (לימודים) ===== -->
