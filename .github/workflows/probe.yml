@@ -37,6 +37,10 @@ on:
         description: "Test the WhatsApp token against both stored secrets, report which is valid"
         required: false
         default: "no"
+      growtry:
+        description: "Try Grow CreatePaymentLink with candidate ids: 'userId1,userId2|pageCode' — creates an INACTIVE 1₪ link at most; prints Grow's verdict per candidate"
+        required: false
+        default: ""
 
 jobs:
   probe:
@@ -186,6 +190,49 @@ jobs:
                     '| type:', data.get('type','-'),
                     '| valid:', data.get('is_valid','-'),
                     ('| ERR: '+err[:120]) if err else '')
+          PYEOF
+      - name: Grow API — which ids does Grow accept
+        if: ${{ github.event.inputs.growtry != '' }}
+        env:
+          GROWTRY: ${{ github.event.inputs.growtry }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, urllib.request, urllib.parse, uuid
+          spec = os.environ.get('GROWTRY','')
+          users, page = spec.split('|',1)
+          page = page.strip()
+          hosts = ['https://secure.meshulam.co.il', 'https://sandbox.meshulam.co.il', 'https://api.grow.link', 'https://secureapi.grow.link']
+          def multipart(fields):
+              b = uuid.uuid4().hex
+              body = b''
+              for k, v in fields:
+                  body += ('--%s\r\nContent-Disposition: form-data; name="%s"\r\n\r\n%s\r\n' % (b, k, v)).encode('utf-8')
+              body += ('--%s--\r\n' % b).encode()
+              return body, 'multipart/form-data; boundary=' + b
+          for host in hosts:
+            for uid in [u.strip() for u in users.split(',') if u.strip()]:
+              fields = [('userId', uid), ('pageCode', page), ('paymentLinkType', '1'), ('isActive', '0'), ('chargeType', '1'),
+                        ('title', 'בדיקת מערכת'), ('paymentTypes[0][type]', 'payments'), ('paymentTypes[0][payments][paymentsPaymentNum]', '1'),
+                        ('pageFieldSettings[fullName][value]', 'בדיקה בדיקה'), ('pageFieldSettings[phone][value]', '0500000000'),
+                        ('products[data][0][name]', 'בדיקה'), ('products[data][0][price]', '1'), ('products[data][0][quantity]', '1'), ('products[data][0][vatType]', '1'),
+                        ('successUrl', 'https://djeliorravid-crypto.github.io/elior-studio-app/pay.html'), ('notifyUrl', 'https://ravid-whatsapp.djeliorravid.workers.dev/grow/notify')]
+              body, ct = multipart(fields)
+              req = urllib.request.Request(host + '/api/light/server/1.0/CreatePaymentLink', data=body, method='POST',
+                                           headers={'Content-Type': ct, 'x-api-key': 'WqnMS3npu9IOxLc2lRfz8Ny9teEN87AACzSUma80'})
+              try:
+                  r = urllib.request.urlopen(req, timeout=25); txt = r.read().decode('utf-8', 'replace'); code = r.status
+              except urllib.error.HTTPError as e:
+                  code = e.code; txt = e.read().decode('utf-8', 'replace')
+              except Exception as e:
+                  code = 0; txt = str(e)
+              # never print a live url in full — mask the token part
+              try:
+                  j = json.loads(txt)
+                  if isinstance(j, dict) and isinstance(j.get('data'), dict) and j['data'].get('url'):
+                      j['data']['url'] = j['data']['url'][:40] + '…'
+                  txt = json.dumps(j, ensure_ascii=False)
+              except Exception: pass
+              print('host=%s userId=%s pageCode=%s… → HTTP %s  %s' % (host, uid, page[:6], code, txt[:300]))
           PYEOF
       - name: Which secret matches the token
         if: ${{ github.event.inputs.whichsecret == 'yes' }}
