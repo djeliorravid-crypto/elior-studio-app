@@ -32,6 +32,14 @@
   .methods { text-align: center; font-size: 12px; color: #9a8f83; margin-top: 12px; font-weight: 400; }
   .paid { margin: 22px 28px 0; padding: 14px; border: 1px solid #cfe3cf; background: #f2f9f2; color: #23632b; border-radius: 6px; text-align: center; font-weight: 500; font-size: 14px; }
   .failed { margin: 22px 28px 0; padding: 14px; border: 1px solid #ead5cf; background: #fbf3f1; color: #8a3a2b; border-radius: 6px; text-align: center; font-weight: 500; font-size: 14px; }
+  .alt { margin: 18px 28px 0; border: 1px solid #ece6dc; border-radius: 6px; padding: 14px 16px; }
+  .alt .t { font-size: 13px; font-weight: 600; color: #1c1713; display: flex; justify-content: space-between; align-items: center; }
+  .alt .t span:last-child { font-size: 11px; color: #2a8a4a; font-weight: 500; border: 1px solid #cfe3cf; border-radius: 4px; padding: 3px 8px; }
+  .alt .d { font-size: 13px; color: #7a6e62; margin-top: 6px; line-height: 1.6; }
+  .alt .d b { color: #1c1713; font-weight: 600; }
+  .alt .btns { display: flex; gap: 8px; margin-top: 12px; }
+  .alt .btns a, .alt .btns button { flex: 1; text-align: center; padding: 12px; border-radius: 6px; border: 1px solid #1c1713; background: #fff; color: #1c1713; font-size: 14px; font-weight: 600; text-decoration: none; font-family: inherit; cursor: pointer; }
+  .alt .btns button.ok { background: #f2f9f2; border-color: #cfe3cf; color: #23632b; }
   .foot { padding: 22px 28px 26px; border-top: 1px solid #ece6dc; margin-top: 20px; font-size: 12px; color: #9a8f83; line-height: 1.7; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .foot a { color: #8a6d3b; text-decoration: none; font-weight: 500; }
   .loading { padding: 40px 28px; text-align: center; color: #9a8f83; font-size: 14px; line-height: 1.7; }
@@ -75,7 +83,19 @@
       (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" href="' + esc(d.url) + '">המשך לתשלום מאובטח</a>') +
       (d.manual && !d.paid ? '<div class="methods">בדף התשלום יש להזין את הסכום ' + money(d.sum) + ' ₪</div>' : '<div class="methods">כרטיס אשראי · תשלומים · דף תשלום מאובטח (PCI)</div>') +
     '</div>' +
+    ((d.bitLink || d.bitPhone) && !d.paid ? '<div class="alt"><div class="t"><span>תשלום ב-bit</span><span>ללא עמלה</span></div>' +
+      '<div class="d">' + (d.bitPhone ? 'להעברה ב-bit למספר <b dir="ltr">' + esc(d.bitPhone.replace(/^972/, '0').replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')) + '</b>, על סך <b>' + money(d.sum) + ' ₪</b>.' : 'להעברה ב-bit דרך הקישור, על סך <b>' + money(d.sum) + ' ₪</b>.') + '</div>' +
+      '<div class="btns">' + (d.bitLink ? '<a href="' + esc(d.bitLink) + '">פתיחת bit</a>' : '<a href="https://www.bitpay.co.il/app/">פתיחת bit</a>') + '<button class="ok" id="claim" type="button">שילמתי ב-bit</button></div></div>' : '') +
     '<div class="foot"><span>סליקה מאובטחת באמצעות Grow</span><a href="https://wa.me/972' + '" id="wa">שאלות? וואטסאפ</a></div>';
+  const claim = document.getElementById('claim');
+  if (claim) claim.onclick = async () => {
+    claim.disabled = true; claim.textContent = 'נשלח…';
+    try {
+      await fetch('https://elior-studio-default-rtdb.firebaseio.com/grow_paid/claim_' + encodeURIComponent(id) + '_' + Date.now() + '.json', { method: 'PUT',
+        body: JSON.stringify({ ref: id, sum: Number(d.sum) || 0, name: d.name || '', description: d.title || '', claim: true, source: 'bit-claim', ts: Date.now() }) });
+      claim.textContent = 'תודה, נעדכן לאחר אימות';
+    } catch (e) { claim.disabled = false; claim.textContent = 'שילמתי ב-bit'; }
+  };
   try { const wa = document.getElementById('wa'); if (wa) wa.href = 'https://wa.me/' + (d.ownerPhone || ''); if (wa && !d.ownerPhone) wa.style.display = 'none'; } catch (e) {}
 })();
 </script>

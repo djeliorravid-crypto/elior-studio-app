@@ -7342,7 +7342,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v480</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v481</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9256,6 +9256,10 @@
         <summary>🔗 לינק מ-Grow</summary>
         <label class="gl-lbl">לינק לבקשת התשלום הזאת (יצרת ב-Grow עם הסכום)</label>
         <input type="url" id="gl-once-url" placeholder="הדבק כאן את הלינק שקיבלת ב-Grow לבקשה הזאת" autocomplete="off"/>
+        <label class="gl-lbl" style="margin-top:10px">bit — הקישור האישי שלי (bit → פרופיל → "הקישור שלי") או מספר הטלפון</label>
+        <input type="text" id="gl-bit" placeholder="https://www.bitpay.co.il/app/me/… או 05X-XXXXXXX" autocomplete="off" oninput="glBitSave(this.value)"/>
+        <label class="gl-lbl" style="margin-top:10px">המספר שלי לשאלות בוואטסאפ (מופיע בתחתית העמוד)</label>
+        <input type="tel" id="gl-owner" placeholder="05X-XXXXXXX" autocomplete="off" oninput="glOwnerSave(this.value)"/>
         <label class="gl-lbl" style="margin-top:10px">או דף תשלום קבוע (נשמר לתמיד, אם יש לך כזה)</label>
         <input type="url" id="gl-static" placeholder="לינק לדף תשלום ללא סכום" autocomplete="off" oninput="glStaticSave(this.value)"/>
         <div class="ses-hint">האפליקציה עוטפת את הלינק בעמוד מעוצב של הסטודיו עם הסכום והשם, ושולחת בוואטסאפ. כשהלקוח משלם, ההכנסה נסגרת לבד.</div>
@@ -14015,6 +14019,17 @@ window.glKind = function(k) {
     : k === 'installments' ? '🔢 הלקוח יבחר בעצמו בכמה תשלומים לשלם, עד המספר שבחרת.' : '💳 אשראי · bit · Apple Pay · Google Pay. הכסף מגיע ל-Grow שלך כרגיל.';
 };
 function _glStaticUrl() { try { return String((loadObj('producer_settings') || {}).growPageUrl || '').trim(); } catch (_) { return ''; } }
+function _glBit() { try { return String((loadObj('producer_settings') || {}).bitLink || '').trim(); } catch (_) { return ''; } }
+window.glBitSave = function(v) { const st = loadObj('producer_settings') || {}; st.bitLink = String(v || '').trim(); save('producer_settings', st); };
+window.glOwnerSave = function(v) { const st = loadObj('producer_settings') || {}; st.ownerPhone = String(v || '').trim(); save('producer_settings', st); };
+// Extra fields every link record carries for the public page: bit
+// (free, his personal link/phone) + his WhatsApp for questions.
+function _glExtras() {
+  const bit = _glBit(); const ex = {};
+  if (bit) { if (/^https?:\/\//.test(bit)) ex.bitLink = bit; else ex.bitPhone = bit.replace(/\D/g, ''); }
+  try { const op = (loadObj('producer_settings') || {}).ownerPhone || localStorage.getItem('owner_phone') || ''; if (op) ex.ownerPhone = _waPhone(op); } catch (_) {}
+  return ex;
+}
 window.glStaticSave = function(v) {
   const st = loadObj('producer_settings') || {}; st.growPageUrl = String(v || '').trim(); save('producer_settings', st);
   const w = document.getElementById('gl-static-wrap'); if (w) w.classList.toggle('has', !!st.growPageUrl);
@@ -14025,7 +14040,7 @@ async function _glManualLink(ref, sum, title, name, kind, n) {
   const once = String((document.getElementById('gl-once-url') || {}).value || '').trim();
   const url = /^https?:\/\//.test(once) ? once : _glStaticUrl(); if (!url) return null;
   // a per-request link already carries the sum → no "enter amount" note
-  const rec = { id: ref, url, title, sum, name, kind, payments: n, created: Date.now(), paid: false, manual: !once };
+  const rec = Object.assign({ id: ref, url, title, sum, name, kind, payments: n, created: Date.now(), paid: false, manual: !once }, _glExtras());
   try {
     const r = await fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) });
     if (!r.ok) return null;
@@ -14041,6 +14056,8 @@ window.glOpenNew = function() {
   document.getElementById('gl-landing').checked = true;
   glKind('once');
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
+  const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
+  const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
   const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
   const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !viaMorning; }
@@ -14062,6 +14079,8 @@ window.glOpenFor = function(incomeId) {
   _glIncomeId = incomeId; _glLast = null;
   const cw = document.getElementById('gl-client-wrap'); if (cw) cw.style.display = 'none';
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
+  const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
+  const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
   const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
   const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !viaMorning; }
@@ -14145,6 +14164,7 @@ window.glCreate = async function() {
       j = m; document.getElementById('gl-landing').checked = true;
     }
     const pretty = document.getElementById('gl-landing').checked ? _glPretty(j.id) : j.url;
+    try { const ex = _glExtras(); if (Object.keys(ex).length) fetch(_DB_REST + '/grow_links/' + j.id + '.json', { method: 'PATCH', body: JSON.stringify(ex) }); } catch (_) {}
     _glLast = { url: j.url, pretty, title, sum, name, kind: _glKind, n, phone };
     const income = load('income') || []; const i = income.find(x => x.id === _glIncomeId);
     if (i) { i.growUrl = j.url; i.growPretty = pretty; i.growId = j.id; i.growKind = _glKind; i.growN = n; i.growAt = new Date().toISOString(); save('income', income); }
@@ -14193,7 +14213,14 @@ async function _growPaidDrain() {
         if (cands.length === 1) i = cands[0];
       }
       const later = Number(t.allPaymentsNum) > 1 && Number(t.paymentsNum) > 1;   // 2nd+ installment of a known deal
-      if (i && (i.status || 'pending') !== 'paid') {
+      if (t.claim) {   // the client tapped "שילמתי ב-bit" — his word, not the bank's → approve by hand
+        const credits = bankCreditsList();
+        if (!credits.some(c => c.id === 'grow_' + k)) {
+          credits.push({ id: 'grow_' + k, date: new Date().toISOString().slice(0, 10), amount: sum, name: 'bit · ' + (t.name || 'לקוח') + ' דיווח ששילם' + (t.description ? ' · ' + t.description : '') });
+          bankCreditsSave(credits);
+          toast('💙 ' + (t.name || 'לקוח') + ' דיווח ששילם ב-bit · ' + _ilsFmt(sum) + ' — תאשר אחרי שראית');
+        }
+      } else if (i && (i.status || 'pending') !== 'paid') {
         i.growPaidAt = new Date().toISOString(); i.growAsmachta = t.asmachta || ''; save('income', income);
         try { setIncomeStatus(i.id, 'paid'); } catch (_) {}
         toast('💳 ' + (t.name || 'לקוח') + ' שילם דרך Grow · ' + _ilsFmt(sum));
@@ -27564,7 +27591,7 @@ async function _glMorningLink(ref, sum, title, name, phone, email, kind, n) {
     const r = await _morningCall('POST', '/payments/form', body, t);
     const j = r.json;
     if (r.ok && j && j.url) {
-      const rec = { id: ref, url: j.url, title, sum, name, kind, payments: n, created: Date.now(), paid: false, via: 'morning' };
+      const rec = Object.assign({ id: ref, url: j.url, title, sum, name, kind, payments: n, created: Date.now(), paid: false, via: 'morning' }, _glExtras());
       try { await fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) }); } catch (_) {}
       return { ok: true, id: ref, url: j.url };
     }
