@@ -3514,42 +3514,6 @@
       box-sizing: border-box;
     }
 
-    /* ===== SESSION MODE — live studio timer (25.9) ===== */
-    #ses-live {
-      position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 50%; transform: translateX(-50%);
-      z-index: 10000; display: none; align-items: center; gap: 8px;
-      padding: 8px 14px 8px 12px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.22);
-      background: linear-gradient(135deg, #3a1f16, #5c3a28); color: #fff; font-family: inherit;
-      font-size: 13.5px; font-weight: 800; cursor: pointer; white-space: nowrap; max-width: 60vw;
-      box-shadow: 0 10px 30px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.15);
-      font-variant-numeric: tabular-nums;
-    }
-    #ses-live.on { display: inline-flex; }
-    #ses-live .dot { width: 9px; height: 9px; border-radius: 50%; background: #ff4d4d; box-shadow: 0 0 0 0 rgba(255,77,77,.6); animation: sesPulse 1.6s infinite; flex-shrink: 0; }
-    #ses-live .lbl { overflow: hidden; text-overflow: ellipsis; color: rgba(255,255,255,.8); font-weight: 700; }
-    #ses-live .tm { color: #ffc87d; }
-    @keyframes sesPulse { 0% { box-shadow: 0 0 0 0 rgba(255,77,77,.6); } 70% { box-shadow: 0 0 0 9px rgba(255,77,77,0); } 100% { box-shadow: 0 0 0 0 rgba(255,77,77,0); } }
-    body:has(#login-screen:not(.hidden)) #ses-live { display: none !important; }
-    /* On content pages the chip sits top-left (the לובי button owns the
-       top-right, the page title the middle); on the lobby it's centered. */
-    body:has(#mode-screen.hidden) #ses-live { left: 12px; transform: none; max-width: 40vw; padding: 7px 12px 7px 10px; }
-    body:has(#mode-screen.hidden) #ses-live .lbl { display: none; }
-    #modal-session-start, #modal-session-end { z-index: 10001; }
-    .ses-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
-    .ses-pill { min-height: 40px; padding: 8px 13px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; }
-    .ses-pill.on { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; border-color: transparent; }
-    .ses-big { text-align: center; padding: 6px 0 14px; }
-    .ses-big .t { font-size: 44px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1; }
-    [data-theme="dark"] .ses-big .t { color: #ffc87d; }
-    .ses-big .l { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-top: 6px; }
-    .ses-hint { font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.6; margin-top: 8px; }
-    .ses-hint b { color: var(--text); }
-    .prod-session-btn {
-      width: 100%; min-height: 44px; margin-top: 10px; border-radius: 12px; cursor: pointer; font-family: inherit;
-      border: 1.5px dashed var(--border); background: transparent; color: var(--accent); font-size: 14px; font-weight: 800;
-    }
-    [data-theme="dark"] .prod-session-btn { color: #ffc87d; border-color: rgba(242,189,116,.4); }
-
     /* ===== NEW-YEAR GOALS (תשפ״ז) — lobby card + page (20.9) ===== */
     .lobby-year-card {
       position: relative; z-index: 1; width: 100%; max-width: 580px;
@@ -6427,37 +6391,6 @@
   </div>
 </div>
 
-<!-- Session mode: live chip (visible everywhere while a session runs) -->
-<button id="ses-live" type="button" onclick="sessionModeTap()" title="סשן פעיל"><span class="dot"></span><span class="tm" id="ses-live-time">00:00</span><span class="lbl" id="ses-live-lbl"></span></button>
-
-<div class="modal-overlay" id="modal-session-start">
-  <div class="modal">
-    <h3>🎙️ מתחילים סשן</h3>
-    <div class="form-group"><label>סוג</label><div class="ses-pills" id="ses-start-types"></div></div>
-    <div class="form-group"><label>לקוח</label><select id="ses-start-client"></select></div>
-    <div class="form-group"><label>הפקה (לא חובה)</label><select id="ses-start-prod"><option value="">בלי הפקה</option></select></div>
-    <div class="ses-hint" id="ses-start-hint"></div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" style="flex:1" onclick="sessionModeStart()">▶ התחל סשן</button>
-      <button class="btn btn-ghost" onclick="closeModal('session-start')">ביטול</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="modal-session-end">
-  <div class="modal">
-    <h3>🏁 סיום סשן</h3>
-    <div class="ses-big"><div class="t" id="ses-end-time">00:00</div><div class="l" id="ses-end-lbl"></div></div>
-    <div class="form-group"><label>סכום להכנסה (₪)</label><input type="number" id="ses-end-amount" placeholder="0" min="0" inputmode="decimal"/></div>
-    <div class="ses-hint" id="ses-end-hint"></div>
-    <div class="modal-actions" style="flex-direction:column;gap:8px">
-      <button class="btn btn-primary" style="width:100%;min-height:46px" onclick="sessionModeEnd(true)">💰 סיים והוסף הכנסה</button>
-      <button class="btn btn-ghost" style="width:100%" onclick="sessionModeEnd(false)">סיים בלי הכנסה</button>
-      <button class="btn btn-ghost" style="width:100%;opacity:.8" onclick="closeModal('session-end')">↩ המשך סשן</button>
-    </div>
-  </div>
-</div>
-
 <!-- Mobile: floating back-to-lobby button -->
 <button id="mobile-lobby-btn" onclick="switchMode()" title="חזרה ללובי" aria-label="חזרה ללובי">
   <span style="font-size:13px">←</span>
@@ -6473,7 +6406,6 @@
   <div class="fab-menu" id="fab-menu">
     <button class="fab-item" onclick="fabAction('search')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#6c47f5,#8b6bf7)"><svg class="fab-item-svg" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg></span> חיפוש בכל האפליקציה</button>
     <button class="fab-item" onclick="fabAction('schedule')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#3e6079,#5a86a8)"><svg class="fab-item-svg" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></span> אירוע בלוז</button>
-    <button class="fab-item" onclick="fabAction('session')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#8a2e2e,#c44a4a)"><svg class="fab-item-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span> <span id="fab-session-label">סשן אולפן</span></button>
     <button class="fab-item" onclick="fabAction('income')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#5a7a2e,#7a9e3e)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-up"/></svg></span> הכנסה</button>
     <button class="fab-item" onclick="fabAction('expense')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#b8442e,#d4644a)"><svg class="fab-item-svg" viewBox="0 0 24 24"><use href="#ic-trend-down"/></svg></span> הוצאה</button>
     <button class="fab-item" onclick="fabAction('meal')"><span class="fab-item-icon" style="background:linear-gradient(135deg,#7a5a9e,#9a7ac2)"><svg class="fab-item-svg" viewBox="0 0 24 24"><path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M17 3c-1.5 0-3 2-3 5s1.5 4 3 4v9"/></svg></span> ארוחה</button>
@@ -7379,7 +7311,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v467</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v468</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -13976,120 +13908,6 @@ function _mptHealthVisible() {
       && document.visibilityState !== 'hidden';
   } catch (_) { return false; }
 }
-// ══════════ SESSION MODE — one tap starts a studio session, the app
-// counts the time, and the end offers an income entry (25.9).
-// Live state is device-local (`session_live`); the finished session
-// lands in `sessions` (calendar) and, if an amount was given, `income`.
-const SES_LIVE_KEY = 'session_live';
-function _sesLive() { try { return JSON.parse(localStorage.getItem(SES_LIVE_KEY) || 'null'); } catch (_) { return null; } }
-function _sesSetLive(v) { if (v) localStorage.setItem(SES_LIVE_KEY, JSON.stringify(v)); else localStorage.removeItem(SES_LIVE_KEY); _sesRenderChip(); }
-function _sesFmt(ms) {
-  const t = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
-  return h > 0 ? h + ':' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0') : String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
-}
-function _sesHuman(ms) {
-  const m = Math.round(ms / 60000), h = Math.floor(m / 60), r = m % 60;
-  return h ? h + ' שע׳' + (r ? ' ו-' + r + ' דק׳' : '') : m + ' דק׳';
-}
-function _sesRenderChip() {
-  const live = _sesLive(), el = document.getElementById('ses-live'); if (!el) return;
-  el.classList.toggle('on', !!live);
-  const fl = document.getElementById('fab-session-label');
-  if (fl) fl.textContent = live ? 'סיים סשן' : 'סשן אולפן';
-  if (!live) return;
-  document.getElementById('ses-live-time').textContent = _sesFmt(Date.now() - live.startedAt);
-  document.getElementById('ses-live-lbl').textContent = live.label || '';
-}
-setInterval(_sesRenderChip, 1000);
-document.addEventListener('DOMContentLoaded', _sesRenderChip);
-window.sessionModeTap = function() { if (_sesLive()) sessionModeOpenEnd(); else sessionModeOpenStart(); };
-let _sesStartType = 'הקלטה', _sesStartProd = '';
-window.sessionModeOpenStart = function(opts) {
-  opts = opts || {};
-  if (_sesLive()) { sessionModeOpenEnd(); return; }
-  _sesStartProd = opts.prodId || '';
-  const types = Object.keys(SES_TYPES).filter(k => k !== 'אחר');
-  if (_sesStartProd) _sesStartType = 'הפקה מוזיקלית';
-  document.getElementById('ses-start-types').innerHTML = types.map(k =>
-    '<button type="button" class="ses-pill' + (k === _sesStartType ? ' on' : '') + '" onclick="_sesStartType=\'' + k + '\';sessionModeOpenStart({prodId:_sesStartProd,keep:1})">' + SES_TYPES[k].label + '</button>').join('');
-  if (!opts.keep) populateClientSel('ses-start-client');
-  const ps = document.getElementById('ses-start-prod');
-  const prods = (typeof prodList === 'function' ? prodList() : []).filter(p => p.stage !== 'sent');
-  ps.innerHTML = '<option value="">בלי הפקה</option>' + prods.map(p => '<option value="' + p.id + '"' + (p.id === _sesStartProd ? ' selected' : '') + '>' + _escHtml(p.title + (p.artist ? ' · ' + p.artist : '')) + '</option>').join('');
-  // A hint from today's schedule — what was planned for now?
-  const today = new Date().toISOString().slice(0, 10), nowM = new Date().getHours() * 60 + new Date().getMinutes();
-  const near = (load('schedule') || []).filter(x => x && x.date === today && x.time).map(x => {
-    const [h, m] = String(x.time).split(':').map(Number); return { x, d: Math.abs(h * 60 + m - nowM) };
-  }).sort((a, b) => a.d - b.d)[0];
-  document.getElementById('ses-start-hint').innerHTML = near && near.d <= 120
-    ? 'בלוז עכשיו: <b>' + _escHtml(near.x.time + ' ' + (near.x.title || '')) + '</b>' : '';
-  document.getElementById('modal-session-start').classList.add('open');
-};
-window.sessionModeStart = function() {
-  const clientSel = document.getElementById('ses-start-client'), prodSel = document.getElementById('ses-start-prod');
-  const clientId = clientSel.value || '', client = (load('clients') || []).find(c => c.id === clientId);
-  const prod = prodSel.value ? (prodList().find(p => p.id === prodSel.value) || null) : null;
-  const label = client ? client.name : prod ? prod.title : SES_TYPES[_sesStartType].label.replace(/^\S+\s/, '');
-  _sesSetLive({ startedAt: Date.now(), type: _sesStartType, clientId, clientName: client ? client.name : '', prodId: prod ? prod.id : '', prodTitle: prod ? prod.title : '', label });
-  closeModal('session-start');
-  if (window.haptic) window.haptic.success();
-  toast('🎙️ סשן התחיל — ' + label);
-};
-window.sessionModeOpenEnd = function() {
-  const live = _sesLive(); if (!live) return;
-  const ms = Date.now() - live.startedAt;
-  document.getElementById('ses-end-time').textContent = _sesFmt(ms);
-  document.getElementById('ses-end-lbl').textContent = (SES_TYPES[live.type] || SES_TYPES['אחר']).label + ' · ' + (live.label || '') + ' · ' + _sesHuman(ms);
-  // Suggest an amount: last income of this client, else what's still
-  // open on the production, else blank.
-  let suggest = '', why = '';
-  const income = load('income') || [];
-  if (live.clientId) {
-    const last = income.filter(i => i.clientId === live.clientId).sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
-    if (last) { suggest = last.amount; why = 'לפי ההכנסה האחרונה מ-' + live.clientName; }
-  }
-  if (!suggest && live.prodId) {
-    const p = prodList().find(x => x.id === live.prodId);
-    if (p && Number(p.price)) { const open = Math.max(0, Number(p.price) - (Number(p.paid) || 0)); if (open) { suggest = open; why = 'נשאר פתוח על ההפקה "' + p.title + '"'; } }
-  }
-  document.getElementById('ses-end-amount').value = suggest || '';
-  // Month tally — how much studio time this month already.
-  const ym = new Date().toISOString().slice(0, 7);
-  const mins = (load('sessions') || []).filter(x => x && x.status === 'done' && String(x.date).slice(0, 7) === ym && x.startTime && x.endTime)
-    .reduce((t, x) => { const [a, b] = [x.startTime, x.endTime].map(v => { const [h, m] = v.split(':').map(Number); return h * 60 + m; }); return t + Math.max(0, b - a); }, 0);
-  document.getElementById('ses-end-hint').innerHTML = (why ? '💡 ' + _escHtml(why) + '<br>' : '') + '🎛️ החודש באולפן: <b>' + _sesHuman((mins + ms / 60000) * 60000) + '</b> כולל הסשן הזה';
-  document.getElementById('modal-session-end').classList.add('open');
-};
-window.sessionModeEnd = function(withIncome) {
-  const live = _sesLive(); if (!live) { closeModal('session-end'); return; }
-  const end = new Date(), start = new Date(live.startedAt);
-  const hm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  const dateKey = start.toISOString().slice(0, 10);
-  const dur = _sesHuman(end - start);
-  const sessions = load('sessions') || [];
-  sessions.push({ id: genId(), date: dateKey, startTime: hm(start), endTime: hm(end), type: live.type, clientId: live.clientId || '', clientName: live.clientName || '',
-    status: 'done', notes: 'סשן חי · ' + dur + (live.prodTitle ? ' · ' + live.prodTitle : ''), live: true });
-  save('sessions', sessions);
-  let msg = '🏁 הסשן נשמר · ' + dur;
-  if (withIncome) {
-    const amount = parseFloat(document.getElementById('ses-end-amount').value);
-    if (!amount) { toast('תכתוב סכום, או סיים בלי הכנסה'); return; }
-    const income = load('income') || [];
-    income.push({ id: genId(), date: end.toISOString().slice(0, 10), amount, clientId: live.clientId || '', clientName: live.clientName || '',
-      description: (SES_TYPES[live.type] || SES_TYPES['אחר']).label.replace(/^\S+\s/, '') + ' · ' + (live.prodTitle || live.label || 'סשן') + ' (' + dur + ')',
-      category: SES_TYPES[live.type] ? live.type : 'אחר', notes: 'נוצר ממצב סשן', status: 'pending', fromSession: true });
-    income.sort((a, b) => new Date(b.date) - new Date(a.date));
-    save('income', income);
-    msg += ' · הכנסה ' + fmtMoney(amount) + ' ממתינה לגבייה';
-    try { mptConfetti(['🎙️', '💰', '✨', '⭐']); } catch (_) {}
-  }
-  _sesSetLive(null);
-  closeModal('session-end');
-  if (window.haptic) window.haptic.success();
-  toast(msg);
-  try { refreshAll(); } catch (_) {}
-};
-
 // ══════════ NEW-YEAR GOALS (תשפ״ז) — lobby page (20.9) ══════════
 // Data lives in `year_goals` (cloud-synced via ALL_KEYS):
 //   { vision, goals:[{ id, title, area, done, doneAt, createdAt,
@@ -21506,7 +21324,6 @@ function _prodCardHtml(p) {
         ${canAdvance
           ? `<div class="prod-actions"><button class="prod-advance" onclick="prodAdvanceStage('${id}')">→ ${nextStage.label}</button></div>`
           : ''}
-        <button class="prod-session-btn" onclick="sessionModeOpenStart({ prodId: '${id}' })">🎙️ התחל סשן על השיר הזה</button>
 
         <div class="prod-expand-h">שלב</div>
         <div class="prod-stage-row">${stagePills}</div>
@@ -25654,7 +25471,6 @@ function _qaBiz() {
 }
 function quickAction(type) {
   if (type === 'search') { try { gsOpen(); } catch (_) {} return; }
-  if (type === 'session') { try { sessionModeTap(); } catch (_) {} return; }
   if (type === 'meal') {
     chooseMode('path');
     setTimeout(() => {
