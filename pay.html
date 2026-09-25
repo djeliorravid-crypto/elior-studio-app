@@ -69,21 +69,23 @@
   const date = d.created ? new Date(d.created).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
   const terms = d.kind === 'installments' ? 'תשלום אחד או עד ' + d.payments + ' תשלומים' : d.kind === 'recurring' ? 'הוראת קבע · ' + d.payments + ' חודשים' : 'תשלום אחד';
   const refShort = String(id).replace(/^inc_/, '').slice(-6).toUpperCase();
+  const hasFee = Number(d.cardSum) > Number(d.sum);
   el.innerHTML =
     '<div class="top"><div><div class="brand">Ravid Studio</div><div class="name">אליאור רביד</div><div class="sub">הפקה מוזיקלית · הקלטה · מיקס</div></div><div class="badge">בקשת תשלום</div></div>' +
-    '<div class="amount-wrap"><div class="lbl">סכום לתשלום</div><div class="amount">' + money(d.sum) + '<small>₪</small></div><div class="terms">' + esc(terms) + '</div></div>' +
+    '<div class="amount-wrap"><div class="lbl">סכום לתשלום</div><div class="amount">' + money(d.sum) + '<small>₪</small></div><div class="terms">' + esc(terms) + (hasFee ? ' · באשראי ' + money(d.cardSum) + ' ₪ כולל עמלת סליקה' : '') + '</div></div>' +
     '<div class="rows">' +
       (d.name ? '<div class="row"><span class="k">לכבוד</span><span class="v">' + esc(d.name) + '</span></div>' : '') +
       '<div class="row"><span class="k">עבור</span><span class="v">' + esc(d.title || 'שירותי אולפן') + '</span></div>' +
       (date ? '<div class="row"><span class="k">תאריך</span><span class="v">' + date + '</span></div>' : '') +
+      (hasFee ? '<div class="row"><span class="k">עמלת סליקה באשראי</span><span class="v">' + money(d.cardSum - d.sum) + ' ₪</span></div>' : '') +
       '<div class="row"><span class="k">אסמכתא</span><span class="v">' + esc(refShort) + '</span></div>' +
     '</div>' +
     (d.paid ? '<div class="paid">התשלום התקבל. תודה רבה.</div>' : failed ? '<div class="failed">התשלום לא הושלם. ניתן לנסות שוב.</div>' : '') +
     '<div class="cta-wrap">' +
-      (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" href="' + esc(d.url) + '">המשך לתשלום מאובטח</a>') +
-      (d.manual && !d.paid ? '<div class="methods">בדף התשלום יש להזין את הסכום ' + money(d.sum) + ' ₪</div>' : '<div class="methods">כרטיס אשראי · תשלומים · דף תשלום מאובטח (PCI)</div>') +
+      (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" href="' + esc(d.url) + '">' + (hasFee ? 'לתשלום באשראי · ' + money(d.cardSum) + ' ₪' : 'המשך לתשלום מאובטח') + '</a>') +
+      (d.manual && !d.paid ? '<div class="methods">בדף התשלום יש להזין את הסכום ' + money(hasFee ? d.cardSum : d.sum) + ' ₪</div>' : '<div class="methods">כרטיס אשראי · תשלומים · דף תשלום מאובטח (PCI)</div>') +
     '</div>' +
-    ((d.bitLink || d.bitPhone) && !d.paid ? '<div class="alt"><div class="t"><span>תשלום ב-bit</span></div>' +
+    ((d.bitLink || d.bitPhone) && !d.paid ? '<div class="alt"><div class="t"><b style="font-weight:600">תשלום ב-bit</b></div>' +
       '<div class="d">' + (d.bitPhone ? 'להעברה ב-bit למספר <b dir="ltr">' + esc(d.bitPhone.replace(/^972/, '0').replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')) + '</b>, על סך <b>' + money(d.sum) + ' ₪</b>.' : 'להעברה ב-bit דרך הקישור, על סך <b>' + money(d.sum) + ' ₪</b>.') + '</div>' +
       '<div class="btns">' + (d.bitLink ? '<a href="' + esc(d.bitLink) + '">פתיחת bit</a>' : '<a href="https://www.bitpay.co.il/app/">פתיחת bit</a>') + '<button class="ok" id="claim" type="button">שילמתי ב-bit</button></div></div>' : '') +
     '<div class="foot"><span>סליקה מאובטחת באמצעות Grow</span><a href="https://wa.me/972' + '" id="wa">שאלות? וואטסאפ</a></div>';

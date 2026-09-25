@@ -3529,6 +3529,9 @@
     .gl-card-s { font-size: 34px; font-weight: 900; color: #f2d4a8; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
     .gl-card-m { font-size: 12.5px; font-weight: 700; color: rgba(255,255,255,.75); margin-top: 4px; }
     .gl-card-u { margin-top: 12px; font-size: 11.5px; color: rgba(255,255,255,.6); direction: ltr; word-break: break-all; }
+    .gl-fee-row { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text-muted); }
+    .gl-fee-row input { width: 72px; min-height: 42px; text-align: center; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 15px; font-weight: 800; outline: none; }
+    .gl-fee-row .plus { padding: 0 4px; font-size: 16px; }
     .gl-static { margin: 4px 0 8px; border: 1px dashed var(--border); border-radius: 12px; padding: 8px 12px; }
     .gl-static summary { font-size: 13px; font-weight: 800; color: var(--text-muted); cursor: pointer; list-style: none; }
     .gl-lbl { display: block; font-size: 12px; font-weight: 800; color: var(--text-muted); margin-top: 8px; }
@@ -7342,7 +7345,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v481</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v482</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9234,7 +9237,7 @@
     <h3>💳 לינק לתשלום</h3>
     <div id="gl-form">
       <div class="form-row">
-        <div class="form-group"><label>סכום (₪) *</label><input type="number" id="gl-sum" min="1" inputmode="decimal" placeholder="0"/></div>
+        <div class="form-group"><label>סכום (₪) *</label><input type="number" id="gl-sum" min="1" inputmode="decimal" placeholder="0" oninput="glFeePreview()"/></div>
         <div class="form-group"><label>על מה</label><input type="text" id="gl-title" placeholder="הפקה · שם השיר"/></div>
       </div>
       <div class="form-group" id="gl-client-wrap" style="display:none"><label>לקוח קיים (ממלא שם וטלפון)</label><select id="gl-client" onchange="glPickClient(this.value)"></select></div>
@@ -9250,6 +9253,14 @@
         </div>
       </div>
       <div class="form-group" id="gl-n-wrap" style="display:none"><label id="gl-n-label">עד כמה תשלומים</label><select id="gl-n"></select></div>
+      <div class="form-group"><label>עמלת אשראי שמתגלגלת ללקוח</label>
+        <div class="gl-fee-row">
+          <input type="number" id="gl-fee-pct" step="0.1" min="0" inputmode="decimal" placeholder="1.4" oninput="glFeeSave()"/><span>%</span>
+          <span class="plus">+</span>
+          <input type="number" id="gl-fee-fix" step="1" min="0" inputmode="numeric" placeholder="1" oninput="glFeeSave()"/><span>₪ לעסקה</span>
+        </div>
+        <div class="ses-hint" id="gl-fee-preview" style="margin-top:6px"></div>
+      </div>
       <label class="gl-check"><input type="checkbox" id="gl-landing" checked/> עמוד מעוצב של הסטודיו לפני התשלום</label>
       <div class="ses-hint" id="gl-engine" style="margin:0 0 8px"></div>
       <details class="gl-static" id="gl-static-wrap">
@@ -14021,6 +14032,23 @@ window.glKind = function(k) {
 function _glStaticUrl() { try { return String((loadObj('producer_settings') || {}).growPageUrl || '').trim(); } catch (_) { return ''; } }
 function _glBit() { try { return String((loadObj('producer_settings') || {}).bitLink || '').trim(); } catch (_) { return ''; } }
 window.glBitSave = function(v) { const st = loadObj('producer_settings') || {}; st.bitLink = String(v || '').trim(); save('producer_settings', st); };
+// Card surcharge passed on to the client (his Grow tier: % + fixed ₪).
+// bit / bank transfer stay at the base price.
+function _glFee() { const st = loadObj('producer_settings') || {}; return { pct: st.cardFeePct == null ? 1.4 : Number(st.cardFeePct) || 0, fix: st.cardFeeFix == null ? 1 : Number(st.cardFeeFix) || 0 }; }
+function _glCardSum(base) { const f = _glFee(); return Math.round(Number(base) * (1 + f.pct / 100) + f.fix); }
+window.glFeeSave = function() {
+  const st = loadObj('producer_settings') || {};
+  st.cardFeePct = Number(document.getElementById('gl-fee-pct').value) || 0;
+  st.cardFeeFix = Number(document.getElementById('gl-fee-fix').value) || 0;
+  save('producer_settings', st); glFeePreview();
+};
+window.glFeePreview = function() {
+  const base = parseFloat(document.getElementById('gl-sum').value) || 0, el = document.getElementById('gl-fee-preview');
+  if (!el) return;
+  if (!base) { el.textContent = ''; return; }
+  const card = _glCardSum(base);
+  el.innerHTML = card > base ? 'ב-bit / העברה: <b>' + _ilsFmt(base) + '</b> · באשראי: <b>' + _ilsFmt(card) + '</b> (כולל עמלת סליקה ' + _ilsFmt(card - base) + ')' : 'בלי גלגול עמלה — הלקוח משלם <b>' + _ilsFmt(base) + '</b> בכל אמצעי';
+};
 window.glOwnerSave = function(v) { const st = loadObj('producer_settings') || {}; st.ownerPhone = String(v || '').trim(); save('producer_settings', st); };
 // Extra fields every link record carries for the public page: bit
 // (free, his personal link/phone) + his WhatsApp for questions.
@@ -14057,6 +14085,7 @@ window.glOpenNew = function() {
   glKind('once');
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
   const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
+  { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
   const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
@@ -14080,6 +14109,7 @@ window.glOpenFor = function(incomeId) {
   const cw = document.getElementById('gl-client-wrap'); if (cw) cw.style.display = 'none';
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
   const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
+  { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = '';
   const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
@@ -14101,14 +14131,14 @@ window.glReopen = function(incomeId) {
   const i = (load('income') || []).find(x => x.id === incomeId); if (!i || !i.growUrl) return;
   _glIncomeId = incomeId;
   const c = i.clientId ? (load('clients') || []).find(x => x.id === i.clientId) : null;
-  _glLast = { url: i.growUrl, pretty: i.growPretty || i.growUrl, title: i.description || '', sum: Number(i.amount) || 0, name: i.clientName || '', kind: i.growKind || 'once', n: i.growN || 1, phone: (c && c.phone) || '' };
+  _glLast = { url: i.growUrl, pretty: i.growPretty || i.growUrl, title: i.description || '', sum: Number(i.amount) || 0, cardSum: Number(i.growCardSum) || 0, name: i.clientName || '', kind: i.growKind || 'once', n: i.growN || 1, phone: (c && c.phone) || '' };
   _glShowResult(); document.getElementById('modal-growlink').classList.add('open');
 };
 function _glShowResult() {
   const r = _glLast; if (!r) return;
   document.getElementById('gl-form').style.display = 'none'; document.getElementById('gl-result').style.display = '';
   document.getElementById('gl-r-title').textContent = r.title || 'תשלום';
-  document.getElementById('gl-r-sum').textContent = fmtMoney(r.sum);
+  document.getElementById('gl-r-sum').textContent = fmtMoney(r.sum) + (r.cardSum && r.cardSum > r.sum ? '  ·  באשראי ' + fmtMoney(r.cardSum) : '');
   document.getElementById('gl-r-meta').textContent = (r.name ? r.name + ' · ' : '') + (r.kind === 'installments' ? 'עד ' + r.n + ' תשלומים' : r.kind === 'recurring' ? 'הוראת קבע · ' + r.n + ' חודשים' : 'תשלום אחד');
   document.getElementById('gl-r-url').textContent = r.pretty;
 }
@@ -14134,13 +14164,14 @@ window.glCreate = async function() {
     _glIncomeId = row.id;
   }
   const ref = 'inc_' + String(_glIncomeId || Date.now()).replace(/[^A-Za-z0-9_-]/g, '');
+  const cardSum = _glCardSum(sum);   // what the card processor charges; `sum` stays the bit/base price
   const btn = document.getElementById('gl-go'); btn.disabled = true; btn.textContent = 'יוצר לינק…';
   try {
     let j = null;
     if (sec) {
       try {
         const r = await _mptHttp('POST', WA_WORKER + '/grow/link', {
-          secret: sec, kind: _glKind, sum, title: title || 'תשלום לרביד סטודיו', fullName: name, phone, ref,
+          secret: sec, kind: _glKind, sum: cardSum, title: title || 'תשלום לרביד סטודיו', fullName: name, phone, ref,
           paymentNum: _glKind === 'recurring' ? n : 1, maxPaymentNum: _glKind === 'installments' ? n : 1
         });
         if (r.ok && r.json && r.json.ok) j = r.json; else j = { error: (r.json && r.json.error) || ('שגיאה ' + r.status) };
@@ -14150,7 +14181,7 @@ window.glCreate = async function() {
     if ((!j || !j.ok) && !onceUrl && window.morningConnected && morningConnected() && morningPluginId()) {
       btn.textContent = 'יוצר דף תשלום ב-Morning…';
       const email = ((load('clients') || []).find(x => x.id === (((load('income') || []).find(y => y.id === _glIncomeId) || {}).clientId || _glNewClient)) || {}).email || '';
-      const m = await _glMorningLink(ref, sum, title || 'תשלום לרביד סטודיו', name, phone, email, _glKind, n);
+      const m = await _glMorningLink(ref, cardSum, title || 'תשלום לרביד סטודיו', name, phone, email, _glKind, n);
       if (m && m.ok) j = m; else if (m && m.error) { toast('✗ ' + m.error); }
     }
     if (!j || !j.ok) {
@@ -14164,10 +14195,10 @@ window.glCreate = async function() {
       j = m; document.getElementById('gl-landing').checked = true;
     }
     const pretty = document.getElementById('gl-landing').checked ? _glPretty(j.id) : j.url;
-    try { const ex = _glExtras(); if (Object.keys(ex).length) fetch(_DB_REST + '/grow_links/' + j.id + '.json', { method: 'PATCH', body: JSON.stringify(ex) }); } catch (_) {}
-    _glLast = { url: j.url, pretty, title, sum, name, kind: _glKind, n, phone };
+    try { const ex = Object.assign({ sum, cardSum, feePct: _glFee().pct, feeFix: _glFee().fix }, _glExtras()); fetch(_DB_REST + '/grow_links/' + j.id + '.json', { method: 'PATCH', body: JSON.stringify(ex) }); } catch (_) {}
+    _glLast = { url: j.url, pretty, title, sum, cardSum, name, kind: _glKind, n, phone };
     const income = load('income') || []; const i = income.find(x => x.id === _glIncomeId);
-    if (i) { i.growUrl = j.url; i.growPretty = pretty; i.growId = j.id; i.growKind = _glKind; i.growN = n; i.growAt = new Date().toISOString(); save('income', income); }
+    if (i) { i.growUrl = j.url; i.growPretty = pretty; i.growId = j.id; i.growKind = _glKind; i.growN = n; i.growCardSum = cardSum; i.growAt = new Date().toISOString(); save('income', income); }
     _glShowResult();
     if (window.haptic) window.haptic.success();
     toast('✓ הלינק מוכן');
@@ -14177,7 +14208,8 @@ function _glMsg() {
   const r = _glLast; if (!r) return '';
   const first = (r.name || '').split(/\s+/)[0];
   const how = r.kind === 'installments' ? ' (אפשר לחלק עד ' + r.n + ' תשלומים)' : r.kind === 'recurring' ? ' (הוראת קבע ל-' + r.n + ' חודשים)' : '';
-  return 'שלום' + (first ? ' ' + first : '') + ',\nמצורפת בקשת תשלום עבור ' + (r.title || 'שירותי אולפן') + ' על סך ' + _ilsFmt(r.sum) + how + '.\nלתשלום מאובטח בכרטיס אשראי:\n' + r.pretty + '\n\nתודה,\nאליאור רביד · Ravid Studio';
+  const priceLine = r.cardSum && r.cardSum > r.sum ? ' על סך ' + _ilsFmt(r.sum) + ' (בהעברה / bit), או ' + _ilsFmt(r.cardSum) + ' באשראי כולל עמלת סליקה' : ' על סך ' + _ilsFmt(r.sum);
+  return 'שלום' + (first ? ' ' + first : '') + ',\nמצורפת בקשת תשלום עבור ' + (r.title || 'שירותי אולפן') + priceLine + how + '.\nלתשלום:\n' + r.pretty + '\n\nתודה,\nאליאור רביד · Ravid Studio';
 }
 window.glShare = function() {
   const r = _glLast; if (!r) return;
@@ -14208,7 +14240,7 @@ async function _growPaidDrain() {
       if (incId) i = income.find(x => x.id === incId) || null;
       if (!i && sum > 0) {
         const words = norm(t.name).split(/\s+/).filter(w => w.length > 1);
-        const cands = income.filter(x => (x.status || 'pending') !== 'paid' && Math.abs(Number(x.amount) - sum) < 1
+        const cands = income.filter(x => (x.status || 'pending') !== 'paid' && (Math.abs(Number(x.amount) - sum) < 1 || (x.growCardSum && Math.abs(Number(x.growCardSum) - sum) < 1))
           && (!words.length || words.some(w => norm(x.clientName).indexOf(w) !== -1)));
         if (cands.length === 1) i = cands[0];
       }
