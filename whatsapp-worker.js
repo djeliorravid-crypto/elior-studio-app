@@ -439,21 +439,36 @@ export default {
       return json({ ok: true, id: ref, url: j.data.url });
     }
     // Grow → us: server-to-server payment update (form-encoded, NOT json)
+    // Two callers land here:
+    //  a) notifyUrl of links WE created (form-encoded, carries ?k= a key
+    //     derived from SEND_SECRET, has cField1 = our income ref)
+    //  b) the dashboard Webhook Elior pastes into Grow's business site
+    //     (JSON, carries "webhookKey" — must equal GROW_WEBHOOK_KEY)
     if (url.pathname === '/grow/notify') {
-      const expect = (await sha256hex('grow|' + sendSecret(env))).slice(0, 24);
-      if (!sendSecret(env) || url.searchParams.get('k') !== expect) return new Response('forbidden', { status: 403 });
       let f = {};
       try {
         const ct = request.headers.get('content-type') || '';
         if (ct.indexOf('json') !== -1) f = await request.json();
         else { const fdIn = await request.formData(); fdIn.forEach((v, k) => { f[k] = String(v); }); }
       } catch (_) { return new Response('ok', { status: 200 }); }
+      const expect = sendSecret(env) ? (await sha256hex('grow|' + sendSecret(env))).slice(0, 24) : '';
+      const dashKey = String(env.GROW_WEBHOOK_KEY || '').trim();
+      const k = url.searchParams.get('k') || '';
+      const okDerived = expect && k === expect;
+      const okDash = dashKey && (String(f.webhookKey || f.webhook_key || '').trim() === dashKey || k === dashKey);
+      if (!okDerived && !okDash) { await diag(env, 'grow-notify-forbidden', { hasKey: !!k, hasWk: !!(f.webhookKey || f.webhook_key) }); return new Response('forbidden', { status: 403 }); }
+      if (f.error_message || f.regular_payment_id) {   // failed recurring charge
+        await fetch(DB_ROOT + '/grow_failed/' + Date.now() + '.json', { method: 'PUT', body: JSON.stringify({ name: f.payer_name || '', sum: Number(f.sum) || 0, error: f.error_message || '', description: f.description || '', ts: Date.now() }) }).catch(() => {});
+        return new Response('ok', { status: 200 });
+      }
       const ref = f.cField1 || (f['customFields[cField1]']) || '';
-      const txId = String(f.transactionId || Date.now());
-      const rec = { ref, sum: Number(f.sum) || 0, name: f.fullName || '', phone: f.payerPhone || '', asmachta: f.asmachta || '',
-        paymentsNum: Number(f.paymentsNum) || 1, allPaymentsNum: Number(f.allPaymentsNum) || 1, paymentDate: f.paymentDate || '', description: f.description || '', ts: Date.now() };
+      const txId = String(f.transactionId || f.transactionCode || Date.now()).replace(/[^A-Za-z0-9_-]/g, '');
+      const rec = { ref, sum: Number(f.sum != null ? f.sum : f.paymentSum) || 0, name: f.fullName || '', phone: f.payerPhone || '', asmachta: f.asmachta || '',
+        paymentsNum: Number(f.paymentsNum) || 1, allPaymentsNum: Number(f.allPaymentsNum != null ? f.allPaymentsNum : f.allPaymentNum) || 1, paymentDate: f.paymentDate || '',
+        description: f.description || f.paymentDesc || '', paymentType: f.paymentType || '', source: okDerived ? 'link' : 'webhook', ts: Date.now() };
       await fetch(DB_ROOT + '/grow_paid/' + txId + '.json', { method: 'PUT', body: JSON.stringify(rec) }).catch(() => {});
       if (ref) await fetch(DB_ROOT + '/grow_links/' + ref + '/paid.json', { method: 'PUT', body: 'true' }).catch(() => {});
+      if (!f.transactionToken) { await diag(env, 'grow-paid', { ref, sum: rec.sum, source: rec.source }); return new Response('ok', { status: 200 }); }
       // ApproveTransaction — echo every field Grow sent us, plus our ids
       try {
         const host = String(env.GROW_HOST || 'https://secure.meshulam.co.il').replace(/\/$/, '');
