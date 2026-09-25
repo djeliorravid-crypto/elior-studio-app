@@ -25,6 +25,12 @@
   .row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #f0ebe3; font-size: 14px; }
   .row .k { color: #7a6e62; font-weight: 400; flex-shrink: 0; }
   .row .v { font-weight: 500; text-align: left; min-width: 0; }
+  .pick { margin: 22px 28px 0; }
+  .pick .lbl { text-align: center; }
+  .pick .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); gap: 6px; margin-top: 10px; }
+  .pick button { padding: 10px 4px; border-radius: 6px; border: 1px solid #e6dfd4; background: #fff; color: #1c1713; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .pick button.on { background: #1c1713; color: #f2e3c6; border-color: #1c1713; }
+  .pick .each { text-align: center; font-size: 13px; color: #7a6e62; margin-top: 8px; }
   .cta-wrap { padding: 26px 28px 10px; }
   .cta { display: block; width: 100%; padding: 17px 20px; border-radius: 6px; background: #1c1713; color: #f2e3c6; text-align: center; text-decoration: none; font-size: 16px; font-weight: 600; letter-spacing: .02em; border: 1px solid #1c1713; }
   .cta:active { background: #2a221b; }
@@ -67,9 +73,11 @@
   } catch (e) {}
   if (!d || !d.url) return fail('הקישור לא נמצא או שפג תוקפו. אנא בקשו קישור חדש.');
   const date = d.created ? new Date(d.created).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-  const terms = d.kind === 'installments' ? 'תשלום אחד או עד ' + d.payments + ' תשלומים' : d.kind === 'recurring' ? 'הוראת קבע · ' + d.payments + ' חודשים' : 'תשלום אחד';
+  const terms = d.kind === 'installments' ? 'תשלום אחד או עד ' + d.payments + ' תשלומים, לבחירתך' : d.kind === 'recurring' ? 'הוראת קבע · ' + d.payments + ' חודשים' : 'תשלום אחד';
   const refShort = String(id).replace(/^inc_/, '').slice(-6).toUpperCase();
   const hasFee = Number(d.cardSum) > Number(d.sum);
+  const counts = d.urls ? Object.keys(d.urls).map(Number).filter(k => k > 0).sort((a, b) => a - b) : [];
+  const chargeSum = hasFee ? Number(d.cardSum) : Number(d.sum);
   el.innerHTML =
     '<div class="top"><div><div class="brand">Ravid Studio</div><div class="name">אליאור רביד</div><div class="sub">הפקה מוזיקלית · הקלטה · מיקס</div></div><div class="badge">בקשת תשלום</div></div>' +
     '<div class="amount-wrap"><div class="lbl">סכום לתשלום</div><div class="amount">' + money(d.sum) + '<small>₪</small></div><div class="terms">' + esc(terms) + (hasFee ? ' · באשראי ' + money(d.cardSum) + ' ₪ כולל עמלת סליקה' : '') + '</div></div>' +
@@ -81,14 +89,26 @@
       '<div class="row"><span class="k">אסמכתא</span><span class="v">' + esc(refShort) + '</span></div>' +
     '</div>' +
     (d.paid ? '<div class="paid">התשלום התקבל. תודה רבה.</div>' : failed ? '<div class="failed">התשלום לא הושלם. ניתן לנסות שוב.</div>' : '') +
+    (counts.length > 1 && !d.paid ? '<div class="pick"><div class="lbl">מספר תשלומים באשראי</div><div class="opts">' + counts.map(k => '<button type="button" data-k="' + k + '"' + (k === 1 ? ' class="on"' : '') + '>' + k + '</button>').join('') + '</div><div class="each" id="each"></div></div>' : '') +
     '<div class="cta-wrap">' +
-      (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" href="' + esc(d.url) + '">' + (hasFee ? 'לתשלום באשראי · ' + money(d.cardSum) + ' ₪' : 'המשך לתשלום מאובטח') + '</a>') +
+      (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" id="cta" href="' + esc(d.url) + '">' + (hasFee ? 'לתשלום באשראי · ' + money(d.cardSum) + ' ₪' : 'המשך לתשלום מאובטח') + '</a>') +
       (d.manual && !d.paid ? '<div class="methods">בדף התשלום יש להזין את הסכום ' + money(hasFee ? d.cardSum : d.sum) + ' ₪</div>' : '<div class="methods">כרטיס אשראי · תשלומים · דף תשלום מאובטח (PCI)</div>') +
     '</div>' +
     ((d.bitLink || d.bitPhone) && !d.paid ? '<div class="alt"><div class="t"><b style="font-weight:600">תשלום ב-bit</b></div>' +
       '<div class="d">' + (d.bitPhone ? 'להעברה ב-bit למספר <b dir="ltr">' + esc(d.bitPhone.replace(/^972/, '0').replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')) + '</b>, על סך <b>' + money(d.sum) + ' ₪</b>.' : 'להעברה ב-bit דרך הקישור, על סך <b>' + money(d.sum) + ' ₪</b>.') + '</div>' +
       '<div class="btns">' + (d.bitLink ? '<a href="' + esc(d.bitLink) + '">פתיחת bit</a>' : '<a href="https://www.bitpay.co.il/app/">פתיחת bit</a>') + '<button class="ok" id="claim" type="button">שילמתי ב-bit</button></div></div>' : '') +
     '<div class="foot"><span>סליקה מאובטחת באמצעות Grow</span><a href="https://wa.me/972' + '" id="wa">שאלות? וואטסאפ</a></div>';
+  // installment picker → swaps the card link + shows the per-payment amount
+  const pickBtns = Array.from(document.querySelectorAll('.pick button'));
+  const setPick = k => {
+    pickBtns.forEach(b => b.classList.toggle('on', Number(b.dataset.k) === k));
+    const cta = document.getElementById('cta'); if (cta && d.urls && d.urls[k]) cta.href = d.urls[k];
+    const each = document.getElementById('each');
+    if (each) each.textContent = k > 1 ? k + ' תשלומים של ' + money(chargeSum / k) + ' ₪' : 'תשלום אחד של ' + money(chargeSum) + ' ₪';
+    if (cta) cta.textContent = (hasFee ? 'לתשלום באשראי · ' + money(chargeSum) + ' ₪' : 'המשך לתשלום מאובטח') + (k > 1 ? ' · ' + k + ' תשלומים' : '');
+  };
+  pickBtns.forEach(b => b.onclick = () => setPick(Number(b.dataset.k)));
+  if (pickBtns.length) setPick(1);
   const claim = document.getElementById('claim');
   if (claim) claim.onclick = async () => {
     claim.disabled = true; claim.textContent = 'נשלח…';
