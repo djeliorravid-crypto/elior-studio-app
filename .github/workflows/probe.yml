@@ -45,6 +45,10 @@ on:
         description: "Public Grow payment-page URL — fetch it and print the ids embedded in it (userId / pageCode candidates), never the page body"
         required: false
         default: ""
+      readdocs:
+        description: "Comma-separated public doc URLs to fetch and print as plain text (the sandbox can't reach them)"
+        required: false
+        default: ""
 
 jobs:
   probe:
@@ -194,6 +198,28 @@ jobs:
                     '| type:', data.get('type','-'),
                     '| valid:', data.get('is_valid','-'),
                     ('| ERR: '+err[:120]) if err else '')
+          PYEOF
+      - name: Read public docs
+        if: ${{ github.event.inputs.readdocs != '' }}
+        env:
+          READDOCS: ${{ github.event.inputs.readdocs }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, re, html, urllib.request
+          for u in [x.strip() for x in os.environ.get('READDOCS','').split(',') if x.strip()]:
+              print('\n' + '=' * 30, u[:120])
+              try:
+                  req = urllib.request.Request(u, headers={'User-Agent': 'Mozilla/5.0'})
+                  body = urllib.request.urlopen(req, timeout=30).read().decode('utf-8', 'replace')
+              except Exception as e:
+                  print('fetch failed:', e); continue
+              body = re.sub(r'(?is)<(script|style|noscript|svg|header|footer|nav)[^>]*>.*?</\1>', ' ', body)
+              body = re.sub(r'(?i)<br\s*/?>|</p>|</div>|</li>|</h\d>|</tr>', '\n', body)
+              text = html.unescape(re.sub(r'<[^>]+>', ' ', body))
+              text = re.sub(r'[ \t ]+', ' ', text); text = re.sub(r'\n\s*\n+', '\n', text)
+              # keep the part that talks about ids / api / settings
+              keep = [ln.strip() for ln in text.split('\n') if ln.strip()]
+              print('\n'.join(keep)[:9000])
           PYEOF
       - name: Grow page — extract embedded ids
         if: ${{ github.event.inputs.growpage != '' }}
