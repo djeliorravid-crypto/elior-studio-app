@@ -452,10 +452,13 @@ export default {
         else { const fdIn = await request.formData(); fdIn.forEach((v, k) => { f[k] = String(v); }); }
       } catch (_) { return new Response('ok', { status: 200 }); }
       const expect = sendSecret(env) ? (await sha256hex('grow|' + sendSecret(env))).slice(0, 24) : '';
-      const dashKey = String(env.GROW_WEBHOOK_KEY || '').trim();
+      // GROW_WEBHOOK_KEY may hold several keys separated by commas — Grow
+      // issues one key per webhook (transactions / recurring runs).
+      const dashKeys = String(env.GROW_WEBHOOK_KEY || '').split(',').map(x => x.trim()).filter(Boolean);
       const k = url.searchParams.get('k') || '';
       const okDerived = expect && k === expect;
-      const okDash = dashKey && (String(f.webhookKey || f.webhook_key || '').trim() === dashKey || k === dashKey);
+      const gotKey = String(f.webhookKey || f.webhook_key || '').trim();
+      const okDash = dashKeys.length > 0 && (dashKeys.indexOf(gotKey) !== -1 || dashKeys.indexOf(k) !== -1);
       if (!okDerived && !okDash) { await diag(env, 'grow-notify-forbidden', { hasKey: !!k, hasWk: !!(f.webhookKey || f.webhook_key) }); return new Response('forbidden', { status: 403 }); }
       if (f.error_message || f.regular_payment_id) {   // failed recurring charge
         await fetch(DB_ROOT + '/grow_failed/' + Date.now() + '.json', { method: 'PUT', body: JSON.stringify({ name: f.payer_name || '', sum: Number(f.sum) || 0, error: f.error_message || '', description: f.description || '', ts: Date.now() }) }).catch(() => {});
