@@ -3514,6 +3514,15 @@
       box-sizing: border-box;
     }
 
+    /* Six tabs fit the phone bar without scrolling (25.9: "אין כרטיסיית לקוחות"
+       — the sixth tab was off-screen). */
+    .nav-lbl-short { display: none; }
+    @media (max-width: 480px) {
+      #business-sidebar nav a { min-width: 0; flex: 1 0 16.6%; margin: 3px 0; padding: 10px 2px 8px; font-size: 11px; letter-spacing: -.01em; }
+      #business-sidebar nav a .nav-icon svg { width: 24px; height: 24px; }
+      .nav-lbl-long { display: none; }
+      .nav-lbl-short { display: inline; }
+    }
     /* ===== CLIENT 360 (25.9) ===== */
     .inc-client-link { color: var(--accent); font-weight: 800; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
     [data-theme="dark"] .inc-client-link { color: #ffc87d; }
@@ -7361,7 +7370,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v471</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v472</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7489,7 +7498,7 @@
     </div>
   </div>
   <nav id="sidebar-nav">
-    <a class="active" onclick="showPage('productions')" data-page="productions"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> הפקות פעילות</a>
+    <a class="active" onclick="showPage('productions')" data-page="productions"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> <span class="nav-lbl-long">הפקות פעילות</span><span class="nav-lbl-short">הפקות</span></a>
     <a onclick="showPage('income')" data-page="income"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span> הכנסות</a>
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg></span> הוצאות</a>
     <a onclick="showPage('schedule')" data-page="schedule"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><circle cx="8" cy="14" r="0.8" fill="currentColor"/><circle cx="12" cy="14" r="0.8" fill="currentColor"/><circle cx="16" cy="14" r="0.8" fill="currentColor"/></svg></span> לוז יומי</a>
