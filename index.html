@@ -3514,65 +3514,6 @@
       box-sizing: border-box;
     }
 
-    /* Six tabs fit the phone bar without scrolling (25.9: "אין כרטיסיית לקוחות"
-       — the sixth tab was off-screen). */
-    .nav-lbl-short { display: none; }
-    @media (max-width: 480px) {
-      #business-sidebar nav a { min-width: 0; flex: 1 0 16.6%; margin: 3px 0; padding: 10px 2px 8px; font-size: 11px; letter-spacing: -.01em; }
-      #business-sidebar nav a .nav-icon svg { width: 24px; height: 24px; }
-      .nav-lbl-long { display: none; }
-      .nav-lbl-short { display: inline; }
-    }
-    /* ===== CLIENT 360 (25.9) ===== */
-    .inc-client-link { color: var(--accent); font-weight: 800; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
-    [data-theme="dark"] .inc-client-link { color: #ffc87d; }
-    @media (max-width: 768px) { .detail-topbar { margin-top: 46px !important; } }
-    .c360-last { font-size: 13px; font-weight: 700; color: var(--text-muted); margin: 2px 0 6px; }
-    .c360-actions .btn { min-height: 42px; }
-    .c360-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-    @media (max-width: 720px) { .c360-tiles { grid-template-columns: repeat(2, 1fr); } }
-    .c360-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; }
-    .c360-tile .n { display: block; font-size: 21px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-    .c360-tile .n small { font-size: 12px; color: var(--text-muted); font-weight: 700; }
-    .c360-tile .l { display: block; font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-top: 3px; }
-    .c360-tile.warn .n { color: var(--red); }
-    .c360-tile.good .n { color: var(--green); }
-    [data-theme="dark"] .c360-tile { background: linear-gradient(160deg, rgba(242,189,116,.10), rgba(0,0,0,.18)); border-color: rgba(242,189,116,.22); }
-    [data-theme="dark"] .c360-tile .n { color: #ffc87d; }
-    [data-theme="dark"] .c360-tile.warn .n { color: #ff8a7a; }
-    [data-theme="dark"] .c360-tile.good .n { color: #b7e58a; }
-    .c360-list { display: flex; flex-direction: column; gap: 8px; }
-    .c360-row { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 12px; background: var(--surface2); border: 1px solid var(--border); }
-    [data-theme="dark"] .c360-row { background: rgba(0,0,0,.22); border-color: rgba(255,255,255,.08); }
-    .c360-row-main { flex: 1; min-width: 0; }
-    .c360-row .t { font-size: 14px; font-weight: 800; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .c360-row .s { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
-    .c360-amt { flex-shrink: 0; font-size: 13.5px; font-weight: 900; color: var(--green); white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .c360-amt.red { color: var(--red); }
-    .c360-stage { flex-shrink: 0; font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
-    .c360-empty { font-size: 13px; color: var(--text-muted); font-weight: 600; line-height: 1.6; padding: 4px 0; }
-    .c360-mini { display: flex; gap: 18px; font-size: 13px; color: var(--text-muted); font-weight: 700; margin-bottom: 10px; }
-    .c360-mini b { color: var(--text); }
-    .c360-wa { border-radius: 14px; padding: 12px 14px; background: var(--surface2); border: 1px solid var(--border); }
-    [data-theme="dark"] .c360-wa { background: rgba(0,0,0,.22); border-color: rgba(255,255,255,.08); }
-    .c360-wa.waiting { border-color: rgba(255,120,100,.5); }
-    .c360-wa-top { display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; }
-    .c360-wa-text { font-size: 14px; color: var(--text); line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
-    .c360-wa-flag { margin-top: 8px; font-size: 12px; font-weight: 800; color: var(--red); }
-    [data-theme="dark"] .c360-head, [data-theme="dark"] .detail-section {
-      background: linear-gradient(160deg, #2f2218 0%, #241a10 100%);
-      border: 1px solid rgba(255,200,140,.14); border-radius: 20px;
-      box-shadow: 0 12px 30px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.04);
-    }
-    @media (max-width: 720px) {
-      .detail-header { padding: 20px 18px; }
-      .detail-header-inner { gap: 14px; }
-      .detail-section { padding: 18px 16px; }
-      .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-      .stat-box { padding: 12px 6px; }
-      .stat-box-val { font-size: 19px; }
-    }
-
     /* ===== NEW-YEAR GOALS (תשפ״ז) — lobby card + page (20.9) ===== */
     .lobby-year-card {
       position: relative; z-index: 1; width: 100%; max-width: 580px;
@@ -7370,7 +7311,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v472</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v473</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -7498,13 +7439,14 @@
     </div>
   </div>
   <nav id="sidebar-nav">
-    <a class="active" onclick="showPage('productions')" data-page="productions"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> <span class="nav-lbl-long">הפקות פעילות</span><span class="nav-lbl-short">הפקות</span></a>
+    <a class="active" onclick="showPage('productions')" data-page="productions"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span> הפקות פעילות</a>
     <a onclick="showPage('income')" data-page="income"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span> הכנסות</a>
     <a onclick="showPage('expenses')" data-page="expenses"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 7 9 13 13 9 21 17"/><polyline points="14 17 21 17 21 10"/></svg></span> הוצאות</a>
     <a onclick="showPage('schedule')" data-page="schedule"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><circle cx="8" cy="14" r="0.8" fill="currentColor"/><circle cx="12" cy="14" r="0.8" fill="currentColor"/><circle cx="16" cy="14" r="0.8" fill="currentColor"/></svg></span> לוז יומי</a>
     <a onclick="showPage('whatsapp')" data-page="whatsapp"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.5L3 21l2-5.6A8.5 8.5 0 1 1 21 11.5z"/></svg></span> וואטסאפ</a>
-    <a onclick="showPage('profiles')" data-page="profiles"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="8" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> לקוחות</a>
     <a onclick="showPage('installments')" data-page="installments"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></span> תשלומים</a>
+    <!-- כרטיסיית לקוחות מוסתרת לפי בקשה — להחזרה: מחק את style="display:none" -->
+    <a onclick="showPage('profiles')" data-page="profiles" style="display:none"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="8" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> לקוחות</a>
     <!-- "משימות יומיות" tab hidden — the user manages tasks from the
          lobby quick-add. Page-daily still exists for programmatic
          routing and the lobby task list. -->
@@ -8949,7 +8891,7 @@
   <!-- ===== PROFILE DETAIL ===== -->
   <div class="page" id="page-profile-detail">
     <div class="detail-wrap">
-      <div class="detail-topbar" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+      <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
         <button class="btn btn-back" onclick="showPage('profiles')">← חזרה לפרופילים</button>
         <button class="btn btn-danger btn-sm" id="detail-delete-btn"><svg class="icon" style="width:13px;height:13px"><use href="#ic-trash"/></svg> מחיקת לקוח</button>
       </div>
@@ -10049,8 +9991,10 @@ function showPage(name) {
     if (typeof renderScheduleGcalBar === 'function') renderScheduleGcalBar();
     renderSchedule();
   }
+  const navLinks = document.querySelectorAll('#sidebar-nav a');
   const key = name === 'profile-detail' ? 'profiles' : name;
-  document.querySelector('#sidebar-nav a[data-page="' + key + '"]')?.classList.add('active');
+  const idx = map[key];
+  if (idx !== undefined) navLinks[idx]?.classList.add('active');
   if (name === 'gcal') { setTimeout(() => { gcalInitPage(); }, 50); }
   if (name === 'productions') { try { renderProductions(); } catch(_) {} }
   refreshAll();
@@ -10505,120 +10449,46 @@ function showProfileDetail(id) {
       <input type="file" accept="image/*" style="display:none" onchange="updateClientPhoto('${c.id}', this)"/>
     </label>`;
 
-  // ── CLIENT 360 (25.9) — everything about this client on one page ──
-  const sessions    = (load('sessions') || []).filter(x => x && x.clientId === id).sort((x, y) => String(y.date).localeCompare(String(x.date)));
-  const norm        = v => String(v || '').trim().toLowerCase();
-  const cn          = norm(c.name);
-  const prods       = (typeof prodList === 'function' ? prodList() : []).filter(p => {
-    const a = norm(p.artist), t = norm(p.title);
-    return cn && (a === cn || (a && cn.includes(a)) || (a && a.includes(cn)) || (p.clientId && p.clientId === id));
-  });
-  const phoneKey    = c.phone ? _waPhone(c.phone) : '';
-  const conv        = phoneKey ? (_waConvs || []).find(x => x.phone === phoneKey) : null;
-  const openItems   = clientIncome.filter(i => (i.status || 'pending') !== 'paid');
-  const openSum     = openItems.reduce((t, i) => t + Number(i.amount), 0);
-  const today       = new Date();
-  const ageDays     = d => { const x = new Date(String(d).slice(0, 10) + 'T12:00:00'); return isNaN(x) ? null : Math.max(0, Math.floor((today - x) / 864e5)); };
-  // Last contact = newest of: income date, session date, WhatsApp message
-  let lastTs = 0;
-  clientIncome.forEach(i => { const t = new Date(i.date).getTime(); if (t > lastTs) lastTs = t; });
-  sessions.forEach(x => { const t = new Date(x.date).getTime(); if (t > lastTs) lastTs = t; });
-  if (conv && conv.lastTs > lastTs) lastTs = conv.lastTs;
-  const lastDays    = lastTs ? Math.floor((Date.now() - lastTs) / 864e5) : null;
-  const sesMins     = sessions.reduce((t, x) => { if (!x.startTime || !x.endTime) return t; const [a, b] = [x.startTime, x.endTime].map(v => { const [h, m] = String(v).split(':').map(Number); return h * 60 + m; }); return t + Math.max(0, b - a); }, 0);
-  const waLink      = phoneKey ? 'https://wa.me/' + phoneKey : '';
-  const remindMsg   = 'היי ' + c.name + ' 👋 תזכורת קטנה מרביד סטודיו — נשאר תשלום פתוח של ' + _ilsFmt(openSum) + (openItems[0] && openItems[0].description ? ' על ' + openItems[0].description : '') + '. אפשר בביט / פייבוקס / העברה 🙏 תודה רבה!';
-  const stageOf     = p => (typeof prodStageMeta === 'function' ? prodStageMeta(p.stage) : { label: p.stage, color: '#999' });
-
   document.getElementById('detail-content').innerHTML = `
-    <div class="detail-header c360-head">
+    <div class="detail-header">
       <div class="detail-header-inner">
         ${detailAvatarHtml}
         <div class="detail-info">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap">
-            <div class="detail-name">${_escape(c.name)}</div>
+            <div class="detail-name">${c.name}</div>
             <span class="badge ${c.active ? 'badge-green' : 'badge-gray'}"><span class="ftab-dot ${c.active ? 'green' : 'gray'}" style="margin-left:5px"></span>${c.active ? 'פעיל' : 'לא פעיל'}</span>
           </div>
-          <div class="detail-type">${_escape(c.type || '')}</div>
-          <div class="c360-last">${lastDays == null ? 'עוד לא היה קשר מתועד' : lastDays === 0 ? '🟢 היה קשר היום' : lastDays <= 14 ? '🟢 קשר אחרון לפני ' + lastDays + ' ימים' : lastDays <= 45 ? '🟡 קשר אחרון לפני ' + lastDays + ' ימים' : '🔴 שקט כבר ' + lastDays + ' ימים'}</div>
-          <div class="detail-actions c360-actions">
-            ${c.phone ? `<a href="tel:${_escape(c.phone)}" class="btn btn-ghost" style="text-decoration:none">📞 התקשר</a>` : ''}
-            ${waLink ? `<button class="btn btn-ghost" onclick="window.open('${waLink}','_blank')">💬 וואטסאפ</button>` : ''}
-            ${openSum > 0 && waLink ? `<button class="btn btn-primary" onclick="window.open('${waLink}?text=' + encodeURIComponent(${JSON.stringify(remindMsg)}),'_blank')">💸 תזכורת תשלום</button>` : ''}
-            <button class="btn ${c.active ? 'btn-ghost' : 'btn-primary'}" onclick="toggleActiveFromDetail('${c.id}')">${c.active ? '⏸ לא פעיל' : '▶ סמן כפעיל'}</button>
+          <div class="detail-type">${c.type}</div>
+          <div class="detail-meta">
+            ${c.location ? `<span class="detail-meta-item">📍 ${c.location}</span>` : ''}
+            ${c.email    ? `<span class="detail-meta-item">✉️ ${c.email}</span>` : ''}
+            ${c.phone    ? `<span class="detail-meta-item">📞 ${c.phone}</span>` : ''}
+          </div>
+          <div class="detail-actions">
+            ${c.phone ? `<a href="tel:${c.phone}" class="btn btn-primary" style="text-decoration:none">📞 התקשר</a>` : ''}
+            ${c.email ? `<a href="mailto:${c.email}" class="btn btn-ghost" style="text-decoration:none">✉️ מייל</a>` : ''}
+            <button class="btn ${c.active ? 'btn-danger' : 'btn-ghost'}" onclick="toggleActiveFromDetail('${c.id}')">
+              ${c.active ? '⏸ סמן כלא פעיל' : '▶ סמן כפעיל'}
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="c360-tiles">
-      <div class="c360-tile ${openSum > 0 ? 'warn' : ''}"><span class="n">${fmtMoney(openSum)}</span><span class="l">${openSum > 0 ? 'חייב לך' : 'אין חוב פתוח'}</span></div>
-      <div class="c360-tile good"><span class="n">${fmtMoney(totalIncome)}</span><span class="l">נכנס בפועל</span></div>
-      <div class="c360-tile"><span class="n">${prods.filter(p => p.stage !== 'sent').length}<small>/${prods.length}</small></span><span class="l">הפקות פעילות</span></div>
-      <div class="c360-tile ${conv && conv.waiting ? 'warn' : ''}"><span class="n">${conv ? (conv.waiting ? (conv.unread || 1) : '✓') : '—'}</span><span class="l">${conv ? (conv.waiting ? 'ממתין לתשובה' : 'וואטסאפ מעודכן') : 'אין שיחות'}</span></div>
-    </div>
-
-    ${openItems.length ? `
+    <!-- stats -->
     <div class="detail-section">
-      <h3>💸 כסף פתוח · ${fmtMoney(openSum)}</h3>
-      <div class="c360-list">
-        ${openItems.map(i => { const ag = ageDays(i.date); return `
-          <div class="c360-row">
-            <div class="c360-row-main"><div class="t">${_escape(i.description || i.category || 'הכנסה')}</div><div class="s">${fmtDate(i.date)}${ag != null ? ' · לפני ' + ag + ' ימים' : ''}${(i.status || '') === 'overdue' ? ' · <span style="color:var(--red);font-weight:800">באיחור</span>' : ''}</div></div>
-            <div class="c360-amt red">${fmtMoney(i.amount)}</div>
-            <button class="btn btn-ghost btn-sm" onclick="setIncomeStatus('${i.id}','paid');showProfileDetail('${id}')">✓ שולם</button>
-          </div>`; }).join('')}
-      </div>
-    </div>` : ''}
-
-    <div class="detail-section">
-      <h3>🎵 הפקות${prods.length ? ' · ' + prods.length : ''}</h3>
-      ${prods.length ? `<div class="c360-list">
-        ${prods.map(p => { const st = stageOf(p), d = ageDays(p.createdAt), open = Math.max(0, (Number(p.price) || 0) - (Number(p.paid) || 0)); return `
-          <div class="c360-row" onclick="c360GoProd('${p.id}')" style="cursor:pointer">
-            <span class="c360-stage" style="background:${st.color}22;color:${st.color};border-color:${st.color}66">${_escape(st.label)}</span>
-            <div class="c360-row-main"><div class="t">${_escape(p.title)}</div><div class="s">${d != null ? d + ' ימים בהפקה' : ''}${p.deadline ? ' · דד-ליין ' + fmtDate(p.deadline) : ''}</div></div>
-            ${open ? `<div class="c360-amt red">${fmtMoney(open)} פתוח</div>` : (Number(p.price) ? '<div class="c360-amt">שולם</div>' : '')}
-          </div>`; }).join('')}
-      </div>` : `<div class="c360-empty">אין הפקות על השם הזה. הפקה שהאמן שלה הוא "${_escape(c.name)}" תופיע כאן אוטומטית.</div>`}
-    </div>
-
-    <div class="detail-section">
-      <h3>💬 וואטסאפ</h3>
-      ${conv ? `
-        <div class="c360-wa ${conv.waiting ? 'waiting' : ''}">
-          <div class="c360-wa-top"><span>${conv.lastDir === 'in' ? '⬅️ ' + _escape(c.name) : '➡️ אתה'}</span><span>לפני ${_waAgo(conv.lastTs)}</span></div>
-          <div class="c360-wa-text">${_escape(conv.lastText || '(מדיה)')}</div>
-          ${conv.waiting ? '<div class="c360-wa-flag">⏳ מחכה לתשובה שלך</div>' : ''}
-        </div>
-        <div class="detail-actions" style="margin-top:12px">
-          <button class="btn btn-ghost btn-sm" onclick="waHistory('${phoneKey}')">📜 כל השיחה</button>
-          <button class="btn btn-ghost btn-sm" onclick="waComposeOpen('${phoneKey}')">✍️ כתוב מהאפליקציה</button>
-          <button class="btn btn-ghost btn-sm" onclick="showPage('whatsapp')">📥 לתיבה</button>
-        </div>`
-      : `<div class="c360-empty">${phoneKey ? 'אין עדיין שיחות וואטסאפ עם המספר הזה.' : 'תוסיף טלפון ללקוח כדי לחבר את שיחות הוואטסאפ שלו לכאן.'}</div>`}
-    </div>
-
-    <div class="detail-section">
-      <h3>🎙️ סשנים באולפן${sessions.length ? ' · ' + sessions.length : ''}</h3>
-      ${sessions.length ? `
-        <div class="c360-mini"><span><b>${Math.round(sesMins / 6) / 10}</b> שעות סה״כ</span><span>אחרון: <b>${fmtDate(sessions[0].date)}</b></span></div>
-        <div class="c360-list">
-          ${sessions.slice(0, 4).map(x => `<div class="c360-row"><div class="c360-row-main"><div class="t">${_escape((SES_TYPES[x.type] || SES_TYPES['אחר']).label)}</div><div class="s">${fmtDate(x.date)} · ${_escape(x.startTime || '')}–${_escape(x.endTime || '')}${x.notes ? ' · ' + _escape(x.notes) : ''}</div></div></div>`).join('')}
-        </div>`
-      : '<div class="c360-empty">עוד לא נרשמו סשנים עם הלקוח הזה.</div>'}
-    </div>
-
-    <div class="detail-section">
-      <h3>נתונים כלליים</h3>
+      <h3><svg class="icon-lg"><use href="#ic-chart-bars"/></svg>נתונים כלליים</h3>
       <div class="stats-row">
+        <div class="stat-box"><div class="stat-box-val">${fmtMoney(totalIncome)}</div><div class="stat-box-lbl">נכנס בפועל</div></div>
         <div class="stat-box"><div class="stat-box-val">${fmtMoney(totalExpected)}</div><div class="stat-box-lbl">סה"כ צפוי</div></div>
         <div class="stat-box"><div class="stat-box-val">${txCount}</div><div class="stat-box-lbl">עסקאות</div></div>
         <div class="stat-box"><div class="stat-box-val">${fmtMoney(avgTx)}</div><div class="stat-box-lbl">ממוצע לעסקה</div></div>
         ${clientPlans.length > 0 ? `<div class="stat-box"><div class="stat-box-val">${clientPlans.length}</div><div class="stat-box-lbl">תוכניות תשלום</div></div>` : ''}
+        ${clientProjects.length > 0 ? `<div class="stat-box"><div class="stat-box-val">${clientProjects.length}</div><div class="stat-box-lbl">פרויקטים</div></div>` : ''}
       </div>
     </div>
 
+    <!-- editable fields -->
     <div class="detail-section">
       <h3>פרטי לקוח</h3>
       <div class="contact-list">
@@ -10631,36 +10501,81 @@ function showProfileDetail(id) {
       </div>
     </div>
 
+    <!-- ציר זמן -->
     <div class="detail-section">
-      <h3>📅 ציר זמן — כל מה שקרה</h3>
+      <h3><svg class="icon-lg"><use href="#ic-calendar"/></svg>ציר זמן — כל האינטרקציות</h3>
       ${(() => {
+        // איסוף כל האירועים
         const events = [];
+
+        // הכנסות
         clientIncome.forEach(i => {
           const st = i.status || 'pending';
-          events.push({ date: i.date, dotClass: st === 'paid' ? 'income-paid' : st === 'overdue' ? 'income-overdue' : 'income-pending',
-            icon: st === 'paid' ? '✅' : st === 'overdue' ? '🔴' : '⏳', title: i.description, sub: i.category + (i.notes ? ' · ' + i.notes : ''),
-            badge: st === 'paid' ? 'badge-green' : st === 'overdue' ? 'badge-red' : 'badge-gray', badgeLbl: st === 'paid' ? 'שולם' : st === 'overdue' ? 'באיחור' : 'ממתין',
-            amt: fmtMoney(i.amount), amtClass: st === 'paid' ? '' : 'red' });
+          events.push({
+            date: i.date,
+            type: 'income',
+            dotClass: st === 'paid' ? 'income-paid' : st === 'overdue' ? 'income-overdue' : 'income-pending',
+            icon: st === 'paid' ? '✅' : st === 'overdue' ? '🔴' : '⏳',
+            title: i.description,
+            sub: i.category + (i.notes ? ' · ' + i.notes : ''),
+            badge: st === 'paid' ? 'badge-green' : st === 'overdue' ? 'badge-red' : 'badge-gray',
+            badgeLbl: st === 'paid' ? 'שולם' : st === 'overdue' ? 'באיחור' : 'ממתין',
+            amt: fmtMoney(i.amount),
+            amtClass: st === 'paid' ? '' : 'red'
+          });
         });
-        prods.forEach(p => events.push({ date: String(p.createdAt || '').slice(0, 10), dotClass: 'project', icon: '🎵', title: p.title, sub: 'הפקה נפתחה · עכשיו: ' + stageOf(p).label, badge: 'badge-purple', badgeLbl: 'הפקה', amt: '', amtClass: '' }));
-        sessions.forEach(x => events.push({ date: x.date, dotClass: 'session', icon: '🎙️', title: (SES_TYPES[x.type] || SES_TYPES['אחר']).label, sub: (x.startTime || '') + '–' + (x.endTime || ''), badge: 'badge-gray', badgeLbl: 'סשן', amt: '', amtClass: '' }));
-        clientProjects.forEach(p => events.push({ date: p.startDate || p.date || '', dotClass: 'project', icon: '📁', title: p.name || p.title || 'פרויקט', sub: p.status ? 'סטטוס: ' + p.status : '', badge: 'badge-purple', badgeLbl: 'פרויקט', amt: '', amtClass: '' }));
-        clientPlans.forEach(plan => (plan.payments || []).forEach(p => events.push({ date: p.dueDate, dotClass: p.paid ? 'income-paid' : new Date(p.dueDate) < new Date() ? 'income-overdue' : 'income-pending',
-          icon: p.paid ? '✅' : '📋', title: `${plan.project} — תשלום ${p.index}/${plan.count}`, sub: 'תוכנית תשלום', badge: p.paid ? 'badge-green' : 'badge-gray', badgeLbl: p.paid ? 'שולם' : 'מתוכנית', amt: fmtMoney(p.amount), amtClass: p.paid ? '' : 'red' })));
-        if (conv) events.push({ date: new Date(conv.lastTs).toISOString().slice(0, 10), dotClass: 'session', icon: '💬', title: 'הודעת וואטסאפ אחרונה', sub: (conv.lastText || '').slice(0, 80), badge: 'badge-gray', badgeLbl: conv.lastDir === 'in' ? 'ממנו' : 'ממך', amt: '', amtClass: '' });
-        if (!events.length) return '<div class="c360-empty">אין פעילות עדיין</div>';
-        events.sort((a, b) => { if (!a.date) return 1; if (!b.date) return -1; return new Date(b.date) - new Date(a.date); });
+
+        // פרויקטים
+        clientProjects.forEach(p => {
+          events.push({
+            date: p.startDate || p.date || '',
+            type: 'project',
+            dotClass: 'project',
+            icon: '🎵',
+            title: p.name || p.title || 'פרויקט',
+            sub: p.status ? 'סטטוס: ' + p.status : '',
+            badge: 'badge-purple', badgeLbl: 'פרויקט',
+            amt: '', amtClass: ''
+          });
+        });
+
+        // תוכניות תשלום
+        clientPlans.forEach(plan => {
+          plan.payments.forEach(p => {
+            events.push({
+              date: p.dueDate,
+              type: 'plan',
+              dotClass: p.paid ? 'income-paid' : new Date(p.dueDate) < new Date() ? 'income-overdue' : 'income-pending',
+              icon: p.paid ? '✅' : '📋',
+              title: `${plan.project} — תשלום ${p.index}/${plan.count}`,
+              sub: 'תוכנית תשלום',
+              badge: p.paid ? 'badge-green' : 'badge-gray',
+              badgeLbl: p.paid ? 'שולם' : 'מתוכנית',
+              amt: fmtMoney(p.amount), amtClass: p.paid ? '' : 'red'
+            });
+          });
+        });
+
+        if (events.length === 0)
+          return '<div style="color:var(--text-muted);font-size:14px;padding:8px 0">אין פעילות עדיין</div>';
+
+        // מיון לפי תאריך — חדש ראשון
+        events.sort((a,b) => {
+          if (!a.date) return 1; if (!b.date) return -1;
+          return new Date(b.date) - new Date(a.date);
+        });
+
         return `<div class="timeline">` + events.map(ev => `
           <div class="tl-item">
             <div class="tl-dot ${ev.dotClass}">${ev.icon}</div>
             <div class="tl-body">
               <div class="tl-date">${ev.date ? fmtDate(ev.date) : '—'}</div>
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <div class="tl-title">${_escape(ev.title || '')}</div>
+                <div class="tl-title">${ev.title}</div>
                 <span class="badge ${ev.badge}" style="font-size:10px">${ev.badgeLbl}</span>
                 ${ev.amt ? `<div class="tl-amt ${ev.amtClass}">${ev.amt}</div>` : ''}
               </div>
-              ${ev.sub ? `<div class="tl-sub">${_escape(ev.sub)}</div>` : ''}
+              ${ev.sub ? `<div class="tl-sub">${ev.sub}</div>` : ''}
             </div>
           </div>`).join('') + `</div>`;
       })()}
@@ -10672,15 +10587,10 @@ function showProfileDetail(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-profile-detail').classList.add('active');
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
-  document.querySelector('#sidebar-nav a[data-page="profiles"]')?.classList.add('active');
+  document.querySelectorAll('#sidebar-nav a')[3]?.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-window.c360GoProd = function(pid) {
-  try { _prodExpanded.add(pid); } catch (_) {}
-  showPage('productions');
-  setTimeout(() => { const el = document.getElementById('prod-card-' + pid); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 250);
-};
 function toggleActiveFromDetail(id) {
   toggleActive(id);
   showProfileDetail(id);
@@ -11241,7 +11151,7 @@ function _renderIncomeCatGrid(entries, planRows) {
         <div class="exp-cat-row ${isPaid ? 'paid' : ''}">
           <div class="exp-cat-row-main">
             <div class="exp-cat-row-desc">${i.description || '—'}</div>
-            <div class="exp-cat-row-meta">${fmtDate(i.date)}${i.clientName ? ' · ' + (i.clientId ? `<span class="inc-client-link" onclick="event.stopPropagation();showProfileDetail('${i.clientId}')">👤 ${_escape(i.clientName)}</span>` : _escape(i.clientName)) : ''}${i._carried ? ' · <span style="color:var(--orange);font-weight:800">נגרר מחודש קודם</span>' : ''}</div>
+            <div class="exp-cat-row-meta">${fmtDate(i.date)}${i.clientName ? ' · ' + i.clientName : ''}${i._carried ? ' · <span style="color:var(--orange);font-weight:800">נגרר מחודש קודם</span>' : ''}</div>
           </div>
           <div class="exp-cat-row-amt" style="color:${isPaid ? 'var(--green)' : 'var(--accent)'}">${fmtMoney(i.amount)}</div>
           <div class="exp-cat-row-actions">
@@ -19036,7 +18946,6 @@ window.waActOpen = function(phone) {
   html += B('✉️ שלח הודעה', 'compose');
   html += B('📜 רקע לשיחה', 'history');
   html += B('📅 שלח קישור לקביעת סשן', 'book');
-  if (c.client) html += B('👤 כרטיס לקוח', 'card');
   if (c.waiting) html += B('😴 הזכר לי לענות מאוחר יותר', 'snooze');
   html += B(_waPins[phone] ? '📌 הסר נעיצה' : '📌 נעץ למעלה', 'pin');
   html += B('🏷️ תווית' + (_waLabels[phone] && WA_LABELS[_waLabels[phone]] ? ' — ' + WA_LABELS[_waLabels[phone]].name : ''), 'label');
@@ -19062,7 +18971,6 @@ window.waActDo = function(phone, act) {
   else if (act === 'pin') waPinToggle(phone);
   else if (act === 'label') { setTimeout(() => waLabelOpen(phone), 180); return; }
   else if (act === 'compose') waComposeOpen(phone);
-  else if (act === 'card') { const cl = load('clients').find(x => _waPhone(x.phone) === phone); if (cl) showProfileDetail(cl.id); else toast('אין כרטיס לקוח למספר הזה'); }
   else if (act === 'open') window.open('https://wa.me/' + phone, '_blank');
 };
 // ── Compose: a message HE initiates, to any client, from the app ──
