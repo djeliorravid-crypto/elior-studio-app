@@ -255,6 +255,26 @@ jobs:
               queue = nxt
           for k, v in out.items(): print(k, '→', sorted(v)[:12])
           print('urls seen:', [u[:110] for u in sorted(seen)])
+          # Deeper: the page's JS config + the API calls it makes
+          try:
+              final, body = get(url); body = html.unescape(body)
+              for kw in ['userId', 'pageCode', 'businessId', 'apiUrl', 'api/biz', 'api/light', 'linkToken', 'processToken', 'paymentLinkProcess', 'window.__', 'NUXT', 'INITIAL']:
+                  for m in list(re.finditer(re.escape(kw), body))[:4]:
+                      a, b = max(0, m.start() - 160), min(len(body), m.end() + 240)
+                      print('--- ctx[%s]: %s' % (kw, re.sub(r'\s+', ' ', body[a:b])))
+              scripts = re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', body)
+              print('scripts:', scripts[:20])
+              for sc in scripts[:12]:
+                  if sc.startswith('//'): sc = 'https:' + sc
+                  if not sc.startswith('http'): sc = 'https://pay.grow.link' + (sc if sc.startswith('/') else '/' + sc)
+                  try:
+                      _, js = get(sc)
+                  except Exception as e: print('js fail', sc[:80], e); continue
+                  hits = [m.start() for m in re.finditer(r'userId|pageCode|api/biz/web|api/light', js)]
+                  print('=== js', sc[:100], 'len', len(js), 'hits', len(hits))
+                  for h in hits[:8]:
+                      print('   …', re.sub(r'\s+', ' ', js[max(0, h - 140):h + 200]))
+          except Exception as e: print('deep fail', e)
           PYEOF
       - name: Grow API — which ids does Grow accept
         if: ${{ github.event.inputs.growtry != '' }}
