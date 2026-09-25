@@ -464,7 +464,13 @@ export default {
         await fetch(DB_ROOT + '/grow_failed/' + Date.now() + '.json', { method: 'PUT', body: JSON.stringify({ name: f.payer_name || '', sum: Number(f.sum) || 0, error: f.error_message || '', description: f.description || '', ts: Date.now() }) }).catch(() => {});
         return new Response('ok', { status: 200 });
       }
-      const ref = f.cField1 || (f['customFields[cField1]']) || '';
+      // Morning's payment-form notification carries our ref in `custom`
+      // and the amount in `amount`/`sum`/`total`; map it onto the same record.
+      const ref = f.cField1 || (f['customFields[cField1]']) || f.custom || (f.payment && f.payment.custom) || '';
+      if (f.amount != null && f.sum == null) f.sum = f.amount;
+      if (f.total != null && f.sum == null) f.sum = f.total;
+      if (!f.fullName && f.client && f.client.name) f.fullName = f.client.name;
+      if (!f.fullName && f.clientName) f.fullName = f.clientName;
       const txId = String(f.transactionId || f.transactionCode || Date.now()).replace(/[^A-Za-z0-9_-]/g, '');
       const rec = { ref, sum: Number(f.sum != null ? f.sum : f.paymentSum) || 0, name: f.fullName || '', phone: f.payerPhone || '', asmachta: f.asmachta || '',
         paymentsNum: Number(f.paymentsNum) || 1, allPaymentsNum: Number(f.allPaymentsNum != null ? f.allPaymentsNum : f.allPaymentNum) || 1, paymentDate: f.paymentDate || '',
