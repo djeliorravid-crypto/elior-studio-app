@@ -41,6 +41,10 @@ on:
         description: "Try Grow CreatePaymentLink with candidate ids: 'userId1,userId2|pageCode' — creates an INACTIVE 1₪ link at most; prints Grow's verdict per candidate"
         required: false
         default: ""
+      growpage:
+        description: "Public Grow payment-page URL — fetch it and print the ids embedded in it (userId / pageCode candidates), never the page body"
+        required: false
+        default: ""
 
 jobs:
   probe:
@@ -190,6 +194,41 @@ jobs:
                     '| type:', data.get('type','-'),
                     '| valid:', data.get('is_valid','-'),
                     ('| ERR: '+err[:120]) if err else '')
+          PYEOF
+      - name: Grow page — extract embedded ids
+        if: ${{ github.event.inputs.growpage != '' }}
+        env:
+          GROWPAGE: ${{ github.event.inputs.growpage }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, re, urllib.request, html
+          url = os.environ.get('GROWPAGE','').strip()
+          seen = set(); queue = [url]; out = {}
+          def get(u):
+              req = urllib.request.Request(u, headers={'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1'})
+              r = urllib.request.urlopen(req, timeout=25)
+              return r.geturl(), r.read().decode('utf-8', 'replace')
+          for depth in range(3):
+              nxt = []
+              for u in queue:
+                  if u in seen or len(seen) > 8: continue
+                  seen.add(u)
+                  try: final, body = get(u)
+                  except Exception as e: print('fetch fail', u[:80], e); continue
+                  body = html.unescape(body)
+                  print('=== fetched', u[:90], '→ final', final[:120], 'len', len(body))
+                  for m in re.finditer(r'(userId|pageCode|page_code|user_id|businessId|business_id|processId|apiKey)["\']?\s*[:=]\s*["\']?([A-Za-z0-9_-]{4,64})', body, re.I):
+                      out.setdefault(m.group(1), set()).add(m.group(2))
+                  for m in re.finditer(r'\b[0-9a-f]{16}\b', body): out.setdefault('hex16', set()).add(m.group(0))
+                  for m in re.finditer(r'\b[0-9a-f]{32}\b', body): out.setdefault('hex32', set()).add(m.group(0))
+                  for m in re.finditer(r'(?:src|href|action)=["\']([^"\']*(?:meshulam|grow)[^"\']*)["\']', body, re.I):
+                      link = m.group(1)
+                      if link.startswith('//'): link = 'https:' + link
+                      if link.startswith('http'): nxt.append(link)
+                  for m in re.finditer(r'https?://[^\s"\'<>]*(?:meshulam|grow\.link|grow\.business)[^\s"\'<>]*', body): nxt.append(m.group(0))
+              queue = nxt
+          for k, v in out.items(): print(k, '→', sorted(v)[:12])
+          print('urls seen:', [u[:110] for u in sorted(seen)])
           PYEOF
       - name: Grow API — which ids does Grow accept
         if: ${{ github.event.inputs.growtry != '' }}
