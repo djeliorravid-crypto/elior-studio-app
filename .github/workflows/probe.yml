@@ -57,6 +57,10 @@ on:
         description: "yes = test MORNING_API_ID/SECRET from repo secrets against Morning: token + list clearing plugins (prints pluginId, never the secret)"
         required: false
         default: "no"
+      morninginline:
+        description: "id|secret to test directly (used when repo secrets are not set)"
+        required: false
+        default: ""
       readdocs:
         description: "Comma-separated public doc URLs to fetch and print as plain text (the sandbox can't reach them)"
         required: false
@@ -310,15 +314,21 @@ jobs:
               except Exception as e: print('GET path fail', e)
           PYEOF
       - name: Morning — test keys + list plugins
-        if: ${{ github.event.inputs.morningauth == 'yes' }}
+        if: ${{ github.event.inputs.morningauth == 'yes' || github.event.inputs.morninginline != '' }}
         env:
           MORNING_API_ID: ${{ secrets.MORNING_API_ID }}
           MORNING_API_SECRET: ${{ secrets.MORNING_API_SECRET }}
+          MORNING_INLINE: ${{ github.event.inputs.morninginline }}
         run: |
           python3 - <<'PYEOF'
           import os, json, urllib.request
-          cid = (os.environ.get('MORNING_API_ID') or '').strip()
-          sec = (os.environ.get('MORNING_API_SECRET') or '').strip()
+          inline = (os.environ.get('MORNING_INLINE') or '').strip()
+          if inline and '|' in inline:
+              cid, sec = inline.split('|', 1)
+          else:
+              cid = (os.environ.get('MORNING_API_ID') or '').strip()
+              sec = (os.environ.get('MORNING_API_SECRET') or '').strip()
+          cid = cid.strip(); sec = sec.strip()
           print('id present:', bool(cid), '| id len:', len(cid), '| id head:', cid[:8] + '…' if cid else '-')
           print('secret present:', bool(sec), '| secret len:', len(sec))
           if not cid or not sec:
