@@ -7346,7 +7346,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v487</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v488</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -14115,7 +14115,7 @@ window.glOpenNew = function() {
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = ''; glOnceCount();
   setTimeout(() => glPasteClipboard(false), 350);
-  const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
+  const viaMorning = window.morningConnected && morningConnected();
   const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !viaMorning; }
   const eng = document.getElementById('gl-engine'); if (eng) eng.textContent = viaMorning ? '⚡ הלינק ייווצר אוטומטית דרך Morning (הסליקה המחוברת שם)' : 'ℹ️ בלי סליקה מחוברת ב-Morning — הדבק לינק מ-Grow למטה';
   document.getElementById('gl-form').style.display = ''; document.getElementById('gl-result').style.display = 'none';
@@ -14140,7 +14140,7 @@ window.glOpenFor = function(incomeId) {
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = ''; glOnceCount();
   setTimeout(() => glPasteClipboard(false), 350);
-  const viaMorning = window.morningConnected && morningConnected() && morningPluginId();
+  const viaMorning = window.morningConnected && morningConnected();
   const sw = document.getElementById('gl-static-wrap'); if (sw) { sw.classList.toggle('has', !!su); sw.open = !viaMorning; }
   const eng = document.getElementById('gl-engine'); if (eng) eng.textContent = viaMorning ? '⚡ הלינק ייווצר אוטומטית דרך Morning (הסליקה המחוברת שם)' : 'ℹ️ בלי סליקה מחוברת ב-Morning — הדבק לינק מ-Grow למטה';
   const c = i.clientId ? (load('clients') || []).find(x => x.id === i.clientId) : null;
@@ -14206,7 +14206,7 @@ window.glCreate = async function() {
       } catch (e) { j = { error: (e && e.message) || 'שגיאת רשת' }; }
     }
     if (onceUrl) j = null;   // he pasted a specific request link — that wins
-    if ((!j || !j.ok) && !onceUrl && window.morningConnected && morningConnected() && morningPluginId()) {
+    if ((!j || !j.ok) && !onceUrl && window.morningConnected && morningConnected()) {
       btn.textContent = 'שומר את הלינק…';
       const email = ((load('clients') || []).find(x => x.id === (((load('income') || []).find(y => y.id === _glIncomeId) || {}).clientId || _glNewClient)) || {}).email || '';
       const m = await _glMorningLink(ref, cardSum, title || 'תשלום לרביד סטודיו', name, phone, email, _glKind, n);
@@ -27629,15 +27629,15 @@ window.morningFindPlugin = async function() {
   toast('✓ נשמר תוסף סליקה: ' + (p.name || id));
 };
 async function _glMorningLink(ref, sum, title, name, phone, email, kind, n) {
-  const pluginId = morningPluginId(); if (!pluginId) return { error: 'חסר מזהה סליקה של Morning (הגדרות → Morning → מצא אוטומטית)' };
+  const pluginId = morningPluginId();   // optional here — the worker falls back to its own MORNING_PLUGIN_ID
   // Live mode (25.9): the Grow form behind a Morning payment page
   // expires in ~10 minutes, so nothing is minted now. The record holds
   // everything; the worker mints a fresh form when the CLIENT clicks,
   // with the installment count they picked on our page.
   const go = WA_WORKER + '/pay/go?id=' + encodeURIComponent(ref);
-  const rec = Object.assign({ id: ref, url: go, live: true, pluginId, title, sum, name, phone: String(phone || '').replace(/\D/g, '').replace(/^972/, '0'), email: email || '',
+  const rec = Object.assign({ id: ref, url: go, live: true, title, sum, name, phone: String(phone || '').replace(/\D/g, '').replace(/^972/, '0'), email: email || '',
     kind, payments: kind === 'installments' ? Math.max(1, n) : kind === 'recurring' ? Math.max(1, n) : 1, docType: Number(window.MORNING_DOC_TYPE) || 400,
-    created: Date.now(), paid: false, via: 'morning-live' }, _glExtras());
+    created: Date.now(), paid: false, via: 'morning-live' }, pluginId ? { pluginId } : {}, _glExtras());
   try {
     const r = await fetch(_DB_REST + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) });
     if (!r.ok) return { error: 'לא הצלחתי לשמור את הלינק בענן' };
