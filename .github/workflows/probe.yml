@@ -234,7 +234,7 @@ jobs:
                   for line in out[:80]: print('   ', line)
               except Exception:
                   print(tag, 'HTTP', code, txt[:400])
-          for name in ['h', 'hash', 'pageHash', 'paymentLinkHash', 'token', 'paymentLinkProcessToken', 'linkHash']:
+          for name in ['page_hash', 'h']:
               q = urllib.parse.urlencode({name: h})
               for base in ['https://api.grow.link/api/biz/web/1.1/DrawPaymentLinkPageData']:
                   try:
