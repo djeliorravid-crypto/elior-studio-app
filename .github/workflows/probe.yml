@@ -45,6 +45,10 @@ on:
         description: "Public Grow payment-page URL — fetch it and print the ids embedded in it (userId / pageCode candidates), never the page body"
         required: false
         default: ""
+      growdraw:
+        description: "Page hash of a pay.grow.link page (the part after the domain) — call DrawPaymentLinkPageData like the browser does and print linkData/ids"
+        required: false
+        default: ""
       readdocs:
         description: "Comma-separated public doc URLs to fetch and print as plain text (the sandbox can't reach them)"
         required: false
@@ -198,6 +202,54 @@ jobs:
                     '| type:', data.get('type','-'),
                     '| valid:', data.get('is_valid','-'),
                     ('| ERR: '+err[:120]) if err else '')
+          PYEOF
+      - name: Grow — DrawPaymentLinkPageData for a page hash
+        if: ${{ github.event.inputs.growdraw != '' }}
+        env:
+          GROWDRAW: ${{ github.event.inputs.growdraw }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, re, urllib.request, urllib.parse
+          h = os.environ.get('GROWDRAW','').strip()
+          key = 'WqnMS3npu9IOxLc2lRfz8Ny9teEN87AACzSUma80'
+          hdr = {'x-api-key': key, 'Origin': 'https://pay.grow.link', 'Referer': 'https://pay.grow.link/' + h, 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1', 'Accept': 'application/json'}
+          def show(tag, code, txt):
+              try:
+                  j = json.loads(txt)
+                  def walk(o, path, out):
+                      if isinstance(o, dict):
+                          for k, v in o.items(): walk(v, path + '.' + k, out)
+                      elif isinstance(o, list):
+                          for i, v in enumerate(o[:10]): walk(v, path + '[%d]' % i, out)
+                      else:
+                          if re.search(r'id|code|user|business|token|hash|key|page|vat|link', path.lower()) and not re.search(r'translation|text|label|title|desc|color|font|image|url', path.lower()):
+                              out.append(path[-80:] + ' = ' + str(o)[:80])
+                  out = []; walk(j, '', out)
+                  print(tag, 'HTTP', code, 'status=', j.get('status'), 'err=', str(j.get('err'))[:200], 'top keys=', list(j.keys())[:10])
+                  d = j.get('data') if isinstance(j, dict) else None
+                  if isinstance(d, dict):
+                      print('   data keys:', list(d.keys())[:30])
+                      if 'linkData' in d: print('   linkData:', json.dumps(d['linkData'], ensure_ascii=False)[:1500])
+                      if 'generalSettings' in d: print('   generalSettings:', json.dumps(d['generalSettings'], ensure_ascii=False)[:800])
+                  for line in out[:80]: print('   ', line)
+              except Exception:
+                  print(tag, 'HTTP', code, txt[:400])
+          for name in ['h', 'hash', 'pageHash', 'paymentLinkHash', 'token', 'paymentLinkProcessToken', 'linkHash']:
+              q = urllib.parse.urlencode({name: h})
+              for base in ['https://api.grow.link/api/biz/web/1.1/DrawPaymentLinkPageData']:
+                  try:
+                      req = urllib.request.Request(base + '?' + q, headers=hdr)
+                      r = urllib.request.urlopen(req, timeout=25); code = r.status; txt = r.read().decode('utf-8', 'replace')
+                  except urllib.error.HTTPError as e: code = e.code; txt = e.read().decode('utf-8', 'replace')
+                  except Exception as e: code = 0; txt = str(e)
+                  show('GET ?' + name, code, txt)
+                  if '"status":1' in txt.replace(' ', '') or '"status": 1' in txt: break
+          # also try the path style /DrawPaymentLinkPageData/<hash> and POST
+          for url in ['https://api.grow.link/api/biz/web/1.1/DrawPaymentLinkPageData/' + urllib.parse.quote(h)]:
+              try:
+                  req = urllib.request.Request(url, headers=hdr); r = urllib.request.urlopen(req, timeout=25); show('GET path', r.status, r.read().decode('utf-8','replace'))
+              except urllib.error.HTTPError as e: show('GET path', e.code, e.read().decode('utf-8','replace'))
+              except Exception as e: print('GET path fail', e)
           PYEOF
       - name: Read public docs
         if: ${{ github.event.inputs.readdocs != '' }}
