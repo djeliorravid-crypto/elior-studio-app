@@ -53,6 +53,10 @@ on:
         description: "Page hash — discover doPaymentLinkCreatePaymentProcess params by following Grow's 'required field' errors (creates a harmless checkout, no charge)"
         required: false
         default: ""
+      mform:
+        description: "amount to POST straight to Morning payments/form with your exact values (prints full response)"
+        required: false
+        default: ""
       dbpath:
         description: "Firebase path to dump (read-only), e.g. grow_links/inc_xxx"
         required: false
@@ -334,6 +338,35 @@ jobs:
               d = json.load(urllib.request.urlopen(u, timeout=25))
               print(json.dumps(d, ensure_ascii=False, indent=2)[:3000])
           except Exception as e: print('fail', e)
+          PYEOF
+      - name: Morning form direct (full response)
+        if: ${{ github.event.inputs.mform != '' }}
+        env:
+          MORNING_API_ID: ${{ secrets.MORNING_API_ID }}
+          MORNING_API_SECRET: ${{ secrets.MORNING_API_SECRET }}
+          MORNING_PLUGIN_ID: ${{ secrets.MORNING_PLUGIN_ID }}
+          MFORM: ${{ github.event.inputs.mform }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, urllib.request
+          cid=os.environ['MORNING_API_ID'].strip(); sec=os.environ['MORNING_API_SECRET'].strip(); plug=os.environ['MORNING_PLUGIN_ID'].strip()
+          amount=float(os.environ.get('MFORM') or '1522')
+          def call(method,path,body=None,token=None):
+              hdr={'Content-Type':'application/json'}
+              if token: hdr['Authorization']='Bearer '+token
+              req=urllib.request.Request('https://api.greeninvoice.co.il/api/v1'+path,data=json.dumps(body).encode() if body is not None else None,method=method,headers=hdr)
+              try: r=urllib.request.urlopen(req,timeout=25); return r.status,r.read().decode('utf-8','replace')
+              except urllib.error.HTTPError as e: return e.code,e.read().decode('utf-8','replace')
+              except Exception as e: return 0,str(e)
+          _,t=call('POST','/account/token',{'id':cid,'secret':sec}); tok=json.loads(t).get('token')
+          body={'description':'הפקה בלה בלב','type':400,'lang':'he','currency':'ILS','vatType':0,'amount':amount,'maxPayments':3,'pluginId':plug,
+                'client':{'name':'הדר רביד','emails':[],'phone':'0547432695','add':True},
+                'income':[{'description':'הפקה בלה בלב','quantity':1,'price':amount,'currency':'ILS','vatType':0}],
+                'remarks':'Ravid Studio','custom':'probe_mform',
+                'successUrl':'https://ravid-whatsapp.djeliorravid.workers.dev/grow/thanks','failureUrl':'https://djeliorravid-crypto.github.io/elior-studio-app/pay.html?failed=1'}
+          code,txt=call('POST','/payments/form',body,tok)
+          print('FORM HTTP',code)
+          print(txt[:1500])
           PYEOF
       - name: Pay-go end-to-end (worker mints a Morning page)
         if: ${{ github.event.inputs.paygo == 'yes' }}
