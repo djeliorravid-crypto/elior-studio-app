@@ -57,6 +57,10 @@ on:
         description: "amount to POST straight to Morning payments/form with your exact values (prints full response)"
         required: false
         default: ""
+      paygoid:
+        description: "existing link ref to test against the live worker /pay/go (e.g. inc_xxx)"
+        required: false
+        default: ""
       dbpath:
         description: "Firebase path to dump (read-only), e.g. grow_links/inc_xxx"
         required: false
@@ -324,6 +328,37 @@ jobs:
                   req = urllib.request.Request(url, headers=hdr); r = urllib.request.urlopen(req, timeout=25); show('GET path', r.status, r.read().decode('utf-8','replace'))
               except urllib.error.HTTPError as e: show('GET path', e.code, e.read().decode('utf-8','replace'))
               except Exception as e: print('GET path fail', e)
+          PYEOF
+      - name: Pay-go existing link
+        if: ${{ github.event.inputs.paygoid != '' }}
+        env:
+          PGID: ${{ github.event.inputs.paygoid }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, urllib.request, urllib.parse, urllib.error
+          ref=os.environ['PGID'].strip()
+          WK='https://ravid-whatsapp.djeliorravid.workers.dev'
+          UA='Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+          class NR(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,req,fp,code,msg,headers,newurl): raise urllib.error.HTTPError(req.full_url,code,'r '+newurl,headers,fp)
+          op=urllib.request.build_opener(NR)
+          for n in (1,2,3):
+              try:
+                  op.open(urllib.request.Request(WK+'/pay/go?id='+ref+'&n='+str(n),headers={'User-Agent':UA}),timeout=30)
+                  print('n=%d no redirect'%n)
+              except urllib.error.HTTPError as e:
+                  loc=e.headers.get('Location','') if e.headers else ''
+                  host=urllib.parse.urlparse(loc).netloc
+                  if e.code in (301,302,303,307,308) and ('meshulam' in loc or 'greeninvoice' in loc or 'grow' in loc):
+                      print('n=%d OK → %s'%(n,host))
+                  else:
+                      body=''
+                      try: body=e.read().decode('utf-8','replace')
+                      except Exception: pass
+                      import re
+                      m=re.search(r'<p[^>]*>(.*?)</p>',body,re.S)
+                      print('n=%d code=%s host=%s msg=%s'%(n,e.code,host,(m.group(1).strip()[:200] if m else body[:200])))
+              except Exception as e: print('n=%d err %s'%(n,e))
           PYEOF
       - name: Dump a Firebase path
         if: ${{ github.event.inputs.dbpath != '' }}
