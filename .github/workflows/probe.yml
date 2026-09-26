@@ -53,6 +53,10 @@ on:
         description: "Page hash — discover doPaymentLinkCreatePaymentProcess params by following Grow's 'required field' errors (creates a harmless checkout, no charge)"
         required: false
         default: ""
+      dbpath:
+        description: "Firebase path to dump (read-only), e.g. grow_links/inc_xxx"
+        required: false
+        default: ""
       paygo:
         description: "yes = seed a test link record and hit the worker /pay/go to prove Morning mints a payment page (prints the redirect host, no full url)"
         required: false
@@ -316,6 +320,20 @@ jobs:
                   req = urllib.request.Request(url, headers=hdr); r = urllib.request.urlopen(req, timeout=25); show('GET path', r.status, r.read().decode('utf-8','replace'))
               except urllib.error.HTTPError as e: show('GET path', e.code, e.read().decode('utf-8','replace'))
               except Exception as e: print('GET path fail', e)
+          PYEOF
+      - name: Dump a Firebase path
+        if: ${{ github.event.inputs.dbpath != '' }}
+        env:
+          DBPATH: ${{ github.event.inputs.dbpath }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, urllib.request
+          path = os.environ.get('DBPATH','').strip().strip('/')
+          u = 'https://elior-studio-default-rtdb.firebaseio.com/' + path + '.json'
+          try:
+              d = json.load(urllib.request.urlopen(u, timeout=25))
+              print(json.dumps(d, ensure_ascii=False, indent=2)[:3000])
+          except Exception as e: print('fail', e)
           PYEOF
       - name: Pay-go end-to-end (worker mints a Morning page)
         if: ${{ github.event.inputs.paygo == 'yes' }}
