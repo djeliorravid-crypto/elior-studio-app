@@ -334,9 +334,11 @@ jobs:
               def redirect_request(self, req, fp, code, msg, headers, newurl): 
                   raise urllib.error.HTTPError(req.full_url, code, 'redirect to ' + newurl, headers, fp)
           op = urllib.request.build_opener(NoRedirect)
+          UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+          def mkreq(u): return urllib.request.Request(u, headers={'User-Agent': UA, 'Accept': 'text/html,application/xhtml+xml', 'Accept-Language': 'he-IL,he;q=0.9'})
           for n in (1, 3):
               try:
-                  op.open(WK + '/pay/go?id=' + ref + '&n=' + str(n), timeout=30)
+                  op.open(mkreq(WK + '/pay/go?id=' + ref + '&n=' + str(n)), timeout=30)
                   print('n=%d: no redirect (unexpected)' % n)
               except urllib.error.HTTPError as e:
                   loc = e.headers.get('Location', '') if e.headers else ''
