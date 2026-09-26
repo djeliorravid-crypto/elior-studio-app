@@ -49,6 +49,10 @@ on:
         description: "Page hash of a pay.grow.link page (the part after the domain) — call DrawPaymentLinkPageData like the browser does and print linkData/ids"
         required: false
         default: ""
+      growproc:
+        description: "Page hash — discover doPaymentLinkCreatePaymentProcess params by following Grow's 'required field' errors (creates a harmless checkout, no charge)"
+        required: false
+        default: ""
       readdocs:
         description: "Comma-separated public doc URLs to fetch and print as plain text (the sandbox can't reach them)"
         required: false
@@ -202,6 +206,56 @@ jobs:
                     '| type:', data.get('type','-'),
                     '| valid:', data.get('is_valid','-'),
                     ('| ERR: '+err[:120]) if err else '')
+          PYEOF
+      - name: Grow — doPaymentLinkCreatePaymentProcess param discovery
+        if: ${{ github.event.inputs.growproc != '' }}
+        env:
+          GROWPROC: ${{ github.event.inputs.growproc }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, re, urllib.request, urllib.parse
+          h = os.environ.get('GROWPROC','').strip()
+          mid = h.split('~')[1].split('-')[0] if '~' in h else h
+          guess = {'page_hash': h, 'pageHash': h, 'paymentLinkProcessToken': mid, 'sum': '250', 'amount': '250', 'paymentNum': '1', 'maxPaymentNum': '1',
+                   'fullName': 'בדיקה בדיקה', 'payerName': 'בדיקה בדיקה', 'phone': '0500000000', 'payerPhone': '0500000000', 'email': 'test@test.com', 'payerEmail': 'test@test.com',
+                   'description': 'בדיקת מערכת', 'vatType': '3', 'paymentLinkId': '4041951', 'transactionTypeId': '1', 'paymentType': '2', 'currency': '1', 'lang': 'he',
+                   'successUrl': 'https://djeliorravid-crypto.github.io/elior-studio-app/pay.html', 'cancelUrl': 'https://djeliorravid-crypto.github.io/elior-studio-app/pay.html',
+                   'notifyUrl': 'https://ravid-whatsapp.djeliorravid.workers.dev/grow/notify', 'cField1': 'probe', 'pageField[fullName]': 'בדיקה בדיקה', 'pageField[phone]': '0500000000', 'pageField[email]': 'test@test.com'}
+          hdr = {'Origin': 'https://pay.grow.link', 'Referer': 'https://pay.grow.link/' + h, 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1', 'Accept': 'application/json'}
+          hosts = ['https://meshulam.co.il/api/light/server/1.0/doPaymentLinkCreatePaymentProcess', 'https://secure.meshulam.co.il/api/light/server/1.0/doPaymentLinkCreatePaymentProcess']
+          def post(url, fields, as_json):
+              if as_json:
+                  data = json.dumps(fields, ensure_ascii=False).encode('utf-8'); ct = 'application/json'
+              else:
+                  data = urllib.parse.urlencode(fields).encode('utf-8'); ct = 'application/x-www-form-urlencoded'
+              req = urllib.request.Request(url, data=data, method='POST', headers=dict(hdr, **{'Content-Type': ct}))
+              try:
+                  r = urllib.request.urlopen(req, timeout=25); return r.status, r.read().decode('utf-8', 'replace')
+              except urllib.error.HTTPError as e: return e.code, e.read().decode('utf-8', 'replace')
+              except Exception as e: return 0, str(e)
+          for url in hosts:
+            for as_json in (False, True):
+              fields = {'page_hash': h}
+              print('\n#### host', url, 'json' if as_json else 'form')
+              for step in range(10):
+                  code, txt = post(url, fields, as_json)
+                  short = txt[:400]
+                  try:
+                      j = json.loads(txt)
+                      if isinstance(j, dict) and isinstance(j.get('data'), dict):
+                          d = j['data']
+                          for k in ('url', 'processToken', 'authCode'):
+                              if d.get(k): d[k] = str(d[k])[:36] + '…'
+                      short = json.dumps(j, ensure_ascii=False)[:400]
+                  except Exception: j = None
+                  print('step', step, 'fields=', sorted(fields.keys()), '→', code, short)
+                  if j and str(j.get('status')) == '1': print('SUCCESS with', sorted(fields.keys())); break
+                  msg = str((j or {}).get('err', {}).get('message', '') if isinstance((j or {}).get('err'), dict) else (j or {}).get('err', ''))
+                  m = re.search(r"'([A-Za-z_\[\]\.]+)'", msg) or re.search(r':\s*([A-Za-z_\[\]\.]+)\s*$', msg)
+                  if not m: break
+                  need = m.group(1)
+                  if need in fields: break
+                  fields[need] = guess.get(need, '1')
           PYEOF
       - name: Grow — DrawPaymentLinkPageData for a page hash
         if: ${{ github.event.inputs.growdraw != '' }}
