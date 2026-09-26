@@ -53,6 +53,10 @@ on:
         description: "Page hash — discover doPaymentLinkCreatePaymentProcess params by following Grow's 'required field' errors (creates a harmless checkout, no charge)"
         required: false
         default: ""
+      morningauth:
+        description: "yes = test MORNING_API_ID/SECRET from repo secrets against Morning: token + list clearing plugins (prints pluginId, never the secret)"
+        required: false
+        default: "no"
       readdocs:
         description: "Comma-separated public doc URLs to fetch and print as plain text (the sandbox can't reach them)"
         required: false
@@ -304,6 +308,48 @@ jobs:
                   req = urllib.request.Request(url, headers=hdr); r = urllib.request.urlopen(req, timeout=25); show('GET path', r.status, r.read().decode('utf-8','replace'))
               except urllib.error.HTTPError as e: show('GET path', e.code, e.read().decode('utf-8','replace'))
               except Exception as e: print('GET path fail', e)
+          PYEOF
+      - name: Morning — test keys + list plugins
+        if: ${{ github.event.inputs.morningauth == 'yes' }}
+        env:
+          MORNING_API_ID: ${{ secrets.MORNING_API_ID }}
+          MORNING_API_SECRET: ${{ secrets.MORNING_API_SECRET }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, urllib.request
+          cid = (os.environ.get('MORNING_API_ID') or '').strip()
+          sec = (os.environ.get('MORNING_API_SECRET') or '').strip()
+          print('id present:', bool(cid), '| id len:', len(cid), '| id head:', cid[:8] + '…' if cid else '-')
+          print('secret present:', bool(sec), '| secret len:', len(sec))
+          if not cid or not sec:
+              print('MISSING one of MORNING_API_ID / MORNING_API_SECRET in repo secrets'); raise SystemExit
+          def call(method, path, body=None, token=None):
+              url = 'https://api.greeninvoice.co.il/api/v1' + path
+              data = json.dumps(body).encode() if body is not None else None
+              hdr = {'Content-Type': 'application/json'}
+              if token: hdr['Authorization'] = 'Bearer ' + token
+              req = urllib.request.Request(url, data=data, method=method, headers=hdr)
+              try:
+                  r = urllib.request.urlopen(req, timeout=25); return r.status, r.read().decode('utf-8','replace')
+              except urllib.error.HTTPError as e: return e.code, e.read().decode('utf-8','replace')
+              except Exception as e: return 0, str(e)
+          code, txt = call('POST', '/account/token', {'id': cid, 'secret': sec})
+          try: j = json.loads(txt)
+          except Exception: j = {}
+          tok = j.get('token') if isinstance(j, dict) else None
+          print('TOKEN call: HTTP', code, '| got token:', bool(tok), '| body(no token):', json.dumps({k:v for k,v in (j or {}).items() if k!='token'}, ensure_ascii=False)[:300])
+          if not tok:
+              print('>>> VERDICT: the keys did NOT authenticate. Re-create the key in Morning and copy both parts.'); raise SystemExit
+          print('>>> VERDICT: keys are VALID.')
+          for path in ['/payments/plugins', '/plugins', '/account/plugins']:
+              code, txt = call('GET', path, None, tok)
+              try: pj = json.loads(txt)
+              except Exception: pj = None
+              arr = pj if isinstance(pj, list) else (pj.get('items') or pj.get('plugins') or pj.get('data') or []) if isinstance(pj, dict) else []
+              print('GET', path, 'HTTP', code, '| items:', len(arr) if isinstance(arr, list) else 'n/a')
+              if isinstance(arr, list):
+                  for it in arr[:20]:
+                      if isinstance(it, dict): print('   PLUGIN id=', it.get('id') or it.get('pluginId'), '| name=', it.get('name') or it.get('title') or it.get('type'), '| type=', it.get('type'))
           PYEOF
       - name: Read public docs
         if: ${{ github.event.inputs.readdocs != '' }}
