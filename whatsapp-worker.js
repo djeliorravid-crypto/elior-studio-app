@@ -127,7 +127,9 @@ export default {
         if (rec.paid) return Response.redirect(back, 302);
         if (rec.urls && rec.urls[nReq]) return Response.redirect(rec.urls[nReq], 302);   // pre-made Grow links (pasted)
         if (!env.MORNING_API_ID || !env.MORNING_API_SECRET) return rec.url ? Response.redirect(rec.url, 302) : fail('דף התשלום אינו זמין כרגע. אנא פנו לאליאור.');
-        const pluginId = rec.pluginId || env.MORNING_PLUGIN_ID || '';
+        // env plugin id is the verified-correct one; a stale/wrong id in the
+        // record (e.g. the API id pasted by mistake) must not win → env first.
+        const pluginId = String(env.MORNING_PLUGIN_ID || rec.pluginId || '').trim();
         if (!pluginId) return rec.url ? Response.redirect(rec.url, 302) : fail('דף התשלום אינו מוגדר. אנא פנו לאליאור.');
         const n = Math.min(nReq, Math.max(1, Number(rec.payments) || 1));
         try {
