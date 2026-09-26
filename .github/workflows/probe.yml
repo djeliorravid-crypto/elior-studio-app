@@ -53,6 +53,10 @@ on:
         description: "Page hash — discover doPaymentLinkCreatePaymentProcess params by following Grow's 'required field' errors (creates a harmless checkout, no charge)"
         required: false
         default: ""
+      paygo:
+        description: "yes = seed a test link record and hit the worker /pay/go to prove Morning mints a payment page (prints the redirect host, no full url)"
+        required: false
+        default: "no"
       morningauth:
         description: "yes = test MORNING_API_ID/SECRET from repo secrets against Morning: token + list clearing plugins (prints pluginId, never the secret)"
         required: false
@@ -312,6 +316,42 @@ jobs:
                   req = urllib.request.Request(url, headers=hdr); r = urllib.request.urlopen(req, timeout=25); show('GET path', r.status, r.read().decode('utf-8','replace'))
               except urllib.error.HTTPError as e: show('GET path', e.code, e.read().decode('utf-8','replace'))
               except Exception as e: print('GET path fail', e)
+          PYEOF
+      - name: Pay-go end-to-end (worker mints a Morning page)
+        if: ${{ github.event.inputs.paygo == 'yes' }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, urllib.request, urllib.parse
+          DB = 'https://elior-studio-default-rtdb.firebaseio.com'
+          WK = 'https://ravid-whatsapp.djeliorravid.workers.dev'
+          ref = 'probe_paygo'
+          rec = {'id': ref, 'url': WK + '/pay/go?id=' + ref, 'live': True, 'sum': 100, 'cardSum': 100,
+                 'title': 'בדיקת מערכת', 'name': 'בדיקה בדיקה', 'phone': '0500000000', 'email': '',
+                 'kind': 'installments', 'payments': 3, 'docType': 400, 'paid': False, 'via': 'morning-live'}
+          urllib.request.urlopen(urllib.request.Request(DB + '/grow_links/' + ref + '.json', data=json.dumps(rec).encode(), method='PUT'), timeout=25).read()
+          print('seeded record.')
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl): 
+                  raise urllib.error.HTTPError(req.full_url, code, 'redirect to ' + newurl, headers, fp)
+          op = urllib.request.build_opener(NoRedirect)
+          for n in (1, 3):
+              try:
+                  op.open(WK + '/pay/go?id=' + ref + '&n=' + str(n), timeout=30)
+                  print('n=%d: no redirect (unexpected)' % n)
+              except urllib.error.HTTPError as e:
+                  loc = e.headers.get('Location', '') if e.headers else ''
+                  host = urllib.parse.urlparse(loc).netloc
+                  if e.code in (301,302,303,307,308) and ('greeninvoice' in loc or 'meshulam' in loc or 'grow' in loc):
+                      print('n=%d: OK → %s (payment page created)' % (n, host))
+                  else:
+                      body = ''
+                      try: body = e.read().decode('utf-8','replace')[:300]
+                      except Exception: pass
+                      print('n=%d: code=%s host=%s body=%s' % (n, e.code, host, body))
+              except Exception as e:
+                  print('n=%d: error %s' % (n, e))
+          urllib.request.urlopen(urllib.request.Request(DB + '/grow_links/' + ref + '.json', method='DELETE'), timeout=25).read()
+          print('cleaned up.')
           PYEOF
       - name: Morning — test keys + list plugins
         if: ${{ github.event.inputs.morningauth == 'yes' || github.event.inputs.morninginline != '' }}
