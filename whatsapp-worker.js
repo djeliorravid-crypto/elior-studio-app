@@ -419,11 +419,15 @@ export default {
       if (!name) return json({ error: 'missing name' }, 400);
       const prompt = 'אתה יועץ פיננסי ישראלי חד וחסכן. עסק: אולפן הקלטות ביתי בישראל.\n'
         + 'ההוצאה החודשית הקבועה: "' + name + '"' + (price ? ', שהעסק משלם עליה כיום ' + price + ' ש"ח בחודש' : '') + '.\n'
-        + 'חפש מידע עדכני. החזר אך ורק JSON תקין (בלי טקסט מסביב, בלי markdown) במבנה:\n'
-        + '{"what":"מה זה במשפט","typical":"טווח מחיר טיפוסי בישראל בש\\"ח לחודש","verdict":"fair|high|cheap|unknown",'
-        + '"verdictText":"משפט קצר האם המחיר סביר ביחס למה שמשלמים","alternatives":[{"name":"חלופה","price":"מחיר משוער","why":"למה"}],'
-        + '"tip":"טיפ פעולה אחד קצר וקונקרטי"}\n'
-        + 'שמור על תשובות קצרות מאוד: what עד 12 מילים, verdictText עד 12 מילים, tip עד 12 מילים, כל why עד 6 מילים. עד 3 חלופות אמיתיות בישראל (אם אין — מערך ריק). אל תמציא מחירים.';
+        + 'חפש מידע עדכני והחזר בדיוק בפורמט הבא, כל שדה בשורה נפרדת, בלי markdown ובלי טקסט נוסף:\n'
+        + 'WHAT: מה זה במשפט קצר\n'
+        + 'TYPICAL: טווח מחיר טיפוסי בישראל בשקלים לחודש\n'
+        + 'VERDICT: אחת מהמילים fair או high או cheap\n'
+        + 'VERDICTTEXT: משפט קצר האם המחיר שהוא משלם סביר\n'
+        + 'ALT: שם חלופה | מחיר משוער | למה\n'
+        + 'ALT: שם חלופה | מחיר משוער | למה\n'
+        + 'TIP: טיפ פעולה אחד קצר\n'
+        + 'עד 3 שורות ALT, רק חלופות אמיתיות בישראל (אם אין, אל תכתוב ALT). תשובות קצרות. אל תמציא מחירים.';
       let raw = '', lastErr = '';
       const models = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-1.5-flash'];
       // Try each model twice: first grounded with Google Search, then plain
@@ -456,18 +460,29 @@ export default {
         await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ err: lastErr, name: name, at: Date.now() }) }).catch(() => {});
         return json({ error: 'לא הצלחתי לחקור כרגע: ' + (lastErr || 'שגיאת AI') }, 502);
       }
-      raw = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
+      // Line-format parser (robust vs grounded output). Falls back to JSON if the model still returned JSON.
       let out = null;
-      const tryParse = (t) => { try { return JSON.parse(t); } catch (_) { return null; } };
-      out = tryParse(raw);
-      if (!out) { const m = raw.match(/\{[\s\S]*\}/); if (m) out = tryParse(m[0]); }
-      if (!out) {
-        // truncated JSON — cut to the last complete "key": value pair and close it
-        let t = raw.replace(/^[^{]*\{/, '{');
-        const lastComma = t.lastIndexOf(',');
-        if (lastComma > 0) { t = t.slice(0, lastComma); let opens = (t.match(/\[/g) || []).length - (t.match(/\]/g) || []).length; while (opens-- > 0) t += ']'; t += '}'; out = tryParse(t); }
+      const grab = (re) => { const m = raw.match(re); return m ? m[1].trim() : ''; };
+      const what = grab(/WHAT:\s*(.+)/i);
+      const typical = grab(/TYPICAL:\s*(.+)/i);
+      let verdict = (grab(/VERDICT:\s*([A-Za-z]+)/i) || '').toLowerCase();
+      if (!['fair','high','cheap'].includes(verdict)) verdict = 'unknown';
+      const verdictText = grab(/VERDICTTEXT:\s*(.+)/i);
+      const tip = grab(/TIP:\s*(.+)/i);
+      const alternatives = [];
+      const altRe = /ALT:\s*(.+)/ig; let am;
+      while ((am = altRe.exec(raw)) && alternatives.length < 3) {
+        const parts = am[1].split('|').map(x => x.trim());
+        if (parts[0]) alternatives.push({ name: parts[0], price: parts[1] || '', why: parts[2] || '' });
       }
-      if (!out) { await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ err: 'parse', raw: raw.slice(0, 200), at: Date.now() }) }).catch(() => {}); return json({ error: 'התשובה לא הובנה, נסה שוב' }, 502); }
+      if (what || typical || verdictText || alternatives.length) {
+        out = { what, typical, verdict, verdictText, alternatives, tip };
+      } else {
+        // last resort: maybe it returned JSON after all
+        const jr = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
+        try { out = JSON.parse(jr); } catch (_) { const m = jr.match(/\{[\s\S]*\}/); if (m) { try { out = JSON.parse(m[0]); } catch (__) {} } }
+      }
+      if (!out) { await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ err: 'parse', raw: raw.slice(0, 400), at: Date.now() }) }).catch(() => {}); return json({ error: 'התשובה לא הובנה, נסה שוב' }, 502); }
       return json({ ok: true, name, price, data: out, at: Date.now() });
     }
     if (url.pathname === '/grow/status') {
