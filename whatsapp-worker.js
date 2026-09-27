@@ -421,27 +421,42 @@ export default {
         + '"verdictText":"משפט קצר האם המחיר סביר ביחס למה שמשלמים","alternatives":[{"name":"חלופה","price":"מחיר משוער","why":"למה"}],'
         + '"tip":"טיפ פעולה אחד קצר וקונקרטי"}\n'
         + 'עד 3 חלופות, רק אמיתיות ורלוונטיות לישראל. אם אין חלופה טובה החזר מערך ריק. היה מדויק וזהיר, אל תמציא מחירים.';
-      let raw = '';
-      const models = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
-      for (const model of models) {
-        try {
-          const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + env.GEMINI_KEY, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 800 } })
-          });
-          const gj = await g.json().catch(() => ({}));
-          if (g.ok) {
-            const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
-            raw = parts ? parts.map(p => p.text || '').join('').trim() : '';
-            if (raw) break;
-          } else if (![429, 404, 503].includes(g.status)) { await diag(env, 'fx-ai-fail', { model, status: g.status, err: gj && gj.error && gj.error.message }); break; }
-        } catch (e) { await diag(env, 'fx-ai-fail', { model, msg: String(e && e.message).slice(0, 100) }); }
+      let raw = '', lastErr = '';
+      const models = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+      // Try each model twice: first grounded with Google Search, then plain
+      // (some API keys don't have search grounding — plain still helps).
+      const bodies = [
+        { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 800 } },
+        { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 800 } }
+      ];
+      outer:
+      for (const body of bodies) {
+        for (const model of models) {
+          try {
+            const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + env.GEMINI_KEY, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            const gj = await g.json().catch(() => ({}));
+            if (g.ok) {
+              const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
+              raw = parts ? parts.map(p => p.text || '').join('').trim() : '';
+              if (raw) break outer;
+              lastErr = 'empty ' + model;
+            } else {
+              lastErr = model + ' ' + g.status + ' ' + ((gj && gj.error && gj.error.message) || '').slice(0, 120);
+              if (g.status === 400 && body.tools) break;   // search not supported → drop to plain body
+            }
+          } catch (e) { lastErr = model + ' ' + String(e && e.message).slice(0, 80); }
+        }
       }
-      if (!raw) return json({ error: 'no-ai' }, 502);
+      if (!raw) {
+        await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ err: lastErr, name: name, at: Date.now() }) }).catch(() => {});
+        return json({ error: 'לא הצלחתי לחקור כרגע: ' + (lastErr || 'שגיאת AI') }, 502);
+      }
       raw = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
       let out = null;
       try { out = JSON.parse(raw); } catch (_) { const m = raw.match(/\{[\s\S]*\}/); if (m) { try { out = JSON.parse(m[0]); } catch (__) {} } }
-      if (!out) return json({ error: 'parse', raw: raw.slice(0, 300) }, 502);
+      if (!out) { await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ err: 'parse', raw: raw.slice(0, 200), at: Date.now() }) }).catch(() => {}); return json({ error: 'התשובה לא הובנה, נסה שוב' }, 502); }
       return json({ ok: true, name, price, data: out, at: Date.now() });
     }
     if (url.pathname === '/grow/status') {
