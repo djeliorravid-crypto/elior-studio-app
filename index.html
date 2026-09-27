@@ -3546,6 +3546,22 @@
     .ses-hint b { color: var(--text); }
 
     /* ===== FIXED MONTHLY COSTS (27.9) ===== */
+    .fc-item { margin-bottom: 6px; }
+    .fc-item .fc-row { margin-bottom: 0; }
+    .fc-research-btn { flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface2); font-size: 13px; cursor: pointer; padding: 0; line-height: 1; }
+    [data-theme="dark"] .fc-research-btn { background: rgba(0,0,0,.25); border-color: rgba(255,255,255,.1); }
+    .fc-res { margin-top: -2px; padding: 10px 14px 12px; background: var(--surface2); border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; }
+    [data-theme="dark"] .fc-res { background: rgba(0,0,0,.28); border-color: rgba(255,255,255,.07); }
+    .fc-res-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .fc-res-badge { font-size: 11px; font-weight: 900; padding: 3px 9px; border-radius: 999px; }
+    .fc-res-typ { font-size: 11.5px; font-weight: 700; color: var(--text-muted); }
+    .fc-res-refresh { margin-right: auto; font-size: 11px; font-weight: 800; color: var(--accent); background: none; border: none; cursor: pointer; padding: 2px 4px; font-family: inherit; }
+    .fc-res-line { font-size: 12.5px; color: var(--text); font-weight: 600; margin-top: 6px; line-height: 1.5; }
+    .fc-res-alts { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 6px; line-height: 1.6; }
+    .fc-res-alts b { color: var(--text); font-weight: 800; }
+    .fc-res-tip { font-size: 12px; color: var(--accent); font-weight: 700; margin-top: 6px; line-height: 1.5; }
+    [data-theme="dark"] .fc-res-tip { color: #ffc87d; }
+
     .fc-entry { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px;
       padding: 14px 16px; border-radius: 16px; cursor: pointer; font-family: inherit; text-align: right;
       background: var(--surface); border: 1.5px solid var(--border); box-shadow: var(--shadow); }
@@ -7388,7 +7404,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v491</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v492</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8380,12 +8396,15 @@
   <div class="page" id="page-fixed">
     <div class="page-header">
       <div><h2><svg class="icon-lg"><use href="#ic-repeat"/></svg>הוצאות קבועות</h2><p>מה יורד לי כל חודש, וכמה זה עולה לי בשנה</p></div>
-      <button class="btn btn-primary" onclick="fcAdd()">+ הוצאה קבועה</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="fcResearchAll()">🔎 בדוק מחירים</button>
+        <button class="btn btn-primary" onclick="fcAdd()">+ הוצאה קבועה</button>
+      </div>
     </div>
     <div id="fc-hero"></div>
     <div id="fc-stats"></div>
     <div id="fc-groups"></div>
-    <div class="fc-note">💡 הוצאה קבועה היא כל דבר שיורד אוטומטית כל חודש. לדעת בדיוק כמה זה — זה חצי מהשליטה בכסף.</div>
+    <div class="fc-note">💡 הוצאה קבועה היא כל דבר שיורד אוטומטית כל חודש. לחיצה על 🔎 בודקת מחיר טיפוסי וחלופות זולות (מידע לבדיקה, לא ייעוץ — מחירים משתנים).</div>
   </div>
 
   <!-- ===== PROFILES LIST ===== -->
@@ -17596,14 +17615,70 @@ window.fcRender = function() {
     if (!items.length) return;
     const gt = items.reduce((t, x) => t + (Number(x.amount) || 0), 0);
     html += '<div class="fc-group"><div class="fc-group-head"><span>' + FC_GROUPS[g].icon + ' ' + FC_GROUPS[g].name + '</span><span class="fc-group-sum">' + fmtMoney(gt) + '</span></div>'
-      + items.map(x => '<div class="fc-row" onclick="fcEdit(\'' + x.id + '\')">'
+      + items.map(x => '<div class="fc-item"><div class="fc-row" onclick="fcEdit(\'' + x.id + '\')">'
+        + '<button class="fc-research-btn" onclick="event.stopPropagation();fcResearchOne(\'' + x.id + '\')" title="בדוק מחיר">🔎</button>'
         + '<div class="fc-row-main"><div class="t">' + _escape(x.name) + '</div>'
         + ((x.note || x.until) ? '<div class="s">' + (x.until ? 'עד ' + fcUntilLabel(x.until) : '') + (x.until && x.note ? ' · ' : '') + (x.note ? _escape(x.note) : '') + '</div>' : '') + '</div>'
-        + '<div class="fc-amt">' + fmtMoney(x.amount) + '</div></div>').join('')
+        + '<div class="fc-amt">' + fmtMoney(x.amount) + '</div></div>'
+        + _fcResearchHtml(x) + '</div>').join('')
       + '</div>';
   });
   document.getElementById('fc-groups').innerHTML = html;
   fcEntryCard();
+};
+// -- Price research (27.9): each fixed expense is looked up by name via
+// the worker (Gemini + Google Search): typical price, overpay?, cheaper
+// alternatives. Advisory, cached locally, refreshable. --
+function _fcResearchStore() { try { return JSON.parse(localStorage.getItem('fx_research') || '{}') || {}; } catch (_) { return {}; } }
+function _fcResearchSave(o) { try { localStorage.setItem('fx_research', JSON.stringify(o)); } catch (_) {} }
+const _FC_STALE = 14 * 864e5;
+function _fcVerdict(v) {
+  return v === 'high' ? { t: 'אולי יקר', c: '#d64545', bg: 'rgba(214,69,69,.12)' }
+    : v === 'cheap' ? { t: 'מחיר טוב', c: '#3f8a4a', bg: 'rgba(60,140,74,.14)' }
+    : v === 'fair' ? { t: 'סביר', c: '#8a6d3b', bg: 'rgba(180,140,90,.14)' }
+    : { t: 'לבדיקה', c: '#8a7a68', bg: 'rgba(140,120,100,.12)' };
+}
+function _fcResearchHtml(x) {
+  const r = _fcResearchStore()[x.id];
+  if (!r || !r.data) return '';
+  const stale = (r.price !== Math.round(Number(x.amount) || 0)) || (Date.now() - (r.at || 0) > _FC_STALE);
+  const d = r.data, ver = _fcVerdict(d.verdict);
+  const alts = Array.isArray(d.alternatives) ? d.alternatives.filter(a => a && a.name) : [];
+  return '<div class="fc-res">'
+    + '<div class="fc-res-top"><span class="fc-res-badge" style="color:' + ver.c + ';background:' + ver.bg + '">' + ver.t + '</span>'
+    + (d.typical ? '<span class="fc-res-typ">טיפוסי: ' + _escape(String(d.typical)) + '</span>' : '')
+    + (stale ? '<button class="fc-res-refresh" onclick="event.stopPropagation();fcResearchOne(\'' + x.id + '\',1)">רענן</button>' : '') + '</div>'
+    + (d.verdictText ? '<div class="fc-res-line">' + _escape(String(d.verdictText)) + '</div>' : '')
+    + (alts.length ? '<div class="fc-res-alts">חלופות: ' + alts.map(a => '<b>' + _escape(String(a.name)) + '</b>' + (a.price ? ' (' + _escape(String(a.price)) + ')' : '')).join(' · ') + '</div>' : '')
+    + (d.tip ? '<div class="fc-res-tip">💡 ' + _escape(String(d.tip)) + '</div>' : '')
+    + '</div>';
+}
+window.fcResearchOne = async function(id, force) {
+  const x = (load('fixed_costs') || []).find(i => i.id === id); if (!x) return;
+  const cur = _fcResearchStore()[id];
+  if (!force && cur && cur.price === Math.round(Number(x.amount) || 0) && (Date.now() - (cur.at || 0) < _FC_STALE)) { toast('כבר נבדק לאחרונה'); return; }
+  const sec = localStorage.getItem('wa_send_secret') || '';
+  if (!sec) { toast('צריך קוד שליחה (וואטסאפ ← קוד) כדי לחקור מחירים'); return; }
+  toast('בודק מחיר של ' + x.name + '…');
+  try {
+    const r = await _mptHttp('POST', WA_WORKER + '/fx/research', { secret: sec, name: x.name, price: Math.round(Number(x.amount) || 0) });
+    const j = r.json || {};
+    if (!r.ok || !j.ok || !j.data) { toast('לא הצלחתי לבדוק: ' + (j.error || 'שגיאה')); return false; }
+    const st = _fcResearchStore(); st[id] = { name: x.name, price: j.price, data: j.data, at: j.at || Date.now() }; _fcResearchSave(st);
+    const pg = document.getElementById('page-fixed'); if (pg && pg.classList.contains('active')) fcRender();
+    try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {}
+    return true;
+  } catch (e) { toast('שגיאה: ' + ((e && e.message) || '')); return false; }
+};
+window.fcResearchAll = async function() {
+  const list = load('fixed_costs') || [], store = _fcResearchStore();
+  const todo = list.filter(x => { const c = store[x.id]; return !c || c.price !== Math.round(Number(x.amount) || 0) || (Date.now() - (c.at || 0) > _FC_STALE); });
+  if (!todo.length) { toast('הכל נבדק לאחרונה ✓'); return; }
+  if (!localStorage.getItem('wa_send_secret')) { toast('צריך קוד שליחה (וואטסאפ ← קוד) כדי לחקור מחירים'); return; }
+  toast('בודק ' + todo.length + ' הוצאות… זה ייקח דקה');
+  let ok = 0;
+  for (const x of todo) { const done = await fcResearchOne(x.id, true); if (done) ok++; await new Promise(r => setTimeout(r, 400)); }
+  toast('✓ נבדקו ' + ok + ' הוצאות');
 };
 function fcUntilLabel(m) { try { return new Date(m + '-01T12:00:00').toLocaleDateString('he-IL', { month: 'long', year: 'numeric' }); } catch (_) { return m; } }
 window.fcAdd = function() {
