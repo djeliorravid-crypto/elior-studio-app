@@ -3625,6 +3625,22 @@
     .fc-row-main .s { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
     .fc-until { font-size: 10.5px; font-weight: 800; color: var(--orange); background: rgba(220,140,50,.12); padding: 2px 7px; border-radius: 999px; margin-right: 4px; }
     .fc-amt { flex-shrink: 0; font-size: 15px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+    .fc-row { cursor: default; }
+    .fc-mini { flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface2); font-size: 13px; cursor: pointer; padding: 0; line-height: 1; }
+    [data-theme="dark"] .fc-mini { background: rgba(0,0,0,.25); border-color: rgba(255,255,255,.1); }
+    .fc-mini:active { transform: scale(.92); }
+    .fc-amt.tap { cursor: pointer; text-decoration: underline dotted rgba(150,150,150,.4); text-underline-offset: 3px; }
+    /* "כבר לא" — archived (cancelled) expenses */
+    .fc-arch { margin-top: 22px; }
+    .fc-arch-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 4px; cursor: pointer; font-size: 13.5px; font-weight: 800; color: var(--text-muted); }
+    .fc-arch-head .cnt { font-size: 12px; font-weight: 700; }
+    .fc-arch-body { display: none; }
+    .fc-arch.open .fc-arch-body { display: block; }
+    .fc-arch.open .fc-arch-head .chev { transform: rotate(90deg); }
+    .fc-arch-item { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 6px; opacity: .72; }
+    [data-theme="dark"] .fc-arch-item { background: rgba(0,0,0,.18); border-color: rgba(255,255,255,.06); }
+    .fc-arch-item .t { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; color: var(--text); text-decoration: line-through; text-decoration-color: rgba(150,150,150,.5); }
+    .fc-arch-item .am { flex-shrink: 0; font-size: 13.5px; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
     .fc-note { font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.6; margin-top: 16px; }
 
     /* ===== NEW-YEAR GOALS (תשפ״ז) — lobby card + page (20.9) ===== */
@@ -7437,7 +7453,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v498</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v499</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17660,7 +17676,8 @@ function fcTopUps() {
     } catch (_) {}
   });
 }
-function fcList() { try { return (load('fixed_costs') || []).filter(x => x && x.name); } catch (_) { return []; } }
+function fcList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && !x.archived); } catch (_) { return []; } }
+function fcArchivedList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && x.archived); } catch (_) { return []; } }
 function fcTotal() { return fcList().reduce((t, x) => t + (Number(x.amount) || 0), 0); }
 function fcEntryCard() {
   const el = document.getElementById('fc-entry'); if (!el) return;
@@ -17714,17 +17731,41 @@ window.fcRender = function() {
     if (!items.length) return;
     const gt = items.reduce((t, x) => t + (Number(x.amount) || 0), 0);
     html += '<div class="fc-group"><div class="fc-group-head"><span>' + FC_GROUPS[g].icon + ' ' + FC_GROUPS[g].name + '</span><span class="fc-group-sum">' + fmtMoney(gt) + '</span></div>'
-      + items.map(x => '<div class="fc-item"><div class="fc-row" onclick="fcEdit(\'' + x.id + '\')">'
+      + items.map(x => '<div class="fc-item"><div class="fc-row">'
         + '<button class="fc-research-btn" onclick="event.stopPropagation();fcResearchOne(\'' + x.id + '\')" title="בדוק מחיר">🔎</button>'
         + '<div class="fc-row-main"><div class="t">' + _escape(x.name) + '</div>'
         + ((x.note || x.until) ? '<div class="s">' + (x.until ? 'עד ' + fcUntilLabel(x.until) : '') + (x.until && x.note ? ' · ' : '') + (x.note ? _escape(x.note) : '') + '</div>' : '') + '</div>'
-        + '<div class="fc-amt">' + fmtMoney(x.amount) + '</div></div>'
+        + '<div class="fc-amt tap" onclick="fcEditAmount(\'' + x.id + '\')" title="שנה סכום">' + fmtMoney(x.amount) + '</div>'
+        + '<button class="fc-mini" onclick="fcRenameOne(\'' + x.id + '\')" title="שנה שם">✏️</button>'
+        + '<button class="fc-mini" onclick="fcArchive(\'' + x.id + '\')" title="כבר לא משלם">🗑️</button></div>'
         + _fcResearchHtml(x) + '</div>').join('')
       + '</div>';
   });
   document.getElementById('fc-groups').innerHTML = html || '<div class="fc-note" style="text-align:center;margin-top:20px">אין הוצאות בקטגוריה הזאת</div>';
+  fcRenderArchive();
   fcEntryCard();
 };
+// "כבר לא" — cancelled expenses kept for reference (soft delete). Shows a
+// collapsible folder under the list with restore / delete-forever.
+let _fcArchOpen = false;
+window.fcToggleArch = function() { _fcArchOpen = !_fcArchOpen; fcRenderArchive(); };
+function fcRenderArchive() {
+  let host = document.getElementById('fc-archive');
+  if (!host) { host = document.createElement('div'); host.id = 'fc-archive'; const g = document.getElementById('fc-groups'); if (g && g.parentNode) g.parentNode.insertBefore(host, g.nextSibling); }
+  const arch = fcArchivedList();
+  if (!arch.length) { host.innerHTML = ''; return; }
+  const saved = arch.reduce((t, x) => t + (Number(x.amount) || 0), 0);
+  host.innerHTML = '<div class="fc-arch' + (_fcArchOpen ? ' open' : '') + '">'
+    + '<div class="fc-arch-head" onclick="fcToggleArch()"><span class="chev">›</span>'
+    + '<span style="flex:1">🗑️ כבר לא · ' + arch.length + '</span>'
+    + '<span class="cnt">חוסך ' + fmtMoney(saved) + '/חודש</span></div>'
+    + '<div class="fc-arch-body">'
+    + arch.map(x => '<div class="fc-arch-item"><span class="t">' + _escape(x.name) + '</span>'
+      + '<span class="am">' + fmtMoney(x.amount) + '</span>'
+      + '<button class="fc-mini" onclick="fcRestore(\'' + x.id + '\')" title="החזר">↩️</button>'
+      + '<button class="fc-mini" onclick="fcDeleteForever(\'' + x.id + '\')" title="מחק לצמיתות">✕</button></div>').join('')
+    + '</div></div>';
+}
 let _fcFilter = 'all';
 window.fcSetFilter = function(f) { _fcFilter = f || 'all'; fcRender(); try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {} };
 // -- Price research (27.9): each fixed expense is looked up by name via
@@ -17871,27 +17912,45 @@ window.fcAdd = function() {
   if (window.haptic) window.haptic.success();
   toast('✓ נוסף להוצאות הקבועות');
 };
-window.fcEdit = function(id) {
+// ✏️ rename directly (and auto re-check the price if it was researched)
+window.fcRenameOne = function(id) {
   const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
-  const pick = (prompt('"' + x.name + '" · ' + fmtMoney(x.amount) + '\n\nמה לעשות?\n1 = שנה שם\n2 = שנה סכום\n3 = מחק', '2') || '').trim();
-  if (pick === '1') {
-    const nm = prompt('שם חדש:', x.name); if (nm === null) return;
-    if (nm.trim() && _fcNameKey(nm) !== _fcNameKey(x.name)) {
-      x.name = nm.trim(); save('fixed_costs', list); fcRender();
-      // The point of renaming is usually to research the new name — if it
-      // was checked before, re-check it now automatically with the new name.
-      const had = _fcResearchStore()[id];
-      if (had && localStorage.getItem('wa_send_secret')) { toast('✓ השם עודכן — בודק מחדש…'); fcResearchOne(id, 1); }
-      else toast('✓ השם עודכן — לחץ 🔎 לבדיקת מחיר');
-    } else if (nm.trim()) { x.name = nm.trim(); save('fixed_costs', list); fcRender(); toast('✓ השם עודכן'); }
-  } else if (pick === '2') {
-    const v = prompt('סכום חדש בחודש (₪):', String(x.amount)); if (v === null) return;
-    const n = Number(v); if (n > 0) { x.amount = n; save('fixed_costs', list); fcRender(); toast('✓ הסכום עודכן'); }
-  } else if (pick === '3') {
-    if (!confirm('למחוק את "' + x.name + '" מההוצאות הקבועות?')) return;
-    save('fixed_costs', list.filter(i => i.id !== id)); fcRender(); toast('נמחק');
-  }
+  const nm = prompt('שם חדש:', x.name); if (nm === null) return;
+  if (!nm.trim()) return;
+  if (_fcNameKey(nm) !== _fcNameKey(x.name)) {
+    x.name = nm.trim(); save('fixed_costs', list); fcRender();
+    const had = _fcResearchStore()[id];
+    if (had && localStorage.getItem('wa_send_secret')) { toast('✓ השם עודכן — בודק מחדש…'); fcResearchOne(id, 1); }
+    else toast('✓ השם עודכן — לחץ 🔎 לבדיקת מחיר');
+  } else { x.name = nm.trim(); save('fixed_costs', list); fcRender(); toast('✓ השם עודכן'); }
 };
+window.fcEditAmount = function(id) {
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  const v = prompt('כמה זה עולה בחודש? (₪)', String(x.amount)); if (v === null) return;
+  const n = Number(v); if (n > 0) { x.amount = n; save('fixed_costs', list); fcRender(); if (window.haptic) window.haptic.light && window.haptic.light(); toast('✓ הסכום עודכן'); }
+};
+// 🗑️ move to the "כבר לא" folder (soft delete — reversible, kept for record)
+window.fcArchive = function(id) {
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  x.archived = true; x.archivedAt = Date.now(); save('fixed_costs', list);
+  _fcArchOpen = true; fcRender();
+  if (window.haptic) window.haptic.success && window.haptic.success();
+  toast('הועבר ל"כבר לא" · חוסך ' + fmtMoney(x.amount) + '/חודש');
+};
+window.fcRestore = function(id) {
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  delete x.archived; delete x.archivedAt; save('fixed_costs', list); fcRender();
+  toast('✓ "' + x.name + '" חזר להוצאות הקבועות');
+};
+window.fcDeleteForever = function(id) {
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  if (!confirm('למחוק את "' + x.name + '" לצמיתות? (לא ניתן לשחזר)')) return;
+  save('fixed_costs', list.filter(i => i.id !== id));
+  try { const st = _fcResearchStore(); if (st[id]) { delete st[id]; _fcResearchSave(st); } } catch (_) {}
+  fcRender(); toast('נמחק לצמיתות');
+};
+// kept for any old callers — routes to the rename flow
+window.fcEdit = function(id) { fcRenameOne(id); };
 
 initFirebase().then(() => {
   autoMarkOverdue();
