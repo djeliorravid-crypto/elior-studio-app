@@ -7388,7 +7388,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v490</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v491</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17619,13 +17619,17 @@ window.fcAdd = function() {
 };
 window.fcEdit = function(id) {
   const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
-  const choice = prompt('"' + x.name + '" · ' + fmtMoney(x.amount) + '\n\nכתוב סכום חדש כדי לעדכן, או מחק כדי להסיר:', String(x.amount));
-  if (choice === null) return;
-  if (choice.trim() === 'מחק') {
+  const pick = (prompt('"' + x.name + '" · ' + fmtMoney(x.amount) + '\n\nמה לעשות?\n1 = שנה שם\n2 = שנה סכום\n3 = מחק', '2') || '').trim();
+  if (pick === '1') {
+    const nm = prompt('שם חדש:', x.name); if (nm === null) return;
+    if (nm.trim()) { x.name = nm.trim(); save('fixed_costs', list); fcRender(); toast('✓ השם עודכן'); }
+  } else if (pick === '2') {
+    const v = prompt('סכום חדש בחודש (₪):', String(x.amount)); if (v === null) return;
+    const n = Number(v); if (n > 0) { x.amount = n; save('fixed_costs', list); fcRender(); toast('✓ הסכום עודכן'); }
+  } else if (pick === '3') {
     if (!confirm('למחוק את "' + x.name + '" מההוצאות הקבועות?')) return;
-    save('fixed_costs', list.filter(i => i.id !== id)); fcRender(); toast('נמחק'); return;
+    save('fixed_costs', list.filter(i => i.id !== id)); fcRender(); toast('נמחק');
   }
-  const n = Number(choice); if (n > 0) { x.amount = n; save('fixed_costs', list); fcRender(); toast('✓ עודכן'); }
 };
 
 initFirebase().then(() => {
