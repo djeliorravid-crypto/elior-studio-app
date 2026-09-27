@@ -3545,6 +3545,48 @@
     .ses-hint { font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.6; margin-top: 8px; }
     .ses-hint b { color: var(--text); }
 
+    /* ===== FIXED MONTHLY COSTS (27.9) ===== */
+    .fc-entry { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px;
+      padding: 14px 16px; border-radius: 16px; cursor: pointer; font-family: inherit; text-align: right;
+      background: var(--surface); border: 1.5px solid var(--border); box-shadow: var(--shadow); }
+    [data-theme="dark"] .fc-entry { background: linear-gradient(160deg, rgba(242,189,116,.10), rgba(0,0,0,.18)); border-color: rgba(242,189,116,.22); }
+    .fc-entry-l { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .fc-entry-l .ic { font-size: 26px; flex-shrink: 0; }
+    .fc-entry-l .t { display: flex; flex-direction: column; font-size: 15px; font-weight: 900; color: var(--text); }
+    .fc-entry-l .t small { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
+    .fc-entry-r { display: flex; flex-direction: column; align-items: flex-end; margin-right: auto; }
+    .fc-entry-r b { font-size: 19px; font-weight: 900; color: var(--accent); font-variant-numeric: tabular-nums; }
+    [data-theme="dark"] .fc-entry-r b { color: #ffc87d; }
+    .fc-entry-r small { font-size: 11px; color: var(--text-muted); font-weight: 700; }
+    .fc-entry .ar { font-size: 20px; color: var(--text-muted); flex-shrink: 0; }
+    .fc-hero { border-radius: 20px; padding: 22px 20px; margin-bottom: 14px; text-align: center; color: #fff; position: relative; overflow: hidden;
+      background: linear-gradient(140deg, var(--accent) 0%, var(--accent2) 55%, #5c3a28 130%); box-shadow: 0 14px 40px var(--accent-glow); }
+    .fc-hero::after { content: ''; position: absolute; top: -60%; left: -20%; width: 70%; height: 220%; background: radial-gradient(circle, rgba(255,255,255,.14), transparent 60%); pointer-events: none; }
+    .fc-hero-k { font-size: 11px; font-weight: 900; letter-spacing: .18em; color: rgba(255,255,255,.75); }
+    .fc-hero-n { font-size: 46px; font-weight: 900; letter-spacing: -.02em; line-height: 1.05; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+    .fc-hero-sub { font-size: 13px; font-weight: 600; color: rgba(255,255,255,.85); }
+    .fc-hero-sub b { color: #fff; }
+    .fc-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+    .fc-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; }
+    .fc-stat .n { display: block; font-size: 18px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+    .fc-stat .l { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 2px; line-height: 1.3; }
+    [data-theme="dark"] .fc-stat { background: linear-gradient(160deg, rgba(242,189,116,.08), rgba(0,0,0,.16)); border-color: rgba(242,189,116,.18); }
+    [data-theme="dark"] .fc-stat .n { color: #ffc87d; }
+    .fc-flag { font-size: 12.5px; font-weight: 700; color: var(--orange); background: rgba(220,140,50,.10); border: 1px solid rgba(220,140,50,.3); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; line-height: 1.5; }
+    .fc-group { margin-bottom: 14px; }
+    .fc-group-head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 900; color: var(--text); padding: 4px 4px 8px; }
+    .fc-group-sum { color: var(--accent); font-variant-numeric: tabular-nums; }
+    [data-theme="dark"] .fc-group-sum { color: #ffc87d; }
+    .fc-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 6px; cursor: pointer; }
+    [data-theme="dark"] .fc-row { background: rgba(0,0,0,.2); border-color: rgba(255,255,255,.07); }
+    .fc-row:active { background: var(--surface2); }
+    .fc-row-main { flex: 1; min-width: 0; }
+    .fc-row-main .t { font-size: 14.5px; font-weight: 800; color: var(--text); }
+    .fc-row-main .s { font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+    .fc-until { font-size: 10.5px; font-weight: 800; color: var(--orange); background: rgba(220,140,50,.12); padding: 2px 7px; border-radius: 999px; margin-right: 4px; }
+    .fc-amt { flex-shrink: 0; font-size: 15px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+    .fc-note { font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.6; margin-top: 16px; }
+
     /* ===== NEW-YEAR GOALS (תשפ״ז) — lobby card + page (20.9) ===== */
     .lobby-year-card {
       position: relative; z-index: 1; width: 100%; max-width: 580px;
@@ -7346,7 +7388,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v488</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v489</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8315,6 +8357,9 @@
       </div>
     </div>
 
+    <!-- Fixed monthly costs — the "מה יורד לי כל חודש" dedicated view -->
+    <button type="button" class="fc-entry" id="fc-entry" onclick="showPage('fixed')"></button>
+
     <!-- Pending Apple Wallet transactions inbox — populated when iOS
          Shortcut sends new transactions via ravidstudio:// URL scheme.
          Hidden until at least one pending item exists. -->
@@ -8329,6 +8374,18 @@
 
     <!-- פרויקטים -->
     <div id="e-projects-list" style="display:flex;flex-direction:column;gap:16px"></div>
+  </div>
+
+  <!-- ===== FIXED MONTHLY COSTS ===== -->
+  <div class="page" id="page-fixed">
+    <div class="page-header">
+      <div><h2><svg class="icon-lg"><use href="#ic-repeat"/></svg>הוצאות קבועות</h2><p>מה יורד לי כל חודש, וכמה זה עולה לי בשנה</p></div>
+      <button class="btn btn-primary" onclick="fcAdd()">+ הוצאה קבועה</button>
+    </div>
+    <div id="fc-hero"></div>
+    <div id="fc-stats"></div>
+    <div id="fc-groups"></div>
+    <div class="fc-note">💡 הוצאה קבועה היא כל דבר שיורד אוטומטית כל חודש. לדעת בדיוק כמה זה — זה חצי מהשליטה בכסף.</div>
   </div>
 
   <!-- ===== PROFILES LIST ===== -->
@@ -9808,7 +9865,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals','fixed_costs'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -10075,6 +10132,7 @@ function showPage(name) {
   document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   const map = {productions:0, income:1, expenses:2, schedule:3, whatsapp:4, installments:5, profiles:6, daily:7, workshops:8, proposals:9, contracts:10, students:11, dashboard:12};
+  if (name === 'fixed') { try { fcRender(); } catch (_) {} }
   if (name === 'whatsapp') { try { renderWhatsappPage(); } catch (e) {} }
   if (name === 'daily') _dailyDate = dailyDateStr();
   if (name === 'schedule') {
@@ -17445,6 +17503,112 @@ function autoMarkOverdue() {
 }
 
 // ===== STARTUP – sync from cloud then render =====
+// ══════════ FIXED MONTHLY COSTS (27.9) — Elior's real recurring bill,
+// cleaned up with RiseUp. Its own page + insights. Stored in
+// `fixed_costs` (cloud-synced). Seeded once from his list. ══════════
+const FC_GROUPS = {
+  living:  { name: 'מגורים וקבוע', icon: '🏠' },
+  studio:  { name: 'אולפן ותוכנות', icon: '🎛️' },
+  service: { name: 'שירותים ומנויים', icon: '🔁' }
+};
+const FC_SEED = [
+  { n: 'שכירות',                a: 1800, g: 'living' },
+  { n: 'ארנונה',                a: 651,  g: 'living' },
+  { n: 'חשמל',                  a: 226,  g: 'living', note: 'ממוצע · 451 כל חודשיים' },
+  { n: 'בזק אינטרנט',           a: 120,  g: 'living' },
+  { n: 'מיקס וויט דה מאסטרס',   a: 93,   g: 'studio', until: '2027-03' },
+  { n: 'חשבונית ירוקה',         a: 63,   g: 'service' },
+  { n: 'ספארק UAD',             a: 62,   g: 'studio' },
+  { n: 'קלוד Pro',              a: 62,   g: 'studio' },
+  { n: 'רייזאפ',                a: 55,   g: 'service' },
+  { n: 'פלאגין אליינס',         a: 50,   g: 'studio' },
+  { n: 'Dualhook',              a: 43,   g: 'studio' },
+  { n: 'ספלייס',                a: 40,   g: 'studio' },
+  { n: 'דרופבוקס',              a: 37,   g: 'service' },
+  { n: 'Tidal',                 a: 31,   g: 'service' },
+  { n: 'סייב מי מאק',           a: 30,   g: 'service' },
+  { n: 'סווט פלאגין',           a: 29,   g: 'studio' },
+  { n: 'פלאגין בוטיק',          a: 25,   g: 'studio' }
+];
+function fcSeedOnce() {
+  try {
+    if (localStorage.getItem('fc_seeded_2709') === '1') return;
+    const cur = load('fixed_costs') || [];
+    if (!cur.length) {
+      const list = FC_SEED.map(x => ({ id: genId(), name: x.n, amount: x.a, group: x.g, note: x.note || '', until: x.until || '' }));
+      save('fixed_costs', list);
+    }
+    localStorage.setItem('fc_seeded_2709', '1');
+  } catch (e) { console.warn('fcSeedOnce', e); }
+}
+function fcList() { try { return (load('fixed_costs') || []).filter(x => x && x.name); } catch (_) { return []; } }
+function fcTotal() { return fcList().reduce((t, x) => t + (Number(x.amount) || 0), 0); }
+function fcEntryCard() {
+  const el = document.getElementById('fc-entry'); if (!el) return;
+  const list = fcList();
+  if (!list.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = '<span class="fc-entry-l"><span class="ic">🔁</span><span class="t">הוצאות קבועות<small>' + list.length + ' דברים שיורדים כל חודש</small></span></span>'
+    + '<span class="fc-entry-r"><b>' + fmtMoney(fcTotal()) + '</b><small>לחודש</small></span><span class="ar">‹</span>';
+}
+window.fcRender = function() {
+  const list = fcList().slice().sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0));
+  const total = fcTotal(), yearly = total * 12;
+  const hero = document.getElementById('fc-hero'); if (!hero) return;
+  hero.innerHTML = '<div class="fc-hero"><div class="fc-hero-k">סך הכל קבוע בחודש</div>'
+    + '<div class="fc-hero-n">' + fmtMoney(total) + '</div>'
+    + '<div class="fc-hero-sub">שווה ל-<b>' + fmtMoney(yearly) + '</b> בשנה · ' + list.length + ' הוצאות</div></div>';
+  // stats
+  const sumG = g => list.filter(x => x.group === g).reduce((t, x) => t + (Number(x.amount) || 0), 0);
+  const software = sumG('studio'), living = sumG('living');
+  const ending = list.filter(x => x.until);
+  const big = list[0];
+  const stats = [];
+  stats.push({ n: fmtMoney(software), l: 'אולפן ותוכנות בחודש' });
+  stats.push({ n: fmtMoney(living), l: 'מגורים בחודש' });
+  if (big) stats.push({ n: fmtMoney(big.amount), l: 'הכי גדול · ' + big.name });
+  document.getElementById('fc-stats').innerHTML = '<div class="fc-stat-grid">'
+    + stats.map(s => '<div class="fc-stat"><span class="n">' + s.n + '</span><span class="l">' + _escape(s.l) + '</span></div>').join('') + '</div>'
+    + (ending.length ? '<div class="fc-flag">⏳ ' + ending.map(x => _escape(x.name) + ' נגמר ב-' + fcUntilLabel(x.until) + ' (יחסוך ' + fmtMoney(x.amount) + '/חודש)').join(' · ') + '</div>' : '');
+  // groups
+  let html = '';
+  Object.keys(FC_GROUPS).forEach(g => {
+    const items = list.filter(x => x.group === g);
+    if (!items.length) return;
+    const gt = items.reduce((t, x) => t + (Number(x.amount) || 0), 0);
+    html += '<div class="fc-group"><div class="fc-group-head"><span>' + FC_GROUPS[g].icon + ' ' + FC_GROUPS[g].name + '</span><span class="fc-group-sum">' + fmtMoney(gt) + '</span></div>'
+      + items.map(x => '<div class="fc-row" onclick="fcEdit(\'' + x.id + '\')">'
+        + '<div class="fc-row-main"><div class="t">' + _escape(x.name) + '</div>'
+        + ((x.note || x.until) ? '<div class="s">' + (x.until ? 'עד ' + fcUntilLabel(x.until) : '') + (x.until && x.note ? ' · ' : '') + (x.note ? _escape(x.note) : '') + '</div>' : '') + '</div>'
+        + '<div class="fc-amt">' + fmtMoney(x.amount) + '</div></div>').join('')
+      + '</div>';
+  });
+  document.getElementById('fc-groups').innerHTML = html;
+  fcEntryCard();
+};
+function fcUntilLabel(m) { try { return new Date(m + '-01T12:00:00').toLocaleDateString('he-IL', { month: 'long', year: 'numeric' }); } catch (_) { return m; } }
+window.fcAdd = function() {
+  const name = prompt('שם ההוצאה הקבועה:'); if (!name || !name.trim()) return;
+  const amt = Number(prompt('כמה זה עולה בחודש? (₪)')); if (!amt || amt <= 0) return;
+  const g = (prompt('קבוצה: כתוב 1=מגורים, 2=אולפן/תוכנות, 3=שירותים', '2') || '2').trim();
+  const group = g === '1' ? 'living' : g === '3' ? 'service' : 'studio';
+  const list = load('fixed_costs') || [];
+  list.push({ id: genId(), name: name.trim(), amount: amt, group, note: '', until: '' });
+  save('fixed_costs', list); fcRender();
+  if (window.haptic) window.haptic.success();
+  toast('✓ נוסף להוצאות הקבועות');
+};
+window.fcEdit = function(id) {
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  const choice = prompt('"' + x.name + '" · ' + fmtMoney(x.amount) + '\n\nכתוב סכום חדש כדי לעדכן, או מחק כדי להסיר:', String(x.amount));
+  if (choice === null) return;
+  if (choice.trim() === 'מחק') {
+    if (!confirm('למחוק את "' + x.name + '" מההוצאות הקבועות?')) return;
+    save('fixed_costs', list.filter(i => i.id !== id)); fcRender(); toast('נמחק'); return;
+  }
+  const n = Number(choice); if (n > 0) { x.amount = n; save('fixed_costs', list); fcRender(); toast('✓ עודכן'); }
+};
+
 initFirebase().then(() => {
   autoMarkOverdue();
   // runs on EVERY startup path (cloud, cloud-failed, local-only) —
@@ -17452,6 +17616,8 @@ initFirebase().then(() => {
   try { fixProcessRestart104(); } catch (_) {}
   try { fixProcessDay2(); } catch (_) {}
   try { fixFreshChapter308(); } catch (_) {}
+  try { fcSeedOnce(); } catch (_) {}
+  try { fcEntryCard(); } catch (_) {}
   refreshAll();
   // Live listener: pick up signed contracts within seconds, no reload needed
   try { _attachContractsListener(); } catch(e){}
