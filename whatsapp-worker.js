@@ -406,6 +406,62 @@ export default {
     // ── /fx/research — research one fixed expense by name with Gemini +
     // Google Search grounding: typical price in Israel, is he overpaying,
     // cheaper alternatives. Advisory only. Needs GEMINI_KEY. (27.9) ──
+    // ── /grow/read — read the amount/title from a Grow payment link the
+    // user created in the Grow app and pasted, so the app auto-fills. It
+    // calls the link page's own public data endpoint (page_hash). (27.9) ──
+    if (url.pathname === '/grow/read') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
+      const link = String(b.url || '').trim();
+      const m = link.match(/(?:pay\.grow\.link|grow\.link|meshulam\.co\.il)\/(?:[a-z_]+\?[^#]*l=)?([A-Za-z0-9~%._-]{6,})/i);
+      let hash = m ? decodeURIComponent(m[1]) : '';
+      if (!hash) { const seg = link.split(/[?#]/)[0].split('/').filter(Boolean).pop(); hash = seg || ''; }
+      if (!hash) return json({ error: 'לא זיהיתי לינק של Grow' }, 400);
+      const key = 'WqnMS3npu9IOxLc2lRfz8Ny9teEN87AACzSUma80';
+      const hosts = ['https://api.grow.link/api/biz/web/1.1/DrawPaymentLinkPageData', 'https://secure.meshulam.co.il/api/biz/web/1.1/DrawPaymentLinkPageData'];
+      let data = null, lastErr = '';
+      for (const h of hosts) {
+        try {
+          const r = await fetch(h + '?page_hash=' + encodeURIComponent(hash), { headers: { 'x-api-key': key, 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1', 'Accept': 'application/json' } });
+          const j = await r.json().catch(() => null);
+          if (j && String(j.status) === '1' && j.data) { data = j.data; break; }
+          lastErr = (j && j.err && (j.err.message || JSON.stringify(j.err))) || ('HTTP ' + r.status);
+        } catch (e) { lastErr = String(e && e.message).slice(0, 100); }
+      }
+      if (!data) return json({ error: 'לא הצלחתי לקרוא את הלינק: ' + lastErr, hash }, 502);
+      // dig out an amount + title + name from the page structure
+      let amount = 0, title = '', name = '', maxPay = 1;
+      try {
+        const comp = data.components || {}, pf = comp.paymentForm || {}, ld = data.linkData || {};
+        const cand = [pf.sum, pf.amount, pf.price, pf.total, ld.sum, ld.amount, ld.price,
+          pf.closedAmount && pf.closedAmount.amount, (Array.isArray(pf.amountList) && pf.amountList[0] && (pf.amountList[0].amount || pf.amountList[0])),
+          (Array.isArray(data.products) && data.products[0] && data.products[0].price),
+          (data.paymentData && data.paymentData.sum)];
+        for (const c of cand) { const n = Number(c); if (n > 0) { amount = n; break; } }
+        // Fallback: deep-scan for a key literally named sum/amount/price/total
+        // with a positive numeric value (Grow nests the fields differently
+        // per link type; this catches the ones the explicit list missed).
+        if (!(amount > 0)) {
+          const seen = new Set(); const stack = [data]; const AMT = /^(sum|amount|price|total|paymentsum|closedamount)$/i;
+          while (stack.length && !(amount > 0)) {
+            const o = stack.pop(); if (!o || typeof o !== 'object' || seen.has(o)) continue; seen.add(o);
+            for (const k of Object.keys(o)) {
+              const v = o[k];
+              if (v && typeof v === 'object') { stack.push(v); continue; }
+              if (AMT.test(k)) { const n = Number(v); if (n > 0 && n < 1e7) { amount = n; break; } }
+            }
+          }
+        }
+        title = (pf.header || pf.description || (comp.logoAndName && comp.logoAndName.businessDescription) || (Array.isArray(data.products) && data.products[0] && data.products[0].name) || '').toString().slice(0, 80);
+        name = ((data.client && data.client.name) || (pf.fullName && pf.fullName.value) || '').toString().slice(0, 60);
+        maxPay = Number(ld.maxPayments || pf.maxPayments || (pf.payments && pf.payments.max)) || 1;
+      } catch (_) {}
+      // One-off diagnostic: log the real structure so field paths can be
+      // verified against an actual pasted link. Safe to remove later.
+      try { fetch(DB_ROOT + '/growreaddiag.json', { method: 'PUT', body: JSON.stringify({ at: Date.now(), hash, amount, title, name, keys: Object.keys(data || {}), pfKeys: Object.keys((data.components && data.components.paymentForm) || {}), ldKeys: Object.keys(data.linkData || {}), sample: JSON.stringify(data).slice(0, 3500) }) }).catch(() => {}); } catch (_) {}
+      return json({ ok: true, hash, amount, title, name, maxPay });
+    }
     if (url.pathname === '/fx/research') {
       const fxlog = (o) => fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify(Object.assign({ at: Date.now() }, o)) }).catch(() => {});
       let b = null;

@@ -6809,13 +6809,9 @@
 
     <div class="notif-section-title">פרטי תשלום ללינקים</div>
     <div style="font-size:11px;color:rgba(244,237,224,0.5);margin-bottom:10px;line-height:1.5">
-      מופיעים בעמוד התשלום שהלקוח מקבל (bit והעברה בנקאית — ללא עמלה).
+      את הלינק אתה יוצר באפליקציית Grow ומדביק אצלנו — האפליקציה קוראת לבד את הסכום ושולחת בוואטסאפ. כאן רק הטלפון שלך לשאלות.
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-      <input id="set-bit" type="text" placeholder="bit — הקישור האישי או מספר טלפון" autocomplete="off" oninput="glBitSave && glBitSave(this.value)"
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px"/>
-      <textarea id="set-bank" rows="3" placeholder="פרטים להעברה בנקאית: בנק · סניף · חשבון · על שם" autocomplete="off" oninput="glBankSave && glBankSave(this.value)"
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;direction:rtl;resize:vertical"></textarea>
       <input id="set-owner" type="tel" placeholder="הטלפון שלי לשאלות (מופיע בתחתית העמוד)" autocomplete="off" oninput="glOwnerSave && glOwnerSave(this.value)"
         style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;direction:ltr"/>
     </div>
@@ -7417,7 +7413,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v494</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v495</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9358,15 +9354,11 @@
         <label class="gl-lbl">לינק לבקשת התשלום הזאת (יצרת ב-Grow עם הסכום)</label>
         <div style="display:flex;gap:6px;align-items:flex-start"><textarea id="gl-once-url" rows="2" placeholder="הדבק כאן את הלינק מ-Grow. רוצה שהלקוח יבחר מספר תשלומים? צור ב-Grow לינק לכל אפשרות (1, 2, 3…) והדבק את כולם, אחד בכל שורה" autocomplete="off" oninput="glOnceCount()" style="flex:1;min-width:0;resize:vertical;direction:ltr;text-align:left"></textarea><button type="button" class="btn btn-ghost btn-sm" style="min-height:42px;white-space:nowrap" onclick="glPasteClipboard(true)">📋 מהלוח</button></div>
         <div class="ses-hint" id="gl-once-count" style="margin-top:4px"></div>
-        <label class="gl-lbl" style="margin-top:10px">bit — הקישור האישי שלי (bit → פרופיל → "הקישור שלי") או מספר הטלפון</label>
-        <input type="text" id="gl-bit" placeholder="https://www.bitpay.co.il/app/me/… או 05X-XXXXXXX" autocomplete="off" oninput="glBitSave(this.value)"/>
-        <label class="gl-lbl" style="margin-top:10px">פרטים להעברה בנקאית (יופיע בעמוד עם כפתור העתקה)</label>
-        <textarea id="gl-bank" rows="3" placeholder="בנק ... · סניף ... · חשבון ... · על שם אליאור רביד" autocomplete="off" oninput="glBankSave(this.value)" style="direction:rtl"></textarea>
         <label class="gl-lbl" style="margin-top:10px">המספר שלי לשאלות בוואטסאפ (מופיע בתחתית העמוד)</label>
         <input type="tel" id="gl-owner" placeholder="05X-XXXXXXX" autocomplete="off" oninput="glOwnerSave(this.value)"/>
         <label class="gl-lbl" style="margin-top:10px">או דף תשלום קבוע (נשמר לתמיד, אם יש לך כזה)</label>
         <input type="url" id="gl-static" placeholder="לינק לדף תשלום ללא סכום" autocomplete="off" oninput="glStaticSave(this.value)"/>
-        <div class="ses-hint">האפליקציה עוטפת את הלינק בעמוד מעוצב של הסטודיו עם הסכום והשם, ושולחת בוואטסאפ. כשהלקוח משלם, ההכנסה נסגרת לבד.</div>
+        <div class="ses-hint">מדביקים את הלינק מ-Grow — האפליקציה קוראת ממנו את הסכום לבד וממלאת אותו למעלה, עוטפת בעמוד מעוצב של הסטודיו ושולחת בוואטסאפ. כשהלקוח משלם, ההכנסה נסגרת לבד.</div>
       </details>
       <div class="ses-hint" id="gl-hint"></div>
       <div class="modal-actions">
@@ -14153,6 +14145,7 @@ function _glOnceLinks() {
 window.glOnceCount = function() {
   const n = _glOnceLinks().length, el = document.getElementById('gl-once-count'); if (!el) return;
   el.textContent = n === 0 ? '' : n === 1 ? '🔗 לינק אחד — מספר התשלומים כפי שהוגדר ב-Grow' : '🔗 ' + n + ' לינקים — הלקוח יבחר אצלנו: 1 עד ' + n + ' תשלומים (לפי סדר ההדבקה)';
+  _glScheduleAutoRead();
 };
 window.glPasteClipboard = async function(manual) {
   try {
@@ -14162,21 +14155,51 @@ window.glPasteClipboard = async function(manual) {
       const inp = document.getElementById('gl-once-url');
       if (inp && inp.value.indexOf(m[0]) === -1) { inp.value = (inp.value.trim() ? inp.value.trim() + '\n' : '') + m[0]; glOnceCount(); toast('📋 לינק מ-Grow נכנס מהלוח' + (_glOnceLinks().length > 1 ? ' (' + _glOnceLinks().length + ')' : '')); }
       const sw = document.getElementById('gl-static-wrap'); if (sw) sw.open = true;
+      glAutoReadLink(true);
     } else if (manual) toast('אין לינק בלוח — תעתיק אותו קודם באפליקציית Grow');
   } catch (_) { if (manual) toast('אין גישה ללוח — הדבק ידנית'); }
 };
 window.glOwnerSave = function(v) { const st = loadObj('producer_settings') || {}; st.ownerPhone = String(v || '').trim(); save('producer_settings', st); };
-function _glBank() { try { return String((loadObj('producer_settings') || {}).bankDetails || '').trim(); } catch (_) { return ''; } }
-window.glBankSave = function(v) { const st = loadObj('producer_settings') || {}; st.bankDetails = String(v || '').trim(); save('producer_settings', st); };
-// Extra fields every link record carries for the public page: bit
-// (free, his personal link/phone) + his WhatsApp for questions.
+// Extra fields every link record carries for the public page: just his
+// WhatsApp number for questions (bit / bank transfer were removed 27.9 —
+// the Grow link handles payment, incl. Apple Pay / bit, on Grow's side).
 function _glExtras() {
-  const bit = _glBit(); const ex = {};
-  if (bit) { if (/^https?:\/\//.test(bit)) ex.bitLink = bit; else ex.bitPhone = bit.replace(/\D/g, ''); }
+  const ex = {};
   try { const op = (loadObj('producer_settings') || {}).ownerPhone || localStorage.getItem('owner_phone') || ''; if (op) ex.ownerPhone = _waPhone(op); } catch (_) {}
-  const bank = _glBank(); if (bank) ex.bankDetails = bank;
   return ex;
 }
+// Read the amount / title / name straight out of a Grow payment link the
+// user pasted (they always build the link in the Grow app). The worker
+// hits the link's own public data endpoint. If it can't read the amount,
+// the field stays editable — no harm done. (27.9)
+let _glReadTimer = 0, _glReadLast = '';
+window.glAutoReadLink = async function(force) {
+  const links = _glOnceLinks(); const url = links[0] || '';
+  if (!url) { _glReadLast = ''; return; }
+  if (!force && url === _glReadLast) return;
+  _glReadLast = url;
+  const sec = localStorage.getItem('wa_send_secret') || '';
+  if (!sec) return; // silent — auto-read is a bonus, not required
+  const el = document.getElementById('gl-once-count');
+  if (el) el.textContent = '⏳ קורא את הפרטים מהלינק…';
+  try {
+    const r = await _mptHttp('POST', WA_WORKER + '/grow/read', { secret: sec, url });
+    const j = r.json || {};
+    if (!r.ok || !j.ok) { glOnceCount(); return; }
+    let filled = [];
+    const sumEl = document.getElementById('gl-sum');
+    if (sumEl && Number(j.amount) > 0 && !(parseFloat(sumEl.value) > 0)) { sumEl.value = Math.round(Number(j.amount)); glFeePreview(); filled.push('סכום'); }
+    const tEl = document.getElementById('gl-title');
+    if (tEl && j.title && !tEl.value.trim()) { tEl.value = String(j.title).trim(); filled.push('תיאור'); }
+    const nEl = document.getElementById('gl-name');
+    if (nEl && j.name && !nEl.value.trim()) { nEl.value = String(j.name).trim(); filled.push('שם'); }
+    glOnceCount();
+    if (filled.length) { toast('✓ מילאתי מהלינק: ' + filled.join(' · ')); try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {} }
+    else if (Number(j.amount) > 0) { /* already had a sum */ }
+    else if (el) el.textContent = '🔗 לינק מ-Grow — לא זיהיתי סכום, מלא אותו למעלה ידנית';
+  } catch (_) { glOnceCount(); }
+};
+function _glScheduleAutoRead() { clearTimeout(_glReadTimer); _glReadTimer = setTimeout(() => glAutoReadLink(false), 700); }
 window.glStaticSave = function(v) {
   const st = loadObj('producer_settings') || {}; st.growPageUrl = String(v || '').trim(); save('producer_settings', st);
   const w = document.getElementById('gl-static-wrap'); if (w) w.classList.toggle('has', !!st.growPageUrl);
@@ -14205,8 +14228,6 @@ window.glOpenNew = function() {
   document.getElementById('gl-landing').checked = true;
   glKind('once');
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
-  const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
-  const bkIn = document.getElementById('gl-bank'); if (bkIn) bkIn.value = _glBank();
   { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = ''; glOnceCount();
@@ -14231,8 +14252,6 @@ window.glOpenFor = function(incomeId) {
   _glIncomeId = incomeId; _glLast = null;
   const cw = document.getElementById('gl-client-wrap'); if (cw) cw.style.display = 'none';
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
-  const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
-  const bkIn = document.getElementById('gl-bank'); if (bkIn) bkIn.value = _glBank();
   { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = ''; glOnceCount();
@@ -18670,8 +18689,6 @@ window.openNotifSettings = function() {
   try { const mp = document.getElementById('morning-plugin'); if (mp) mp.value = localStorage.getItem('morning_plugin_id') || ''; } catch (_) {}
   try {
     const st = (typeof loadObj === 'function' ? loadObj('producer_settings') : {}) || {};
-    const sb = document.getElementById('set-bit'); if (sb) sb.value = st.bitLink || '';
-    const sk = document.getElementById('set-bank'); if (sk) sk.value = st.bankDetails || '';
     const so = document.getElementById('set-owner'); if (so) so.value = st.ownerPhone || '';
   } catch (_) {}
   const mid = document.getElementById('morning-id');

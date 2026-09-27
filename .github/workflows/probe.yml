@@ -37,6 +37,10 @@ on:
         description: "Test the WhatsApp token against both stored secrets, report which is valid"
         required: false
         default: "no"
+      growreadurl:
+        description: "Paste a Grow payment link to test /grow/read (prints amount/title it extracted)"
+        required: false
+        default: ""
 
 jobs:
   probe:
@@ -103,6 +107,8 @@ jobs:
           curl -sS "$DB/whatsapp/push.json" | head -c 300; echo
           echo "===== FX RESEARCH DIAG ====="
           curl -sS "$DB/fxdiag.json" | head -c 600; echo
+          echo "===== GROW READ DIAG (last pasted link's structure) ====="
+          curl -sS "$DB/growreaddiag.json" | head -c 3800; echo
           echo "===== CMDQUEUE ====="
           curl -sS "$DB/whatsapp/cmdqueue.json" | head -c 1500; echo
       - name: Test assistant command
@@ -217,6 +223,17 @@ jobs:
               if err: print(label,'-> ✗', err[:90])
               else:   print(label,'-> ✓ VALID (id:', d.get('id','-'), 'name:', d.get('name','-'), ')')
           PYEOF
+      - name: Test /grow/read on a pasted link
+        if: ${{ github.event.inputs.growreadurl != '' }}
+        env:
+          SEND_SECRET: ${{ secrets.SEND_SECRET }}
+          GURL: ${{ github.event.inputs.growreadurl }}
+        run: |
+          jq -n --arg s "$SEND_SECRET" --arg u "$GURL" '{secret: ($s | gsub("\\s";"")), url: $u}' \
+          | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/grow/read" \
+              -H 'Content-Type: application/json' -H 'User-Agent: Mozilla/5.0' -d @- | python3 -m json.tool
+          echo "----- structure logged to /growreaddiag -----"
+          curl -sS "https://elior-studio-default-rtdb.firebaseio.com/growreaddiag.json" | head -c 3800; echo
       - name: Register Telegram webhook
         if: ${{ github.event.inputs.tgsetup == 'yes' }}
         env:

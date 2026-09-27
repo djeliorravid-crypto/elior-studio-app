@@ -98,13 +98,6 @@
       (d.paid ? '<a class="cta disabled">שולם</a>' : '<a class="cta" id="cta" href="' + esc(linkFor(1)) + '">' + (hasFee ? 'לתשלום באשראי · ' + money(d.cardSum) + ' ₪' : 'המשך לתשלום מאובטח') + '</a>') +
       (d.manual && !d.paid ? '<div class="methods">בדף התשלום יש להזין את הסכום ' + money(hasFee ? d.cardSum : d.sum) + ' ₪</div>' : '<div class="methods">כרטיס אשראי · תשלומים · דף תשלום מאובטח (PCI)</div>') +
     '</div>' +
-    ((d.bitLink || d.bitPhone) && !d.paid ? '<div class="alt"><div class="t"><b style="font-weight:600">תשלום ב-bit</b></div>' +
-      '<div class="d">' + (d.bitPhone ? 'להעברה ב-bit למספר <b dir="ltr">' + esc(d.bitPhone.replace(/^972/, '0').replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3')) + '</b>, על סך <b>' + money(d.sum) + ' ₪</b>.' : 'להעברה ב-bit דרך הקישור, על סך <b>' + money(d.sum) + ' ₪</b>.') + '</div>' +
-      '<div class="btns">' + (d.bitLink ? '<a href="' + esc(d.bitLink) + '">פתיחת bit</a>' : '<a href="https://www.bitpay.co.il/app/">פתיחת bit</a>') + '<button class="ok" id="claim" type="button">שילמתי ב-bit</button></div></div>' : '') +
-    (d.bankDetails && !d.paid ? '<div class="alt"><div class="t"><b style="font-weight:600">העברה בנקאית</b></div>' +
-      '<div class="d" id="bank-d" style="white-space:pre-line">' + esc(d.bankDetails) + '</div>' +
-      '<div class="d" style="margin-top:4px">על סך <b>' + money(d.sum) + ' ₪</b></div>' +
-      '<div class="btns"><button id="bank-copy" type="button">📋 העתק פרטים</button><button class="ok" id="claim-bank" type="button">שילמתי בהעברה</button></div></div>' : '') +
     '<div class="foot"><span>סליקה מאובטחת באמצעות Grow</span><a href="https://wa.me/972' + '" id="wa">שאלות? וואטסאפ</a></div>';
   // installment picker → swaps the card link + shows the per-payment amount
   const pickBtns = Array.from(document.querySelectorAll('.pick button'));
@@ -117,23 +110,6 @@
   };
   pickBtns.forEach(b => b.onclick = () => setPick(Number(b.dataset.k)));
   if (pickBtns.length) setPick(1);
-  const sendClaim = async (btn, src, label) => {
-    btn.disabled = true; btn.textContent = 'נשלח…';
-    try {
-      await fetch('https://elior-studio-default-rtdb.firebaseio.com/grow_paid/claim_' + encodeURIComponent(id) + '_' + Date.now() + '.json', { method: 'PUT',
-        body: JSON.stringify({ ref: id, sum: Number(d.sum) || 0, name: d.name || '', description: d.title || '', claim: true, source: src, ts: Date.now() }) });
-      btn.textContent = 'תודה, נעדכן לאחר אימות';
-    } catch (e) { btn.disabled = false; btn.textContent = label; }
-  };
-  const claim = document.getElementById('claim');
-  if (claim) claim.onclick = () => sendClaim(claim, 'bit-claim', 'שילמתי ב-bit');
-  const claimBank = document.getElementById('claim-bank');
-  if (claimBank) claimBank.onclick = () => sendClaim(claimBank, 'bank-claim', 'שילמתי בהעברה');
-  const bankCopy = document.getElementById('bank-copy');
-  if (bankCopy) bankCopy.onclick = async () => {
-    try { await navigator.clipboard.writeText(d.bankDetails || ''); bankCopy.textContent = '✓ הועתק'; setTimeout(() => bankCopy.textContent = '📋 העתק פרטים', 1800); }
-    catch (e) { const r = document.createRange(); r.selectNode(document.getElementById('bank-d')); getSelection().removeAllRanges(); getSelection().addRange(r); }
-  };
   try { const wa = document.getElementById('wa'); if (wa) wa.href = 'https://wa.me/' + (d.ownerPhone || ''); if (wa && !d.ownerPhone) wa.style.display = 'none'; } catch (e) {}
 })();
 </script>
