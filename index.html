@@ -7404,7 +7404,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v492</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v493</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -9347,6 +9347,8 @@
         <div class="ses-hint" id="gl-once-count" style="margin-top:4px"></div>
         <label class="gl-lbl" style="margin-top:10px">bit — הקישור האישי שלי (bit → פרופיל → "הקישור שלי") או מספר הטלפון</label>
         <input type="text" id="gl-bit" placeholder="https://www.bitpay.co.il/app/me/… או 05X-XXXXXXX" autocomplete="off" oninput="glBitSave(this.value)"/>
+        <label class="gl-lbl" style="margin-top:10px">פרטים להעברה בנקאית (יופיע בעמוד עם כפתור העתקה)</label>
+        <textarea id="gl-bank" rows="3" placeholder="בנק ... · סניף ... · חשבון ... · על שם אליאור רביד" autocomplete="off" oninput="glBankSave(this.value)" style="direction:rtl"></textarea>
         <label class="gl-lbl" style="margin-top:10px">המספר שלי לשאלות בוואטסאפ (מופיע בתחתית העמוד)</label>
         <input type="tel" id="gl-owner" placeholder="05X-XXXXXXX" autocomplete="off" oninput="glOwnerSave(this.value)"/>
         <label class="gl-lbl" style="margin-top:10px">או דף תשלום קבוע (נשמר לתמיד, אם יש לך כזה)</label>
@@ -14151,12 +14153,15 @@ window.glPasteClipboard = async function(manual) {
   } catch (_) { if (manual) toast('אין גישה ללוח — הדבק ידנית'); }
 };
 window.glOwnerSave = function(v) { const st = loadObj('producer_settings') || {}; st.ownerPhone = String(v || '').trim(); save('producer_settings', st); };
+function _glBank() { try { return String((loadObj('producer_settings') || {}).bankDetails || '').trim(); } catch (_) { return ''; } }
+window.glBankSave = function(v) { const st = loadObj('producer_settings') || {}; st.bankDetails = String(v || '').trim(); save('producer_settings', st); };
 // Extra fields every link record carries for the public page: bit
 // (free, his personal link/phone) + his WhatsApp for questions.
 function _glExtras() {
   const bit = _glBit(); const ex = {};
   if (bit) { if (/^https?:\/\//.test(bit)) ex.bitLink = bit; else ex.bitPhone = bit.replace(/\D/g, ''); }
   try { const op = (loadObj('producer_settings') || {}).ownerPhone || localStorage.getItem('owner_phone') || ''; if (op) ex.ownerPhone = _waPhone(op); } catch (_) {}
+  const bank = _glBank(); if (bank) ex.bankDetails = bank;
   return ex;
 }
 window.glStaticSave = function(v) {
@@ -14188,6 +14193,7 @@ window.glOpenNew = function() {
   glKind('once');
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
   const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
+  const bkIn = document.getElementById('gl-bank'); if (bkIn) bkIn.value = _glBank();
   { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = ''; glOnceCount();
@@ -14213,6 +14219,7 @@ window.glOpenFor = function(incomeId) {
   const cw = document.getElementById('gl-client-wrap'); if (cw) cw.style.display = 'none';
   const su = _glStaticUrl(); const sIn = document.getElementById('gl-static'); if (sIn) sIn.value = su;
   const bIn = document.getElementById('gl-bit'); if (bIn) bIn.value = _glBit();
+  const bkIn = document.getElementById('gl-bank'); if (bkIn) bkIn.value = _glBank();
   { const f = _glFee(); document.getElementById('gl-fee-pct').value = f.pct; document.getElementById('gl-fee-fix').value = f.fix; setTimeout(glFeePreview, 0); }
   const oPh = document.getElementById('gl-owner'); if (oPh) oPh.value = (loadObj('producer_settings') || {}).ownerPhone || '';
   const oIn = document.getElementById('gl-once-url'); if (oIn) oIn.value = ''; glOnceCount();
