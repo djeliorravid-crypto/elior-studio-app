@@ -483,6 +483,7 @@ export default {
         try { out = JSON.parse(jr); } catch (_) { const m = jr.match(/\{[\s\S]*\}/); if (m) { try { out = JSON.parse(m[0]); } catch (__) {} } }
       }
       if (!out) { await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ err: 'parse', raw: raw.slice(0, 400), at: Date.now() }) }).catch(() => {}); return json({ error: 'התשובה לא הובנה, נסה שוב' }, 502); }
+      await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ ok: true, name, raw: raw.slice(0, 500), parsed: out, at: Date.now() }) }).catch(() => {});
       return json({ ok: true, name, price, data: out, at: Date.now() });
     }
     if (url.pathname === '/grow/status') {
