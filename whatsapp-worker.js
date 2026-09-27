@@ -491,7 +491,7 @@ export default {
       // Current Gemini models (verified live 27.9.2026): 2.0/1.5 are retired.
       // flash-latest auto-tracks the newest flash so this survives the next
       // rename too.
-      const models = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+      const models = ['gemini-2.5-flash', 'gemini-flash-latest'];
       // 2.5 flash is a THINKING model — with a small token budget the internal
       // reasoning eats it all and the real answer gets truncated. Disable
       // thinking (thinkingBudget 0) and give plenty of output room.
@@ -580,7 +580,7 @@ export default {
         + 'השאלה של בעל העסק: "' + question + '"\n'
         + 'ענה בעברית, קצר וקונקרטי (עד 4 משפטים), עם מספרים/שמות ספקים אמיתיים אם רלוונטי, ובלי סימני markdown. אם צריך מידע עדכני חפש בגוגל. תכל\'ס — מה לעשות.';
       let ans = '', lastErr = '';
-      const models = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+      const models = ['gemini-2.5-flash', 'gemini-flash-latest'];
       const askGen = { temperature: 0.4, maxOutputTokens: 1500, thinkingConfig: { thinkingBudget: 0 } };
       const bodies = [
         { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: askGen },
@@ -1363,7 +1363,7 @@ async function aiCommand(t, env, reply) {
       }
     }
     if (!raw && env.GEMINI_KEY) {
-      const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-flash-latest'];
+      const models = ['gemini-2.5-flash', 'gemini-flash-latest'];
       for (const model of models) {
         const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + env.GEMINI_KEY, {
           method: 'POST',
