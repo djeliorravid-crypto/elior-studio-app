@@ -101,6 +101,8 @@ jobs:
           '
           echo "===== PUSH TOKEN ====="
           curl -sS "$DB/whatsapp/push.json" | head -c 300; echo
+          echo "===== FX RESEARCH DIAG ====="
+          curl -sS "$DB/fxdiag.json" | head -c 600; echo
           echo "===== CMDQUEUE ====="
           curl -sS "$DB/whatsapp/cmdqueue.json" | head -c 1500; echo
       - name: Test assistant command
