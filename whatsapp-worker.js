@@ -492,11 +492,15 @@ export default {
       // flash-latest auto-tracks the newest flash so this survives the next
       // rename too.
       const models = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+      // 2.5 flash is a THINKING model — with a small token budget the internal
+      // reasoning eats it all and the real answer gets truncated. Disable
+      // thinking (thinkingBudget 0) and give plenty of output room.
+      const fxGen = { temperature: 0.3, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } };
       // Try each model twice: first grounded with Google Search, then plain
       // (some API keys don't have search grounding — plain still helps).
       const bodies = [
-        { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 1500 } },
-        { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1500 } }
+        { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: fxGen },
+        { contents: [{ parts: [{ text: prompt }] }], generationConfig: fxGen }
       ];
       outer:
       for (const body of bodies) {
@@ -577,9 +581,10 @@ export default {
         + 'ענה בעברית, קצר וקונקרטי (עד 4 משפטים), עם מספרים/שמות ספקים אמיתיים אם רלוונטי, ובלי סימני markdown. אם צריך מידע עדכני חפש בגוגל. תכל\'ס — מה לעשות.';
       let ans = '', lastErr = '';
       const models = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+      const askGen = { temperature: 0.4, maxOutputTokens: 1500, thinkingConfig: { thinkingBudget: 0 } };
       const bodies = [
-        { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.4, maxOutputTokens: 900 } },
-        { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 900 } }
+        { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: askGen },
+        { contents: [{ parts: [{ text: prompt }] }], generationConfig: askGen }
       ];
       outerAsk:
       for (const body of bodies) {
