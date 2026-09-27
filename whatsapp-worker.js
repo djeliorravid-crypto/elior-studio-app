@@ -403,6 +403,47 @@ export default {
     // GROW_API_KEY (CreatePaymentLink header; docs' production value is
     // the default), GROW_HOST (default secure.meshulam.co.il),
     // GROW_VAT_TYPE (1 = עוסק מורשה, 3 = פטור ממע"מ).
+    // ── /fx/research — research one fixed expense by name with Gemini +
+    // Google Search grounding: typical price in Israel, is he overpaying,
+    // cheaper alternatives. Advisory only. Needs GEMINI_KEY. (27.9) ──
+    if (url.pathname === '/fx/research') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
+      if (!env.GEMINI_KEY) return json({ error: 'GEMINI_KEY חסר' }, 500);
+      const name = String(b.name || '').slice(0, 80).trim();
+      const price = Math.round(Number(b.price) || 0);
+      if (!name) return json({ error: 'missing name' }, 400);
+      const prompt = 'אתה יועץ פיננסי ישראלי חד וחסכן. עסק: אולפן הקלטות ביתי בישראל.\n'
+        + 'ההוצאה החודשית הקבועה: "' + name + '"' + (price ? ', שהעסק משלם עליה כיום ' + price + ' ש"ח בחודש' : '') + '.\n'
+        + 'חפש מידע עדכני. החזר אך ורק JSON תקין (בלי טקסט מסביב, בלי markdown) במבנה:\n'
+        + '{"what":"מה זה במשפט","typical":"טווח מחיר טיפוסי בישראל בש\\"ח לחודש","verdict":"fair|high|cheap|unknown",'
+        + '"verdictText":"משפט קצר האם המחיר סביר ביחס למה שמשלמים","alternatives":[{"name":"חלופה","price":"מחיר משוער","why":"למה"}],'
+        + '"tip":"טיפ פעולה אחד קצר וקונקרטי"}\n'
+        + 'עד 3 חלופות, רק אמיתיות ורלוונטיות לישראל. אם אין חלופה טובה החזר מערך ריק. היה מדויק וזהיר, אל תמציא מחירים.';
+      let raw = '';
+      const models = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+      for (const model of models) {
+        try {
+          const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + env.GEMINI_KEY, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 800 } })
+          });
+          const gj = await g.json().catch(() => ({}));
+          if (g.ok) {
+            const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
+            raw = parts ? parts.map(p => p.text || '').join('').trim() : '';
+            if (raw) break;
+          } else if (![429, 404, 503].includes(g.status)) { await diag(env, 'fx-ai-fail', { model, status: g.status, err: gj && gj.error && gj.error.message }); break; }
+        } catch (e) { await diag(env, 'fx-ai-fail', { model, msg: String(e && e.message).slice(0, 100) }); }
+      }
+      if (!raw) return json({ error: 'no-ai' }, 502);
+      raw = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
+      let out = null;
+      try { out = JSON.parse(raw); } catch (_) { const m = raw.match(/\{[\s\S]*\}/); if (m) { try { out = JSON.parse(m[0]); } catch (__) {} } }
+      if (!out) return json({ error: 'parse', raw: raw.slice(0, 300) }, 502);
+      return json({ ok: true, name, price, data: out, at: Date.now() });
+    }
     if (url.pathname === '/grow/status') {
       let b = null; try { b = await request.json(); } catch (_) { b = {}; }
       if (!env || !sendSecret(env) || String((b && b.secret) || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
