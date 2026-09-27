@@ -7413,7 +7413,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v495</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v496</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17671,6 +17671,16 @@ window.fcRender = function() {
 function _fcResearchStore() { try { return JSON.parse(localStorage.getItem('fx_research') || '{}') || {}; } catch (_) { return {}; } }
 function _fcResearchSave(o) { try { localStorage.setItem('fx_research', JSON.stringify(o)); } catch (_) {} }
 const _FC_STALE = 14 * 864e5;
+// A cached result is stale — and worth re-checking — when there's no
+// cache, the NAME changed (the whole point of renaming is to research the
+// new name), the price changed, or 14 days passed.
+function _fcNameKey(s) { return String(s || '').trim().replace(/\s+/g, ' '); }
+function _fcStale(c, x) {
+  if (!c || !c.data) return true;
+  if (_fcNameKey(c.name) !== _fcNameKey(x.name)) return true;
+  if (Number(c.price) !== Math.round(Number(x.amount) || 0)) return true;
+  return (Date.now() - (c.at || 0) > _FC_STALE);
+}
 function _fcVerdict(v) {
   return v === 'high' ? { t: 'אולי יקר', c: '#d64545', bg: 'rgba(214,69,69,.12)' }
     : v === 'cheap' ? { t: 'מחיר טוב', c: '#3f8a4a', bg: 'rgba(60,140,74,.14)' }
@@ -17680,7 +17690,7 @@ function _fcVerdict(v) {
 function _fcResearchHtml(x) {
   const r = _fcResearchStore()[x.id];
   if (!r || !r.data) return '';
-  const stale = (r.price !== Math.round(Number(x.amount) || 0)) || (Date.now() - (r.at || 0) > _FC_STALE);
+  const stale = _fcStale(r, x);
   const d = r.data, ver = _fcVerdict(d.verdict);
   const alts = Array.isArray(d.alternatives) ? d.alternatives.filter(a => a && a.name) : [];
   return '<div class="fc-res">'
@@ -17695,7 +17705,7 @@ function _fcResearchHtml(x) {
 window.fcResearchOne = async function(id, force) {
   const x = (load('fixed_costs') || []).find(i => i.id === id); if (!x) return;
   const cur = _fcResearchStore()[id];
-  if (!force && cur && cur.price === Math.round(Number(x.amount) || 0) && (Date.now() - (cur.at || 0) < _FC_STALE)) { toast('כבר נבדק לאחרונה'); return; }
+  if (!force && !_fcStale(cur, x)) { toast('כבר נבדק לאחרונה'); return; }
   const sec = localStorage.getItem('wa_send_secret') || '';
   if (!sec) { toast('צריך קוד שליחה (וואטסאפ ← קוד) כדי לחקור מחירים'); return; }
   toast('בודק מחיר של ' + x.name + '…');
@@ -17711,7 +17721,7 @@ window.fcResearchOne = async function(id, force) {
 };
 window.fcResearchAll = async function() {
   const list = load('fixed_costs') || [], store = _fcResearchStore();
-  const todo = list.filter(x => { const c = store[x.id]; return !c || c.price !== Math.round(Number(x.amount) || 0) || (Date.now() - (c.at || 0) > _FC_STALE); });
+  const todo = list.filter(x => _fcStale(store[x.id], x));
   if (!todo.length) { toast('הכל נבדק לאחרונה ✓'); return; }
   if (!localStorage.getItem('wa_send_secret')) { toast('צריך קוד שליחה (וואטסאפ ← קוד) כדי לחקור מחירים'); return; }
   toast('בודק ' + todo.length + ' הוצאות… זה ייקח דקה');
@@ -17736,7 +17746,14 @@ window.fcEdit = function(id) {
   const pick = (prompt('"' + x.name + '" · ' + fmtMoney(x.amount) + '\n\nמה לעשות?\n1 = שנה שם\n2 = שנה סכום\n3 = מחק', '2') || '').trim();
   if (pick === '1') {
     const nm = prompt('שם חדש:', x.name); if (nm === null) return;
-    if (nm.trim()) { x.name = nm.trim(); save('fixed_costs', list); fcRender(); toast('✓ השם עודכן'); }
+    if (nm.trim() && _fcNameKey(nm) !== _fcNameKey(x.name)) {
+      x.name = nm.trim(); save('fixed_costs', list); fcRender();
+      // The point of renaming is usually to research the new name — if it
+      // was checked before, re-check it now automatically with the new name.
+      const had = _fcResearchStore()[id];
+      if (had && localStorage.getItem('wa_send_secret')) { toast('✓ השם עודכן — בודק מחדש…'); fcResearchOne(id, 1); }
+      else toast('✓ השם עודכן — לחץ 🔎 לבדיקת מחיר');
+    } else if (nm.trim()) { x.name = nm.trim(); save('fixed_costs', list); fcRender(); toast('✓ השם עודכן'); }
   } else if (pick === '2') {
     const v = prompt('סכום חדש בחודש (₪):', String(x.amount)); if (v === null) return;
     const n = Number(v); if (n > 0) { x.amount = n; save('fixed_costs', list); fcRender(); toast('✓ הסכום עודכן'); }
