@@ -518,7 +518,11 @@ export default {
               lastErr = 'empty ' + model;
             } else {
               lastErr = model + ' ' + g.status + ' ' + ((gj && gj.error && gj.error.message) || '').slice(0, 120);
-              if (g.status === 429) { quota = true; break outer; }   // all models share one quota → stop hammering
+              // Google-Search grounding has a much smaller (often billing-gated)
+              // free quota than plain calls. On a grounded 429, fall back to the
+              // plain body (still has quota) instead of giving up. Only a 429 on
+              // the plain body means we're really out.
+              if (g.status === 429) { if (body.tools) break; quota = true; break outer; }
               if (g.status === 400 && body.tools) break;   // search not supported → drop to plain body
             }
           } catch (e) { lastErr = model + ' ' + String(e && e.message).slice(0, 80); }
@@ -605,7 +609,7 @@ export default {
               lastErr = 'empty ' + model;
             } else {
               lastErr = model + ' ' + g.status + ' ' + ((gj && gj.error && gj.error.message) || '').slice(0, 100);
-              if (g.status === 429) { quotaAsk = true; break outerAsk; }
+              if (g.status === 429) { if (body.tools) break; quotaAsk = true; break outerAsk; }
               if (g.status === 400 && body.tools) break;
             }
           } catch (e) { lastErr = model + ' ' + String(e && e.message).slice(0, 60); }
