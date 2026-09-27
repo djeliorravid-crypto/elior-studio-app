@@ -7388,7 +7388,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v489</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v490</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17516,6 +17516,7 @@ const FC_SEED = [
   { n: 'ארנונה',                a: 651,  g: 'living' },
   { n: 'חשמל',                  a: 226,  g: 'living', note: 'ממוצע · 451 כל חודשיים' },
   { n: 'בזק אינטרנט',           a: 120,  g: 'living' },
+  { n: 'מים · מי עדן',          a: 180,  g: 'living' },
   { n: 'מיקס וויט דה מאסטרס',   a: 93,   g: 'studio', until: '2027-03' },
   { n: 'חשבונית ירוקה',         a: 63,   g: 'service' },
   { n: 'ספארק UAD',             a: 62,   g: 'studio' },
@@ -17540,6 +17541,24 @@ function fcSeedOnce() {
     }
     localStorage.setItem('fc_seeded_2709', '1');
   } catch (e) { console.warn('fcSeedOnce', e); }
+}
+// Additive top-ups to the fixed list (run after seed). Each keyed by a
+// flag so it adds exactly once, without disturbing edits.
+function fcTopUps() {
+  const adds = [
+    { flag: 'fc_add_mayim', name: 'מים · מי עדן', amount: 180, group: 'living' }
+  ];
+  adds.forEach(a => {
+    try {
+      if (localStorage.getItem(a.flag) === '1') return;
+      const list = load('fixed_costs') || [];
+      if (!list.some(x => String(x.name).trim() === a.name)) {
+        list.push({ id: genId(), name: a.name, amount: a.amount, group: a.group, note: '', until: '' });
+        save('fixed_costs', list);
+      }
+      localStorage.setItem(a.flag, '1');
+    } catch (_) {}
+  });
 }
 function fcList() { try { return (load('fixed_costs') || []).filter(x => x && x.name); } catch (_) { return []; } }
 function fcTotal() { return fcList().reduce((t, x) => t + (Number(x.amount) || 0), 0); }
@@ -17617,6 +17636,7 @@ initFirebase().then(() => {
   try { fixProcessDay2(); } catch (_) {}
   try { fixFreshChapter308(); } catch (_) {}
   try { fcSeedOnce(); } catch (_) {}
+  try { fcTopUps(); } catch (_) {}
   try { fcEntryCard(); } catch (_) {}
   refreshAll();
   // Live listener: pick up signed contracts within seconds, no reload needed
