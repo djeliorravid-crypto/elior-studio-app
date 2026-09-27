@@ -407,10 +407,13 @@ export default {
     // Google Search grounding: typical price in Israel, is he overpaying,
     // cheaper alternatives. Advisory only. Needs GEMINI_KEY. (27.9) ──
     if (url.pathname === '/fx/research') {
+      const fxlog = (o) => fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify(Object.assign({ at: Date.now() }, o)) }).catch(() => {});
       let b = null;
-      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
-      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
-      if (!env.GEMINI_KEY) return json({ error: 'GEMINI_KEY חסר' }, 500);
+      try { b = await request.json(); } catch (_) { await fxlog({ stage: 'bad-json' }); return json({ error: 'bad json' }, 400); }
+      if (!sendSecret(env)) { await fxlog({ stage: 'no-server-secret' }); return json({ error: 'SEND_SECRET חסר בשרת' }, 403); }
+      if (!b || String(b.secret || '').trim() !== sendSecret(env)) { await fxlog({ stage: 'forbidden', got: b ? String(b.secret || '').length : 0 }); return json({ error: 'קוד השליחה לא תואם' }, 403); }
+      if (!env.GEMINI_KEY) { await fxlog({ stage: 'no-gemini-key' }); return json({ error: 'GEMINI_KEY חסר בשרת' }, 500); }
+      await fxlog({ stage: 'reached', name: String(b.name || '').slice(0, 40) });
       const name = String(b.name || '').slice(0, 80).trim();
       const price = Math.round(Number(b.price) || 0);
       if (!name) return json({ error: 'missing name' }, 400);
