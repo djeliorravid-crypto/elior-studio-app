@@ -41,6 +41,10 @@ on:
         description: "Paste a Grow payment link to test /grow/read (prints amount/title it extracted)"
         required: false
         default: ""
+      geminimodels:
+        description: "List the Gemini models this GEMINI_KEY can call for generateContent"
+        required: false
+        default: "no"
 
 jobs:
   probe:
@@ -234,6 +238,44 @@ jobs:
               -H 'Content-Type: application/json' -H 'User-Agent: Mozilla/5.0' -d @- | python3 -m json.tool
           echo "----- structure logged to /growreaddiag -----"
           curl -sS "https://elior-studio-default-rtdb.firebaseio.com/growreaddiag.json" | head -c 3800; echo
+      - name: List Gemini models
+        if: ${{ github.event.inputs.geminimodels == 'yes' }}
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, json, urllib.request
+          key=(os.environ.get('GEMINI_KEY') or '').strip()
+          print('key set:', bool(key), '| len:', len(key))
+          def call(url):
+              try:
+                  with urllib.request.urlopen(url, timeout=20) as r: return json.load(r)
+              except urllib.error.HTTPError as e:
+                  try: return json.load(e)
+                  except Exception: return {'error':{'message':'http '+str(e.code)}}
+              except Exception as e: return {'error':{'message':type(e).__name__}}
+          d=call('https://generativelanguage.googleapis.com/v1beta/models?key='+key+'&pageSize=200')
+          if d.get('error'):
+              print('ERROR listing:', d['error'].get('message','')[:200]); raise SystemExit(0)
+          for m in d.get('models',[]):
+              methods=m.get('supportedGenerationMethods',[])
+              if 'generateContent' in methods:
+                  print(m.get('name','?').replace('models/',''), '|', m.get('displayName','')[:40])
+          print('--- quick generateContent test on a few ---')
+          import urllib.request
+          for model in ['gemini-2.0-flash','gemini-2.5-flash','gemini-flash-latest']:
+              body=json.dumps({'contents':[{'parts':[{'text':'say OK'}]}]}).encode()
+              req=urllib.request.Request('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key,
+                  data=body, headers={'Content-Type':'application/json'})
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      j=json.load(r); print(model,'-> OK')
+              except urllib.error.HTTPError as e:
+                  try: msg=json.load(e).get('error',{}).get('message','')[:120]
+                  except Exception: msg='http '+str(e.code)
+                  print(model,'-> FAIL:', msg)
+              except Exception as e: print(model,'->',type(e).__name__)
+          PYEOF
       - name: Register Telegram webhook
         if: ${{ github.event.inputs.tgsetup == 'yes' }}
         env:
