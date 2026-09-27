@@ -6807,6 +6807,19 @@
       <button type="button" class="notif-when-chip" data-lead="2880" onclick="handleNotifLead(this)">יומיים לפני</button>
     </div>
 
+    <div class="notif-section-title">פרטי תשלום ללינקים</div>
+    <div style="font-size:11px;color:rgba(244,237,224,0.5);margin-bottom:10px;line-height:1.5">
+      מופיעים בעמוד התשלום שהלקוח מקבל (bit והעברה בנקאית — ללא עמלה).
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <input id="set-bit" type="text" placeholder="bit — הקישור האישי או מספר טלפון" autocomplete="off" oninput="glBitSave && glBitSave(this.value)"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px"/>
+      <textarea id="set-bank" rows="3" placeholder="פרטים להעברה בנקאית: בנק · סניף · חשבון · על שם" autocomplete="off" oninput="glBankSave && glBankSave(this.value)"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;direction:rtl;resize:vertical"></textarea>
+      <input id="set-owner" type="tel" placeholder="הטלפון שלי לשאלות (מופיע בתחתית העמוד)" autocomplete="off" oninput="glOwnerSave && glOwnerSave(this.value)"
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;direction:ltr"/>
+    </div>
+
     <div class="notif-section-title">קבלות אוטומטיות (Morning)</div>
     <div style="font-size:11px;color:rgba(244,237,224,0.5);margin-bottom:10px;line-height:1.5">
       אחרי חיבור Morning — בכל הכנסה ששולמה יופיע כפתור <strong>"צור קבלה"</strong>. הקבלה נוצרת רק כשאתה לוחץ עליו (לא אוטומטית). <span id="morning-conn-dot" style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(220,60,60,0.18);color:#ff8b6b;font-weight:700;font-size:10.5px;margin-right:6px">לא מחובר</span>
@@ -7404,7 +7417,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v493</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v494</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -18655,6 +18668,12 @@ window.openNotifSettings = function() {
   }
   // Morning section — fill the saved API creds and reflect status.
   try { const mp = document.getElementById('morning-plugin'); if (mp) mp.value = localStorage.getItem('morning_plugin_id') || ''; } catch (_) {}
+  try {
+    const st = (typeof loadObj === 'function' ? loadObj('producer_settings') : {}) || {};
+    const sb = document.getElementById('set-bit'); if (sb) sb.value = st.bitLink || '';
+    const sk = document.getElementById('set-bank'); if (sk) sk.value = st.bankDetails || '';
+    const so = document.getElementById('set-owner'); if (so) so.value = st.ownerPhone || '';
+  } catch (_) {}
   const mid = document.getElementById('morning-id');
   const mse = document.getElementById('morning-secret');
   const mdot = document.getElementById('morning-conn-dot');
