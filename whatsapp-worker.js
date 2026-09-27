@@ -480,11 +480,12 @@ export default {
         + 'TYPICAL: טווח מחיר טיפוסי בישראל בש"ח לחודש (מספרים)\n'
         + 'VERDICT: מילה אחת בלבד — fair או high או cheap (high אם משלם מעל הטווח)\n'
         + 'VERDICTTEXT: משפט אחד ברור — האם המחיר שהוא משלם סביר, ובכמה הוא חורג\n'
+        + 'NEED: מילה אחת בלבד — essential או reducible או waste. essential=חיוני לתפעול האולפן שאי אפשר בלעדיו; reducible=נחוץ אבל אפשר להוזיל/לצמצם; waste=מותרות או כפילות שאפשר לשקול לבטל\n'
         + 'ALT: שם ספק/מסלול חלופי אמיתי בישראל | מחיר משוער בש"ח | יתרון קצר\n'
         + 'ALT: שם ספק/מסלול חלופי אמיתי בישראל | מחיר משוער בש"ח | יתרון קצר\n'
         + 'TIP: טיפ פעולה אחד קונקרטי לחיסכון (למשל: להתקשר ולבקש התאמת מחיר)\n'
         + 'דוגמה לפורמט:\n'
-        + 'WHAT: חבילת סלולר\nTYPICAL: 20-40 ש"ח\nVERDICT: high\nVERDICTTEXT: אתה משלם כמעט כפול מהמקובל.\nALT: We4G | 25 ש"ח | ללא הגבלה\nALT: 012 מובייל | 30 ש"ח | שירות טוב\nTIP: התקשר ובקש לעבור למסלול הזול, מיד יורידו.\n'
+        + 'WHAT: חבילת סלולר\nTYPICAL: 20-40 ש"ח\nVERDICT: high\nVERDICTTEXT: אתה משלם כמעט כפול מהמקובל.\nNEED: reducible\nALT: We4G | 25 ש"ח | ללא הגבלה\nALT: 012 מובייל | 30 ש"ח | שירות טוב\nTIP: התקשר ובקש לעבור למסלול הזול, מיד יורידו.\n'
         + 'לפחות שתי שורות ALT עם ספקים אמיתיים. רק אם באמת אין שום חלופה בשוק (למשל ארנונה/שכירות), כתוב שורת ALT אחת: ALT: אין חלופה | | . אל תמציא מחירים, בסס על מה שמצאת.';
       let raw = '', lastErr = '';
       // Current Gemini models (verified live 27.9.2026): 2.0/1.5 are retired.
@@ -529,15 +530,17 @@ export default {
       let verdict = (grab(/VERDICT:\s*([A-Za-z]+)/i) || '').toLowerCase();
       if (!['fair','high','cheap'].includes(verdict)) verdict = 'unknown';
       const verdictText = grab(/VERDICTTEXT:\s*(.+)/i);
+      let need = (grab(/NEED:\s*([A-Za-z]+)/i) || '').toLowerCase();
+      if (!['essential','reducible','waste'].includes(need)) need = 'unknown';
       const tip = grab(/TIP:\s*(.+)/i);
       const alternatives = [];
       const altRe = /ALT:\s*(.+)/ig; let am;
       while ((am = altRe.exec(raw)) && alternatives.length < 3) {
         const parts = am[1].split('|').map(x => x.trim());
-        if (parts[0]) alternatives.push({ name: parts[0], price: parts[1] || '', why: parts[2] || '' });
+        if (parts[0] && !/^אין\b/.test(parts[0])) alternatives.push({ name: parts[0], price: parts[1] || '', why: parts[2] || '' });
       }
       if (what || typical || verdictText || alternatives.length) {
-        out = { what, typical, verdict, verdictText, alternatives, tip };
+        out = { what, typical, verdict, verdictText, need, alternatives, tip };
       } else {
         // last resort: maybe it returned JSON after all
         const jr = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
@@ -546,6 +549,60 @@ export default {
       if (!out) { await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ err: 'parse', raw: raw.slice(0, 400), at: Date.now() }) }).catch(() => {}); return json({ error: 'התשובה לא הובנה, נסה שוב' }, 502); }
       await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ ok: true, name, raw: raw.slice(0, 500), parsed: out, at: Date.now() }) }).catch(() => {});
       return json({ ok: true, name, price, data: out, at: Date.now() });
+    }
+    // ── /fx/ask — free follow-up question about one fixed expense / its tip.
+    // Gets the expense + the research already shown as context, answers
+    // briefly and concretely with Google-grounded Gemini. (27.9) ──
+    if (url.pathname === '/fx/ask') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
+      if (!env.GEMINI_KEY) return json({ error: 'GEMINI_KEY חסר בשרת' }, 500);
+      const name = String(b.name || '').slice(0, 80).trim();
+      const price = Math.round(Number(b.price) || 0);
+      const question = String(b.question || '').slice(0, 400).trim();
+      if (!name || !question) return json({ error: 'missing name/question' }, 400);
+      let ctx = '';
+      try {
+        const c = b.context || {};
+        if (c.typical) ctx += 'מחיר טיפוסי בשוק: ' + c.typical + '. ';
+        if (c.verdictText) ctx += c.verdictText + ' ';
+        if (Array.isArray(c.alternatives) && c.alternatives.length) ctx += 'חלופות שהוזכרו: ' + c.alternatives.map(a => a.name + (a.price ? ' (' + a.price + ')' : '')).join(', ') + '. ';
+        if (c.tip) ctx += 'טיפ קודם: ' + c.tip + '. ';
+      } catch (_) {}
+      const prompt = 'אתה יועץ פיננסי ישראלי חד, מעשי וישיר, שעוזר לאולפן הקלטות ביתי בישראל לחסוך.\n'
+        + 'ההוצאה: "' + name + '"' + (price ? ', משלם עליה ' + price + ' ש"ח בחודש' : '') + '.\n'
+        + (ctx ? 'מה שכבר ידוע: ' + ctx + '\n' : '')
+        + 'השאלה של בעל העסק: "' + question + '"\n'
+        + 'ענה בעברית, קצר וקונקרטי (עד 4 משפטים), עם מספרים/שמות ספקים אמיתיים אם רלוונטי, ובלי סימני markdown. אם צריך מידע עדכני חפש בגוגל. תכל\'ס — מה לעשות.';
+      let ans = '', lastErr = '';
+      const models = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
+      const bodies = [
+        { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.4, maxOutputTokens: 900 } },
+        { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 900 } }
+      ];
+      outerAsk:
+      for (const body of bodies) {
+        for (const model of models) {
+          try {
+            const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + env.GEMINI_KEY, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            });
+            const gj = await g.json().catch(() => ({}));
+            if (g.ok) {
+              const parts = gj && gj.candidates && gj.candidates[0] && gj.candidates[0].content && gj.candidates[0].content.parts;
+              ans = parts ? parts.map(p => p.text || '').join('').trim() : '';
+              if (ans) break outerAsk;
+              lastErr = 'empty ' + model;
+            } else {
+              lastErr = model + ' ' + g.status + ' ' + ((gj && gj.error && gj.error.message) || '').slice(0, 100);
+              if (g.status === 400 && body.tools) break;
+            }
+          } catch (e) { lastErr = model + ' ' + String(e && e.message).slice(0, 60); }
+        }
+      }
+      if (!ans) return json({ error: 'לא הצלחתי לענות כרגע: ' + (lastErr || 'שגיאת AI') }, 502);
+      return json({ ok: true, answer: ans.slice(0, 1200), at: Date.now() });
     }
     if (url.pathname === '/grow/status') {
       let b = null; try { b = await request.json(); } catch (_) { b = {}; }

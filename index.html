@@ -3561,6 +3561,30 @@
     .fc-res-alts b { color: var(--text); font-weight: 800; }
     .fc-res-tip { font-size: 12px; color: var(--accent); font-weight: 700; margin-top: 6px; line-height: 1.5; }
     [data-theme="dark"] .fc-res-tip { color: #ffc87d; }
+    .fc-res-ask { margin-top: 8px; font-size: 12px; font-weight: 800; color: var(--accent); background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 6px 12px; cursor: pointer; font-family: inherit; }
+    [data-theme="dark"] .fc-res-ask { background: rgba(255,255,255,.05); }
+    .fc-need { display: inline-block; font-size: 11px; font-weight: 900; padding: 3px 9px; border-radius: 999px; }
+    /* necessity filter chips */
+    .fc-filter { display: flex; gap: 7px; overflow-x: auto; padding: 2px 2px 4px; margin: 4px 0 14px; -webkit-overflow-scrolling: touch; }
+    .fc-filter::-webkit-scrollbar { display: none; }
+    .fc-fchip { flex: 0 0 auto; font-size: 12.5px; font-weight: 800; padding: 7px 13px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .fc-fchip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    [data-theme="dark"] .fc-fchip.on { color: #1a1206; }
+    .fc-save-flag { background: rgba(60,140,74,.12); border: 1px solid rgba(60,140,74,.3); color: #3f8a4a; border-radius: 12px; padding: 10px 14px; font-size: 13px; font-weight: 800; margin: 10px 0 2px; line-height: 1.5; }
+    [data-theme="dark"] .fc-save-flag { color: #7ed492; background: rgba(60,140,74,.16); }
+    /* ask (Q&A) modal */
+    .fcask-sub { font-size: 12.5px; color: var(--text-muted); font-weight: 700; margin: -4px 0 12px; line-height: 1.5; }
+    .fcask-thread { display: flex; flex-direction: column; gap: 10px; max-height: 42vh; overflow-y: auto; margin-bottom: 12px; }
+    .fcask-thread:empty { display: none; }
+    .fcask-q { align-self: flex-end; max-width: 85%; background: var(--accent); color: #fff; padding: 8px 13px; border-radius: 14px 14px 4px 14px; font-size: 13.5px; font-weight: 700; line-height: 1.5; }
+    [data-theme="dark"] .fcask-q { color: #1a1206; }
+    .fcask-a { align-self: flex-start; max-width: 92%; background: var(--surface2); color: var(--text); padding: 9px 13px; border-radius: 14px 14px 14px 4px; font-size: 13.5px; font-weight: 600; line-height: 1.6; white-space: pre-line; }
+    [data-theme="dark"] .fcask-a { background: rgba(255,255,255,.06); }
+    .fcask-a.thinking { color: var(--text-muted); font-style: italic; }
+    .fcask-suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .fcask-schip { font-size: 12px; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px dashed var(--border); background: transparent; color: var(--accent); cursor: pointer; font-family: inherit; text-align: right; }
+    .fcask-row { display: flex; gap: 6px; align-items: flex-start; }
+    .fcask-row textarea { flex: 1; min-width: 0; box-sizing: border-box; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text); font-family: inherit; font-size: 14px; resize: vertical; outline: none; }
 
     .fc-entry { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px;
       padding: 14px 16px; border-radius: 16px; cursor: pointer; font-family: inherit; text-align: right;
@@ -7413,7 +7437,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v496</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v497</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8412,8 +8436,9 @@
     </div>
     <div id="fc-hero"></div>
     <div id="fc-stats"></div>
+    <div id="fc-filter"></div>
     <div id="fc-groups"></div>
-    <div class="fc-note">💡 הוצאה קבועה היא כל דבר שיורד אוטומטית כל חודש. לחיצה על 🔎 בודקת מחיר טיפוסי וחלופות זולות (מידע לבדיקה, לא ייעוץ — מחירים משתנים).</div>
+    <div class="fc-note">💡 הוצאה קבועה היא כל דבר שיורד אוטומטית כל חודש. לחיצה על 🔎 בודקת מחיר טיפוסי, נחיצות וחלופות זולות. אפשר לשאול שאלה על כל הוצאה בכפתור 💬 (מידע לבדיקה, לא ייעוץ — מחירים משתנים).</div>
   </div>
 
   <!-- ===== PROFILES LIST ===== -->
@@ -9382,6 +9407,23 @@
         </div>
         <button class="btn btn-ghost" style="width:100%;opacity:.8" onclick="closeModal('growlink');refreshAll()">סגור</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FIXED-COST ASK (Q&A) MODAL (27.9) ===== -->
+<div class="modal-overlay" id="modal-fcask">
+  <div class="modal">
+    <h3 id="fcask-title">שאלה על ההוצאה</h3>
+    <div class="fcask-sub" id="fcask-sub"></div>
+    <div id="fcask-thread" class="fcask-thread"></div>
+    <div id="fcask-suggest" class="fcask-suggest"></div>
+    <div class="fcask-row">
+      <textarea id="fcask-input" rows="2" placeholder="מה תרצה לשאול? (למשל: איך אני מבקש הנחה?)" oninput="_fcAskAuto(this)"></textarea>
+      <button class="btn btn-primary" id="fcask-send" style="min-height:44px;white-space:nowrap" onclick="fcAskSend()">שלח</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('fcask')">סגור</button>
     </div>
   </div>
 </div>
@@ -17644,13 +17686,31 @@ window.fcRender = function() {
   stats.push({ n: fmtMoney(software), l: 'אולפן ותוכנות בחודש' });
   stats.push({ n: fmtMoney(living), l: 'מגורים בחודש' });
   if (big) stats.push({ n: fmtMoney(big.amount), l: 'הכי גדול · ' + big.name });
+  // potential monthly saving: for items judged יקר, how far above the
+  // low end of the typical range they sit (rough, advisory).
+  let saveSum = 0;
+  list.forEach(x => { const r = _fcResearchStore()[x.id]; if (r && r.data && r.data.verdict === 'high') { const low = _fcTypicalLow(r.data.typical); if (low > 0 && Number(x.amount) > low) saveSum += Number(x.amount) - low; } });
   document.getElementById('fc-stats').innerHTML = '<div class="fc-stat-grid">'
     + stats.map(s => '<div class="fc-stat"><span class="n">' + s.n + '</span><span class="l">' + _escape(s.l) + '</span></div>').join('') + '</div>'
-    + (ending.length ? '<div class="fc-flag">⏳ ' + ending.map(x => _escape(x.name) + ' נגמר ב-' + fcUntilLabel(x.until) + ' (יחסוך ' + fmtMoney(x.amount) + '/חודש)').join(' · ') + '</div>' : '');
+    + (ending.length ? '<div class="fc-flag">⏳ ' + ending.map(x => _escape(x.name) + ' נגמר ב-' + fcUntilLabel(x.until) + ' (יחסוך ' + fmtMoney(x.amount) + '/חודש)').join(' · ') + '</div>' : '')
+    + (saveSum >= 5 ? '<div class="fc-save-flag">💰 לפי הבדיקה אפשר לחסוך עד כ-' + fmtMoney(Math.round(saveSum)) + ' בחודש (' + fmtMoney(Math.round(saveSum) * 12) + ' בשנה) בהוצאות המסומנות "יקר". פתח כל אחת וראה חלופות.</div>' : '');
+  // necessity filter chips (only meaningful once something was researched)
+  const needCount = n => list.filter(x => _fcNeedOf(x) === n).length;
+  const checked = list.filter(x => _fcNeedOf(x) !== 'unknown').length;
+  const fcf = document.getElementById('fc-filter');
+  if (fcf) {
+    if (!checked) { fcf.innerHTML = ''; }
+    else {
+      const chips = [['all', 'הכל', list.length], ['essential', '🟢 חיוני', needCount('essential')], ['reducible', '🟡 אפשר לצמצם', needCount('reducible')], ['waste', '🔴 לשקול לבטל', needCount('waste')], ['unknown', 'עוד לא נבדק', needCount('unknown')]];
+      fcf.innerHTML = '<div class="fc-filter">' + chips.filter(c => c[0] === 'all' || c[2] > 0).map(c =>
+        '<button class="fc-fchip' + (_fcFilter === c[0] ? ' on' : '') + '" onclick="fcSetFilter(\'' + c[0] + '\')">' + c[1] + ' · ' + c[2] + '</button>').join('') + '</div>';
+    }
+  }
+  const pass = x => _fcFilter === 'all' || _fcNeedOf(x) === _fcFilter;
   // groups
   let html = '';
   Object.keys(FC_GROUPS).forEach(g => {
-    const items = list.filter(x => x.group === g);
+    const items = list.filter(x => x.group === g && pass(x));
     if (!items.length) return;
     const gt = items.reduce((t, x) => t + (Number(x.amount) || 0), 0);
     html += '<div class="fc-group"><div class="fc-group-head"><span>' + FC_GROUPS[g].icon + ' ' + FC_GROUPS[g].name + '</span><span class="fc-group-sum">' + fmtMoney(gt) + '</span></div>'
@@ -17662,9 +17722,11 @@ window.fcRender = function() {
         + _fcResearchHtml(x) + '</div>').join('')
       + '</div>';
   });
-  document.getElementById('fc-groups').innerHTML = html;
+  document.getElementById('fc-groups').innerHTML = html || '<div class="fc-note" style="text-align:center;margin-top:20px">אין הוצאות בקטגוריה הזאת</div>';
   fcEntryCard();
 };
+let _fcFilter = 'all';
+window.fcSetFilter = function(f) { _fcFilter = f || 'all'; fcRender(); try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {} };
 // -- Price research (27.9): each fixed expense is looked up by name via
 // the worker (Gemini + Google Search): typical price, overpay?, cheaper
 // alternatives. Advisory, cached locally, refreshable. --
@@ -17687,19 +17749,32 @@ function _fcVerdict(v) {
     : v === 'fair' ? { t: 'סביר', c: '#8a6d3b', bg: 'rgba(180,140,90,.14)' }
     : { t: 'לבדיקה', c: '#8a7a68', bg: 'rgba(140,120,100,.12)' };
 }
+// Necessity classification (from the research): how essential the expense
+// is to running the studio → drives the badge + the top filter.
+function _fcNeedMeta(n) {
+  return n === 'essential' ? { t: '🟢 חיוני', c: '#3f8a4a', bg: 'rgba(60,140,74,.14)' }
+    : n === 'reducible' ? { t: '🟡 אפשר לצמצם', c: '#8a6d3b', bg: 'rgba(180,140,90,.16)' }
+    : n === 'waste' ? { t: '🔴 לשקול לבטל', c: '#d64545', bg: 'rgba(214,69,69,.14)' }
+    : null;
+}
+function _fcNeedOf(x) { const r = _fcResearchStore()[x.id]; return (r && r.data && r.data.need) || 'unknown'; }
+// lowest number in a typical-price string like "80-110 ש\"ח" → 80
+function _fcTypicalLow(s) { const m = String(s || '').match(/\d[\d,]*/g); if (!m) return 0; return Math.min.apply(null, m.map(v => Number(v.replace(/,/g, '')))); }
 function _fcResearchHtml(x) {
   const r = _fcResearchStore()[x.id];
   if (!r || !r.data) return '';
   const stale = _fcStale(r, x);
-  const d = r.data, ver = _fcVerdict(d.verdict);
+  const d = r.data, ver = _fcVerdict(d.verdict), need = _fcNeedMeta(d.need);
   const alts = Array.isArray(d.alternatives) ? d.alternatives.filter(a => a && a.name) : [];
   return '<div class="fc-res">'
     + '<div class="fc-res-top"><span class="fc-res-badge" style="color:' + ver.c + ';background:' + ver.bg + '">' + ver.t + '</span>'
+    + (need ? '<span class="fc-need" style="color:' + need.c + ';background:' + need.bg + '">' + need.t + '</span>' : '')
     + (d.typical ? '<span class="fc-res-typ">טיפוסי: ' + _escape(String(d.typical)) + '</span>' : '')
     + (stale ? '<button class="fc-res-refresh" onclick="event.stopPropagation();fcResearchOne(\'' + x.id + '\',1)">רענן</button>' : '') + '</div>'
     + (d.verdictText ? '<div class="fc-res-line">' + _escape(String(d.verdictText)) + '</div>' : '')
     + (alts.length ? '<div class="fc-res-alts">חלופות: ' + alts.map(a => '<b>' + _escape(String(a.name)) + '</b>' + (a.price ? ' (' + _escape(String(a.price)) + ')' : '')).join(' · ') + '</div>' : '')
     + (d.tip ? '<div class="fc-res-tip">💡 ' + _escape(String(d.tip)) + '</div>' : '')
+    + '<button class="fc-res-ask" onclick="event.stopPropagation();fcAskOpen(\'' + x.id + '\')">💬 שאל שאלה על זה</button>'
     + '</div>';
 }
 window.fcResearchOne = async function(id, force) {
@@ -17728,6 +17803,54 @@ window.fcResearchAll = async function() {
   let ok = 0;
   for (const x of todo) { const done = await fcResearchOne(x.id, true); if (done) ok++; await new Promise(r => setTimeout(r, 400)); }
   toast('✓ נבדקו ' + ok + ' הוצאות');
+};
+// -- Ask (Q&A) about one expense / its tip: free follow-up questions
+// answered by the worker (grounded Gemini), with the research already shown
+// passed as context. Thread is per-open (not persisted). (27.9) --
+let _fcAskId = '';
+window.fcAskOpen = function(id) {
+  const x = (load('fixed_costs') || []).find(i => i.id === id); if (!x) return;
+  _fcAskId = id;
+  document.getElementById('fcask-title').textContent = '💬 ' + x.name;
+  const r = _fcResearchStore()[id], d = (r && r.data) || {};
+  const sub = document.getElementById('fcask-sub');
+  sub.textContent = 'משלם ' + fmtMoney(x.amount) + ' בחודש' + (d.typical ? ' · טיפוסי: ' + d.typical : '');
+  document.getElementById('fcask-thread').innerHTML = '';
+  document.getElementById('fcask-input').value = '';
+  // smart suggested questions from the context
+  const sugg = ['איך אני מבקש הנחה בלי לאבד את השירות?'];
+  if (Array.isArray(d.alternatives) && d.alternatives[0] && d.alternatives[0].name) sugg.push('כדאי לעבור ל' + d.alternatives[0].name + '? מה החסרונות?');
+  if (d.verdict === 'high') sugg.push('למה אני משלם יותר מהמקובל, ומה לומר בשיחה?');
+  else sugg.push('יש דרך להוזיל את זה עוד?');
+  sugg.push('מה אני מפספס אם אבטל את זה?');
+  document.getElementById('fcask-suggest').innerHTML = sugg.slice(0, 4).map(q =>
+    '<button class="fcask-schip" onclick="fcAskSend(this.textContent)">' + _escape(q) + '</button>').join('');
+  document.getElementById('modal-fcask').classList.add('open');
+  setTimeout(() => { const i = document.getElementById('fcask-input'); if (i) i.focus(); }, 200);
+};
+window._fcAskAuto = function(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; };
+window.fcAskSend = async function(preset) {
+  const q = String(preset || document.getElementById('fcask-input').value || '').trim();
+  if (!q) { toast('כתוב שאלה קודם'); return; }
+  const x = (load('fixed_costs') || []).find(i => i.id === _fcAskId); if (!x) return;
+  const sec = localStorage.getItem('wa_send_secret') || '';
+  if (!sec) { toast('צריך קוד שליחה (וואטסאפ ← קוד) כדי לשאול'); return; }
+  const thread = document.getElementById('fcask-thread');
+  document.getElementById('fcask-input').value = '';
+  document.getElementById('fcask-suggest').innerHTML = '';
+  const qEl = document.createElement('div'); qEl.className = 'fcask-q'; qEl.textContent = q; thread.appendChild(qEl);
+  const aEl = document.createElement('div'); aEl.className = 'fcask-a thinking'; aEl.textContent = 'חושב…'; thread.appendChild(aEl);
+  thread.scrollTop = thread.scrollHeight;
+  const btn = document.getElementById('fcask-send'); if (btn) btn.disabled = true;
+  try {
+    const r = _fcResearchStore()[_fcAskId], ctx = (r && r.data) || {};
+    const res = await _mptHttp('POST', WA_WORKER + '/fx/ask', { secret: sec, name: x.name, price: Math.round(Number(x.amount) || 0), context: ctx, question: q });
+    const j = res.json || {};
+    if (res.ok && j.ok && j.answer) { aEl.classList.remove('thinking'); aEl.textContent = j.answer; }
+    else { aEl.classList.remove('thinking'); aEl.textContent = 'לא הצלחתי לענות: ' + (j.error || 'שגיאה'); }
+  } catch (e) { aEl.classList.remove('thinking'); aEl.textContent = 'שגיאה: ' + ((e && e.message) || ''); }
+  if (btn) btn.disabled = false;
+  thread.scrollTop = thread.scrollHeight;
 };
 function fcUntilLabel(m) { try { return new Date(m + '-01T12:00:00').toLocaleDateString('he-IL', { month: 'long', year: 'numeric' }); } catch (_) { return m; } }
 window.fcAdd = function() {
