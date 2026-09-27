@@ -45,6 +45,10 @@ on:
         description: "List the Gemini models this GEMINI_KEY can call for generateContent"
         required: false
         default: "no"
+      fxtest:
+        description: "Run /fx/research on this expense name end-to-end (e.g. 'ראוטר אינטרנט בזק')"
+        required: false
+        default: ""
 
 jobs:
   probe:
@@ -238,6 +242,15 @@ jobs:
               -H 'Content-Type: application/json' -H 'User-Agent: Mozilla/5.0' -d @- | python3 -m json.tool
           echo "----- structure logged to /growreaddiag -----"
           curl -sS "https://elior-studio-default-rtdb.firebaseio.com/growreaddiag.json" | head -c 3800; echo
+      - name: Test /fx/research end-to-end
+        if: ${{ github.event.inputs.fxtest != '' }}
+        env:
+          SEND_SECRET: ${{ secrets.SEND_SECRET }}
+          FXNAME: ${{ github.event.inputs.fxtest }}
+        run: |
+          jq -n --arg s "$SEND_SECRET" --arg n "$FXNAME" '{secret: ($s | gsub("\\s";"")), name: $n, price: 120}' \
+          | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/fx/research" \
+              -H 'Content-Type: application/json' -H 'User-Agent: Mozilla/5.0' -d @- | python3 -m json.tool
       - name: List Gemini models
         if: ${{ github.event.inputs.geminimodels == 'yes' }}
         env:
