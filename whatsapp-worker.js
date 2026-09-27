@@ -423,14 +423,14 @@ export default {
         + '{"what":"מה זה במשפט","typical":"טווח מחיר טיפוסי בישראל בש\\"ח לחודש","verdict":"fair|high|cheap|unknown",'
         + '"verdictText":"משפט קצר האם המחיר סביר ביחס למה שמשלמים","alternatives":[{"name":"חלופה","price":"מחיר משוער","why":"למה"}],'
         + '"tip":"טיפ פעולה אחד קצר וקונקרטי"}\n'
-        + 'עד 3 חלופות, רק אמיתיות ורלוונטיות לישראל. אם אין חלופה טובה החזר מערך ריק. היה מדויק וזהיר, אל תמציא מחירים.';
+        + 'שמור על תשובות קצרות מאוד: what עד 12 מילים, verdictText עד 12 מילים, tip עד 12 מילים, כל why עד 6 מילים. עד 3 חלופות אמיתיות בישראל (אם אין — מערך ריק). אל תמציא מחירים.';
       let raw = '', lastErr = '';
       const models = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-1.5-flash'];
       // Try each model twice: first grounded with Google Search, then plain
       // (some API keys don't have search grounding — plain still helps).
       const bodies = [
         { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 800 } },
-        { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 800 } }
+        { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 2000 } }
       ];
       outer:
       for (const body of bodies) {
@@ -458,7 +458,15 @@ export default {
       }
       raw = raw.replace(/^```json?\s*/i, '').replace(/```\s*$/, '').trim();
       let out = null;
-      try { out = JSON.parse(raw); } catch (_) { const m = raw.match(/\{[\s\S]*\}/); if (m) { try { out = JSON.parse(m[0]); } catch (__) {} } }
+      const tryParse = (t) => { try { return JSON.parse(t); } catch (_) { return null; } };
+      out = tryParse(raw);
+      if (!out) { const m = raw.match(/\{[\s\S]*\}/); if (m) out = tryParse(m[0]); }
+      if (!out) {
+        // truncated JSON — cut to the last complete "key": value pair and close it
+        let t = raw.replace(/^[^{]*\{/, '{');
+        const lastComma = t.lastIndexOf(',');
+        if (lastComma > 0) { t = t.slice(0, lastComma); let opens = (t.match(/\[/g) || []).length - (t.match(/\]/g) || []).length; while (opens-- > 0) t += ']'; t += '}'; out = tryParse(t); }
+      }
       if (!out) { await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ err: 'parse', raw: raw.slice(0, 200), at: Date.now() }) }).catch(() => {}); return json({ error: 'התשובה לא הובנה, נסה שוב' }, 502); }
       return json({ ok: true, name, price, data: out, at: Date.now() });
     }
