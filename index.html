@@ -7437,7 +7437,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v497</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v498</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17787,6 +17787,8 @@ window.fcResearchOne = async function(id, force) {
   try {
     const r = await _mptHttp('POST', WA_WORKER + '/fx/research', { secret: sec, name: x.name, price: Math.round(Number(x.amount) || 0) });
     const j = r.json || {};
+    // free-tier quota hit — surface a clear message and signal callers to stop
+    if ((j && j.quota) || r.status === 429) { toast('⏳ נגמרה המכסה החינמית של Gemini. נסה שוב בעוד דקה (או הפעל חיוב על המפתח).'); return 'quota'; }
     if (!r.ok || !j.ok || !j.data) { toast('לא הצלחתי לבדוק: ' + (j.error || 'שגיאה')); return false; }
     const st = _fcResearchStore(); st[id] = { name: x.name, price: j.price, data: j.data, at: j.at || Date.now() }; _fcResearchSave(st);
     const pg = document.getElementById('page-fixed'); if (pg && pg.classList.contains('active')) fcRender();
@@ -17799,9 +17801,14 @@ window.fcResearchAll = async function() {
   const todo = list.filter(x => _fcStale(store[x.id], x));
   if (!todo.length) { toast('הכל נבדק לאחרונה ✓'); return; }
   if (!localStorage.getItem('wa_send_secret')) { toast('צריך קוד שליחה (וואטסאפ ← קוד) כדי לחקור מחירים'); return; }
-  toast('בודק ' + todo.length + ' הוצאות… זה ייקח דקה');
+  toast('בודק ' + todo.length + ' הוצאות… (במכסה החינמית זה איטי, ~2 שניות לכל אחת)');
   let ok = 0;
-  for (const x of todo) { const done = await fcResearchOne(x.id, true); if (done) ok++; await new Promise(r => setTimeout(r, 400)); }
+  for (const x of todo) {
+    const done = await fcResearchOne(x.id, true);
+    if (done === 'quota') { toast('⏳ נבדקו ' + ok + ' מתוך ' + todo.length + '. המכסה החינמית נגמרה — המשך עוד דקה או מחר (או הפעל חיוב).'); return; }
+    if (done) ok++;
+    await new Promise(r => setTimeout(r, 2200)); // spacing to stay under the free per-minute limit
+  }
   toast('✓ נבדקו ' + ok + ' הוצאות');
 };
 // -- Ask (Q&A) about one expense / its tip: free follow-up questions

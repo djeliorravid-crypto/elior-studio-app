@@ -502,6 +502,7 @@ export default {
         { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: fxGen },
         { contents: [{ parts: [{ text: prompt }] }], generationConfig: fxGen }
       ];
+      let quota = false;
       outer:
       for (const body of bodies) {
         for (const model of models) {
@@ -517,6 +518,7 @@ export default {
               lastErr = 'empty ' + model;
             } else {
               lastErr = model + ' ' + g.status + ' ' + ((gj && gj.error && gj.error.message) || '').slice(0, 120);
+              if (g.status === 429) { quota = true; break outer; }   // all models share one quota → stop hammering
               if (g.status === 400 && body.tools) break;   // search not supported → drop to plain body
             }
           } catch (e) { lastErr = model + ' ' + String(e && e.message).slice(0, 80); }
@@ -524,6 +526,7 @@ export default {
       }
       if (!raw) {
         await fetch(DB_ROOT + '/fxdiag.json', { method: 'PUT', body: JSON.stringify({ err: lastErr, name: name, at: Date.now() }) }).catch(() => {});
+        if (quota) return json({ error: 'המכסה החינמית של Gemini נגמרה כרגע. נסה שוב בעוד דקה, או הפעל חיוב על מפתח ה-API (עולה גרושים) כדי להסיר את ההגבלה.', quota: true }, 429);
         return json({ error: 'לא הצלחתי לחקור כרגע: ' + (lastErr || 'שגיאת AI') }, 502);
       }
       // Line-format parser (robust vs grounded output). Falls back to JSON if the model still returned JSON.
@@ -586,6 +589,7 @@ export default {
         { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: askGen },
         { contents: [{ parts: [{ text: prompt }] }], generationConfig: askGen }
       ];
+      let quotaAsk = false;
       outerAsk:
       for (const body of bodies) {
         for (const model of models) {
@@ -601,11 +605,13 @@ export default {
               lastErr = 'empty ' + model;
             } else {
               lastErr = model + ' ' + g.status + ' ' + ((gj && gj.error && gj.error.message) || '').slice(0, 100);
+              if (g.status === 429) { quotaAsk = true; break outerAsk; }
               if (g.status === 400 && body.tools) break;
             }
           } catch (e) { lastErr = model + ' ' + String(e && e.message).slice(0, 60); }
         }
       }
+      if (!ans && quotaAsk) return json({ error: 'המכסה החינמית של Gemini נגמרה כרגע. נסה שוב בעוד דקה, או הפעל חיוב על המפתח.', quota: true }, 429);
       if (!ans) return json({ error: 'לא הצלחתי לענות כרגע: ' + (lastErr || 'שגיאת AI') }, 502);
       return json({ ok: true, answer: ans.slice(0, 1200), at: Date.now() });
     }
