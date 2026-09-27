@@ -485,12 +485,15 @@ export default {
         + 'TIP: טיפ פעולה אחד קצר\n'
         + 'עד 3 שורות ALT, רק חלופות אמיתיות בישראל (אם אין, אל תכתוב ALT). תשובות קצרות. אל תמציא מחירים.';
       let raw = '', lastErr = '';
-      const models = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+      // Current Gemini models (verified live 27.9.2026): 2.0/1.5 are retired.
+      // flash-latest auto-tracks the newest flash so this survives the next
+      // rename too.
+      const models = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite'];
       // Try each model twice: first grounded with Google Search, then plain
       // (some API keys don't have search grounding — plain still helps).
       const bodies = [
-        { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 800 } },
-        { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 2000 } }
+        { contents: [{ parts: [{ text: prompt }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.3, maxOutputTokens: 1500 } },
+        { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1500 } }
       ];
       outer:
       for (const body of bodies) {
@@ -909,7 +912,7 @@ async function transcribe(mediaId, env) {
       }
     }
     if (!env.GEMINI_KEY) return '';
-    const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + env.GEMINI_KEY, {
+    const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + env.GEMINI_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1296,7 +1299,7 @@ async function aiCommand(t, env, reply) {
       }
     }
     if (!raw && env.GEMINI_KEY) {
-      const models = ['gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-flash'];
+      const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-flash-latest'];
       for (const model of models) {
         const g = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + env.GEMINI_KEY, {
           method: 'POST',
