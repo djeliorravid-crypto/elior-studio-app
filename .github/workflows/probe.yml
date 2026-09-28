@@ -268,6 +268,11 @@ jobs:
           | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/morning/api" \
               -H 'Content-Type: application/json' -H 'User-Agent: Mozilla/5.0' -d @- \
           | python3 -c 'import sys,json; d=json.load(sys.stdin); j=d.get("json") or {}; print("relay ok:",d.get("ok"),"| status:",d.get("status"),"| has token:",bool(j.get("token")),"| err:",(j.get("errorMessage") or j.get("errorCode") or d.get("text") or "")[:160])'
+          echo "=== C) NEW /morning/token (worker mints from its own keys — what the app now calls) ==="
+          jq -n --arg s "$SEND_SECRET" '{secret: ($s | gsub("\\s";""))}' \
+          | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/morning/token" \
+              -H 'Content-Type: application/json' -H 'User-Agent: Mozilla/5.0' -d @- \
+          | python3 -c 'import sys,json; d=json.load(sys.stdin); print("ok:",d.get("ok"),"| has token:",bool(d.get("token")),"| err:",(d.get("error") or d.get("detail") or "")[:160])'
           echo "=== B) direct Morning /account/token (bypassing worker) ==="
           jq -n --arg id "$MORNING_API_ID" --arg sec "$MORNING_API_SECRET" '{id: $id, secret: $sec}' \
           | curl -sS -X POST "https://api.greeninvoice.co.il/api/v1/account/token" \
