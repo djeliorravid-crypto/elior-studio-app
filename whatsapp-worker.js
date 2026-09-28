@@ -695,6 +695,26 @@ export default {
       await fetch(DB_ROOT + '/grow_links/' + ref + '.json', { method: 'PUT', body: JSON.stringify(rec) }).catch(() => {});
       return json({ ok: true, id: ref, url: j.data.url });
     }
+    // ── /morning/token — mint a Morning token server-side from the
+    // account keys stored as worker secrets (MORNING_API_ID/SECRET). The
+    // native app can't reach /account/token directly (CORS) and its own
+    // stored keys may be stale; this makes token auth independent of the
+    // app. Same account that issues the receipts. (28.9) ──
+    if (url.pathname === '/morning/token') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
+      if (!env.MORNING_API_ID || !env.MORNING_API_SECRET) return json({ error: 'no_server_keys' }, 500);
+      try {
+        const r = await fetch('https://api.greeninvoice.co.il/api/v1/account/token', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: String(env.MORNING_API_ID).trim(), secret: String(env.MORNING_API_SECRET).trim() })
+        });
+        const tk = await r.json().catch(() => null);
+        if (!tk || !tk.token) return json({ error: 'token_failed', status: r.status, detail: (tk && (tk.errorMessage || tk.errorCode)) || '' }, 502);
+        return json({ ok: true, token: tk.token, expires: tk.expires || 1800 });
+      } catch (e) { return json({ error: 'network', detail: String(e && e.message).slice(0, 150) }, 502); }
+    }
     // ── /morning/api — relay ONE call to Morning's API from the server
     // side. The app's direct browser calls die with "Load failed" on
     // endpoints that answer without CORS headers (25.9). The app sends

@@ -7453,7 +7453,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v500</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v501</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -28052,24 +28052,34 @@ async function morningGetToken() {
   const cached = localStorage.getItem('morning_token');
   const exp    = parseInt(localStorage.getItem('morning_token_exp') || '0');
   if (cached && Date.now() < exp - 60000) return cached;
+  const sec = localStorage.getItem('wa_send_secret') || '';
+  // 1) Preferred: let the worker mint the token from the account keys it
+  // already holds (server-side, no CORS, independent of the app's stored
+  // keys which may be stale). This is the same account that issues receipts.
+  if (sec) {
+    try {
+      const r = await _mptHttp('POST', WA_WORKER + '/morning/token', { secret: sec });
+      const j = r.json || {};
+      if (r.ok && j.ok && j.token) {
+        localStorage.setItem('morning_token', j.token);
+        localStorage.setItem('morning_token_exp', String(Date.now() + (j.expires || 1800) * 1000));
+        return j.token;
+      }
+    } catch (_) {}
+  }
+  // 2) Fallback: use the keys the user entered in the app (direct, or via
+  // the worker relay). Kept so a user who only set up in-app still works.
   const c = morningCreds();
   if (!c.id || !c.secret) return null;
-  const sec = localStorage.getItem('wa_send_secret') || '';
   try {
     let data = null;
     if (sec) {
-      // Route through the worker — the native app can't reach Morning's
-      // /account/token directly (no CORS headers → "no_token"). The worker
-      // relays it server-side. Falls back to a direct fetch if that fails.
       const r = await _morningCall('POST', '/account/token', { id: c.id, secret: c.secret }, null);
       data = r && r.json;
-      if (!data || !data.token) {
-        const rd = await fetch(window.MORNING_BASE + '/account/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, secret: c.secret }) });
-        data = await rd.json().catch(() => null);
-      }
-    } else {
-      const r = await fetch(window.MORNING_BASE + '/account/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, secret: c.secret }) });
-      data = await r.json();
+    }
+    if (!data || !data.token) {
+      const rd = await fetch(window.MORNING_BASE + '/account/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, secret: c.secret }) });
+      data = await rd.json().catch(() => null);
     }
     if (!data || !data.token) { console.warn('Morning token failed', data); return null; }
     localStorage.setItem('morning_token',     data.token);
