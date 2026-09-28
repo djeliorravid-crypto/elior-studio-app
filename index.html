@@ -7453,7 +7453,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v499</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v500</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -28054,17 +28054,24 @@ async function morningGetToken() {
   if (cached && Date.now() < exp - 60000) return cached;
   const c = morningCreds();
   if (!c.id || !c.secret) return null;
+  const sec = localStorage.getItem('wa_send_secret') || '';
   try {
-    const r = await fetch(window.MORNING_BASE + '/account/token', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ id: c.id, secret: c.secret })
-    });
-    const data = await r.json();
-    if (!data || !data.token) {
-      console.warn('Morning token failed', data);
-      return null;
+    let data = null;
+    if (sec) {
+      // Route through the worker — the native app can't reach Morning's
+      // /account/token directly (no CORS headers → "no_token"). The worker
+      // relays it server-side. Falls back to a direct fetch if that fails.
+      const r = await _morningCall('POST', '/account/token', { id: c.id, secret: c.secret }, null);
+      data = r && r.json;
+      if (!data || !data.token) {
+        const rd = await fetch(window.MORNING_BASE + '/account/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, secret: c.secret }) });
+        data = await rd.json().catch(() => null);
+      }
+    } else {
+      const r = await fetch(window.MORNING_BASE + '/account/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, secret: c.secret }) });
+      data = await r.json();
     }
+    if (!data || !data.token) { console.warn('Morning token failed', data); return null; }
     localStorage.setItem('morning_token',     data.token);
     localStorage.setItem('morning_token_exp', String(Date.now() + (data.expires || 1800) * 1000));
     return data.token;
@@ -28311,21 +28318,26 @@ function _morningIsAuthFail(status, data) {
 async function _morningPostDocWithRetry(body) {
   let token = await morningGetToken();
   if (!token) return { error: 'no_token' };
+  const sec = localStorage.getItem('wa_send_secret') || '';
   let lastStatus = 0, lastData = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const r = await fetch(window.MORNING_BASE + '/documents', {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify(body)
-      });
-      lastStatus = r.status;
-      lastData   = await r.json();
+      if (sec) {
+        // Server-side relay (no CORS on native). Same passthrough the
+        // receipts path already relies on.
+        const rr = await _morningCall('POST', '/documents', body, token);
+        lastStatus = rr.status; lastData = rr.json;
+      } else {
+        const r = await fetch(window.MORNING_BASE + '/documents', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(body)
+        });
+        lastStatus = r.status;
+        lastData   = await r.json();
+      }
       if (lastData && lastData.id) return lastData;
-      if (_morningIsAuthFail(r.status, lastData) && attempt === 0) {
+      if (_morningIsAuthFail(lastStatus, lastData) && attempt === 0) {
         localStorage.removeItem('morning_token');
         localStorage.removeItem('morning_token_exp');
         token = await morningGetToken();
@@ -28335,7 +28347,7 @@ async function _morningPostDocWithRetry(body) {
       // Second attempt also failed → expose if it's an auth-permission
       // problem (token works for /account/token but rejected for
       // /documents — typically means the API key lacks write scope).
-      const persistentAuthFail = _morningIsAuthFail(r.status, lastData);
+      const persistentAuthFail = _morningIsAuthFail(lastStatus, lastData);
       console.warn('Morning create persistently failed', { status: lastStatus, body: lastData });
       return {
         error:           persistentAuthFail ? 'auth_no_write' : 'create_failed',
