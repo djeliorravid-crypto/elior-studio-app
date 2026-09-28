@@ -49,6 +49,10 @@ on:
         description: "Run /fx/research on this expense name end-to-end (e.g. 'ראוטר אינטרנט בזק')"
         required: false
         default: ""
+      morningtoken:
+        description: "Test the worker→Morning /account/token relay with the stored Morning keys"
+        required: false
+        default: "no"
 
 jobs:
   probe:
@@ -251,6 +255,27 @@ jobs:
           jq -n --arg s "$SEND_SECRET" --arg n "$FXNAME" '{secret: ($s | gsub("\\s";"")), name: $n, price: 120}' \
           | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/fx/research" \
               -H 'Content-Type: application/json' -H 'User-Agent: Mozilla/5.0' -d @- | python3 -m json.tool
+      - name: Test Morning token relay
+        if: ${{ github.event.inputs.morningtoken == 'yes' }}
+        env:
+          SEND_SECRET: ${{ secrets.SEND_SECRET }}
+          MORNING_API_ID: ${{ secrets.MORNING_API_ID }}
+          MORNING_API_SECRET: ${{ secrets.MORNING_API_SECRET }}
+        run: |
+          echo "=== A) worker /morning/api relay → /account/token (with GitHub-secret keys) ==="
+          jq -n --arg s "$SEND_SECRET" --arg id "$MORNING_API_ID" --arg sec "$MORNING_API_SECRET" \
+            '{secret: ($s | gsub("\\s";"")), method: "POST", path: "/account/token", body: {id: $id, secret: $sec}}' \
+          | curl -sS -X POST "https://ravid-whatsapp.djeliorravid.workers.dev/morning/api" \
+              -H 'Content-Type: application/json' -H 'User-Agent: Mozilla/5.0' -d @- \
+          | python3 -c 'import sys,json; d=json.load(sys.stdin); j=d.get("json") or {}; print("relay ok:",d.get("ok"),"| status:",d.get("status"),"| has token:",bool(j.get("token")),"| err:",(j.get("errorMessage") or j.get("errorCode") or d.get("text") or "")[:160])'
+          echo "=== B) direct Morning /account/token (bypassing worker) ==="
+          jq -n --arg id "$MORNING_API_ID" --arg sec "$MORNING_API_SECRET" '{id: $id, secret: $sec}' \
+          | curl -sS -X POST "https://api.greeninvoice.co.il/api/v1/account/token" \
+              -H 'Content-Type: application/json' -d @- \
+          | python3 -c 'import sys,json;
+          try:
+              d=json.load(sys.stdin); print("has token:",bool(d.get("token")),"| err:",(d.get("errorMessage") or d.get("errorCode") or "")[:160])
+          except Exception as e: print("parse fail:",e)'
       - name: List Gemini models
         if: ${{ github.event.inputs.geminimodels == 'yes' }}
         env:
