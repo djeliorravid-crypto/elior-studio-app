@@ -7518,7 +7518,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v511</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v512</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -31212,6 +31212,173 @@ html[data-skin="spent"] .prod-card.is-open .prod-mini-days { display: none !impo
 #sp-done .sd-n { font-size: 40px; font-weight: 900; color: #0f0f0f; letter-spacing: -0.04em; margin-top: 6px; font-variant-numeric: tabular-nums; }
 #sp-done .sd-s { font-size: 14px; font-weight: 600; color: #8d8d8d; margin-top: 6px; max-width: 300px; }
 html[data-skin="spent"] .congrats-popup { display: none !important; }
+
+/* ══ v512 ══ the remaining bottom sheets (receipt, payment request, calendar edit, reminders…) ══ */
+html[data-skin="spent"] #gcal-write-setup-overlay,
+html[data-skin="spent"] #device-code-overlay,
+html[data-skin="spent"] #manual-paste-overlay,
+html[data-skin="spent"] #morning-receipt-overlay,
+html[data-skin="spent"] #morning-pr-overlay,
+html[data-skin="spent"] #schedule-edit-overlay,
+html[data-skin="spent"] #remind-picker-overlay { background: rgba(15,15,15,.32) !important; }
+html[data-skin="spent"] #gcal-write-setup-card,
+html[data-skin="spent"] #device-code-card,
+html[data-skin="spent"] #manual-paste-card,
+html[data-skin="spent"] #morning-receipt-card,
+html[data-skin="spent"] #morning-pr-card,
+html[data-skin="spent"] #schedule-edit-card,
+html[data-skin="spent"] #remind-picker-card {
+  background: #ffffff !important; color: var(--sp-ink) !important; border: none !important;
+  box-shadow: 0 -10px 40px rgba(0,0,0,.12) !important; border-radius: 28px 28px 0 0 !important; padding-top: 14px !important;
+}
+html[data-skin="spent"] #schedule-edit-card { border-radius: 26px !important; }
+html[data-skin="spent"] #gcal-write-setup-card::before,
+html[data-skin="spent"] #device-code-card::before,
+html[data-skin="spent"] #manual-paste-card::before,
+html[data-skin="spent"] #morning-receipt-card::before,
+html[data-skin="spent"] #morning-pr-card::before,
+html[data-skin="spent"] #schedule-edit-card::before,
+html[data-skin="spent"] #remind-picker-card::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 3px; background: #e2e2df; margin: 0 auto 14px; }
+html[data-skin="spent"] #schedule-edit-card::before { display: none; }
+html[data-skin="spent"] #gcal-write-setup-card h3,
+html[data-skin="spent"] #device-code-card h3,
+html[data-skin="spent"] #manual-paste-card h3,
+html[data-skin="spent"] #morning-receipt-card h3,
+html[data-skin="spent"] #morning-pr-card h3,
+html[data-skin="spent"] #schedule-edit-card h3,
+html[data-skin="spent"] #remind-picker-card h3 { color: var(--sp-ink) !important; font-weight: 900 !important; font-size: 22px !important; letter-spacing: -0.02em; }
+html[data-skin="spent"] #gcal-write-setup-card .notif-sub,
+html[data-skin="spent"] #device-code-card .notif-sub,
+html[data-skin="spent"] #manual-paste-card .notif-sub,
+html[data-skin="spent"] #morning-receipt-card .notif-sub,
+html[data-skin="spent"] #morning-pr-card .notif-sub,
+html[data-skin="spent"] #schedule-edit-card .notif-sub,
+html[data-skin="spent"] #remind-picker-card .notif-sub { color: var(--sp-muted) !important; }
+html[data-skin="spent"] #gcal-write-setup-card label,
+html[data-skin="spent"] #device-code-card label,
+html[data-skin="spent"] #manual-paste-card label,
+html[data-skin="spent"] #morning-receipt-card label,
+html[data-skin="spent"] #morning-pr-card label,
+html[data-skin="spent"] #schedule-edit-card label,
+html[data-skin="spent"] #remind-picker-card label { color: var(--sp-ink2) !important; font-weight: 800 !important; }
+html[data-skin="spent"] #gcal-write-setup-card input,
+html[data-skin="spent"] #device-code-card input,
+html[data-skin="spent"] #manual-paste-card input,
+html[data-skin="spent"] #morning-receipt-card input,
+html[data-skin="spent"] #morning-pr-card input,
+html[data-skin="spent"] #schedule-edit-card input,
+html[data-skin="spent"] #remind-picker-card input,
+html[data-skin="spent"] #gcal-write-setup-card textarea,
+html[data-skin="spent"] #device-code-card textarea,
+html[data-skin="spent"] #manual-paste-card textarea,
+html[data-skin="spent"] #morning-receipt-card textarea,
+html[data-skin="spent"] #morning-pr-card textarea,
+html[data-skin="spent"] #schedule-edit-card textarea,
+html[data-skin="spent"] #remind-picker-card textarea,
+html[data-skin="spent"] #gcal-write-setup-card select,
+html[data-skin="spent"] #device-code-card select,
+html[data-skin="spent"] #manual-paste-card select,
+html[data-skin="spent"] #morning-receipt-card select,
+html[data-skin="spent"] #morning-pr-card select,
+html[data-skin="spent"] #schedule-edit-card select,
+html[data-skin="spent"] #remind-picker-card select {
+  background: var(--sp-soft) !important; color: var(--sp-ink) !important; border: 1.5px solid transparent !important; border-radius: 16px !important; box-shadow: none !important;
+}
+html[data-skin="spent"] #gcal-write-setup-card input:focus,
+html[data-skin="spent"] #device-code-card input:focus,
+html[data-skin="spent"] #manual-paste-card input:focus,
+html[data-skin="spent"] #morning-receipt-card input:focus,
+html[data-skin="spent"] #morning-pr-card input:focus,
+html[data-skin="spent"] #schedule-edit-card input:focus,
+html[data-skin="spent"] #remind-picker-card input:focus { border-color: var(--sp-ink) !important; background: #fff !important; }
+html[data-skin="spent"] #gcal-write-setup-card .notif-actions,
+html[data-skin="spent"] #device-code-card .notif-actions,
+html[data-skin="spent"] #manual-paste-card .notif-actions,
+html[data-skin="spent"] #morning-receipt-card .notif-actions,
+html[data-skin="spent"] #morning-pr-card .notif-actions,
+html[data-skin="spent"] #schedule-edit-card .notif-actions,
+html[data-skin="spent"] #remind-picker-card .notif-actions { flex-direction: column-reverse; gap: 8px !important; }
+html[data-skin="spent"] #gcal-write-setup-card .notif-actions button,
+html[data-skin="spent"] #device-code-card .notif-actions button,
+html[data-skin="spent"] #manual-paste-card .notif-actions button,
+html[data-skin="spent"] #morning-receipt-card .notif-actions button,
+html[data-skin="spent"] #morning-pr-card .notif-actions button,
+html[data-skin="spent"] #schedule-edit-card .notif-actions button,
+html[data-skin="spent"] #remind-picker-card .notif-actions button { width: 100% !important; min-height: 52px !important; border-radius: 16px !important; font-size: 15.5px !important; font-weight: 800 !important; }
+html[data-skin="spent"] #gcal-write-setup-card .notif-close,
+html[data-skin="spent"] #device-code-card .notif-close,
+html[data-skin="spent"] #manual-paste-card .notif-close,
+html[data-skin="spent"] #morning-receipt-card .notif-close,
+html[data-skin="spent"] #morning-pr-card .notif-close,
+html[data-skin="spent"] #schedule-edit-card .notif-close,
+html[data-skin="spent"] #remind-picker-card .notif-close { background: transparent !important; color: var(--sp-muted) !important; border: none !important; }
+html[data-skin="spent"] #gcal-write-setup-card .btn-primary,
+html[data-skin="spent"] #device-code-card .btn-primary,
+html[data-skin="spent"] #manual-paste-card .btn-primary,
+html[data-skin="spent"] #morning-receipt-card .btn-primary,
+html[data-skin="spent"] #morning-pr-card .btn-primary,
+html[data-skin="spent"] #schedule-edit-card .btn-primary,
+html[data-skin="spent"] #remind-picker-card .btn-primary { background: var(--sp-green) !important; color: #fff !important; }
+html[data-skin="spent"] #gcal-write-setup-card [style*="#d4a574"],
+html[data-skin="spent"] #device-code-card [style*="#d4a574"],
+html[data-skin="spent"] #manual-paste-card [style*="#d4a574"],
+html[data-skin="spent"] #morning-receipt-card [style*="#d4a574"],
+html[data-skin="spent"] #morning-pr-card [style*="#d4a574"],
+html[data-skin="spent"] #schedule-edit-card [style*="#d4a574"],
+html[data-skin="spent"] #remind-picker-card [style*="#d4a574"] { color: var(--sp-green) !important; }
+html[data-skin="spent"] #gcal-write-setup-card [style*="color:#f4ede0"],
+html[data-skin="spent"] #device-code-card [style*="color:#f4ede0"],
+html[data-skin="spent"] #manual-paste-card [style*="color:#f4ede0"],
+html[data-skin="spent"] #morning-receipt-card [style*="color:#f4ede0"],
+html[data-skin="spent"] #morning-pr-card [style*="color:#f4ede0"],
+html[data-skin="spent"] #schedule-edit-card [style*="color:#f4ede0"],
+html[data-skin="spent"] #remind-picker-card [style*="color:#f4ede0"],
+html[data-skin="spent"] #gcal-write-setup-card [style*="color: #f4ede0"],
+html[data-skin="spent"] #device-code-card [style*="color: #f4ede0"],
+html[data-skin="spent"] #manual-paste-card [style*="color: #f4ede0"],
+html[data-skin="spent"] #morning-receipt-card [style*="color: #f4ede0"],
+html[data-skin="spent"] #morning-pr-card [style*="color: #f4ede0"],
+html[data-skin="spent"] #schedule-edit-card [style*="color: #f4ede0"],
+html[data-skin="spent"] #remind-picker-card [style*="color: #f4ede0"] { color: var(--sp-ink) !important; }
+html[data-skin="spent"] #gcal-write-setup-card [style*="rgba(244,237,224"],
+html[data-skin="spent"] #device-code-card [style*="rgba(244,237,224"],
+html[data-skin="spent"] #manual-paste-card [style*="rgba(244,237,224"],
+html[data-skin="spent"] #morning-receipt-card [style*="rgba(244,237,224"],
+html[data-skin="spent"] #morning-pr-card [style*="rgba(244,237,224"],
+html[data-skin="spent"] #schedule-edit-card [style*="rgba(244,237,224"],
+html[data-skin="spent"] #remind-picker-card [style*="rgba(244,237,224"] { color: var(--sp-muted) !important; }
+html[data-skin="spent"] #gcal-write-setup-card [style*="rgba(255,255,255,0.0"],
+html[data-skin="spent"] #device-code-card [style*="rgba(255,255,255,0.0"],
+html[data-skin="spent"] #manual-paste-card [style*="rgba(255,255,255,0.0"],
+html[data-skin="spent"] #morning-receipt-card [style*="rgba(255,255,255,0.0"],
+html[data-skin="spent"] #morning-pr-card [style*="rgba(255,255,255,0.0"],
+html[data-skin="spent"] #schedule-edit-card [style*="rgba(255,255,255,0.0"],
+html[data-skin="spent"] #remind-picker-card [style*="rgba(255,255,255,0.0"],
+html[data-skin="spent"] #gcal-write-setup-card [style*="rgba(255,255,255,.0"],
+html[data-skin="spent"] #device-code-card [style*="rgba(255,255,255,.0"],
+html[data-skin="spent"] #manual-paste-card [style*="rgba(255,255,255,.0"],
+html[data-skin="spent"] #morning-receipt-card [style*="rgba(255,255,255,.0"],
+html[data-skin="spent"] #morning-pr-card [style*="rgba(255,255,255,.0"],
+html[data-skin="spent"] #schedule-edit-card [style*="rgba(255,255,255,.0"],
+html[data-skin="spent"] #remind-picker-card [style*="rgba(255,255,255,.0"] { background: var(--sp-soft) !important; border-color: transparent !important; }
+html[data-skin="spent"] #gcal-write-setup-card button:not(.btn-primary):not(.notif-close),
+html[data-skin="spent"] #device-code-card button:not(.btn-primary):not(.notif-close),
+html[data-skin="spent"] #manual-paste-card button:not(.btn-primary):not(.notif-close),
+html[data-skin="spent"] #morning-receipt-card button:not(.btn-primary):not(.notif-close),
+html[data-skin="spent"] #morning-pr-card button:not(.btn-primary):not(.notif-close),
+html[data-skin="spent"] #schedule-edit-card button:not(.btn-primary):not(.notif-close),
+html[data-skin="spent"] #remind-picker-card button:not(.btn-primary):not(.notif-close) { color: var(--sp-ink) !important; }
+/* v512 — leftovers: remind-picker buttons + schedule-edit date/time text */
+html[data-skin="spent"] #remind-picker-card #remind-custom-confirm { background: var(--sp-green) !important; color: #fff !important; min-height: 52px; border-radius: 16px !important; }
+html[data-skin="spent"] #remind-picker-card #remind-none { background: var(--sp-soft) !important; color: var(--sp-ink2) !important; border: none !important; min-height: 48px; border-radius: 16px !important; }
+html[data-skin="spent"] #schedule-edit-card .se-field input,
+html[data-skin="spent"] #schedule-edit-card .se-field input[type="date"],
+html[data-skin="spent"] #schedule-edit-card .se-field input[type="time"] { background: var(--sp-soft) !important; border: 1.5px solid transparent !important; color: var(--sp-ink) !important; -webkit-text-fill-color: var(--sp-ink); border-radius: 14px !important; }
+html[data-skin="spent"] #schedule-edit-card .se-field input:focus { border-color: var(--sp-ink) !important; background: #fff !important; }
+html[data-skin="spent"] #morning-conn-dot { color: #c0392b !important; background: #fdecea !important; }
+html[data-skin="spent"] #schedule-edit-card .se-field input::placeholder { color: #b5b5b0 !important; -webkit-text-fill-color: #b5b5b0; }
+html[data-skin="spent"] #schedule-edit-card .notif-actions button { justify-content: center !important; text-align: center !important; }
+html[data-skin="spent"] #schedule-edit-card button[onclick*="deleteFromScheduleEdit"] { color: #dc2626 !important; }
 </style>
 <!--SPENT-END-->
 </body>
