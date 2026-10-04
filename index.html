@@ -7489,7 +7489,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v503</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v504</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -26625,6 +26625,48 @@ function applyTheme(dark) {
   const mLabel = document.getElementById('mobile-theme-label');
   if (mLabel) mLabel.textContent = dark ? 'יום' : 'לילה';
 }
+// ── SPENT bottom bar (4.10): a floating rounded bar with the 5 main
+// tabs, the green + docked in the middle, and "עוד" opening a sheet with
+// the rest. Pure add-on: the original <a> links stay the source of truth
+// (classic keeps its scrolling strip; CSS gates everything on the skin). ──
+const _SPENT_SHORT = { 'הפקות פעילות': 'הפקות', 'לוז יומי': 'לוז', 'משימות יומיות': 'משימות', 'סיכומי הפקה': 'סיכומים', 'הצעות מחיר': 'הצעות', 'שירים שיצאו': 'שירים' };
+function spentNavInit() {
+  document.querySelectorAll('.sidebar nav').forEach(nav => {
+    nav.querySelectorAll('a').forEach(a => {
+      if (a.dataset.label) return;
+      const t = (a.textContent || '').trim();
+      a.dataset.label = _SPENT_SHORT[t] || t;
+    });
+    const links = [...nav.querySelectorAll('a[data-page]')];
+    if (links.length > 5 && !nav.querySelector('.nav-more')) {
+      const m = document.createElement('a');
+      m.className = 'nav-more'; m.dataset.label = 'עוד';
+      m.innerHTML = '<span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span> עוד';
+      m.onclick = () => spentMoreOpen(nav);
+      nav.appendChild(m);
+    }
+  });
+}
+window.spentMoreOpen = function(nav) {
+  const items = [...nav.querySelectorAll('a[data-page]')].slice(5).filter(a => a.style.display !== 'none');
+  let ov = document.getElementById('spent-more');
+  if (!ov) {
+    ov = document.createElement('div'); ov.id = 'spent-more';
+    ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); };
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = '<div class="sm-sheet"><div class="sm-grab"></div><div class="sm-title">עוד</div><div class="sm-grid"></div></div>';
+  const grid = ov.querySelector('.sm-grid');
+  items.forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'sm-tile' + (a.classList.contains('active') ? ' on' : '');
+    const ic = a.querySelector('.nav-icon');
+    b.innerHTML = '<span class="sm-ic">' + (ic ? ic.innerHTML : '') + '</span><span class="sm-t">' + _escape((a.textContent || '').trim()) + '</span>';
+    b.onclick = () => { ov.classList.remove('open'); a.click(); };
+    grid.appendChild(b);
+  });
+  requestAnimationFrame(() => ov.classList.add('open'));
+};
 // Switch between the new SPENT design and the original (classic) one.
 window.setSkin = function(skin) {
   skin = skin === 'classic' ? 'classic' : 'spent';
@@ -26648,6 +26690,7 @@ function toggleTheme() {
   const saved = localStorage.getItem('theme');
   const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   applyTheme(saved ? saved === 'dark' : prefersDark);
+  try { spentNavInit(); } catch (_) {}
   if (document.documentElement.getAttribute('data-skin') === 'spent') {
     const mc = document.querySelector('meta[name="theme-color"]');
     if (mc) mc.setAttribute('content', '#ffffff');
@@ -29895,21 +29938,21 @@ html[data-skin="spent"] {
   --sp-green: #1f9d55; --sp-green-soft: #e6f5ec; --sp-red: #e4532f; --sp-red-soft: #fdece6;
   --sp-blue: #4b4fe0; --sp-blue-soft: #dfe7fc; --sp-peach: #fdede2; --sp-peach-ink: #e0662f;
   --sp-cream: #fbf1e5; --sp-olive: #cfd05e; --sp-yellow: #f6c544;
-  --sp-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 22px rgba(0,0,0,.05);
+  --sp-shadow: 0 1px 2px rgba(0,0,0,.05), 0 3px 12px rgba(0,0,0,.04);
   --sp-shadow-lg: 0 2px 6px rgba(0,0,0,.05), 0 18px 44px rgba(0,0,0,.08);
 
   /* re-map the app's own tokens onto the SPENT palette */
   --bg: #ffffff; --surface: #ffffff; --surface2: #f4f4f2; --surface3: #ebebe8;
   --border: #ededeb; --border-glow: rgba(0,0,0,.06);
-  --accent: #0f0f0f; --accent-light: #f4f4f2; --accent2: #3b3b3b; --accent-glow: rgba(0,0,0,.08);
+  --accent: #1f9d55; --accent-light: #e6f5ec; --accent2: #34b36b; --accent-glow: rgba(31,157,85,.14);
   --green: #1f9d55; --green-light: #e6f5ec; --green-border: #bfe5cf;
   --red: #e4532f; --red-light: #fdece6; --orange: #e0862f;
   --text: #0f0f0f; --text-muted: #8d8d8d;
   --radius: 20px;
-  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 22px rgba(0,0,0,.05);
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 3px 12px rgba(0,0,0,.04);
   --shadow-md: 0 2px 6px rgba(0,0,0,.05), 0 12px 32px rgba(0,0,0,.07);
   --shadow-hover: 0 2px 6px rgba(0,0,0,.06), 0 14px 36px rgba(0,0,0,.09);
-  --shadow-ios-2: 0 1px 2px rgba(0,0,0,.04), 0 6px 22px rgba(0,0,0,.05);
+  --shadow-ios-2: 0 1px 2px rgba(0,0,0,.05), 0 3px 12px rgba(0,0,0,.04);
   --shadow-ios-3: 0 2px 6px rgba(0,0,0,.05), 0 14px 36px rgba(0,0,0,.08);
   --ring-accent: 0 0 0 3px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.5);
   --sidebar-bg: #ffffff; --tr-hover: #f7f7f5; --input-bg: #f4f4f2;
@@ -29978,8 +30021,8 @@ html[data-skin="spent"] .btn {
 }
 html[data-skin="spent"] .btn-primary,
 html[data-skin="spent"] .login-btn {
-  background: var(--sp-ink) !important; background-image: none !important; color: #ffffff !important;
-  box-shadow: 0 6px 16px rgba(0,0,0,.14) !important; border: none !important;
+  background: var(--sp-green) !important; background-image: none !important; color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(31,157,85,.28) !important; border: none !important;
 }
 html[data-skin="spent"] .btn-primary:hover { filter: none !important; transform: none; }
 html[data-skin="spent"] .btn-ghost, html[data-skin="spent"] .btn-secondary {
@@ -30218,6 +30261,97 @@ html[data-skin="spent"] .fc-up-date { background: var(--sp-peach) !important; }
 html[data-skin="spent"] .fc-up-date b { color: var(--sp-peach-ink) !important; }
 html[data-skin="spent"] .fc-up-row.soon .fc-up-main .s { color: var(--sp-peach-ink) !important; }
 html[data-skin="spent"] .fc-up-chk.on { background: var(--sp-green) !important; border-color: var(--sp-green) !important; }
+
+/* ══ v504: colour, crispness, floating bar ═════════════════════════ */
+/* active chips / tabs: SPENT green, not black */
+html[data-skin="spent"] .fc-fchip.on, html[data-skin="spent"] .notif-when-chip.active, html[data-skin="spent"] .notif-when-chip.on,
+html[data-skin="spent"] .gl-kind.on, html[data-skin="spent"] .ftab.active, html[data-skin="spent"] .ctr-kind-tab.active,
+html[data-skin="spent"] .gp-btn.active, html[data-skin="spent"] .gp-btn.on, html[data-skin="spent"] .gp-btn.sel,
+html[data-skin="spent"] .waappt-chip.on { background: var(--sp-green) !important; color: #ffffff !important; border-color: var(--sp-green) !important; }
+/* toast: light pill */
+html[data-skin="spent"] .toast { background: #ffffff !important; color: var(--sp-ink) !important; box-shadow: 0 8px 28px rgba(0,0,0,.14) !important; border: 1px solid var(--sp-line) !important; }
+/* decorative tint overlays baked into cards → gone (crisp white cards) */
+html[data-skin="spent"] [style*="position:absolute;inset:0;background:linear-gradient"],
+html[data-skin="spent"] [style*="position: absolute; inset: 0; background: linear-gradient"] { display: none !important; }
+/* solid accent-gradient tiles (e.g. the bank icon) → soft green bubble */
+html[data-skin="spent"] [style*="linear-gradient(135deg,var(--accent),var(--accent2))"] {
+  background: var(--sp-green-soft) !important; color: var(--sp-green) !important; box-shadow: none !important;
+}
+html[data-skin="spent"] #bank-deposit-card { background: #ffffff !important; box-shadow: var(--sp-shadow) !important; border: 1px solid var(--sp-line) !important; border-radius: 20px !important; }
+html[data-skin="spent"] #bank-deposit-card [style*="linear-gradient(135deg,var(--accent),var(--accent2))"] { border-radius: 50% !important; }
+html[data-skin="spent"] #bank-deposit-amount { color: var(--sp-ink) !important; }
+html[data-skin="spent"] .goal-bar-wrap { background: #ffffff !important; background-image: none !important; }
+html[data-skin="spent"] .goal-bar-fill { background: var(--sp-green) !important; background-image: none !important; }
+html[data-skin="spent"] .goal-bar-track { background: var(--sp-soft) !important; }
+html[data-skin="spent"] .stat-card { border-width: 1px !important; }
+html[data-skin="spent"] .income-extra-toggle { background: #ffffff !important; border: 1px solid var(--sp-line) !important; color: var(--sp-ink2) !important; box-shadow: none !important; border-radius: 999px !important; }
+
+/* ── Floating bottom bar with the green + in the middle (phones) ── */
+@media (max-width: 768px) {
+  html[data-skin="spent"] .sidebar {
+    left: 12px !important; right: 12px !important; width: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 10px) !important;
+    min-height: 0 !important; height: 66px !important; padding: 0 4px !important;
+    border-radius: 30px !important; border: 1px solid var(--sp-line) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.05) !important;
+  }
+  html[data-skin="spent"] .sidebar nav { overflow: visible !important; justify-content: space-between; align-items: stretch; scroll-snap-type: none !important; }
+  html[data-skin="spent"] .sidebar nav::before { content: ''; flex: 0 0 64px; order: 2; }   /* slot for the + */
+  html[data-skin="spent"] .sidebar nav a {
+    flex: 1 1 0 !important; min-width: 0 !important; min-height: 0 !important; padding: 9px 0 13px !important;
+    gap: 3px !important; font-size: 0 !important; order: 3; justify-content: center;
+  }
+  html[data-skin="spent"] .sidebar nav a:nth-child(-n+3) { order: 1; }
+  html[data-skin="spent"] #music-sidebar nav a:nth-child(2) { order: 3; }
+  html[data-skin="spent"] .sidebar nav a::after { content: attr(data-label); font-size: 10.5px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; }
+  html[data-skin="spent"] .sidebar nav a .nav-icon svg { width: 23px !important; height: 23px !important; stroke-width: 1.7 !important; }
+  html[data-skin="spent"] .sidebar nav a:nth-child(n+6):not(.nav-more) { display: none !important; }
+  html[data-skin="spent"] #mobile-theme-nav-btn { display: none !important; }
+  html[data-skin="spent"] .sidebar nav a.active,
+  html[data-skin="spent"] .sidebar nav:has(a:nth-child(n+6).active) .nav-more {
+    color: var(--sp-ink) !important;
+    background-image: radial-gradient(circle, var(--sp-ink) 2.4px, transparent 2.9px) !important;
+    background-repeat: no-repeat !important; background-position: center bottom 4px !important; background-size: 8px 8px !important;
+  }
+  html[data-skin="spent"] .sidebar nav a.active .nav-icon svg { stroke-width: 2.2 !important; }
+  html[data-skin="spent"] nav a.active::after { position: static !important; width: auto !important; height: auto !important; background: none !important; border-radius: 0 !important; margin: 0 !important; }
+  /* the + docks into the middle of the bar */
+  html[data-skin="spent"] .fab-container {
+    left: 50% !important; right: auto !important; transform: translateX(-50%);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 19px) !important; z-index: 260 !important;
+  }
+  html[data-skin="spent"] .fab-main { width: 48px !important; height: 48px !important; font-size: 26px !important;
+    box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px #11502f, 0 6px 16px rgba(31,157,85,.35) !important; }
+  html[data-skin="spent"] body:has(#mode-screen:not(.hidden)) .fab-container { bottom: calc(env(safe-area-inset-bottom, 0px) + 26px) !important; z-index: 9999 !important; }
+  html[data-skin="spent"] .main { padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+html[data-skin="spent"] .nav-more { cursor: pointer; }
+html:not([data-skin="spent"]) .nav-more { display: none !important; }
+@media (min-width: 769px) { html[data-skin="spent"] .nav-more { display: none !important; } }
+
+/* ── "עוד" sheet ─────────────────────────────────────────────── */
+#spent-more { position: fixed; inset: 0; z-index: 10050; background: rgba(15,15,15,0); display: flex; align-items: flex-end; pointer-events: none; transition: background .2s; }
+#spent-more.open { background: rgba(15,15,15,.28); pointer-events: auto; }
+#spent-more .sm-sheet { width: 100%; background: #ffffff; border-radius: 28px 28px 0 0; padding: 10px 18px calc(env(safe-area-inset-bottom, 0px) + 22px);
+  transform: translateY(100%); transition: transform .28s cubic-bezier(.2,.9,.3,1); box-shadow: 0 -10px 40px rgba(0,0,0,.12); }
+#spent-more.open .sm-sheet { transform: none; }
+#spent-more .sm-grab { width: 40px; height: 5px; border-radius: 3px; background: #e2e2df; margin: 0 auto 12px; }
+#spent-more .sm-title { font-size: 22px; font-weight: 900; color: #0f0f0f; margin: 0 4px 14px; letter-spacing: -0.02em; }
+#spent-more .sm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; }
+#spent-more .sm-tile { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; font-family: inherit; padding: 0; }
+#spent-more .sm-ic { width: 58px; height: 58px; border-radius: 50%; background: #fdede2; color: #e0662f; display: flex; align-items: center; justify-content: center; }
+#spent-more .sm-tile:nth-child(4n+2) .sm-ic { background: #dfe7fc; color: #4b4fe0; }
+#spent-more .sm-tile:nth-child(4n+3) .sm-ic { background: #e6f5ec; color: #1f9d55; }
+#spent-more .sm-tile:nth-child(4n+4) .sm-ic { background: #f4f1d8; color: #8a8a1f; }
+#spent-more .sm-tile.on .sm-ic { outline: 2px solid #0f0f0f; outline-offset: 2px; }
+#spent-more .sm-ic svg { width: 26px; height: 26px; }
+#spent-more .sm-t { font-size: 12px; font-weight: 800; color: #0f0f0f; text-align: center; line-height: 1.2; }
+
+/* toast: fully hidden when idle, pops up above the floating bar */
+html[data-skin="spent"] .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 92px) !important; transform: translateX(-50%) translateY(170px) !important; opacity: 0; border-radius: 18px !important; backdrop-filter: none !important;
+  transition: transform .34s cubic-bezier(.22,1.3,.4,1), opacity .2s ease !important; }
+html[data-skin="spent"] .toast.show { transform: translateX(-50%) translateY(0) !important; opacity: 1; }
+html[data-skin="spent"] .goal-bar-wrap::before, html[data-skin="spent"] .goal-bar-wrap::after { display: none !important; }
 </style>
 <!--SPENT-END-->
 </body>
