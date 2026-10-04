@@ -3649,6 +3649,29 @@
     .fc-arch-item .t { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; color: var(--text); text-decoration: line-through; text-decoration-color: rgba(150,150,150,.5); }
     .fc-arch-item .am { flex-shrink: 0; font-size: 13.5px; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
     .fc-note { font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.6; margin-top: 16px; }
+    /* charge day chip + upcoming charges strip (4.10) */
+    .fc-day { display: inline-block; font-size: 11px; font-weight: 800; color: var(--text-muted); opacity: .55; cursor: pointer; padding: 1px 0; }
+    .fc-day.set { opacity: 1; color: var(--text); }
+    .fc-up { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px 14px 8px; margin: 4px 0 16px; box-shadow: var(--shadow); }
+    .fc-up-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .fc-up-head b { font-size: 16px; font-weight: 900; color: var(--text); }
+    .fc-up-head span { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+    .fc-up-row { display: flex; align-items: center; gap: 11px; padding: 9px 0; border-top: 1px solid var(--border); }
+    .fc-up-row:first-of-type { border-top: none; }
+    .fc-up-date { flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; background: var(--surface2); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+    .fc-up-date b { font-size: 16px; font-weight: 900; color: var(--text); }
+    .fc-up-date small { font-size: 10px; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
+    .fc-up-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .fc-up-main .t { font-size: 14.5px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fc-up-main .s { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-top: 2px; }
+    .fc-up-row.soon .fc-up-main .s { color: var(--orange); }
+    .fc-up-amt { flex-shrink: 0; font-size: 15px; font-weight: 900; color: var(--text); font-variant-numeric: tabular-nums; }
+    .fc-up-chk { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; color: var(--text-muted); font-size: 14px; font-weight: 900; cursor: pointer; padding: 0; }
+    .fc-up-chk.on { background: var(--green); border-color: var(--green); color: #fff; }
+    .fc-up-row.paid { opacity: .55; }
+    .fc-up-row.paid .fc-up-amt { text-decoration: line-through; }
+    .fc-up-empty, .fc-up-foot { font-size: 12.5px; font-weight: 600; color: var(--text-muted); line-height: 1.5; padding: 4px 0 8px; }
+    .fc-up-foot { border-top: 1px solid var(--border); padding-top: 9px; }
 
     /* ===== NEW-YEAR GOALS (תשפ״ז) — lobby card + page (20.9) ===== */
     .lobby-year-card {
@@ -7466,7 +7489,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v502</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v503</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -17692,6 +17715,120 @@ function fcTopUps() {
 function fcList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && !x.archived); } catch (_) { return []; } }
 function fcArchivedList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && x.archived); } catch (_) { return []; } }
 function fcTotal() { return fcList().reduce((t, x) => t + (Number(x.amount) || 0), 0); }
+// ── Charge day (4.10): each fixed cost can carry the day of the month it
+// leaves the account. Drives the "upcoming charges" strip + reminders. ──
+const _FC_DOW = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+function _fcMonthKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+// next date (today included) this item's charge day falls on
+function _fcNextDate(day, from) {
+  const t = from ? new Date(from) : new Date(); t.setHours(0, 0, 0, 0);
+  const at = (y, m) => { const last = new Date(y, m + 1, 0).getDate(); return new Date(y, m, Math.min(day, last)); };
+  let d = at(t.getFullYear(), t.getMonth());
+  if (d < t) d = at(t.getFullYear(), t.getMonth() + 1);
+  return d;
+}
+function _fcPaidFor(x, d) { return !!(x.paidMonths && x.paidMonths[_fcMonthKey(d)]); }
+window.fcEditDay = function(id) {
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  const v = prompt('באיזה יום בחודש זה יורד? (1–31, ריק = בלי יום)', x.day ? String(x.day) : ''); if (v === null) return;
+  const n = parseInt(v, 10);
+  if (!String(v).trim()) delete x.day; else if (n >= 1 && n <= 31) x.day = n; else { toast('יום לא תקין'); return; }
+  save('fixed_costs', list); fcRender(); toast(x.day ? '📅 יורד ב-' + x.day + ' לחודש' : 'הוסר יום החיוב');
+};
+// ✓ mark this month's occurrence as paid / transferred (or undo)
+window.fcMarkPaid = function(id, mk) {
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  x.paidMonths = x.paidMonths || {};
+  if (x.paidMonths[mk]) delete x.paidMonths[mk]; else x.paidMonths[mk] = Date.now();
+  save('fixed_costs', list); fcRender();
+  if (x.paidMonths[mk]) { if (window.haptic && window.haptic.success) window.haptic.success(); toast('✓ ' + x.name + ' — בוצע החודש'); }
+};
+function _fcRelDay(d) {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const n = Math.round((d - t) / 864e5);
+  return n === 0 ? 'היום' : n === 1 ? 'מחר' : 'בעוד ' + n + ' ימים';
+}
+function fcRenderUpcoming() {
+  let host = document.getElementById('fc-upcoming');
+  if (!host) { host = document.createElement('div'); host.id = 'fc-upcoming'; const f = document.getElementById('fc-filter'); if (f && f.parentNode) f.parentNode.insertBefore(host, f); else return; }
+  const items = fcList().filter(x => Number(x.day) >= 1)
+    .map(x => ({ x, d: _fcNextDate(Number(x.day)) }))
+    .filter(o => (o.d - new Date()) / 864e5 < 31)
+    .sort((a, b) => a.d - b.d);
+  const noDay = fcList().filter(x => !(Number(x.day) >= 1)).length;
+  if (!items.length) {
+    host.innerHTML = '<div class="fc-up"><div class="fc-up-head"><b>החיובים הקרובים</b></div><div class="fc-up-empty">קבע לכל הוצאה באיזה יום בחודש היא יורדת (לחיצה על 📅 בשורה) — ותראה כאן מה יוצא ומתי.</div></div>';
+    return;
+  }
+  const due = items.filter(o => !_fcPaidFor(o.x, o.d));
+  const sum = due.reduce((t, o) => t + (Number(o.x.amount) || 0), 0);
+  host.innerHTML = '<div class="fc-up"><div class="fc-up-head"><b>החיובים הקרובים</b><span>' + fmtMoney(sum) + ' ב-30 הימים הבאים</span></div>'
+    + items.slice(0, 7).map(o => {
+        const paid = _fcPaidFor(o.x, o.d), mk = _fcMonthKey(o.d);
+        const soon = !paid && (o.d - new Date()) / 864e5 < 2;
+        return '<div class="fc-up-row' + (paid ? ' paid' : '') + (soon ? ' soon' : '') + '">'
+          + '<span class="fc-up-date"><b>' + o.d.getDate() + '</b><small>' + _FC_DOW[o.d.getDay()] + '</small></span>'
+          + '<span class="fc-up-main"><span class="t">' + _escape(o.x.name) + '</span><span class="s">' + (paid ? 'בוצע ✓' : _fcRelDay(o.d)) + '</span></span>'
+          + '<span class="fc-up-amt">' + fmtMoney(o.x.amount) + '</span>'
+          + '<button class="fc-up-chk' + (paid ? ' on' : '') + '" onclick="fcMarkPaid(\'' + o.x.id + '\',\'' + mk + '\')" title="' + (paid ? 'בטל סימון' : 'סמן שבוצע') + '">✓</button>'
+          + '</div>';
+      }).join('')
+    + (noDay ? '<div class="fc-up-foot">עוד ' + noDay + ' הוצאות בלי יום חיוב — לחץ 📅 בשורה כדי להוסיף</div>' : '')
+    + '</div>';
+}
+// Phone reminders (native): the evening before each charge, and for
+// manual transfers also the morning of. Rescheduled on every change and
+// app open; skipped once the month is marked paid.
+let _fcNotifTimer = 0;
+function fcScheduleReminders() {
+  clearTimeout(_fcNotifTimer);
+  _fcNotifTimer = setTimeout(async () => {
+    try {
+      if (!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform())) return;
+      const LN = Capacitor.Plugins && Capacitor.Plugins.LocalNotifications; if (!LN) return;
+      const hid = s => 700000000 + Math.abs(String(s).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)) % 99000000;
+      let old = []; try { old = JSON.parse(localStorage.getItem('fc_notif_ids') || '[]'); } catch (_) {}
+      if (old.length) await LN.cancel({ notifications: old.map(id => ({ id })) }).catch(() => {});
+      const prefs = (typeof getNotifPrefs === 'function') ? getNotifPrefs() : {};
+      if (prefs.enabled === false || prefs.expenses === false) { localStorage.setItem('fc_notif_ids', '[]'); return; }
+      const now = new Date(), out = [];
+      fcList().filter(x => Number(x.day) >= 1).forEach(x => {
+        let d = _fcNextDate(Number(x.day));
+        for (let k = 0; k < 2; k++) {               // this occurrence + the next one
+          if (!_fcPaidFor(x, d)) {
+            const eve = new Date(d); eve.setDate(eve.getDate() - 1); eve.setHours(19, 0, 0, 0);
+            if (eve > now) out.push({ id: hid('fc-e-' + x.id + _fcMonthKey(d)), title: (x.manual ? '🔔 מחר להעביר ' : '💸 מחר יורדים ') + fmtMoney(x.amount),
+              body: x.name + (x.manual ? ' · ב-' + d.getDate() + ' לחודש' : ' · תוודא שיש כיסוי בחשבון'), schedule: { at: eve, allowWhileIdle: true }, sound: 'default' });
+            if (x.manual) {
+              const morn = new Date(d); morn.setHours(9, 0, 0, 0);
+              if (morn > now) out.push({ id: hid('fc-m-' + x.id + _fcMonthKey(d)), title: '🔔 היום להעביר ' + fmtMoney(x.amount),
+                body: x.name + ' · אחרי ההעברה סמן ✓ באפליקציה', schedule: { at: morn, allowWhileIdle: true }, sound: 'default' });
+            }
+          }
+          d = _fcNextDate(Number(x.day), new Date(d.getFullYear(), d.getMonth() + 1, 1));
+        }
+      });
+      if (out.length) await LN.schedule({ notifications: out }).catch(e => console.warn('fc notif', e));
+      localStorage.setItem('fc_notif_ids', JSON.stringify(out.map(n => n.id)));
+    } catch (e) { console.warn('fcScheduleReminders', e); }
+  }, 800);
+}
+// ── New flat (10.2026): his personal outflows are now the transfer to the
+// joint account with Dari (2nd) + the studio rent (28th). The old flat's
+// rent and bills (now paid from the joint account) move to "כבר לא" —
+// restorable. Idempotent across devices via fixed ids (fixed_costs syncs). ──
+function fcMoveFlat2610() {
+  try {
+    const list = load('fixed_costs') || [];
+    if (!list.length || list.some(x => x && x.id === 'fc_joint_acct')) return;
+    const isOld = n => { n = String(n || '').trim(); return n === 'שכירות' || n === 'ארנונה' || n === 'חשמל' || n.indexOf('מים') === 0; };
+    list.forEach(x => { if (x && !x.archived && isOld(x.name)) { x.archived = true; x.archivedAt = Date.now(); } });
+    list.push({ id: 'fc_joint_acct', name: 'העברה לחשבון המשותף', amount: 3000, group: 'living', day: 2, manual: true, note: 'ארנונה, מים, חשמל · דרי: אותו סכום', until: '' });
+    list.push({ id: 'fc_studio_rent', name: 'שכירות אולפן', amount: 2800, group: 'studio', day: 28, note: '', until: '' });
+    save('fixed_costs', list);
+    setTimeout(() => { try { toast('🏠 ההוצאות הקבועות עודכנו לדירה החדשה'); } catch (_) {} }, 1800);
+  } catch (e) { console.warn('fcMoveFlat2610', e); }
+}
 function fcEntryCard() {
   const el = document.getElementById('fc-entry'); if (!el) return;
   const list = fcList();
@@ -17747,7 +17884,8 @@ window.fcRender = function() {
       + items.map(x => '<div class="fc-item"><div class="fc-row">'
         + '<button class="fc-research-btn" onclick="event.stopPropagation();fcResearchOne(\'' + x.id + '\')" title="בדוק מחיר">🔎</button>'
         + '<div class="fc-row-main"><div class="t">' + _escape(x.name) + '</div>'
-        + ((x.note || x.until) ? '<div class="s">' + (x.until ? 'עד ' + fcUntilLabel(x.until) : '') + (x.until && x.note ? ' · ' : '') + (x.note ? _escape(x.note) : '') + '</div>' : '') + '</div>'
+        + '<div class="s"><span class="fc-day' + (x.day ? ' set' : '') + '" onclick="event.stopPropagation();fcEditDay(\'' + x.id + '\')">📅 ' + (x.day ? 'ב-' + x.day + ' לחודש' : 'יום?') + '</span>'
+        + ((x.note || x.until) ? ' · ' + (x.until ? 'עד ' + fcUntilLabel(x.until) : '') + (x.until && x.note ? ' · ' : '') + (x.note ? _escape(x.note) : '') : '') + '</div></div>'
         + '<div class="fc-amt tap" onclick="fcEditAmount(\'' + x.id + '\')" title="שנה סכום">' + fmtMoney(x.amount) + '</div>'
         + '<button class="fc-mini" onclick="fcRenameOne(\'' + x.id + '\')" title="שנה שם">✏️</button>'
         + '<button class="fc-mini" onclick="fcArchive(\'' + x.id + '\')" title="כבר לא משלם">🗑️</button></div>'
@@ -17755,8 +17893,10 @@ window.fcRender = function() {
       + '</div>';
   });
   document.getElementById('fc-groups').innerHTML = html || '<div class="fc-note" style="text-align:center;margin-top:20px">אין הוצאות בקטגוריה הזאת</div>';
+  fcRenderUpcoming();
   fcRenderArchive();
   fcEntryCard();
+  fcScheduleReminders();
 };
 // "כבר לא" — cancelled expenses kept for reference (soft delete). Shows a
 // collapsible folder under the list with restore / delete-forever.
@@ -17919,8 +18059,11 @@ window.fcAdd = function() {
   const amt = Number(prompt('כמה זה עולה בחודש? (₪)')); if (!amt || amt <= 0) return;
   const g = (prompt('קבוצה: כתוב 1=מגורים, 2=אולפן/תוכנות, 3=שירותים', '2') || '2').trim();
   const group = g === '1' ? 'living' : g === '3' ? 'service' : 'studio';
+  const dv = parseInt(prompt('באיזה יום בחודש זה יורד? (1–31, אפשר להשאיר ריק)') || '', 10);
   const list = load('fixed_costs') || [];
-  list.push({ id: genId(), name: name.trim(), amount: amt, group, note: '', until: '' });
+  const item = { id: genId(), name: name.trim(), amount: amt, group, note: '', until: '' };
+  if (dv >= 1 && dv <= 31) item.day = dv;
+  list.push(item);
   save('fixed_costs', list); fcRender();
   if (window.haptic) window.haptic.success();
   toast('✓ נוסף להוצאות הקבועות');
@@ -17974,7 +18117,9 @@ initFirebase().then(() => {
   try { fixFreshChapter308(); } catch (_) {}
   try { fcSeedOnce(); } catch (_) {}
   try { fcTopUps(); } catch (_) {}
+  try { fcMoveFlat2610(); } catch (_) {}
   try { fcEntryCard(); } catch (_) {}
+  try { fcScheduleReminders(); } catch (_) {}
   refreshAll();
   // Live listener: pick up signed contracts within seconds, no reload needed
   try { _attachContractsListener(); } catch(e){}
@@ -18945,7 +19090,7 @@ window.handleNotifToggle = function(btn) {
   const prefs = window.getNotifPrefs();
   prefs[key] = !prefs[key];
   window.setNotifPrefs(prefs);
-  btn.classList.toggle('on', prefs[key]);
+  btn.classList.toggle('on', prefs[key]);  try { if (typeof fcScheduleReminders === 'function') fcScheduleReminders(); } catch (_) {}
 };
 window.handleNotifLead = function(btn) {
   const val = parseInt(btn.getAttribute('data-lead'), 10);
@@ -30066,6 +30211,13 @@ html[data-skin="spent"] .gp-btn.active, html[data-skin="spent"] .gp-btn.on, html
 /* ── Dark-coded music & misc modal fields (dx-*, sketch) ───────── */
 html[data-skin="spent"] .dx-rename-input, html[data-skin="spent"] .dx-target-row { background: var(--sp-soft) !important; border-color: transparent !important; color: var(--sp-ink) !important; }
 html[data-skin="spent"] .dx-target-empty { color: var(--sp-muted) !important; }
+
+/* ── Upcoming charges: SPENT-style peach date bubbles ──────────── */
+html[data-skin="spent"] .fc-up { background: #ffffff !important; border: 1px solid var(--sp-line) !important; box-shadow: var(--sp-shadow) !important; border-radius: 20px !important; }
+html[data-skin="spent"] .fc-up-date { background: var(--sp-peach) !important; }
+html[data-skin="spent"] .fc-up-date b { color: var(--sp-peach-ink) !important; }
+html[data-skin="spent"] .fc-up-row.soon .fc-up-main .s { color: var(--sp-peach-ink) !important; }
+html[data-skin="spent"] .fc-up-chk.on { background: var(--sp-green) !important; border-color: var(--sp-green) !important; }
 </style>
 <!--SPENT-END-->
 </body>
