@@ -9,6 +9,13 @@
     (function() {
       var native = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
       document.documentElement.classList.add(native ? 'cap-native' : 'cap-web');
+      // UI skin (4.10): "spent" = the new clean light design (default),
+      // "classic" = the original warm-brown design. Set before first paint.
+      try {
+        var skin = localStorage.getItem('ui_skin') || 'spent';
+        document.documentElement.setAttribute('data-skin', skin);
+        if (skin === 'spent') document.documentElement.setAttribute('data-theme', 'light');
+      } catch (e) { document.documentElement.setAttribute('data-skin', 'spent'); }
       // Register the JS proxies for our local Swift plugins. The
       // native side is wired up from BridgeViewController.swift's
       // capacitorDidLoad(); these calls create the matching
@@ -6814,6 +6821,12 @@
     <h3><svg class="icon-lg"><use href="#ic-settings"/></svg>הגדרות</h3>
     <div class="notif-sub">התראות, אבטחה, ועוד</div>
 
+    <div class="notif-section-title">עיצוב</div>
+    <div class="notif-when" id="skin-switch">
+      <button type="button" class="notif-when-chip skin-opt" data-skin="spent" onclick="setSkin('spent')">✨ חדש (לבן)</button>
+      <button type="button" class="notif-when-chip skin-opt" data-skin="classic" onclick="setSkin('classic')">🤎 קלאסי (חום)</button>
+    </div>
+
     <div class="notif-section-title">אבטחה</div>
     <div class="notif-row" id="face-id-row" style="display:none">
       <div><label>Face ID לפתיחת האפליקציה</label><div class="notif-sub-label">נדרש אימות בכל פתיחה</div></div>
@@ -7453,7 +7466,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v501</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v502</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -18871,6 +18884,7 @@ window.setNotifPrefs = function(prefs) {
 };
 
 window.openNotifSettings = function() {
+  try { const sk = document.documentElement.getAttribute('data-skin') || 'spent'; document.querySelectorAll('.skin-opt').forEach(b => b.classList.toggle('on', b.dataset.skin === sk)); } catch (_) {}
   const overlay = document.getElementById('notif-settings-overlay');
   if (!overlay) return;
   const prefs = window.getNotifPrefs();
@@ -26448,6 +26462,8 @@ function removeMusicAudio(type, id) {
 
 // ===== DARK MODE =====
 function applyTheme(dark) {
+  // The SPENT skin is a light-only design — it always sits on the light base.
+  if (document.documentElement.getAttribute('data-skin') === 'spent') dark = false;
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   // Swap the icon by repointing the <use href> so the SVG stays intact.
   // (Old version used textContent and silently obliterated the SVG.)
@@ -26464,6 +26480,18 @@ function applyTheme(dark) {
   const mLabel = document.getElementById('mobile-theme-label');
   if (mLabel) mLabel.textContent = dark ? 'יום' : 'לילה';
 }
+// Switch between the new SPENT design and the original (classic) one.
+window.setSkin = function(skin) {
+  skin = skin === 'classic' ? 'classic' : 'spent';
+  try { localStorage.setItem('ui_skin', skin); } catch (_) {}
+  document.documentElement.setAttribute('data-skin', skin);
+  const saved = localStorage.getItem('theme');
+  applyTheme(skin === 'spent' ? false : (saved ? saved === 'dark' : true));
+  const mc = document.querySelector('meta[name="theme-color"]');
+  if (mc) mc.setAttribute('content', skin === 'spent' ? '#ffffff' : '#2a1f17');
+  try { document.querySelectorAll('.skin-opt').forEach(b => b.classList.toggle('on', b.dataset.skin === skin)); } catch (_) {}
+  toast(skin === 'spent' ? 'עיצוב חדש ✓' : 'חזרה לעיצוב הקלאסי ✓');
+};
 function toggleTheme() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const next = !isDark;
@@ -26475,6 +26503,10 @@ function toggleTheme() {
   const saved = localStorage.getItem('theme');
   const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   applyTheme(saved ? saved === 'dark' : prefersDark);
+  if (document.documentElement.getAttribute('data-skin') === 'spent') {
+    const mc = document.querySelector('meta[name="theme-color"]');
+    if (mc) mc.setAttribute('content', '#ffffff');
+  }
 })();
 
 // ===== TASKS =====
@@ -29703,5 +29735,338 @@ function renderDaily() {
   });
 })();
 </script>
+<!--SPENT-START-->
+<style id="spent-skin">
+/* ═══════════════════════════════════════════════════════════════
+   SPENT SKIN (4.10) — clean, modern light design.
+   White canvas, near-black ink, soft gray pills, black active
+   chips, peach icon bubbles, green primary. Everything is scoped to
+   html[data-skin="spent"] so "classic" (Settings → עיצוב) restores
+   the original look untouched. Placed last so it wins the cascade.
+   ═══════════════════════════════════════════════════════════════ */
+html[data-skin="spent"] {
+  --sp-ink: #0f0f0f; --sp-ink2: #3b3b3b; --sp-muted: #8d8d8d; --sp-faint: #b9b9b9;
+  --sp-bg: #ffffff; --sp-soft: #f4f4f2; --sp-soft2: #ebebe8; --sp-line: #ededeb;
+  --sp-green: #1f9d55; --sp-green-soft: #e6f5ec; --sp-red: #e4532f; --sp-red-soft: #fdece6;
+  --sp-blue: #4b4fe0; --sp-blue-soft: #dfe7fc; --sp-peach: #fdede2; --sp-peach-ink: #e0662f;
+  --sp-cream: #fbf1e5; --sp-olive: #cfd05e; --sp-yellow: #f6c544;
+  --sp-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 22px rgba(0,0,0,.05);
+  --sp-shadow-lg: 0 2px 6px rgba(0,0,0,.05), 0 18px 44px rgba(0,0,0,.08);
+
+  /* re-map the app's own tokens onto the SPENT palette */
+  --bg: #ffffff; --surface: #ffffff; --surface2: #f4f4f2; --surface3: #ebebe8;
+  --border: #ededeb; --border-glow: rgba(0,0,0,.06);
+  --accent: #0f0f0f; --accent-light: #f4f4f2; --accent2: #3b3b3b; --accent-glow: rgba(0,0,0,.08);
+  --green: #1f9d55; --green-light: #e6f5ec; --green-border: #bfe5cf;
+  --red: #e4532f; --red-light: #fdece6; --orange: #e0862f;
+  --text: #0f0f0f; --text-muted: #8d8d8d;
+  --radius: 20px;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 22px rgba(0,0,0,.05);
+  --shadow-md: 0 2px 6px rgba(0,0,0,.05), 0 12px 32px rgba(0,0,0,.07);
+  --shadow-hover: 0 2px 6px rgba(0,0,0,.06), 0 14px 36px rgba(0,0,0,.09);
+  --shadow-ios-2: 0 1px 2px rgba(0,0,0,.04), 0 6px 22px rgba(0,0,0,.05);
+  --shadow-ios-3: 0 2px 6px rgba(0,0,0,.05), 0 14px 36px rgba(0,0,0,.08);
+  --ring-accent: 0 0 0 3px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.5);
+  --sidebar-bg: #ffffff; --tr-hover: #f7f7f5; --input-bg: #f4f4f2;
+  --pill-green-bg: #e6f5ec; --pill-green-text: #1b8a4c; --pill-red-bg: #fdece6; --pill-red-text: #c9411f;
+  --pill-cancel-bg: #fdece6; --pill-cancel-text: #c9411f; --pill-purple-bg: #f4f4f2; --pill-purple-text: #0f0f0f;
+  --pill-gcal-bg: #f4f4f2; --pill-gcal-text: #3b3b3b;
+  --row-paid-bg: #f1faf4; --row-pending-bg: #ffffff; --row-overdue-bg: #fdf1ec; --row-paid-exp-bg: #fdf1ec;
+  --popup-bg: #ffffff; --popup-border: rgba(0,0,0,.08); --popup-separator: #ededeb; --popup-text: #0f0f0f; --popup-muted: #8d8d8d;
+  --gcal-color: #3b3b3b; --delete-btn-color: #b9b9b9;
+  --balance-pos-bg: #ffffff; --balance-pos-border: #ededeb; --balance-neg-bg: #fdf1ec; --balance-neg-border: #f6d3c6;
+  --banner-today-bg: #fdf1ec; --banner-future-bg: #f4f4f2;
+  background: #ffffff;
+  color-scheme: light;
+}
+
+/* ── Canvas & type ─────────────────────────────────────────────── */
+html[data-skin="spent"] body,
+html[data-skin="spent"] .main-content,
+html[data-skin="spent"] #business-main,
+html[data-skin="spent"] #music-main,
+html[data-skin="spent"] #path-main,
+html[data-skin="spent"] #goals-main { background: #ffffff !important; background-image: none !important; color: var(--sp-ink); }
+html[data-skin="spent"] body { font-family: 'Heebo', -apple-system, 'Segoe UI', Arial, sans-serif; font-weight: 500; }
+html[data-skin="spent"] body::before, html[data-skin="spent"] body::after { background: none !important; }
+html[data-skin="spent"] h1, html[data-skin="spent"] h2, html[data-skin="spent"] h3 { color: var(--sp-ink) !important; letter-spacing: -0.02em; }
+html[data-skin="spent"] .page-header h2 {
+  font-size: 30px !important; font-weight: 900 !important; color: var(--sp-ink) !important;
+  -webkit-text-fill-color: var(--sp-ink) !important; background: none !important; text-shadow: none !important; letter-spacing: -0.03em;
+}
+html[data-skin="spent"] .page-header h2 svg, html[data-skin="spent"] .page-header h2 .icon-lg { color: var(--sp-ink) !important; opacity: .9; }
+html[data-skin="spent"] .page-header p { color: var(--sp-muted) !important; font-weight: 500; }
+
+/* Status-bar strip: on a dark-mode iPhone the native clock is white,
+   so keep a slim ink strip behind it; on light mode it's plain white. */
+html[data-skin="spent"] body::before {
+  content: '' !important; position: fixed !important; top: 0; left: 0; right: 0;
+  height: env(safe-area-inset-top, 0px); background: #ffffff !important; z-index: 99990; pointer-events: none;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-skin="spent"] body::before { background: #0f0f0f !important; }
+}
+
+/* ── Cards ─────────────────────────────────────────────────────── */
+html[data-skin="spent"] .card,
+html[data-skin="spent"] .table-card,
+html[data-skin="spent"] .chart-card,
+html[data-skin="spent"] .today-tile,
+html[data-skin="spent"] .home-alert,
+html[data-skin="spent"] .goal-bar-wrap,
+html[data-skin="spent"] .income-triple-grid > div,
+html[data-skin="spent"] .stat-card,
+html[data-skin="spent"] .fc-row,
+html[data-skin="spent"] .fc-stat,
+html[data-skin="spent"] .fc-res,
+html[data-skin="spent"] .fc-arch-item {
+  background: #ffffff !important; background-image: none !important;
+  border: 1px solid var(--sp-line) !important; box-shadow: var(--sp-shadow) !important; color: var(--sp-ink);
+  border-radius: 20px;
+}
+html[data-skin="spent"] .card:hover, html[data-skin="spent"] .table-card:hover { box-shadow: var(--sp-shadow-lg) !important; border-color: var(--sp-line) !important; }
+
+/* ── Buttons ───────────────────────────────────────────────────── */
+html[data-skin="spent"] .btn {
+  border-radius: 999px !important; font-weight: 700; background: var(--sp-soft); color: var(--sp-ink) !important;
+  border: 1px solid transparent !important; box-shadow: none !important; filter: none !important;
+}
+html[data-skin="spent"] .btn-primary,
+html[data-skin="spent"] .login-btn {
+  background: var(--sp-ink) !important; background-image: none !important; color: #ffffff !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,.14) !important; border: none !important;
+}
+html[data-skin="spent"] .btn-primary:hover { filter: none !important; transform: none; }
+html[data-skin="spent"] .btn-ghost, html[data-skin="spent"] .btn-secondary {
+  background: var(--sp-soft) !important; color: var(--sp-ink) !important; border: 1px solid transparent !important;
+}
+html[data-skin="spent"] .btn-danger { background: var(--sp-red-soft) !important; color: #c9411f !important; }
+
+/* ── Inputs ────────────────────────────────────────────────────── */
+html[data-skin="spent"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html[data-skin="spent"] select,
+html[data-skin="spent"] textarea {
+  background: var(--sp-soft) !important; color: var(--sp-ink) !important;
+  border: 1.5px solid transparent !important; border-radius: 14px !important; box-shadow: none !important;
+}
+html[data-skin="spent"] input:focus, html[data-skin="spent"] select:focus, html[data-skin="spent"] textarea:focus {
+  border-color: var(--sp-ink) !important; background: #ffffff !important; outline: none;
+}
+html[data-skin="spent"] input::placeholder, html[data-skin="spent"] textarea::placeholder { color: var(--sp-faint) !important; }
+html[data-skin="spent"] label, html[data-skin="spent"] .form-group label { color: var(--sp-ink2) !important; font-weight: 700; }
+
+/* ── Modals & sheets ───────────────────────────────────────────── */
+html[data-skin="spent"] .modal-overlay { background: rgba(15,15,15,.32) !important; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+html[data-skin="spent"] .modal, html[data-skin="spent"] .modal-box {
+  background: #ffffff !important; background-image: none !important; color: var(--sp-ink) !important;
+  border: none !important; box-shadow: 0 -10px 40px rgba(0,0,0,.12) !important; border-radius: 28px !important;
+}
+html[data-skin="spent"] .modal h3 { font-weight: 900 !important; font-size: 22px !important; }
+
+/* ── Badges / pills / chips ────────────────────────────────────── */
+html[data-skin="spent"] .badge { border: none !important; font-weight: 800; }
+html[data-skin="spent"] .badge-green { background: var(--sp-green-soft) !important; color: #1b8a4c !important; }
+html[data-skin="spent"] .badge-red { background: var(--sp-red-soft) !important; color: #c9411f !important; }
+html[data-skin="spent"] .badge-orange { background: #fff1e0 !important; color: #b8661c !important; }
+html[data-skin="spent"] .badge-purple, html[data-skin="spent"] .badge-gray, html[data-skin="spent"] .badge-blue {
+  background: var(--sp-soft) !important; color: var(--sp-ink2) !important;
+}
+html[data-skin="spent"] .fc-fchip, html[data-skin="spent"] .notif-when-chip, html[data-skin="spent"] .gl-kind {
+  background: var(--sp-soft) !important; color: var(--sp-ink) !important; border: none !important; border-radius: 999px !important;
+}
+html[data-skin="spent"] .fc-fchip.on, html[data-skin="spent"] .notif-when-chip.active,
+html[data-skin="spent"] .notif-when-chip.on, html[data-skin="spent"] .gl-kind.on {
+  background: var(--sp-ink) !important; color: #ffffff !important;
+}
+
+/* ── Tables ────────────────────────────────────────────────────── */
+html[data-skin="spent"] th { background: #ffffff !important; color: var(--sp-muted) !important; border-color: var(--sp-line) !important; font-weight: 700; }
+html[data-skin="spent"] td { border-color: var(--sp-line) !important; color: var(--sp-ink); }
+html[data-skin="spent"] tr:hover td { background: #fafaf8 !important; }
+
+/* ── FAB: SPENT's green plus with an ink ring ─────────────────── */
+html[data-skin="spent"] .fab-main {
+  background: var(--sp-green) !important; background-image: none !important; color: #fff !important;
+  box-shadow: 0 0 0 4px #ffffff, 0 0 0 6px var(--sp-ink), 0 10px 24px rgba(0,0,0,.18) !important;
+}
+html[data-skin="spent"] .fab-main svg { color: #fff !important; stroke: #fff !important; }
+
+/* ── Scrollbars / selection ───────────────────────────────────── */
+html[data-skin="spent"] ::selection { background: #e6f5ec; }
+
+/* ── Lobby: white canvas, big ink greeting, SPENT category bubbles ─ */
+html[data-skin="spent"] #mode-screen { background: #ffffff !important; }
+html[data-skin="spent"] #mode-screen::before, html[data-skin="spent"] #mode-screen::after { display: none !important; }
+html[data-skin="spent"] .bsd-mark { color: var(--sp-muted) !important; text-shadow: none !important; }
+html[data-skin="spent"] #lobby-settings-btn {
+  background: #ffffff !important; border: 1px solid var(--sp-line) !important; color: var(--sp-ink) !important;
+  box-shadow: var(--sp-shadow) !important; backdrop-filter: none !important;
+}
+html[data-skin="spent"] #lobby-greet {
+  color: var(--sp-ink) !important; -webkit-text-fill-color: var(--sp-ink) !important; background: none !important;
+  text-shadow: none !important; font-weight: 900 !important; letter-spacing: -0.035em !important; filter: none !important;
+}
+html[data-skin="spent"] #lobby-sub { color: var(--sp-muted) !important; text-shadow: none !important; letter-spacing: 0 !important; }
+html[data-skin="spent"] #lobby-version { color: var(--sp-muted) !important; background: var(--sp-soft) !important; border-color: transparent !important; }
+html[data-skin="spent"] .lobby-icon, html[data-skin="spent"] #lobby-icon { color: var(--sp-ink) !important; filter: none !important; text-shadow: none !important; }
+html[data-skin="spent"] .mode-card {
+  background: #ffffff !important; border: 1.5px solid var(--sp-line) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.05), 0 16px 36px rgba(0,0,0,.07) !important;
+}
+html[data-skin="spent"] .mode-card::before, html[data-skin="spent"] .mode-card::after, html[data-skin="spent"] .mode-card-glow { display: none !important; }
+html[data-skin="spent"] .mode-card-icon {
+  background: var(--sp-peach) !important; border: none !important; box-shadow: none !important; color: var(--sp-peach-ink) !important;
+}
+html[data-skin="spent"] .mode-card.music .mode-card-icon { background: var(--sp-blue-soft) !important; color: var(--sp-blue) !important; }
+html[data-skin="spent"] .mode-card.path .mode-card-icon { background: var(--sp-green-soft) !important; color: var(--sp-green) !important; }
+html[data-skin="spent"] .mode-card-icon svg { color: inherit !important; stroke: currentColor !important; filter: none !important; }
+html[data-skin="spent"] .mode-card-title { color: var(--sp-ink) !important; text-shadow: none !important; font-weight: 900 !important; }
+html[data-skin="spent"] .mode-card-sub { color: var(--sp-muted) !important; text-shadow: none !important; }
+html[data-skin="spent"] .lobby-year-card {
+  background: #ffffff !important; border: 1px solid var(--sp-line) !important; box-shadow: var(--sp-shadow) !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+}
+html[data-skin="spent"] .lobby-year-card .ic {
+  background: var(--sp-peach); border-radius: 50%; width: 46px; height: 46px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+html[data-skin="spent"] .lobby-year-card .t { color: var(--sp-ink) !important; font-weight: 800 !important; }
+html[data-skin="spent"] .lobby-year-card .s { color: var(--sp-muted) !important; }
+html[data-skin="spent"] .lobby-year-card .ar { color: var(--sp-ink) !important; }
+html[data-skin="spent"] .lobby-tasks { background: #ffffff !important; border: 1px solid var(--sp-line) !important; box-shadow: var(--sp-shadow) !important; }
+
+/* ── Bottom tab bar: white, gray icons, active ink + dot ─────────── */
+html[data-skin="spent"] .sidebar {
+  background: #ffffff !important; background-image: none !important; border-color: var(--sp-line) !important;
+  box-shadow: 0 -1px 0 var(--sp-line), 0 -8px 24px rgba(0,0,0,.04) !important; backdrop-filter: none !important;
+}
+html[data-skin="spent"] nav a { color: #a3a3a3 !important; background: transparent !important; border-color: transparent !important; box-shadow: none !important; }
+html[data-skin="spent"] nav a:hover { background: transparent !important; color: var(--sp-ink2) !important; }
+html[data-skin="spent"] nav a.active { color: var(--sp-ink) !important; background: transparent !important; position: relative; }
+@media (max-width: 768px) {
+  html[data-skin="spent"] nav a.active::after {
+    content: ''; position: absolute; bottom: 6px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px;
+    border-radius: 50%; background: var(--sp-ink);
+  }
+}
+@media (min-width: 769px) {
+  html[data-skin="spent"] nav a.active { background: var(--sp-soft) !important; border-right-color: var(--sp-ink) !important; }
+  html[data-skin="spent"] .sidebar-logo h1 { color: var(--sp-ink) !important; }
+}
+
+/* ── "לובי" back pill: soft white pill like SPENT's top controls ─── */
+html[data-skin="spent"] #mobile-lobby-btn {
+  background: #ffffff !important; color: var(--sp-ink) !important; border: 1px solid var(--sp-line) !important;
+  box-shadow: var(--sp-shadow) !important; backdrop-filter: none !important;
+}
+
+/* ── Category rows (income / expenses): peach bubbles, ink totals ── */
+html[data-skin="spent"] .exp-cat-box { background: #ffffff !important; border: 1px solid var(--sp-line) !important; box-shadow: var(--sp-shadow) !important; border-radius: 20px !important; }
+html[data-skin="spent"] .exp-cat-icon { background: var(--sp-peach) !important; color: var(--sp-peach-ink) !important; border-radius: 50% !important; }
+html[data-skin="spent"] .exp-cat-name { color: var(--sp-ink) !important; font-weight: 800 !important; }
+html[data-skin="spent"] .exp-cat-total { color: var(--sp-ink) !important; font-weight: 900 !important; }
+html[data-skin="spent"] .exp-cat-count { background: var(--sp-soft) !important; color: var(--sp-ink2) !important; }
+html[data-skin="spent"] .exp-cat-arrow { color: var(--sp-muted) !important; }
+html[data-skin="spent"] .exp-cat-row { border-color: var(--sp-line) !important; background: transparent !important; }
+html[data-skin="spent"] .exp-cat-row-desc { color: var(--sp-ink) !important; }
+html[data-skin="spent"] .exp-cat-row-meta { color: var(--sp-muted) !important; }
+
+/* ── Toast: black pill ─────────────────────────────────────────── */
+html[data-skin="spent"] .toast { background: var(--sp-ink) !important; color: #fff !important; border: none !important; border-radius: 999px !important; }
+
+/* ── Fixed-costs hero: big ink number on white (SPENT "₪3,453") ── */
+html[data-skin="spent"] .fc-hero { background: #ffffff !important; background-image: none !important; border: 1px solid var(--sp-line) !important; box-shadow: var(--sp-shadow) !important; }
+html[data-skin="spent"] .fc-hero-k, html[data-skin="spent"] .fc-hero-sub { color: var(--sp-muted) !important; }
+html[data-skin="spent"] .fc-hero-n { color: var(--sp-ink) !important; font-weight: 900 !important; letter-spacing: -0.04em; text-shadow: none !important; }
+html[data-skin="spent"] .fc-hero-sub b { color: var(--sp-ink) !important; }
+
+/* ── WhatsApp: WhatsApp's own light look inside the SPENT canvas ── */
+html[data-skin="spent"] #page-whatsapp { background: #ffffff !important; background-image: none !important; padding: 0 !important; margin: 0 !important; }
+html[data-skin="spent"] #page-whatsapp .page-header h2 { color: var(--sp-ink) !important; }
+html[data-skin="spent"] #page-whatsapp .btn-ghost { background: var(--sp-soft) !important; color: var(--sp-ink) !important; border-color: transparent !important; }
+html[data-skin="spent"] #page-whatsapp .wa-box { background: #ffffff !important; border: 1px solid var(--sp-line) !important; box-shadow: var(--sp-shadow) !important; backdrop-filter: none !important; }
+html[data-skin="spent"] #page-whatsapp .wa-box-title, html[data-skin="spent"] #page-whatsapp .wa-card2-name, html[data-skin="spent"] #page-whatsapp .dun-name { color: var(--sp-ink) !important; }
+html[data-skin="spent"] #page-whatsapp .mp-sub, html[data-skin="spent"] #page-whatsapp .wa-card2-sub, html[data-skin="spent"] #page-whatsapp .dun-meta,
+html[data-skin="spent"] #page-whatsapp .mp-empty, html[data-skin="spent"] #page-whatsapp .wa-quick button { color: var(--sp-muted) !important; }
+html[data-skin="spent"] #page-whatsapp .wa-box-count { background: var(--sp-soft) !important; color: var(--sp-ink2) !important; }
+html[data-skin="spent"] #page-whatsapp .wa-box-count.hot { background: #25D366 !important; color: #ffffff !important; }
+html[data-skin="spent"] #page-whatsapp .wa-card2 { background: #ffffff !important; border-color: var(--sp-line) !important; }
+html[data-skin="spent"] #page-whatsapp .wa-av-badge { border-color: #ffffff !important; }
+html[data-skin="spent"] #page-whatsapp .wa-hist-btn { background: var(--sp-soft) !important; color: var(--sp-ink2) !important; }
+html[data-skin="spent"] #page-whatsapp .dun-row { border-color: var(--sp-line) !important; }
+html[data-skin="spent"] #page-whatsapp .wa-bub { background: #f0f2f5 !important; color: var(--sp-ink) !important; box-shadow: none !important; }
+html[data-skin="spent"] #page-whatsapp .wa-bub:first-child::before { border-top-color: #f0f2f5 !important; border-inline-end-color: #f0f2f5 !important; }
+html[data-skin="spent"] #page-whatsapp .wa-replyrow input { background: var(--sp-soft) !important; color: var(--sp-ink) !important; }
+html[data-skin="spent"] #page-whatsapp .wa-mic { background: var(--sp-soft) !important; color: var(--sp-ink2) !important; }
+html[data-skin="spent"] .wa-hero { background: #25D366 !important; background-image: none !important; box-shadow: none !important; color: #ffffff !important; }
+html[data-skin="spent"] .wa-hero-glow { display: none !important; }
+html[data-skin="spent"] #modal-waconvo .modal { background: #ffffff !important; border: none !important; }
+html[data-skin="spent"] #modal-waconvo h3 { color: var(--sp-ink) !important; }
+html[data-skin="spent"] #modal-waconvo .mp-sub { color: var(--sp-muted) !important; }
+html[data-skin="spent"] #modal-waconvo .btn-ghost { background: var(--sp-soft) !important; color: var(--sp-ink) !important; }
+html[data-skin="spent"] .wa-thread { background: #efeae2 !important; background-image: none !important; }
+html[data-skin="spent"] .wa-th-msg { box-shadow: 0 1px 1px rgba(0,0,0,.08) !important; }
+html[data-skin="spent"] .wa-th-row.in .wa-th-msg { background: #ffffff !important; color: var(--sp-ink) !important; }
+html[data-skin="spent"] .wa-th-row.in .wa-th-msg::before { border-top-color: #ffffff !important; }
+html[data-skin="spent"] .wa-th-row.out .wa-th-msg { background: #d9fdd3 !important; color: var(--sp-ink) !important; }
+html[data-skin="spent"] .wa-th-row.out .wa-th-msg::before { border-top-color: #d9fdd3 !important; }
+html[data-skin="spent"] .wa-th-meta { color: rgba(15,15,15,.45) !important; }
+
+/* ── Fitness hero: SPENT's cream story card ────────────────────── */
+html[data-skin="spent"] .mpt-hero { background: var(--sp-cream) !important; background-image: none !important; box-shadow: none !important; border: none !important; }
+html[data-skin="spent"] .mpt-hero::after { display: none !important; }
+html[data-skin="spent"] .mpt-hero-kicker { color: var(--sp-muted) !important; }
+html[data-skin="spent"] .mpt-hero-title { color: var(--sp-ink) !important; font-family: 'Heebo', sans-serif !important; font-weight: 900 !important; letter-spacing: -0.035em !important; }
+html[data-skin="spent"] .mpt-hero-line { color: var(--sp-ink2) !important; }
+
+/* ── Profiles filter tabs: SPENT chip row ─────────────────────── */
+html[data-skin="spent"] .ftab { background: var(--sp-soft) !important; color: var(--sp-ink) !important; border: none !important; border-radius: 999px !important; box-shadow: none !important; }
+html[data-skin="spent"] .ftab.active { background: var(--sp-ink) !important; color: #ffffff !important; }
+
+/* ── Headline numbers in ink (SPENT big black totals) ──────────── */
+html[data-skin="spent"] .card-value, html[data-skin="spent"] .today-tile-value { letter-spacing: -0.04em; text-shadow: none !important; }
+html[data-skin="spent"] nav a.active::after { bottom: 2px !important; }
+
+/* ── New-year goals hero: SPENT olive story block ─────────────── */
+html[data-skin="spent"] .yg-hero { background: var(--sp-olive) !important; background-image: none !important; box-shadow: none !important; border: none !important; color: var(--sp-ink) !important; }
+html[data-skin="spent"] .yg-hero::before, html[data-skin="spent"] .yg-hero::after { display: none !important; }
+html[data-skin="spent"] .yg-kicker { color: rgba(15,15,15,.6) !important; }
+html[data-skin="spent"] .yg-title { color: var(--sp-ink) !important; font-family: 'Heebo', sans-serif !important; letter-spacing: -0.03em; }
+html[data-skin="spent"] .yg-line { color: rgba(15,15,15,.75) !important; }
+html[data-skin="spent"] .yg-yearbar { background: rgba(15,15,15,.12) !important; }
+html[data-skin="spent"] .yg-yearbar span { background: var(--sp-ink) !important; }
+html[data-skin="spent"] .yg-stat { background: #ffffff !important; background-image: none !important; border: 1px solid var(--sp-line) !important; box-shadow: var(--sp-shadow) !important; }
+
+/* ── Settings sheet: white sheet, inline dark colors neutralised ── */
+html[data-skin="spent"] #notif-settings-overlay { background: rgba(15,15,15,.32) !important; }
+html[data-skin="spent"] #notif-settings-card { background: #ffffff !important; color: var(--sp-ink) !important; border: none !important; box-shadow: var(--sp-shadow-lg) !important; border-radius: 28px !important; }
+html[data-skin="spent"] #notif-settings-card h3 { color: var(--sp-ink) !important; font-weight: 900 !important; font-size: 24px !important; display: flex; align-items: center; gap: 8px; }
+html[data-skin="spent"] #notif-settings-card h3 svg { width: 24px !important; height: 24px !important; }
+html[data-skin="spent"] #notif-settings-card .notif-sub,
+html[data-skin="spent"] .notif-row .notif-sub-label { color: var(--sp-muted) !important; }
+html[data-skin="spent"] .notif-row { border-color: var(--sp-line) !important; }
+html[data-skin="spent"] .notif-row label { color: var(--sp-ink) !important; }
+html[data-skin="spent"] .notif-section-title { color: var(--sp-ink) !important; font-weight: 900 !important; letter-spacing: 0 !important; font-size: 13px !important; }
+html[data-skin="spent"] .notif-toggle { background: #e2e2df !important; }
+html[data-skin="spent"] .notif-toggle.on { background: var(--sp-green) !important; }
+html[data-skin="spent"] #notif-settings-card [style*="color:#f4ede0"],
+html[data-skin="spent"] #notif-settings-card [style*="color: #f4ede0"] { color: var(--sp-ink) !important; }
+html[data-skin="spent"] #notif-settings-card [style*="rgba(244,237,224"] { color: var(--sp-muted) !important; }
+html[data-skin="spent"] #notif-settings-card [style*="rgba(255,255,255,0.06)"],
+html[data-skin="spent"] #notif-settings-card [style*="rgba(255,255,255,0.08)"],
+html[data-skin="spent"] #notif-settings-card [style*="rgba(255,255,255,0.05)"] { background: var(--sp-soft) !important; border-color: transparent !important; }
+html[data-skin="spent"] #notif-settings-card [style*="#d4a574"]:not(button) { color: var(--sp-ink) !important; }
+html[data-skin="spent"] #notif-settings-card button:not(.notif-when-chip):not(.btn-primary) { background: var(--sp-soft) !important; color: var(--sp-ink) !important; border-color: transparent !important; }
+
+/* ── Contract / student tabs and segmented buttons ─────────────── */
+html[data-skin="spent"] .ctr-kind-tab { background: var(--sp-soft) !important; border-color: transparent !important; color: var(--sp-ink) !important; border-radius: 999px !important; }
+html[data-skin="spent"] .ctr-kind-tab.active { background: var(--sp-ink) !important; color: #ffffff !important; }
+html[data-skin="spent"] .gp-btn { background: var(--sp-soft) !important; border-color: transparent !important; color: var(--sp-ink) !important; border-radius: 999px !important; }
+html[data-skin="spent"] .gp-btn.active, html[data-skin="spent"] .gp-btn.on, html[data-skin="spent"] .gp-btn.sel { background: var(--sp-ink) !important; color: #ffffff !important; }
+
+/* ── Dark-coded music & misc modal fields (dx-*, sketch) ───────── */
+html[data-skin="spent"] .dx-rename-input, html[data-skin="spent"] .dx-target-row { background: var(--sp-soft) !important; border-color: transparent !important; color: var(--sp-ink) !important; }
+html[data-skin="spent"] .dx-target-empty { color: var(--sp-muted) !important; }
+</style>
+<!--SPENT-END-->
 </body>
 </html>
