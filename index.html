@@ -3651,6 +3651,12 @@
     .fc-note { font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.6; margin-top: 16px; }
     .prod-mini-days.due-hot { color: var(--red) !important; font-weight: 900 !important; }
     .prod-mini-days.due-warm { color: var(--orange) !important; font-weight: 900 !important; }
+    .inc-chip { display: none; }
+    .prod-edit { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 4px; }
+    .prod-edit > summary { list-style: none; cursor: pointer; padding: 12px 2px; font-size: 13.5px; font-weight: 800; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    .prod-edit > summary::-webkit-details-marker { display: none; }
+    .prod-edit > summary::after { content: '⌄'; margin-inline-start: auto; font-size: 14px; }
+    .prod-edit[open] > summary::after { content: '⌃'; }
     /* fixed-cost cards: summary row, details on tap (4.10) */
     .fc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; margin-bottom: 8px; box-shadow: var(--shadow); overflow: hidden; }
     .fc-line { width: 100%; display: flex; align-items: center; gap: 11px; padding: 12px 14px; background: none; border: none; cursor: pointer; font-family: inherit; text-align: right; color: var(--text); }
@@ -7512,9 +7518,8 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v506</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v507</small>
   </div>
-  <div id="lobby-today"></div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
       <div class="mode-card business" onclick="chooseMode('business')">
@@ -11456,6 +11461,42 @@ function _incomeMorningBtns(i) {
   return out;
 }
 
+// ── Row action sheet (4.10, new design): a row shows only the summary;
+// tapping it opens a sheet with that row's own actions (mark paid, edit,
+// delete, payment link, receipts…). The sheet re-uses the row's existing
+// buttons by clicking them, so every action keeps its exact behaviour. ──
+window.incRowTap = function(ev, row) {
+  if (document.documentElement.getAttribute('data-skin') !== 'spent') return;
+  if (ev && ev.target && ev.target.closest && ev.target.closest('button, a, .status-pill')) return;
+  const btns = [...row.querySelectorAll('.exp-cat-row-actions button, .exp-cat-row-actions .status-pill, .exp-cat-row-morning button, .exp-cat-row-morning a')];
+  if (!btns.length) return;
+  const title = (row.querySelector('.exp-cat-row-desc') || {}).textContent || '';
+  const meta = (row.querySelector('.exp-cat-row-meta') || {}).textContent || '';
+  const amt = (row.querySelector('.exp-cat-row-amt') || {}).textContent || '';
+  spentSheet(title, meta + (amt ? ' · ' + amt : ''), btns.map(b => {
+    let label = (b.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!label) label = b.getAttribute('aria-label') || b.getAttribute('title') || '•';
+    if (b.classList.contains('status-pill')) label = 'החזר ל"ממתין"';
+    const danger = /מחק|ביטול|בטל/.test(label) || /delete/i.test(b.getAttribute('onclick') || '');
+    const pri = /סמן כשולם/.test(label);
+    return { label, danger, pri, run: () => b.click() };
+  }));
+};
+window.spentSheet = function(title, sub, actions) {
+  let ov = document.getElementById('spent-sheet');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'spent-sheet'; ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); }; document.body.appendChild(ov); }
+  ov.innerHTML = '<div class="ss-box"><div class="sm-grab"></div><div class="ss-t">' + _escape(title) + '</div>' + (sub ? '<div class="ss-s">' + _escape(sub) + '</div>' : '') + '<div class="ss-list"></div><button class="ss-cancel">סגור</button></div>';
+  const list = ov.querySelector('.ss-list');
+  actions.forEach(a => {
+    const b = document.createElement('button');
+    b.className = 'ss-btn' + (a.danger ? ' danger' : '') + (a.pri ? ' pri' : '');
+    b.textContent = a.label;
+    b.onclick = () => { ov.classList.remove('open'); setTimeout(a.run, 120); };
+    list.appendChild(b);
+  });
+  ov.querySelector('.ss-cancel').onclick = () => ov.classList.remove('open');
+  requestAnimationFrame(() => ov.classList.add('open'));
+};
 function _renderIncomeCatGrid(entries, planRows) {
   const grid = document.getElementById('i-cat-grid');
   if (!grid) return;
@@ -11494,11 +11535,12 @@ function _renderIncomeCatGrid(entries, planRows) {
       const isPaid = (i.status || 'pending') === 'paid';
       const idEsc = String(i.id).replace(/'/g, "\\'");
       return `
-        <div class="exp-cat-row ${isPaid ? 'paid' : ''}">
+        <div class="exp-cat-row inc-row ${isPaid ? 'paid' : ''}" onclick="incRowTap(event, this)">
           <div class="exp-cat-row-main">
             <div class="exp-cat-row-desc">${i.description || '—'}</div>
-            <div class="exp-cat-row-meta">${fmtDate(i.date)}${i.clientName ? ' · ' + i.clientName : ''}${i._carried ? ' · <span style="color:var(--orange);font-weight:800">נגרר מחודש קודם</span>' : ''}</div>
+            <div class="exp-cat-row-meta">${fmtDate(i.date)}${i.clientName ? ' · ' + i.clientName : ''}${i._carried ? '<span class="inc-carry"> · <span style="color:var(--orange);font-weight:800">נגרר מחודש קודם</span></span>' : ''}</div>
           </div>
+          <span class="inc-chip ${isPaid ? 'ok' : (i._carried ? 'late' : 'wait')}">${isPaid ? 'שולם ✓' : (i._carried ? 'מחודש קודם' : 'ממתין')}</span>
           <div class="exp-cat-row-amt" style="color:${isPaid ? 'var(--green)' : 'var(--accent)'}">${fmtMoney(i.amount)}</div>
           <div class="exp-cat-row-actions">
             ${isPaid
@@ -19214,50 +19256,6 @@ function importGcalEvent(ev) {
 // ===== LOGIN =====
 const PASS = '110';
 
-// ── Lobby "today" card (4.10): the 3 most important things right now —
-// a charge leaving soon, a production due, today's next appointment,
-// money owed to him. Each line jumps straight to its page. ──
-window.lobbyGo = function(pg) { try { chooseMode('business'); showPage(pg); window.scrollTo(0, 0); } catch (_) {} };
-function lobbyToday() {
-  const host = document.getElementById('lobby-today'); if (!host) return;
-  if (document.documentElement.getAttribute('data-skin') !== 'spent') { host.innerHTML = ''; return; }
-  const lines = [];
-  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
-  const todayIso = t0.getFullYear() + '-' + String(t0.getMonth() + 1).padStart(2, '0') + '-' + String(t0.getDate()).padStart(2, '0');
-  // fixed charge today/tomorrow (not yet ✓)
-  try {
-    fcList().filter(x => Number(x.day) >= 1).forEach(x => {
-      const d = _fcNextDate(Number(x.day)); const n = Math.round((d - t0) / 864e5);
-      if (n <= 1 && !_fcPaidFor(x, d)) lines.push({ p: 0, ic: '💸', bg: '#fdede2', t: (n === 0 ? 'היום ' : 'מחר ') + (x.manual ? 'להעביר ' : 'יורדים ') + fmtMoney(x.amount), s: x.name, go: 'fixed' });
-    });
-  } catch (_) {}
-  // production deadlines within 3 days (or late)
-  try {
-    (load('productions') || []).filter(p => p.stage !== 'sent' && p.deadline).forEach(p => {
-      const n = Math.round((new Date(p.deadline) - t0) / 864e5);
-      if (n <= 3) lines.push({ p: 1, ic: '🎵', bg: '#dfe7fc', t: (p.title || 'הפקה') + (n < 0 ? ' · באיחור' : n === 0 ? ' · היום!' : n === 1 ? ' · מחר' : ' · עוד ' + n + ' ימים'), s: p.artist || 'דד-ליין', go: 'productions' });
-    });
-  } catch (_) {}
-  // today's schedule
-  try {
-    const sch = (load('schedule') || []).filter(e => String(e.date || '').slice(0, 10) === todayIso).sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
-    if (sch.length) {
-      const nowHM = String(new Date().getHours()).padStart(2, '0') + ':' + String(new Date().getMinutes()).padStart(2, '0');
-      const next = sch.find(e => String(e.time || '') >= nowHM) || sch[sch.length - 1];
-      lines.push({ p: 2, ic: '📅', bg: '#e6f5ec', t: sch.length === 1 ? 'אירוע אחד היום' : sch.length + ' אירועים היום', s: 'הבא: ' + (next.title || '') + (next.time ? ' ב-' + next.time : ''), go: 'schedule' });
-    }
-  } catch (_) {}
-  // money owed
-  try {
-    const open = (load('income') || []).filter(i => (i.status || 'pending') !== 'paid');
-    const sum = open.reduce((t, i) => t + (Number(i.amount) || 0), 0);
-    if (sum > 0) { const c = new Set(open.map(i => i.clientId || i.clientName || i.id)).size; lines.push({ p: 3, ic: '🟠', bg: '#fff4e6', t: fmtMoney(sum) + ' לגבות', s: 'מ-' + (c === 1 ? 'לקוח אחד' : c + ' לקוחות'), go: 'income' }); }
-  } catch (_) {}
-  lines.sort((a, b) => a.p - b.p);
-  if (!lines.length) { host.innerHTML = '<div class="lt-card lt-calm">✨ אין שום דבר דחוף היום</div>'; return; }
-  host.innerHTML = '<div class="lt-card"><div class="lt-h">היום שלך</div>' + lines.slice(0, 3).map(l =>
-    '<button class="lt-row" onclick="lobbyGo(\'' + l.go + '\')"><span class="lt-ic" style="background:' + l.bg + '">' + l.ic + '</span><span class="lt-m"><b>' + _escape(l.t) + '</b><small>' + _escape(l.s) + '</small></span><span class="lt-ar">‹</span></button>').join('') + '</div>';
-}
 function refreshLobbyGreeting() {
   const greetEl = document.getElementById('lobby-greet');
   const subEl   = document.getElementById('lobby-sub');
@@ -19281,7 +19279,6 @@ function refreshLobbyGreeting() {
     const date  = now.toLocaleDateString('he-IL', { day:'numeric', month:'long' });
     subEl.textContent = 'יום ' + day + ' · ' + date;
   }
-  try { lobbyToday(); } catch (_) {}
 }
 
 function doLogin() {
@@ -19993,7 +19990,14 @@ function _waLobbyBadge() {
   const el = document.getElementById('lobby-wa-badge');
   if (!el) return;
   const n = _waWaitingCount();
-  if (n > 0) {
+  if (document.documentElement.getAttribute('data-skin') === 'spent') {
+    const ms = document.getElementById('mode-screen');
+    if (ms && el.parentNode !== ms) ms.appendChild(el);
+  }
+  if (n > 0 && document.documentElement.getAttribute('data-skin') === 'spent') {
+    el.innerHTML = '<span class="wr-ic">💬</span><span class="wr-m"><b>' + (n === 1 ? 'הודעה אחת מחכה' : n + ' הודעות מחכות') + '</b><small>לתשובה בוואטסאפ</small></span><span class="wr-ar">←</span>';
+    el.style.display = 'flex';
+  } else if (n > 0) {
     el.textContent = '💬 ' + (n === 1 ? 'הודעה אחת מחכה לתשובה' : n + ' הודעות מחכות לתשובה');
     el.style.display = 'block';
   } else {
@@ -22712,6 +22716,8 @@ function _prodCardHtml(p) {
           ? `<div class="prod-actions"><button class="prod-advance" onclick="prodAdvanceStage('${id}')">→ ${nextStage.label}</button></div>`
           : ''}
 
+        <details class="prod-edit">
+        <summary>עריכה · שלב, עדיפות, דד-ליין, הערות</summary>
         <div class="prod-expand-h">שלב</div>
         <div class="prod-stage-row">${stagePills}</div>
 
@@ -22725,6 +22731,7 @@ function _prodCardHtml(p) {
         <textarea class="prod-textarea" placeholder="הערות, רעיונות, תזכורות..." oninput="prodSetNotes('${id}', this.value)">${_escape(p.notes || '')}</textarea>
 
         <button class="prod-delete-link" onclick="prodConfirmDelete('${id}')"><svg class="icon"><use href="#ic-trash"/></svg> מחק הפקה</button>
+        </details>
       </div>
     </div>`;
 }
@@ -30828,18 +30835,6 @@ html[data-skin="spent"] .fc-detail .fc-res { border: none !important; box-shadow
 
 /* schedule: quieter — no legend, compact GCal prompt */
 html[data-skin="spent"] #page-schedule .sched-legend { display: none !important; }
-/* lobby "today" card */
-#lobby-today { width: 100%; max-width: 440px; position: relative; z-index: 2; }
-.lt-card { background: #fff; border: 1px solid var(--sp-line, #ededeb); border-radius: 22px; padding: 12px 12px 6px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 3px 12px rgba(0,0,0,.04); }
-.lt-calm { padding: 14px; text-align: center; font-size: 13.5px; font-weight: 800; color: #3b3b3b; }
-.lt-h { font-size: 13px; font-weight: 900; color: #8d8d8d; margin: 0 6px 4px; }
-.lt-row { width: 100%; display: flex; align-items: center; gap: 11px; padding: 8px 6px; border: none; background: none; cursor: pointer; font-family: inherit; text-align: right; border-top: 1px solid #f1f1ef; }
-.lt-row:first-of-type { border-top: none; }
-.lt-ic { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
-.lt-m { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.lt-m b { font-size: 14.5px; font-weight: 900; color: #0f0f0f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lt-m small { font-size: 12px; font-weight: 600; color: #8d8d8d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lt-ar { color: #b9b9b9; font-size: 18px; font-weight: 700; }
 .sched-gcal-mini { display: block; width: 100%; border: none; background: none; color: #8d8d8d; font-family: inherit; font-weight: 800; font-size: 12.5px; padding: 4px; cursor: pointer; text-align: center; }
 html[data-skin="spent"] #page-schedule .sched-quick { flex-wrap: nowrap !important; align-items: center; }
 html[data-skin="spent"] #page-schedule .sched-quick #schedule-title-input { min-width: 0 !important; }
@@ -30849,6 +30844,62 @@ html[data-skin="spent"] #page-schedule .sched-quick .btn-primary::before { conte
 html[data-skin="spent"] #page-schedule button[onclick*="deleteScheduleItem"] { border-color: transparent !important; background: var(--sp-soft) !important; border-radius: 50% !important; }
 html[data-skin="spent"] #page-schedule button[onclick*="deleteScheduleItem"] svg { color: #a3a3a3 !important; }
 html[data-skin="spent"] #page-schedule .schedule-row { border: 1px solid var(--sp-line) !important; border-radius: 18px !important; box-shadow: var(--sp-shadow) !important; }
+
+/* ══ v507 ══ lobby: top-aligned, never clipped, calm rows ────────── */
+html[data-skin="spent"] #mode-screen {
+  justify-content: flex-start !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch;
+  gap: 22px !important;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 74px) !important;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 110px) !important;
+}
+html[data-skin="spent"] #mode-screen .mode-screen-title { gap: 4px; }
+html[data-skin="spent"] #lobby-icon, html[data-skin="spent"] #mode-screen .lobby-icon { width: 40px !important; height: 40px !important; margin-bottom: 2px !important; }
+html[data-skin="spent"] #lobby-greet { font-size: 36px !important; line-height: 1.1 !important; }
+html[data-skin="spent"] #lobby-version { font-size: 10.5px !important; padding: 2px 10px !important; margin-top: 8px !important; opacity: .8; }
+html[data-skin="spent"] #lobby-settings-btn, html[data-skin="spent"] .bsd-mark { top: calc(env(safe-area-inset-top, 0px) + 14px) !important; }
+/* WhatsApp waiting → a white row card in the lobby flow (matches goals card) */
+html[data-skin="spent"] #lobby-wa-badge {
+  position: relative !important; right: auto !important; bottom: auto !important; z-index: 1 !important;
+  width: 100% !important; max-width: 440px !important; flex-shrink: 0;
+  align-items: center; gap: 14px; text-align: right;
+  background: #ffffff !important; color: var(--sp-ink) !important;
+  border: 1px solid var(--sp-line) !important; border-radius: 22px !important;
+  box-shadow: var(--sp-shadow) !important; padding: 14px 18px !important; white-space: normal !important; max-width: 440px !important;
+}
+html[data-skin="spent"] #lobby-wa-badge .wr-ic { width: 46px; height: 46px; border-radius: 50%; background: #e6f8ee; display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0; }
+html[data-skin="spent"] #lobby-wa-badge .wr-m { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html[data-skin="spent"] #lobby-wa-badge .wr-m b { font-size: 16px; font-weight: 900; color: var(--sp-ink); }
+html[data-skin="spent"] #lobby-wa-badge .wr-m small { font-size: 12.5px; font-weight: 600; color: var(--sp-muted); }
+html[data-skin="spent"] #lobby-wa-badge .wr-ar { color: var(--sp-ink); font-size: 18px; }
+html[data-skin="spent"] .mode-card-sub { display: none !important; }
+html[data-skin="spent"] .lobby-year-card { max-width: 440px; }
+html[data-skin="spent"] .lobby-year-card .t { font-family: 'Heebo', sans-serif !important; font-weight: 900 !important; font-size: 16px !important; }
+
+/* income rows: summary + status chip, actions live in the tap sheet */
+html[data-skin="spent"] #page-income .inc-row { cursor: pointer; align-items: center; }
+html[data-skin="spent"] #page-income .inc-row .exp-cat-row-actions,
+html[data-skin="spent"] #page-income .inc-row .exp-cat-row-morning { display: none !important; }
+html[data-skin="spent"] #page-income .inc-row.paid { opacity: 1 !important; }
+html[data-skin="spent"] #page-income .inc-row.paid .exp-cat-row-desc { text-decoration: none !important; }
+html[data-skin="spent"] .inc-chip { display: inline-block; flex-shrink: 0; font-size: 11px; font-weight: 900; border-radius: 999px; padding: 4px 9px; }
+html[data-skin="spent"] .inc-chip.ok { background: var(--sp-green-soft); color: #1b7a44; }
+html[data-skin="spent"] .inc-chip.wait { background: #fff4e6; color: #b8661c; }
+html[data-skin="spent"] .inc-chip.late { background: var(--sp-red-soft); color: #c9411f; }
+/* action sheet */
+#spent-sheet { position: fixed; inset: 0; z-index: 10060; background: rgba(15,15,15,0); display: flex; align-items: flex-end; pointer-events: none; transition: background .2s; }
+#spent-sheet.open { background: rgba(15,15,15,.28); pointer-events: auto; }
+#spent-sheet .ss-box { width: 100%; background: #fff; border-radius: 28px 28px 0 0; padding: 10px 18px calc(env(safe-area-inset-bottom, 0px) + 16px); transform: translateY(100%); transition: transform .28s cubic-bezier(.2,.9,.3,1); box-shadow: 0 -10px 40px rgba(0,0,0,.12); }
+#spent-sheet.open .ss-box { transform: none; }
+#spent-sheet .ss-t { font-size: 20px; font-weight: 900; color: #0f0f0f; margin: 4px 4px 2px; letter-spacing: -0.02em; }
+#spent-sheet .ss-s { font-size: 13px; font-weight: 600; color: #8d8d8d; margin: 0 4px 14px; }
+#spent-sheet .ss-list { display: flex; flex-direction: column; gap: 8px; }
+#spent-sheet .ss-btn { width: 100%; border: none; background: #f4f4f2; color: #0f0f0f; font-family: inherit; font-weight: 800; font-size: 15px; border-radius: 16px; padding: 15px; cursor: pointer; text-align: center; }
+#spent-sheet .ss-btn.pri { background: #1f9d55; color: #fff; }
+#spent-sheet .ss-btn.danger { background: #fdece6; color: #c9411f; }
+#spent-sheet .ss-cancel { width: 100%; margin-top: 10px; border: none; background: none; color: #8d8d8d; font-family: inherit; font-weight: 800; font-size: 14px; padding: 10px; cursor: pointer; }
+html[data-skin="spent"] .prod-edit { border-color: var(--sp-line) !important; }
+html[data-skin="spent"] #page-income .inc-carry { display: none !important; }
+html[data-skin="spent"] .prod-card.is-open .prod-mini-days { display: none !important; }
 </style>
 <!--SPENT-END-->
 </body>
