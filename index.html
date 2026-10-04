@@ -7522,7 +7522,7 @@
     <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG3)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v514</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v515</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -19548,7 +19548,75 @@ function refreshLobbyGreeting() {
     const date  = now.toLocaleDateString('he-IL', { day:'numeric', month:'long' });
     subEl.textContent = 'יום ' + day + ' · ' + date;
   }
+  try { spLobbyRender(); } catch (e) {}
 }
+
+// ── Bank-style lobby (new design only): balance card, quick actions and
+// "accounts" rows. The original mode cards stay in the DOM for classic. ──
+const _SPL_IC = {
+  biz:  '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M3 12.5h18"/></svg>',
+  fit:  '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg>',
+  inc:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>',
+  exp:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg>',
+  cal:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  pay:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
+  eye:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
+  chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>'
+};
+function spLobbyRender() {
+  const ms = document.getElementById('mode-screen');
+  if (!ms || document.documentElement.getAttribute('data-skin') !== 'spent') return;
+  let box = document.getElementById('sp-lobby');
+  if (!box) {
+    box = document.createElement('div'); box.id = 'sp-lobby';
+    const row = ms.querySelector('.mode-cards-row');
+    ms.insertBefore(box, row);
+  }
+  let paid = 0, pending = 0, out = 0, pendN = 0;
+  try {
+    load('income').forEach(i => {
+      if (!inCurMonth(i.date)) return;
+      const a = Number(i.amount) || 0;
+      if ((i.status || 'pending') === 'paid') paid += a; else { pending += a; pendN++; }
+    });
+    out = load('expenses').filter(e => inCurMonth(e.date)).reduce((t, e) => t + (Number(e.amount) || 0), 0);
+  } catch (_) {}
+  let hide = false; try { hide = localStorage.getItem('sp_hide_bal') === '1'; } catch (_) {}
+  const money = n => hide ? '₪ •••••' : '₪' + Math.round(n).toLocaleString('he-IL');
+  const net = paid - out;
+  const month = new Date().toLocaleDateString('he-IL', { month: 'long' });
+  box.innerHTML =
+    '<div class="spl-card" onclick="chooseMode(\'business\'); showPage(\'income\')">'
+  +   '<div class="spl-top"><span class="spl-lbl">נכנס ב' + month + '</span>'
+  +   '<button type="button" class="spl-eye" onclick="event.stopPropagation(); spLobbyToggleHide()" aria-label="הסתר סכומים">' + (hide ? _SPL_IC.eyeOff : _SPL_IC.eye) + '</button></div>'
+  +   '<div class="spl-bal">' + money(paid) + '</div>'
+  +   '<div class="spl-row">'
+  +     '<div><small>ממתין' + (pendN ? ' · ' + pendN : '') + '</small><b>' + money(pending) + '</b></div>'
+  +     '<div><small>יצא</small><b>' + money(out) + '</b></div>'
+  +     '<div><small>נטו</small><b class="' + (net >= 0 ? 'pos' : 'neg') + '">' + (hide ? '•••' : (net >= 0 ? '+' : '−') + money(Math.abs(net))) + '</b></div>'
+  +   '</div>'
+  + '</div>'
+  + '<div class="spl-qa">'
+  +   '<button type="button" onclick="quickAction(\'income\')"><i class="g">' + _SPL_IC.inc + '</i><span>הכנסה</span></button>'
+  +   '<button type="button" onclick="quickAction(\'expense\')"><i class="r">' + _SPL_IC.exp + '</i><span>הוצאה</span></button>'
+  +   '<button type="button" onclick="quickAction(\'paylink\')"><i class="b">' + _SPL_IC.pay + '</i><span>לינק תשלום</span></button>'
+  +   '<button type="button" onclick="quickAction(\'schedule\')"><i class="p">' + _SPL_IC.cal + '</i><span>פגישה</span></button>'
+  + '</div>'
+  + '<div class="spl-h">החשבונות שלי</div>'
+  + '<div class="spl-acc">'
+  +   '<button type="button" onclick="chooseMode(\'business\')"><i class="biz">' + _SPL_IC.biz + '</i>'
+  +     '<span class="t"><b>עסקי ואישי</b><small>' + (pendN ? pendN + ' תשלומים ממתינים · ' : '') + 'הכנסות · הוצאות · לקוחות</small></span>'
+  +     '<span class="ar">' + _SPL_IC.chev + '</span></button>'
+  +   '<button type="button" onclick="chooseMode(\'path\')"><i class="fit">' + _SPL_IC.fit + '</i>'
+  +     '<span class="t"><b>כושר ותזונה</b><small>משקל · תזונה · מאמן</small></span>'
+  +     '<span class="ar">' + _SPL_IC.chev + '</span></button>'
+  + '</div>';
+}
+window.spLobbyToggleHide = function() {
+  try { localStorage.setItem('sp_hide_bal', localStorage.getItem('sp_hide_bal') === '1' ? '0' : '1'); } catch (_) {}
+  spLobbyRender();
+};
 
 function doLogin() {
   const val = document.getElementById('login-pass').value;
@@ -31416,6 +31484,76 @@ html[data-skin="spent"] .sp-logo { display: block; width: 64px; height: 64px; ma
 html[data-skin="spent"] #mode-screen .sp-logo { width: 46px; height: 46px; margin-bottom: 10px; }
 html[data-skin="spent"] #mode-screen #lobby-icon { display: none !important; }
 html[data-skin="spent"] #face-id-lock .sp-logo { width: 78px; height: 78px; }
+/* v515 — bank-style lobby */
+#sp-lobby { display: none; }
+html[data-skin="spent"] #sp-lobby { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: 440px; }
+html[data-skin="spent"] #mode-screen .mode-cards-row { display: none !important; }
+html[data-skin="spent"] #mode-screen { gap: 18px !important; padding-left: 18px !important; padding-right: 18px !important; }
+/* header: logo + greeting in one row, like a bank home */
+html[data-skin="spent"] #mode-screen .mode-screen-title {
+  display: grid !important; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; row-gap: 2px;
+  align-items: center; width: 100%; max-width: 440px; text-align: right !important;
+}
+html[data-skin="spent"] #mode-screen .sp-logo { grid-row: 1 / span 2; grid-column: 1; width: 52px !important; height: 52px !important; margin: 0 !important;
+  background: #fff; border: 1px solid var(--sp-line); border-radius: 16px; padding: 9px; box-sizing: border-box; box-shadow: 0 4px 14px rgba(15,122,64,.10); }
+html[data-skin="spent"] #lobby-greet { grid-column: 2; font-size: 26px !important; line-height: 1.15 !important; text-align: right !important; }
+html[data-skin="spent"] #lobby-sub { grid-column: 2; font-size: 13.5px !important; text-align: right !important; }
+html[data-skin="spent"] #lobby-version { grid-column: 2; justify-self: start; display: inline-block !important; width: auto !important; margin: 4px 0 0 !important; }
+html[data-skin="spent"] #mode-screen .sp-logo { grid-row: 1 / span 3 !important; }
+html[data-skin="spent"] #mode-screen .mode-screen-title { position: static !important; }
+/* balance card */
+html[data-skin="spent"] .spl-card {
+  position: relative; overflow: hidden; cursor: pointer; color: #fff; border-radius: 28px; padding: 22px 22px 18px;
+  background: radial-gradient(120% 140% at 100% 0%, #2fc472 0%, #16994f 42%, #0b6b37 100%);
+  box-shadow: 0 18px 40px rgba(15,122,64,.28), 0 2px 6px rgba(15,122,64,.18);
+}
+html[data-skin="spent"] .spl-card::after { content: ""; position: absolute; width: 220px; height: 220px; border-radius: 50%; left: -70px; bottom: -110px; background: rgba(255,255,255,.08); }
+html[data-skin="spent"] .spl-card::before { content: ""; position: absolute; width: 140px; height: 140px; border-radius: 50%; left: 40px; top: -80px; background: rgba(255,255,255,.07); }
+html[data-skin="spent"] .spl-top { display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
+html[data-skin="spent"] .spl-lbl { font-size: 14px; font-weight: 700; opacity: .88; }
+html[data-skin="spent"] .spl-eye { width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,.16); color: #fff; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+html[data-skin="spent"] .spl-eye svg { width: 18px; height: 18px; }
+html[data-skin="spent"] .spl-bal { position: relative; z-index: 1; font-size: 42px; font-weight: 900; letter-spacing: -0.03em; margin: 6px 0 16px; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
+html[data-skin="spent"] .spl-row { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: rgba(255,255,255,.13); border-radius: 18px; padding: 11px 12px; }
+html[data-skin="spent"] .spl-row div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+html[data-skin="spent"] .spl-row small { font-size: 11.5px; font-weight: 700; opacity: .8; }
+html[data-skin="spent"] .spl-row b { font-size: 15px; font-weight: 900; direction: ltr; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="spent"] .spl-row b.neg { color: #ffd9d2; }
+/* quick actions */
+html[data-skin="spent"] .spl-qa { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+html[data-skin="spent"] .spl-qa button { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; padding: 0; font-family: inherit; }
+html[data-skin="spent"] .spl-qa i { width: 56px; height: 56px; border-radius: 20px; display: flex; align-items: center; justify-content: center; transition: transform .12s; }
+html[data-skin="spent"] .spl-qa button:active i { transform: scale(.92); }
+html[data-skin="spent"] .spl-qa i svg { width: 24px; height: 24px; }
+html[data-skin="spent"] .spl-qa i.g { background: #e3f6eb; color: #138a4a; }
+html[data-skin="spent"] .spl-qa i.r { background: #fdecea; color: #d0402b; }
+html[data-skin="spent"] .spl-qa i.b { background: #e5edfd; color: #2f5fd0; }
+html[data-skin="spent"] .spl-qa i.p { background: #f0e9fd; color: #7246d6; }
+html[data-skin="spent"] .spl-qa span { font-size: 12.5px; font-weight: 800; color: var(--sp-ink); }
+/* accounts */
+html[data-skin="spent"] .spl-h { font-size: 17px; font-weight: 900; color: var(--sp-ink); margin: 4px 2px -6px; }
+html[data-skin="spent"] .spl-acc { background: #fff; border: 1px solid var(--sp-line); border-radius: 24px; box-shadow: var(--sp-shadow); overflow: hidden; }
+html[data-skin="spent"] .spl-acc button { width: 100%; display: flex; align-items: center; gap: 14px; padding: 15px 16px; background: none; border: none; text-align: right; cursor: pointer; font-family: inherit; }
+html[data-skin="spent"] .spl-acc button + button { border-top: 1px solid var(--sp-line); }
+html[data-skin="spent"] .spl-acc button:active { background: var(--sp-soft); }
+html[data-skin="spent"] .spl-acc i { width: 48px; height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+html[data-skin="spent"] .spl-acc i svg { width: 24px; height: 24px; }
+html[data-skin="spent"] .spl-acc i.biz { background: linear-gradient(135deg, #26b86a, #0f7a40); box-shadow: 0 6px 14px rgba(15,122,64,.25); }
+html[data-skin="spent"] .spl-acc i.fit { background: linear-gradient(135deg, #4f8bff, #2a50c8); box-shadow: 0 6px 14px rgba(42,80,200,.25); }
+html[data-skin="spent"] .spl-acc .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html[data-skin="spent"] .spl-acc .t b { font-size: 16px; font-weight: 900; color: var(--sp-ink); }
+html[data-skin="spent"] .spl-acc .t small { font-size: 12.5px; font-weight: 600; color: var(--sp-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="spent"] .spl-acc .ar { color: #b5b5b0; display: flex; }
+html[data-skin="spent"] .spl-acc .ar svg { width: 20px; height: 20px; }
+/* goals + WhatsApp rows get the same squircle gradient tiles */
+html[data-skin="spent"] .lobby-year-card, html[data-skin="spent"] #lobby-wa-badge { border-radius: 24px !important; max-width: 440px !important; width: 100% !important; }
+html[data-skin="spent"] .lobby-year-card .ic { border-radius: 16px !important; width: 48px !important; height: 48px !important; background: linear-gradient(135deg, #ffb86b, #f0762f) !important; font-size: 0 !important; box-shadow: 0 6px 14px rgba(240,118,47,.25);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Ccircle cx='12' cy='12' r='.6' fill='white'/%3E%3C/svg%3E"), linear-gradient(135deg, #ffb86b, #f0762f) !important;
+  background-size: 24px 24px, cover !important; background-repeat: no-repeat !important; background-position: center !important; }
+html[data-skin="spent"] #lobby-wa-badge .wr-ic { border-radius: 16px !important; width: 48px !important; height: 48px !important; font-size: 0 !important; box-shadow: 0 6px 14px rgba(37,180,95,.25);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.2A8 8 0 1 1 20 11.5z'/%3E%3C/svg%3E"), linear-gradient(135deg, #3fd47f, #1a9a52) !important;
+  background-size: 24px 24px, cover !important; background-repeat: no-repeat !important; background-position: center !important; }
+html[data-skin="spent"] .lobby-year-card .ar, html[data-skin="spent"] #lobby-wa-badge .wr-ar { color: #b5b5b0 !important; }
 </style>
 <!--SPENT-END-->
 </body>
