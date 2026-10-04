@@ -7518,7 +7518,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v507</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v508</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11153,6 +11153,132 @@ function renderIncomeSpent(o) {
   h += '</div></div>';
   host.innerHTML = h;
 }
+// ── Step flow (4.10, new design): add/edit an expense or income one
+// question per screen — amount → what → (client) → category → date — each
+// pre-filled with the current value, with "שמור" available at any step
+// when editing. It intercepts the existing forms wherever they're opened
+// from, reads their pre-filled inputs, and on save writes them back and
+// runs the original save function, so all behaviour stays identical.
+// "טופס מלא" on the last step opens the original full form. ──
+let _spF = null;
+function _spOpts(selId) {
+  const el = document.getElementById(selId); if (!el) return [];
+  return [...el.options].filter(o => !o.disabled && o.value !== '__edit_cats__').map(o => ({ v: o.value, t: o.textContent.trim(), special: /^__.*__$/.test(o.value) }));
+}
+function _spRecentDescs(key) {
+  const seen = [], out = [];
+  (load(key) || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).forEach(x => {
+    const d = String(x.description || '').trim(); if (d && d !== 'תנועה ללא שם' && seen.indexOf(d) < 0) { seen.push(d); out.push(d); }
+  });
+  return out.slice(0, 6);
+}
+function spFlowStart(kind) {
+  const isExp = kind === 'expense', P = isExp ? 'exp' : 'inc';
+  const editing = isExp ? !!_editingExpenseId : !!_incomeEditId;
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const steps = [
+    { k: P + '-amount', type: 'money', q: isExp ? 'כמה זה עלה?' : 'כמה נכנס / ייכנס?' },
+    { k: P + '-desc', type: 'text', q: isExp ? 'על מה?' : 'על מה התשלום?', ph: isExp ? 'סופר, ציוד, דלק…' : 'סשן, הפקה, מיקס…', recent: _spRecentDescs(isExp ? 'expenses' : 'income') }
+  ];
+  if (!isExp) steps.push({ k: 'inc-client', type: 'choice', q: 'מאיזה לקוח?', opts: _spOpts('inc-client').map(o => ({ v: o.v, t: o.v ? o.t : 'בלי לקוח' })) });
+  steps.push({ k: P + '-cat', type: 'choice', q: 'איזו קטגוריה?', opts: _spOpts(P + '-cat'), icons: true });
+  steps.push({ k: P + '-date', type: 'date', q: 'מתי?' });
+  _spF = { kind, isExp, editing, steps, i: 0, vals: {} };
+  steps.forEach(st => { _spF.vals[st.k] = v(st.k); });
+  let ov = document.getElementById('sp-flow');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'sp-flow'; document.body.appendChild(ov); }
+  ov.classList.add('open');
+  _spRender();
+}
+function _spRender() {
+  const f = _spF, ov = document.getElementById('sp-flow'); if (!f || !ov) return;
+  const st = f.steps[f.i], last = f.i === f.steps.length - 1, val = f.vals[st.k] || '';
+  const title = (f.editing ? 'עריכת ' : '') + (f.isExp ? 'הוצאה' : 'הכנסה') + (f.editing ? '' : ' חדשה');
+  let body = '';
+  if (st.type === 'money') {
+    body = '<div class="spf-money"><span>₪</span><input id="spf-in" inputmode="decimal" autocomplete="off" value="' + _escape(val) + '" placeholder="0"/></div>';
+  } else if (st.type === 'text') {
+    body = '<input id="spf-in" class="spf-text" autocomplete="off" value="' + _escape(val) + '" placeholder="' + _escape(st.ph || '') + '"/>'
+      + (st.recent && st.recent.length ? '<div class="spf-chips">' + st.recent.map(r => '<button class="spf-chip" data-v="' + _escape(r) + '">' + _escape(r) + '</button>').join('') + '</div>' : '');
+  } else if (st.type === 'choice') {
+    body = '<div class="spf-grid">' + st.opts.map(o => o.special
+      ? '<button class="spf-opt spf-new" data-special="' + _escape(o.v) + '"><span class="spf-oi">+</span><span>' + _escape(o.t.replace(/^\+\s*/, '')) + '</span></button>'
+      : '<button class="spf-opt' + (o.v === val ? ' on' : '') + '" data-v="' + _escape(o.v) + '">'
+        + (st.icons ? '<span class="spf-oi">' + _txCatSvg(o.v || o.t) + '</span>' : '') + '<span>' + _escape(o.t) + '</span></button>').join('') + '</div>';
+  } else if (st.type === 'date') {
+    const iso = o => { const d = new Date(); d.setDate(d.getDate() - o); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+    body = '<div class="spf-chips spf-days">' + [['היום', 0], ['אתמול', 1], ['שלשום', 2]].map(([t, o]) => '<button class="spf-chip' + (val === iso(o) ? ' on' : '') + '" data-v="' + iso(o) + '">' + t + '</button>').join('') + '</div>'
+      + '<input id="spf-in" type="date" class="spf-text" value="' + _escape(val) + '"/>';
+  }
+  ov.innerHTML = '<div class="spf-top"><button class="spf-x" onclick="spFlowClose()">✕</button>'
+    + '<div class="spf-prog">' + f.steps.map((_, k) => '<span class="' + (k <= f.i ? 'on' : '') + '"></span>').join('') + '</div>'
+    + '<button class="spf-back" onclick="spFlowBack()"' + (f.i ? '' : ' style="visibility:hidden"') + '>→</button></div>'
+    + '<div class="spf-body"><div class="spf-k">' + title + ' · ' + (f.i + 1) + '/' + f.steps.length + '</div><div class="spf-q">' + st.q + '</div>' + body + '</div>'
+    + '<div class="spf-foot">'
+    + (last ? '<button class="spf-link" onclick="spFlowFull()">כל השדות (טופס מלא)</button>' : '')
+    + (f.editing && last ? '<button class="spf-link danger" onclick="spFlowDelete()">מחיקה</button>' : '')
+    + (f.editing && !last ? '<button class="spf-save2" onclick="spFlowSave()">שמור עכשיו</button>' : '')
+    + '<button class="spf-next" onclick="' + (last ? 'spFlowSave()' : 'spFlowNext()') + '">' + (last ? 'שמירה' : 'הבא') + '</button></div>';
+  const inp = document.getElementById('spf-in');
+  if (inp) {
+    inp.oninput = () => { f.vals[st.k] = inp.value; };
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); last ? spFlowSave() : spFlowNext(); } };
+    if (st.type !== 'date') setTimeout(() => { try { inp.focus(); inp.select && inp.select(); } catch (_) {} }, 60);
+  }
+  ov.querySelectorAll('.spf-chip').forEach(b => b.onclick = () => { f.vals[st.k] = b.dataset.v; if (st.type === 'text') { if (inp) inp.value = b.dataset.v; spFlowNext(); } else _spRender(); });
+  ov.querySelectorAll('.spf-opt[data-special]').forEach(b => b.onclick = () => spFlowSpecial(st.k, b.dataset.special));
+  ov.querySelectorAll('.spf-opt:not([data-special])').forEach(b => b.onclick = () => { f.vals[st.k] = b.dataset.v; try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {} last ? _spRender() : spFlowNext(); });
+}
+function _spValid(st) {
+  const v = String(_spF.vals[st.k] || '').trim();
+  if (st.type === 'money') return parseFloat(v.replace(',', '.')) > 0 || (toast('כתוב סכום'), false);
+  if (st.type === 'text') return !!v || (toast('כתוב במילה על מה'), false);
+  if (st.type === 'date') return !!v || (toast('בחר תאריך'), false);
+  return true;
+}
+window.spFlowNext = function() { const f = _spF; if (!f || !_spValid(f.steps[f.i])) return; if (f.i < f.steps.length - 1) { f.i++; _spRender(); } };
+window.spFlowBack = function() { if (_spF && _spF.i > 0) { _spF.i--; _spRender(); } };
+window.spFlowClose = function() { const ov = document.getElementById('sp-flow'); if (ov) ov.classList.remove('open'); _spF = null; };
+function _spWriteBack() {
+  const f = _spF;
+  Object.keys(f.vals).forEach(k => { const el = document.getElementById(k); if (el) el.value = k.endsWith('-amount') ? String(f.vals[k]).replace(',', '.') : f.vals[k]; });
+}
+window.spFlowSave = function() {
+  const f = _spF; if (!f) return;
+  for (const st of f.steps) if (!_spValid(st)) { f.i = f.steps.indexOf(st); _spRender(); return; }
+  _spWriteBack();
+  spFlowClose();
+  try { f.isExp ? saveExpense() : saveIncome(); } catch (e) { console.warn('flow save', e); }
+  try { if (window.haptic && window.haptic.success) window.haptic.success(); } catch (_) {}
+};
+window.spFlowDelete = function() {
+  const f = _spF; if (!f) return; spFlowClose();
+  if (f.isExp && _editingExpenseId) deleteExpense(_editingExpenseId);
+  else if (!f.isExp && _incomeEditId) deleteIncome(_incomeEditId);
+};
+// "+ new category / new client": hand off to the full form and fire the
+// original option there, so the app's own create dialog runs unchanged.
+window.spFlowSpecial = function(selId, value) {
+  spFlowFull();
+  setTimeout(() => { const el = document.getElementById(selId); if (!el) return; el.value = value; el.dispatchEvent(new Event('change', { bubbles: true })); }, 80);
+};
+window.spFlowFull = function() {
+  const f = _spF; if (!f) return; _spWriteBack(); spFlowClose();
+  window._spFullForm = true;
+  document.getElementById(f.isExp ? 'modal-expense' : 'modal-income').classList.add('open');
+};
+// intercept the classic forms in the new design
+(function spFlowHook() {
+  ['modal-expense', 'modal-income'].forEach(id => {
+    const m = document.getElementById(id); if (!m || !window.MutationObserver) return;
+    new MutationObserver(() => {
+      if (!m.classList.contains('open')) { window._spFullForm = false; return; }
+      if (window._spFullForm || document.documentElement.getAttribute('data-skin') !== 'spent') return;
+      m.classList.remove('open');
+      spFlowStart(id === 'modal-expense' ? 'expense' : 'income');
+    }).observe(m, { attributes: true, attributeFilter: ['class'] });
+  });
+})();
 function renderIncome() {
   const income = load('income');
   const plans  = load('plans');
@@ -15898,15 +16024,6 @@ function renderExpensesSpent() {
       h += '<button class="xs-fixed" onclick="showPage(\'fixed\')"><span class="xs-fi"><svg viewBox="0 0 24 24"><use href="#ic-repeat"/></svg></span>'
         + '<span class="xs-fm"><b>הוצאות קבועות</b><small>' + (nx ? 'הבא: ' + _escape(nx.x.name) + ' · ' + _fcRelDay(nx.d) + ' · ' + fmtMoney(nx.x.amount) : fl.length + ' דברים שיורדים כל חודש') + '</small></span>'
         + '<span class="xs-fv">' + fmtMoney(fcTotal()) + '<small>לחודש</small></span><span class="xs-fa">‹</span></button>';
-    }
-  } catch (_) {}
-  // ── unnamed recurring charges (only the actionable ones) ──
-  try {
-    const nameless = (detectFixedExpenses() || []).filter(f => f.nameless);
-    if (nameless.length) {
-      h += '<div class="xs-nudge"><b>' + nameless.length + ' חיובים חוזרים בלי שם</b>'
-        + nameless.slice(0, 4).map(f => '<div class="xs-nrow"><span>' + fmtMoney(f.amount) + ' · בערך ב-' + f.day + ' לחודש</span><button onclick="fxNameGroup(\'' + f.key.replace(/'/g, "\\'") + '\', ' + f.amount + ')">תן שם</button></div>').join('')
-        + '</div>';
     }
   } catch (_) {}
   // ── list grouped by day ──
@@ -30900,6 +31017,40 @@ html[data-skin="spent"] .inc-chip.late { background: var(--sp-red-soft); color: 
 html[data-skin="spent"] .prod-edit { border-color: var(--sp-line) !important; }
 html[data-skin="spent"] #page-income .inc-carry { display: none !important; }
 html[data-skin="spent"] .prod-card.is-open .prod-mini-days { display: none !important; }
+
+/* ══ v508 ══ step flow (one question per screen) ─────────────────── */
+#sp-flow { position: fixed; inset: 0; z-index: 10070; background: #fff; display: none; flex-direction: column; font-family: 'Heebo', sans-serif; color: #0f0f0f; }
+#sp-flow.open { display: flex; animation: spfIn .22s ease; }
+@keyframes spfIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+#sp-flow .spf-top { display: flex; align-items: center; gap: 12px; padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 6px; }
+#sp-flow .spf-x, #sp-flow .spf-back { width: 38px; height: 38px; border-radius: 50%; border: none; background: #f4f4f2; font-size: 15px; cursor: pointer; flex-shrink: 0; color: #0f0f0f; }
+#sp-flow .spf-prog { flex: 1; display: flex; gap: 5px; direction: rtl; }
+#sp-flow .spf-prog span { flex: 1; height: 4px; border-radius: 2px; background: #ebebe8; transition: background .2s; }
+#sp-flow .spf-prog span.on { background: #0f0f0f; }
+#sp-flow .spf-body { flex: 1; overflow-y: auto; padding: 26px 22px 10px; }
+#sp-flow .spf-k { font-size: 13px; font-weight: 800; color: #8d8d8d; }
+#sp-flow .spf-q { font-size: 32px; font-weight: 900; letter-spacing: -0.03em; line-height: 1.15; margin: 6px 0 22px; }
+#sp-flow .spf-money { display: flex; align-items: baseline; gap: 6px; border-bottom: 2.5px solid #0f0f0f; padding-bottom: 6px; direction: ltr; justify-content: flex-end; }
+#sp-flow .spf-money span { font-size: 34px; font-weight: 900; color: #8d8d8d; }
+#sp-flow .spf-money input { flex: 1; min-width: 0; border: none !important; background: none !important; outline: none; font-family: inherit; font-size: 56px !important; font-weight: 900; color: #0f0f0f !important; text-align: right; padding: 0 !important; letter-spacing: -0.03em; box-shadow: none !important; }
+#sp-flow .spf-text { width: 100%; box-sizing: border-box; border: none !important; border-bottom: 2.5px solid #0f0f0f !important; border-radius: 0 !important; background: none !important; outline: none; font-family: inherit; font-size: 24px !important; font-weight: 800; color: #0f0f0f !important; padding: 8px 2px !important; box-shadow: none !important; }
+#sp-flow .spf-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 0; }
+#sp-flow .spf-days { margin: 0 0 18px; }
+#sp-flow .spf-chip { border: none; background: #f4f4f2; color: #0f0f0f; font-family: inherit; font-weight: 800; font-size: 14px; border-radius: 999px; padding: 10px 16px; cursor: pointer; }
+#sp-flow .spf-chip.on { background: #1f9d55; color: #fff; }
+#sp-flow .spf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+#sp-flow .spf-opt { border: 1.5px solid #ededeb; background: #fff; border-radius: 18px; padding: 14px 6px; display: flex; flex-direction: column; align-items: center; gap: 7px; font-family: inherit; font-weight: 800; font-size: 13px; color: #0f0f0f; cursor: pointer; min-height: 88px; justify-content: center; text-align: center; }
+#sp-flow .spf-opt.on { border-color: #1f9d55; background: #e6f5ec; }
+#sp-flow .spf-oi { width: 40px; height: 40px; border-radius: 50%; background: #fdede2; color: #e0662f; display: flex; align-items: center; justify-content: center; }
+#sp-flow .spf-opt.on .spf-oi { background: #fff; color: #1f9d55; }
+#sp-flow .spf-oi svg { width: 21px; height: 21px; stroke: currentColor; fill: none; }
+#sp-flow .spf-foot { padding: 12px 18px calc(env(safe-area-inset-bottom, 0px) + 16px); display: flex; flex-direction: column; gap: 8px; }
+#sp-flow .spf-next { width: 100%; border: none; background: #1f9d55; color: #fff; font-family: inherit; font-weight: 900; font-size: 17px; border-radius: 18px; padding: 17px; cursor: pointer; box-shadow: 0 6px 18px rgba(31,157,85,.28); }
+#sp-flow .spf-save2 { width: 100%; border: none; background: #f4f4f2; color: #0f0f0f; font-family: inherit; font-weight: 800; font-size: 15px; border-radius: 16px; padding: 13px; cursor: pointer; }
+#sp-flow .spf-link { border: none; background: none; color: #8d8d8d; font-family: inherit; font-weight: 800; font-size: 13.5px; padding: 6px; cursor: pointer; }
+#sp-flow .spf-link.danger { color: #c9411f; }
+#sp-flow .spf-new { border-style: dashed; color: #8d8d8d; }
+#sp-flow .spf-new .spf-oi { background: #f4f4f2; color: #0f0f0f; font-size: 22px; font-weight: 700; }
 </style>
 <!--SPENT-END-->
 </body>
