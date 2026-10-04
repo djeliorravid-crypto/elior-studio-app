@@ -3649,6 +3649,29 @@
     .fc-arch-item .t { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; color: var(--text); text-decoration: line-through; text-decoration-color: rgba(150,150,150,.5); }
     .fc-arch-item .am { flex-shrink: 0; font-size: 13.5px; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
     .fc-note { font-size: 12px; color: var(--text-muted); font-weight: 600; line-height: 1.6; margin-top: 16px; }
+    .prod-mini-days.due-hot { color: var(--red) !important; font-weight: 900 !important; }
+    .prod-mini-days.due-warm { color: var(--orange) !important; font-weight: 900 !important; }
+    /* fixed-cost cards: summary row, details on tap (4.10) */
+    .fc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; margin-bottom: 8px; box-shadow: var(--shadow); overflow: hidden; }
+    .fc-line { width: 100%; display: flex; align-items: center; gap: 11px; padding: 12px 14px; background: none; border: none; cursor: pointer; font-family: inherit; text-align: right; color: var(--text); }
+    .fc-ic { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+    .fc-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .fc-mid b { font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fc-mid small { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fc-tag { flex-shrink: 0; font-size: 10.5px; font-weight: 900; border-radius: 999px; padding: 3px 8px; }
+    .fc-tag.hi { background: #fdece6; color: #c9411f; }
+    .fc-tag.red { background: #fff4e6; color: #b8661c; }
+    .fc-tag.waste { background: #fdece6; color: #c9411f; }
+    .fc-sum { flex-shrink: 0; font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    .fc-chev { flex-shrink: 0; color: var(--text-muted); font-size: 13px; width: 12px; text-align: center; }
+    .fc-detail { padding: 2px 14px 14px; border-top: 1px solid var(--border); }
+    .fc-detail .fc-res { margin: 10px 0 0 !important; border: none !important; box-shadow: none !important; padding: 0 !important; background: transparent !important; border-radius: 0 !important; }
+    .fc-check { width: 100%; margin-top: 12px; border: none; background: var(--surface2); color: var(--text); font-family: inherit; font-weight: 800; font-size: 13.5px; border-radius: 14px; padding: 12px; cursor: pointer; }
+    .fc-acts { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    .fc-acts button { flex: 1; min-width: 70px; border: none; background: var(--surface2); color: var(--text); font-family: inherit; font-weight: 800; font-size: 12.5px; border-radius: 999px; padding: 9px 6px; cursor: pointer; white-space: nowrap; }
+    .fc-acts button.danger { color: var(--red); }
+    .fc-hero-save { margin-top: 10px; display: inline-block; font-size: 12.5px; font-weight: 800; color: var(--green); background: var(--green-light); border-radius: 999px; padding: 6px 12px; }
+    .fc-up-more { display: block; width: 100%; margin-top: 4px; border: none; background: none; color: var(--text-muted); font-family: inherit; font-weight: 800; font-size: 12.5px; padding: 8px; cursor: pointer; border-top: 1px solid var(--border); }
     /* charge day chip + upcoming charges strip (4.10) */
     .fc-day { display: inline-block; font-size: 11px; font-weight: 800; color: var(--text-muted); opacity: .55; cursor: pointer; padding: 1px 0; }
     .fc-day.set { opacity: 1; color: var(--text); }
@@ -7489,8 +7512,9 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v505</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v506</small>
   </div>
+  <div id="lobby-today"></div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
       <div class="mode-card business" onclick="chooseMode('business')">
@@ -8812,7 +8836,7 @@
     </div>
 
     <!-- הוספה מהירה: כותרת + שעה -->
-    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+    <div class="sched-quick" style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
       <input type="time" id="schedule-time-input" value="10:00"
         style="border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;font-size:15px;font-family:'Heebo',sans-serif;color:var(--text);background:var(--surface);outline:none;width:140px"/>
       <input type="text" id="schedule-title-input" placeholder="כותרת הפעילות (לדוגמה: פגישה עם דני)" autocomplete="off"
@@ -8823,7 +8847,7 @@
     </div>
 
     <!-- מקרא צבעים -->
-    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;font-size:11.5px;font-weight:600;color:var(--text-muted)">
+    <div class="sched-legend" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;font-size:11.5px;font-weight:600;color:var(--text-muted)">
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#ef4444;box-shadow:0 0 6px rgba(239,68,68,0.4)"></span>בחצי שעה</span>
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#f59e0b"></span>תוך שעתיים</span>
       <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#facc15"></span>היום</span>
@@ -17933,6 +17957,7 @@ function _fcRelDay(d) {
   const n = Math.round((d - t) / 864e5);
   return n === 0 ? 'היום' : n === 1 ? 'מחר' : 'בעוד ' + n + ' ימים';
 }
+let _fcUpAll = false;
 function fcRenderUpcoming() {
   let host = document.getElementById('fc-upcoming');
   if (!host) { host = document.createElement('div'); host.id = 'fc-upcoming'; const f = document.getElementById('fc-filter'); if (f && f.parentNode) f.parentNode.insertBefore(host, f); else return; }
@@ -17948,7 +17973,7 @@ function fcRenderUpcoming() {
   const due = items.filter(o => !_fcPaidFor(o.x, o.d));
   const sum = due.reduce((t, o) => t + (Number(o.x.amount) || 0), 0);
   host.innerHTML = '<div class="fc-up"><div class="fc-up-head"><b>החיובים הקרובים</b><span>' + fmtMoney(sum) + ' ב-30 הימים הבאים</span></div>'
-    + items.slice(0, 7).map(o => {
+    + items.slice(0, _fcUpAll ? 12 : 3).map(o => {
         const paid = _fcPaidFor(o.x, o.d), mk = _fcMonthKey(o.d);
         const soon = !paid && (o.d - new Date()) / 864e5 < 2;
         return '<div class="fc-up-row' + (paid ? ' paid' : '') + (soon ? ' soon' : '') + '">'
@@ -17958,7 +17983,7 @@ function fcRenderUpcoming() {
           + '<button class="fc-up-chk' + (paid ? ' on' : '') + '" onclick="fcMarkPaid(\'' + o.x.id + '\',\'' + mk + '\')" title="' + (paid ? 'בטל סימון' : 'סמן שבוצע') + '">✓</button>'
           + '</div>';
       }).join('')
-    + (noDay ? '<div class="fc-up-foot">עוד ' + noDay + ' הוצאות בלי יום חיוב — לחץ 📅 בשורה כדי להוסיף</div>' : '')
+    + (items.length > 3 ? '<button class="fc-up-more" onclick="_fcUpAll=!_fcUpAll;fcRenderUpcoming()">' + (_fcUpAll ? 'פחות' : 'עוד ' + (items.length - 3) + ' חיובים') + '</button>' : '')
     + '</div>';
 }
 // Phone reminders (native): the evening before each charge, and for
@@ -18056,13 +18081,54 @@ function fcEntryCard() {
   el.innerHTML = '<span class="fc-entry-l"><span class="ic">🔁</span><span class="t">הוצאות קבועות<small>' + list.length + ' דברים שיורדים כל חודש</small></span></span>'
     + '<span class="fc-entry-r"><b>' + fmtMoney(fcTotal()) + '</b><small>לחודש</small></span><span class="ar">‹</span>';
 }
+// ── Fixed-cost row (4.10): summary first, details on tap. The row is
+// just icon · name · when · one short tag · amount; tapping opens the
+// research, tip, alternatives and every action. One row open at a time. ──
+let _fcOpenId = null;
+const _FC_GPAL = { living: ['#fdede2', '#e0662f'], studio: ['#dfe7fc', '#4b4fe0'], service: ['#e6f5ec', '#1f9d55'] };
+window.fcToggle = function(id) { _fcOpenId = _fcOpenId === id ? null : id; fcRender(); try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {} };
+function _fcTagOf(x) {
+  const r = _fcResearchStore()[x.id]; const d = r && r.data; if (!d) return '';
+  if (d.verdict === 'high') return '<span class="fc-tag hi">יקר</span>';
+  if (d.need === 'waste') return '<span class="fc-tag waste">לשקול לבטל</span>';
+  if (d.need === 'reducible') return '<span class="fc-tag red">אפשר לצמצם</span>';
+  return '';
+}
+function _fcRowHtml(x, g) {
+  const open = _fcOpenId === x.id, pal = _FC_GPAL[g] || _FC_GPAL.service, id = x.id;
+  const sub = [x.day ? 'ב-' + x.day + ' לחודש' : '', x.until ? 'עד ' + fcUntilLabel(x.until) : '', x.note ? _escape(x.note) : ''].filter(Boolean).join(' · ');
+  let h = '<div class="fc-card' + (open ? ' open' : '') + '">'
+    + '<button class="fc-line" onclick="fcToggle(\'' + id + '\')">'
+    + '<span class="fc-ic" style="background:' + pal[0] + ';color:' + pal[1] + '">' + (FC_GROUPS[g] ? FC_GROUPS[g].icon : '•') + '</span>'
+    + '<span class="fc-mid"><b>' + _escape(x.name) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>'
+    + _fcTagOf(x)
+    + '<span class="fc-sum">' + fmtMoney(x.amount) + '</span>'
+    + '<span class="fc-chev">' + (open ? '⌃' : '⌄') + '</span></button>';
+  if (open) {
+    const r = _fcResearchStore()[id];
+    h += '<div class="fc-detail">';
+    if (r && r.data) h += _fcResearchHtml(x);
+    else h += '<button class="fc-check" onclick="fcResearchOne(\'' + id + '\')">🔎 בדוק אם אני משלם יותר מדי</button>';
+    h += '<div class="fc-acts">'
+      + '<button onclick="fcRenameOne(\'' + id + '\')">✏️ שם</button>'
+      + '<button onclick="fcEditAmount(\'' + id + '\')">₪ סכום</button>'
+      + '<button onclick="fcEditDay(\'' + id + '\')">📅 ' + (x.day ? 'ב-' + x.day : 'יום חיוב') + '</button>'
+      + '<button class="danger" onclick="fcArchive(\'' + id + '\')">🗑️ כבר לא</button>'
+      + '</div></div>';
+  }
+  return h + '</div>';
+}
 window.fcRender = function() {
   const list = fcList().slice().sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0));
   const total = fcTotal(), yearly = total * 12;
   const hero = document.getElementById('fc-hero'); if (!hero) return;
+  let saveSum = 0;
+  list.forEach(x => { const r = _fcResearchStore()[x.id]; if (r && r.data && r.data.verdict === 'high') { const low = _fcTypicalLow(r.data.typical); if (low > 0 && Number(x.amount) > low) saveSum += Number(x.amount) - low; } });
   hero.innerHTML = '<div class="fc-hero"><div class="fc-hero-k">סך הכל קבוע בחודש</div>'
     + '<div class="fc-hero-n">' + fmtMoney(total) + '</div>'
-    + '<div class="fc-hero-sub">שווה ל-<b>' + fmtMoney(yearly) + '</b> בשנה · ' + list.length + ' הוצאות</div></div>';
+    + '<div class="fc-hero-sub">שווה ל-<b>' + fmtMoney(yearly) + '</b> בשנה · ' + list.length + ' הוצאות</div>'
+    + (saveSum >= 5 ? '<div class="fc-hero-save">💰 אפשר לחסוך עד ' + fmtMoney(Math.round(saveSum)) + ' בחודש</div>' : '')
+    + '</div>';
   // stats
   const sumG = g => list.filter(x => x.group === g).reduce((t, x) => t + (Number(x.amount) || 0), 0);
   const software = sumG('studio'), living = sumG('living');
@@ -18072,14 +18138,9 @@ window.fcRender = function() {
   stats.push({ n: fmtMoney(software), l: 'אולפן ותוכנות בחודש' });
   stats.push({ n: fmtMoney(living), l: 'מגורים בחודש' });
   if (big) stats.push({ n: fmtMoney(big.amount), l: 'הכי גדול · ' + big.name });
-  // potential monthly saving: for items judged יקר, how far above the
-  // low end of the typical range they sit (rough, advisory).
-  let saveSum = 0;
-  list.forEach(x => { const r = _fcResearchStore()[x.id]; if (r && r.data && r.data.verdict === 'high') { const low = _fcTypicalLow(r.data.typical); if (low > 0 && Number(x.amount) > low) saveSum += Number(x.amount) - low; } });
-  document.getElementById('fc-stats').innerHTML = '<div class="fc-stat-grid">'
-    + stats.map(s => '<div class="fc-stat"><span class="n">' + s.n + '</span><span class="l">' + _escape(s.l) + '</span></div>').join('') + '</div>'
-    + (ending.length ? '<div class="fc-flag">⏳ ' + ending.map(x => _escape(x.name) + ' נגמר ב-' + fcUntilLabel(x.until) + ' (יחסוך ' + fmtMoney(x.amount) + '/חודש)').join(' · ') + '</div>' : '')
-    + (saveSum >= 5 ? '<div class="fc-save-flag">💰 לפי הבדיקה אפשר לחסוך עד כ-' + fmtMoney(Math.round(saveSum)) + ' בחודש (' + fmtMoney(Math.round(saveSum) * 12) + ' בשנה) בהוצאות המסומנות "יקר". פתח כל אחת וראה חלופות.</div>' : '');
+  // summary-first (4.10): the three stat boxes and the "ends in" banner
+  // were noise — group headers carry the sums, rows carry "עד …".
+  document.getElementById('fc-stats').innerHTML = '';
   // necessity filter chips (only meaningful once something was researched)
   const needCount = n => list.filter(x => _fcNeedOf(x) === n).length;
   const checked = list.filter(x => _fcNeedOf(x) !== 'unknown').length;
@@ -18100,15 +18161,7 @@ window.fcRender = function() {
     if (!items.length) return;
     const gt = items.reduce((t, x) => t + (Number(x.amount) || 0), 0);
     html += '<div class="fc-group"><div class="fc-group-head"><span>' + FC_GROUPS[g].icon + ' ' + FC_GROUPS[g].name + '</span><span class="fc-group-sum">' + fmtMoney(gt) + '</span></div>'
-      + items.map(x => '<div class="fc-item"><div class="fc-row">'
-        + '<button class="fc-research-btn" onclick="event.stopPropagation();fcResearchOne(\'' + x.id + '\')" title="בדוק מחיר">🔎</button>'
-        + '<div class="fc-row-main"><div class="t">' + _escape(x.name) + '</div>'
-        + '<div class="s"><span class="fc-day' + (x.day ? ' set' : '') + '" onclick="event.stopPropagation();fcEditDay(\'' + x.id + '\')">📅 ' + (x.day ? 'ב-' + x.day + ' לחודש' : 'יום?') + '</span>'
-        + ((x.note || x.until) ? ' · ' + (x.until ? 'עד ' + fcUntilLabel(x.until) : '') + (x.until && x.note ? ' · ' : '') + (x.note ? _escape(x.note) : '') : '') + '</div></div>'
-        + '<div class="fc-amt tap" onclick="fcEditAmount(\'' + x.id + '\')" title="שנה סכום">' + fmtMoney(x.amount) + '</div>'
-        + '<button class="fc-mini" onclick="fcRenameOne(\'' + x.id + '\')" title="שנה שם">✏️</button>'
-        + '<button class="fc-mini" onclick="fcArchive(\'' + x.id + '\')" title="כבר לא משלם">🗑️</button></div>'
-        + _fcResearchHtml(x) + '</div>').join('')
+      + items.map(x => _fcRowHtml(x, g)).join('')
       + '</div>';
   });
   document.getElementById('fc-groups').innerHTML = html || '<div class="fc-note" style="text-align:center;margin-top:20px">אין הוצאות בקטגוריה הזאת</div>';
@@ -19161,6 +19214,50 @@ function importGcalEvent(ev) {
 // ===== LOGIN =====
 const PASS = '110';
 
+// ── Lobby "today" card (4.10): the 3 most important things right now —
+// a charge leaving soon, a production due, today's next appointment,
+// money owed to him. Each line jumps straight to its page. ──
+window.lobbyGo = function(pg) { try { chooseMode('business'); showPage(pg); window.scrollTo(0, 0); } catch (_) {} };
+function lobbyToday() {
+  const host = document.getElementById('lobby-today'); if (!host) return;
+  if (document.documentElement.getAttribute('data-skin') !== 'spent') { host.innerHTML = ''; return; }
+  const lines = [];
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+  const todayIso = t0.getFullYear() + '-' + String(t0.getMonth() + 1).padStart(2, '0') + '-' + String(t0.getDate()).padStart(2, '0');
+  // fixed charge today/tomorrow (not yet ✓)
+  try {
+    fcList().filter(x => Number(x.day) >= 1).forEach(x => {
+      const d = _fcNextDate(Number(x.day)); const n = Math.round((d - t0) / 864e5);
+      if (n <= 1 && !_fcPaidFor(x, d)) lines.push({ p: 0, ic: '💸', bg: '#fdede2', t: (n === 0 ? 'היום ' : 'מחר ') + (x.manual ? 'להעביר ' : 'יורדים ') + fmtMoney(x.amount), s: x.name, go: 'fixed' });
+    });
+  } catch (_) {}
+  // production deadlines within 3 days (or late)
+  try {
+    (load('productions') || []).filter(p => p.stage !== 'sent' && p.deadline).forEach(p => {
+      const n = Math.round((new Date(p.deadline) - t0) / 864e5);
+      if (n <= 3) lines.push({ p: 1, ic: '🎵', bg: '#dfe7fc', t: (p.title || 'הפקה') + (n < 0 ? ' · באיחור' : n === 0 ? ' · היום!' : n === 1 ? ' · מחר' : ' · עוד ' + n + ' ימים'), s: p.artist || 'דד-ליין', go: 'productions' });
+    });
+  } catch (_) {}
+  // today's schedule
+  try {
+    const sch = (load('schedule') || []).filter(e => String(e.date || '').slice(0, 10) === todayIso).sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+    if (sch.length) {
+      const nowHM = String(new Date().getHours()).padStart(2, '0') + ':' + String(new Date().getMinutes()).padStart(2, '0');
+      const next = sch.find(e => String(e.time || '') >= nowHM) || sch[sch.length - 1];
+      lines.push({ p: 2, ic: '📅', bg: '#e6f5ec', t: sch.length === 1 ? 'אירוע אחד היום' : sch.length + ' אירועים היום', s: 'הבא: ' + (next.title || '') + (next.time ? ' ב-' + next.time : ''), go: 'schedule' });
+    }
+  } catch (_) {}
+  // money owed
+  try {
+    const open = (load('income') || []).filter(i => (i.status || 'pending') !== 'paid');
+    const sum = open.reduce((t, i) => t + (Number(i.amount) || 0), 0);
+    if (sum > 0) { const c = new Set(open.map(i => i.clientId || i.clientName || i.id)).size; lines.push({ p: 3, ic: '🟠', bg: '#fff4e6', t: fmtMoney(sum) + ' לגבות', s: 'מ-' + (c === 1 ? 'לקוח אחד' : c + ' לקוחות'), go: 'income' }); }
+  } catch (_) {}
+  lines.sort((a, b) => a.p - b.p);
+  if (!lines.length) { host.innerHTML = '<div class="lt-card lt-calm">✨ אין שום דבר דחוף היום</div>'; return; }
+  host.innerHTML = '<div class="lt-card"><div class="lt-h">היום שלך</div>' + lines.slice(0, 3).map(l =>
+    '<button class="lt-row" onclick="lobbyGo(\'' + l.go + '\')"><span class="lt-ic" style="background:' + l.bg + '">' + l.ic + '</span><span class="lt-m"><b>' + _escape(l.t) + '</b><small>' + _escape(l.s) + '</small></span><span class="lt-ar">‹</span></button>').join('') + '</div>';
+}
 function refreshLobbyGreeting() {
   const greetEl = document.getElementById('lobby-greet');
   const subEl   = document.getElementById('lobby-sub');
@@ -19184,6 +19281,7 @@ function refreshLobbyGreeting() {
     const date  = now.toLocaleDateString('he-IL', { day:'numeric', month:'long' });
     subEl.textContent = 'יום ' + day + ' · ' + date;
   }
+  try { lobbyToday(); } catch (_) {}
 }
 
 function doLogin() {
@@ -22588,7 +22686,9 @@ function _prodCardHtml(p) {
           <span class="prod-card-artist">${_escape(p.artist || 'ללא אמן')}</span>
         </span>
         <span class="prod-mini-status" style="background:${bucket.c}1f;border-color:${bucket.c}66;color:${bucket.c}">${bucket.t}</span>
-        <span class="prod-mini-days">${daysIn === 1 ? 'יום 1' : daysIn + ' ימים'}</span>
+        ${du !== null
+          ? `<span class="prod-mini-days ${du <= 3 ? 'due-hot' : du <= 7 ? 'due-warm' : ''}">${du < 0 ? 'באיחור ' + (-du === 1 ? 'יום' : -du + ' ימים') : du === 0 ? 'היום!' : du === 1 ? 'מחר' : 'עוד ' + du + ' ימים'}</span>`
+          : `<span class="prod-mini-days" title="ימים מאז שנפתחה">${daysIn === 1 ? 'יום 1' : daysIn + ' ימים'}</span>`}
         <span class="prod-head-chevron">${expanded ? '▴' : '▾'}</span>
       </button>
 
@@ -28276,6 +28376,11 @@ function renderScheduleGcalBar() {
         '<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07);display:flex;justify-content:flex-end">' + writeBtn + '</div>' +
       '</div>';
   } else {
+    // New design: one quiet line instead of the big setup card; tap to expand.
+    if (document.documentElement.getAttribute('data-skin') === 'spent' && !window._gcalBarOpen) {
+      bar.innerHTML = '<button class="sched-gcal-mini" onclick="window._gcalBarOpen=true;renderScheduleGcalBar()">📅 לחבר את Google Calendar? ‹</button>';
+      return;
+    }
     const savedUrl = _icsUrl();
     // EventKit write mode is independent of the ICS read connection,
     // so surface a separate toggle in the disconnected state too —
@@ -30697,6 +30802,53 @@ html[data-skin="spent"] #page-income .inc-dun { display: none !important; }
 #story-ov .st-hint { font-size: 12px; font-weight: 700; background: #fff; border-radius: 999px; padding: 6px 14px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
 #story-ov .st-next { border: none; background: #0f0f0f; color: #fff; font-family: inherit; font-weight: 800; font-size: 14px; border-radius: 999px; padding: 10px 22px; cursor: pointer; }
 @keyframes stRise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+/* ══ v506 ══ Face ID lock + login: white, calm, on-brand ─────────── */
+html[data-skin="spent"] #face-id-lock { background: #ffffff !important; background-image: none !important; }
+html[data-skin="spent"] .face-id-mark { color: var(--sp-muted) !important; }
+html[data-skin="spent"] .face-id-logo { color: var(--sp-ink) !important; font-family: 'Heebo', sans-serif !important; font-weight: 900 !important; letter-spacing: -0.03em; font-size: 34px !important; text-shadow: none !important; background: none !important; -webkit-text-fill-color: var(--sp-ink) !important; }
+html[data-skin="spent"] .face-id-sub { color: var(--sp-muted) !important; }
+html[data-skin="spent"] .face-id-icon { background: var(--sp-green-soft) !important; border: none !important; box-shadow: none !important; border-radius: 50% !important; }
+html[data-skin="spent"] .face-id-icon svg { stroke: var(--sp-green) !important; }
+html[data-skin="spent"] .face-id-icon svg circle { fill: var(--sp-green) !important; }
+html[data-skin="spent"] .face-id-retry-btn { background: var(--sp-green) !important; background-image: none !important; color: #fff !important; border: none !important; box-shadow: 0 4px 14px rgba(31,157,85,.28) !important; border-radius: 999px !important; }
+html[data-skin="spent"] #login-screen { background: #ffffff !important; background-image: none !important; }
+html[data-skin="spent"] #login-screen::before, html[data-skin="spent"] #login-screen::after, html[data-skin="spent"] .login-box::before { display: none !important; }
+html[data-skin="spent"] .login-box { background: #ffffff !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; }
+html[data-skin="spent"] .login-signature { color: var(--sp-ink) !important; font-family: 'Heebo', sans-serif !important; font-weight: 900 !important; letter-spacing: -0.03em; text-shadow: none !important; -webkit-text-fill-color: var(--sp-ink) !important; background: none !important; }
+html[data-skin="spent"] .login-sub, html[data-skin="spent"] .login-label { color: var(--sp-muted) !important; text-shadow: none !important; }
+html[data-skin="spent"] .login-input { background: var(--sp-soft) !important; color: var(--sp-ink) !important; border: 1.5px solid transparent !important; box-shadow: none !important; }
+
+html[data-skin="spent"] .fc-card { background: #fff !important; border: 1px solid var(--sp-line) !important; box-shadow: var(--sp-shadow) !important; border-radius: 20px !important; }
+html[data-skin="spent"] .fc-detail { border-color: var(--sp-line) !important; }
+html[data-skin="spent"] #page-fixed .fc-note { display: none !important; }
+html[data-skin="spent"] .fc-hero-save { color: #1b7a44 !important; background: var(--sp-green-soft) !important; }
+html[data-skin="spent"] .fc-group-head { color: var(--sp-ink) !important; font-weight: 900 !important; }
+html[data-skin="spent"] .fc-detail .fc-res { border: none !important; box-shadow: none !important; padding: 0 !important; margin-top: 12px !important; background: transparent !important; }
+
+/* schedule: quieter — no legend, compact GCal prompt */
+html[data-skin="spent"] #page-schedule .sched-legend { display: none !important; }
+/* lobby "today" card */
+#lobby-today { width: 100%; max-width: 440px; position: relative; z-index: 2; }
+.lt-card { background: #fff; border: 1px solid var(--sp-line, #ededeb); border-radius: 22px; padding: 12px 12px 6px; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 3px 12px rgba(0,0,0,.04); }
+.lt-calm { padding: 14px; text-align: center; font-size: 13.5px; font-weight: 800; color: #3b3b3b; }
+.lt-h { font-size: 13px; font-weight: 900; color: #8d8d8d; margin: 0 6px 4px; }
+.lt-row { width: 100%; display: flex; align-items: center; gap: 11px; padding: 8px 6px; border: none; background: none; cursor: pointer; font-family: inherit; text-align: right; border-top: 1px solid #f1f1ef; }
+.lt-row:first-of-type { border-top: none; }
+.lt-ic { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.lt-m { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.lt-m b { font-size: 14.5px; font-weight: 900; color: #0f0f0f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lt-m small { font-size: 12px; font-weight: 600; color: #8d8d8d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lt-ar { color: #b9b9b9; font-size: 18px; font-weight: 700; }
+.sched-gcal-mini { display: block; width: 100%; border: none; background: none; color: #8d8d8d; font-family: inherit; font-weight: 800; font-size: 12.5px; padding: 4px; cursor: pointer; text-align: center; }
+html[data-skin="spent"] #page-schedule .sched-quick { flex-wrap: nowrap !important; align-items: center; }
+html[data-skin="spent"] #page-schedule .sched-quick #schedule-title-input { min-width: 0 !important; }
+html[data-skin="spent"] #page-schedule .sched-quick #schedule-time-input { width: 116px !important; flex-shrink: 0; padding: 11px 8px !important; }
+html[data-skin="spent"] #page-schedule .sched-quick .btn-primary { width: 46px !important; height: 46px !important; min-height: 0 !important; padding: 0 !important; border-radius: 50% !important; font-size: 0 !important; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+html[data-skin="spent"] #page-schedule .sched-quick .btn-primary::before { content: '+'; font-size: 26px; font-weight: 600; line-height: 1; }
+html[data-skin="spent"] #page-schedule button[onclick*="deleteScheduleItem"] { border-color: transparent !important; background: var(--sp-soft) !important; border-radius: 50% !important; }
+html[data-skin="spent"] #page-schedule button[onclick*="deleteScheduleItem"] svg { color: #a3a3a3 !important; }
+html[data-skin="spent"] #page-schedule .schedule-row { border: 1px solid var(--sp-line) !important; border-radius: 18px !important; box-shadow: var(--sp-shadow) !important; }
 </style>
 <!--SPENT-END-->
 </body>
