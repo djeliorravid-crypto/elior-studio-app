@@ -175,6 +175,17 @@ workflows:
           EOF
           ls "$ICONSET"
 
+      - name: Install white launch splash (new "R." logo)
+        # `cap add ios` ships Capacitor's placeholder splash; replace
+        # all three slots with our white splash + green mark.
+        script: |
+          SPL=ios/App/App/Assets.xcassets/Splash.imageset
+          if [ -d "$SPL" ] && [ -f splash/splash-2732.png ]; then
+            for n in splash-2732x2732.png splash-2732x2732-1.png splash-2732x2732-2.png; do
+              cp splash/splash-2732.png "$SPL/$n"
+            done
+          fi
+
       - name: Sync Capacitor
         script: npx cap sync ios
 

@@ -6957,6 +6957,7 @@
      Covers everything until biometry succeeds. Re-armed when the app
      comes back from background. -->
 <div id="face-id-lock">
+  <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG2)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
   <div class="face-id-mark">בס״ד</div>
   <div class="face-id-logo">אליאור רביד</div>
   <div class="face-id-sub">נעול — נדרש Face ID</div>
@@ -6978,6 +6979,7 @@
 <!-- ===== LOGIN ===== -->
 <div id="login-screen">
   <div class="login-box">
+    <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG1" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG1)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div class="login-signature">אליאור רביד</div>
     <div class="login-sub">ניהול חשבונות עסקי</div>
     <label class="login-label">סיסמא</label>
@@ -7517,9 +7519,10 @@
   </button>
   <div class="mode-screen-title">
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
+    <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG3)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v513</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v514</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -31407,6 +31410,12 @@ html[data-skin="spent"] #morning-conn-dot { color: #c0392b !important; backgroun
 html[data-skin="spent"] #schedule-edit-card .se-field input::placeholder { color: #b5b5b0 !important; -webkit-text-fill-color: #b5b5b0; }
 html[data-skin="spent"] #schedule-edit-card .notif-actions button { justify-content: center !important; text-align: center !important; }
 html[data-skin="spent"] #schedule-edit-card button[onclick*="deleteFromScheduleEdit"] { color: #dc2626 !important; }
+/* v514 — "R." brand mark */
+.sp-logo { display: none; }
+html[data-skin="spent"] .sp-logo { display: block; width: 64px; height: 64px; margin: 0 auto 14px; }
+html[data-skin="spent"] #mode-screen .sp-logo { width: 46px; height: 46px; margin-bottom: 10px; }
+html[data-skin="spent"] #mode-screen #lobby-icon { display: none !important; }
+html[data-skin="spent"] #face-id-lock .sp-logo { width: 78px; height: 78px; }
 </style>
 <!--SPENT-END-->
 </body>
