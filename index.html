@@ -1640,6 +1640,7 @@
     .row-morning-btn.warn   { background: rgba(220,60,60,0.14); border:1px dashed rgba(220,60,60,0.5); color: var(--red); }
     .row-morning-btn.danger { background: rgba(220,60,60,0.14); border:1px solid rgba(220,60,60,0.4); color: var(--red); font-weight: 800; border-style: solid; }
     .row-morning-btn.pr     { background: rgba(124,92,255,0.14); border:1px solid rgba(124,92,255,0.4); color:#6b5bd6; border-style: solid; }
+    .row-morning-btn.wa     { background: rgba(37,211,102,0.14); border:1px solid rgba(37,211,102,0.45); color:#128c4a; border-style: solid; }
     [data-theme="dark"] .row-morning-btn.ok { color:#9adf9c; }
     [data-theme="dark"] .row-morning-btn.warn,
     [data-theme="dark"] .row-morning-btn.danger { color:#ff8b6b; }
@@ -7518,7 +7519,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v512</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v513</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11705,6 +11706,7 @@ function _incomeMorningBtns(i) {
       const num = i.morningDocNumber || '';
       const rcptIcon = '<svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-doc-signed"/></svg> ';
       out += '<button class="row-morning-btn ok" onclick="morningOpenReceipt(\'' + url + '\')" title="פתח קבלה">' + rcptIcon + (num ? '#' + num : 'קבלה') + '</button>'
+           + '<button class="row-morning-btn wa" onclick="morningShareWA(\'' + idEsc + '\', \'receipt\')" title="שלח קבלה בוואטסאפ">וואטסאפ</button>'
            + '<button class="row-morning-btn danger" onclick="morningCancelReceipt(\'' + idEsc + '\')" title="בטל קבלה (זיכוי ב-Morning)">✕</button>';
     } else if (i.morningError) {
       out += '<button class="row-morning-btn warn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="נסה שוב ליצור קבלה"><svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-alert-circle"/></svg> נסה קבלה</button>';
@@ -11718,6 +11720,7 @@ function _incomeMorningBtns(i) {
     const url = (i.morningPrUrl || '').replace(/'/g, "\\'");
     const num = i.morningPrNumber || '';
     out += '<button class="row-morning-btn pr" onclick="morningOpenPaymentRequest(\'' + url + '\')" title="פתח דרישת תשלום">דרישה' + (num ? ' #' + num : '') + '</button>'
+         + '<button class="row-morning-btn wa" onclick="morningShareWA(\'' + idEsc + '\', \'pr\')" title="שלח דרישת תשלום בוואטסאפ">וואטסאפ</button>'
          + '<button class="row-morning-btn danger" onclick="morningCancelPaymentRequest(\'' + idEsc + '\')" title="בטל דרישת תשלום">✕</button>';
   } else if (!isPaid) {
     out += '<button class="row-morning-btn" onclick="morningRequestPayment(\'' + idEsc + '\')" title="צור דרישת תשלום ב-Morning">דרישת תשלום</button>';
@@ -11741,10 +11744,16 @@ window.incRowTap = function(ev, row) {
     let label = (b.textContent || '').replace(/\s+/g, ' ').trim();
     if (!label) label = b.getAttribute('aria-label') || b.getAttribute('title') || '•';
     if (b.classList.contains('status-pill')) label = 'החזר ל"ממתין"';
+    if (b.classList.contains('row-morning-btn')) {
+      const t = b.getAttribute('title') || '';
+      if (b.classList.contains('ok')) label = 'פתח קבלה' + (/#\d+/.test(label) ? ' ' + label.match(/#\d+/)[0] : '');
+      else if (b.classList.contains('pr')) label = 'פתח ' + label.replace('דרישה', 'דרישת תשלום');
+      else if (t) label = t;
+    }
     const danger = /מחק|ביטול|בטל/.test(label) || /delete/i.test(b.getAttribute('onclick') || '');
-    const pri = /סמן כשולם/.test(label);
-    return { label, danger, pri, run: () => b.click() };
-  }));
+    const pri = /סמן כשולם/.test(label) || b.classList.contains('wa');
+    return { label, danger, pri, wa: b.classList.contains('wa'), run: () => b.click() };
+  }).sort((a, b) => ((a.wa ? 0 : a.danger ? 2 : 1) - (b.wa ? 0 : b.danger ? 2 : 1))));
 };
 window.spentSheet = function(title, sub, actions) {
   let ov = document.getElementById('spent-sheet');
@@ -29388,6 +29397,25 @@ window.morningOpenReceipt = function(url) {
   } else {
     window.open(url, '_blank');
   }
+};
+
+// Share a Morning receipt / payment request link to the client on
+// WhatsApp. Uses the phone from the client card; without one, wa.me
+// opens WhatsApp's own contact picker with the message ready.
+window.morningShareWA = function(id, kind) {
+  const it = load('income').find(x => String(x.id) === String(id));
+  if (!it) return;
+  const isPr = kind === 'pr';
+  const url = isPr ? it.morningPrUrl : it.morningDocUrl;
+  if (!url) { toast('אין קישור זמין למסמך'); return; }
+  const num = isPr ? it.morningPrNumber : it.morningDocNumber;
+  const c = load('clients').find(x => (x.name || '').trim() === (it.client || '').trim());
+  const phone = c ? _waPhone(c.phone) : '';
+  const first = (it.client || '').trim().split(/\s+/)[0];
+  const msg = isPr
+    ? 'שלום' + (first ? ' ' + first : '') + ',\nמצורפת דרישת תשלום' + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + (it.description ? ' עבור ' + it.description : '') + ':\n' + url + '\n\nתודה,\nאליאור רביד · Ravid Studio'
+    : 'שלום' + (first ? ' ' + first : '') + ',\nתודה על התשלום! מצורפת הקבלה' + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + url + '\n\nאליאור רביד · Ravid Studio';
+  window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
 };
 
 // === Cancel an existing receipt ===
