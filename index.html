@@ -7518,7 +7518,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v509</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v510</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11218,7 +11218,16 @@ function _spRender() {
     + (f.editing && last && f.onDelete ? '<button class="spf-link danger" onclick="spFlowDelete()">' + (f.deleteLabel || 'מחיקה') + '</button>' : '')
     + (f.editing && !last ? '<button class="spf-save2" onclick="spFlowSave()">שמור עכשיו</button>' : '')
     + '<button class="spf-next" onclick="' + (last ? 'spFlowSave()' : 'spFlowNext()') + '">' + (last ? 'שמירה' : (st.optional && !val ? 'דלג' : 'הבא')) + '</button></div>';
+  try { const ae = document.activeElement; if (ae && ae !== document.body && ae.blur) ae.blur(); } catch (_) {}
   const inp = document.getElementById('spf-in');
+  if (inp && inp.type !== 'date' && inp.type !== 'time') {
+    // Locked until the finger taps it — iOS never raises the keyboard for a
+    // readonly field, so nothing can pop it open by itself.
+    inp.readOnly = true;
+    const unlock = () => { if (inp.readOnly) { inp.readOnly = false; try { inp.focus(); } catch (_) {} } };
+    inp.addEventListener('touchstart', unlock, { passive: true });
+    inp.addEventListener('mousedown', unlock);
+  }
   if (inp) {
     inp.oninput = () => { f.vals[st.k] = inp.value; const nb = ov.querySelector('.spf-next'); if (nb && !last && st.optional) nb.textContent = inp.value ? 'הבא' : 'דלג'; };
     inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); last ? spFlowSave() : spFlowNext(); } };
@@ -11227,7 +11236,10 @@ function _spRender() {
     f.vals[st.k] = b.dataset.v;
     if (st.type === 'text') { if (inp) inp.value = b.dataset.v; spFlowNext(); } else _spRender();
   });
-  ov.querySelectorAll('.spf-opt[data-special]').forEach(b => b.onclick = () => { if (f.onSpecial) { const fx = f; spFlowClose(); fx.onSpecial(st.k, b.dataset.special, fx.vals); } });
+  ov.querySelectorAll('.spf-opt[data-special]').forEach(b => b.onclick = () => {
+    if (f.onSpecialInline && f.onSpecialInline(st.k, b.dataset.special)) return;
+    if (f.onSpecial) { const fx = f; spFlowClose(); fx.onSpecial(st.k, b.dataset.special, fx.vals); }
+  });
   ov.querySelectorAll('.spf-opt:not([data-special])').forEach(b => b.onclick = () => {
     f.vals[st.k] = b.dataset.v; try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {}
     last ? _spRender() : spFlowNext();
@@ -11243,7 +11255,11 @@ function _spValid(st) {
   if (st.type === 'day') { const n = parseInt(v, 10); return (n >= 1 && n <= 31) || (toast('יום בין 1 ל-31'), false); }
   return true;
 }
-window.spFlowNext = function() { const f = _spF; if (!f || !_spValid(f.steps[f.i])) return; if (f.i < f.steps.length - 1) { f.i++; _spRender(); } };
+window.spFlowNext = function() {
+  const f = _spF; if (!f) return; const st = f.steps[f.i]; if (!_spValid(st)) return;
+  if (st.onNext) { st.onNext(f.vals); if (f.steps[f.i] !== st) { _spRender(); return; } }
+  if (f.i < f.steps.length - 1) { f.i++; _spRender(); }
+};
 window.spFlowBack = function() { if (_spF && _spF.i > 0) { _spF.i--; _spRender(); } };
 window.spFlowClose = function() { const ov = document.getElementById('sp-flow'); if (ov) ov.classList.remove('open'); _spF = null; };
 window.spFlowSave = function() {
@@ -11277,6 +11293,24 @@ function spFlowStart(kind) {
     onSave: v => { _spFormWrite(v); isExp ? saveExpense() : saveIncome(); },
     onDelete: () => { if (isExp && _editingExpenseId) deleteExpense(_editingExpenseId); else if (!isExp && _incomeEditId) deleteIncome(_incomeEditId); },
     onFull: v => _spOpenFull(modalId, v),
+    onSpecialInline: (selId, value) => {
+      if (selId !== 'inc-client' || value !== '__new__') return false;
+      const f = _spF; const at = f.i;
+      f.vals._qc = '';
+      f.steps.splice(at + 1, 0, { k: '_qc', type: 'text', q: 'מה שם הלקוח החדש?', ph: 'שם ושם משפחה', req: 'כתוב שם',
+        onNext: vals => {
+          const rs = document.getElementById('qc-return-sel'); if (rs) rs.value = 'inc-client';
+          const qn = document.getElementById('qc-name'); if (qn) qn.value = String(vals._qc).trim();
+          const qp = document.getElementById('qc-phone'); if (qp) qp.value = '';
+          const qt = document.getElementById('qc-type'); if (qt && !qt.value) qt.selectedIndex = 0;
+          try { saveQuickClient(); } catch (e) { console.warn('new client', e); }
+          vals['inc-client'] = (document.getElementById('inc-client') || {}).value || '';
+          const cs = f.steps.find(x => x.k === 'inc-client');
+          if (cs) cs.opts = _spOpts('inc-client').map(o => ({ v: o.v, t: o.v ? o.t : 'בלי לקוח', special: o.special }));
+          f.steps.splice(f.steps.indexOf(f.steps.find(x => x.k === '_qc')), 1);   // name step done → on to category
+        } });
+      f.i = at + 1; _spRender(); return true;
+    },
     onSpecial: (selId, value, v) => { _spOpenFull(modalId, v); setTimeout(() => { const el = document.getElementById(selId); if (!el) return; el.value = value; el.dispatchEvent(new Event('change', { bubbles: true })); }, 80); }
   });
 }
@@ -30954,8 +30988,7 @@ html[data-skin="spent"] #page-income #goal-bar-section,
 html[data-skin="spent"] #page-income .income-month-grid,
 html[data-skin="spent"] #page-income #truth-strip,
 html[data-skin="spent"] #page-income #income-extra-btn { display: none !important; }
-html[data-skin="spent"] #page-income .page-header .btn-primary,
-html[data-skin="spent"] #page-expenses .page-header .btn-primary { display: none !important; }
+/* (header add buttons restored in v510 — he wants them) */
 .is-hero { background: #fff; border: 1px solid var(--sp-line); border-radius: 24px; padding: 20px 20px 16px; box-shadow: var(--sp-shadow); margin-bottom: 18px; }
 .is-n { color: var(--sp-green) !important; }
 .is-goal { width: 100%; margin-top: 14px; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; gap: 6px; text-align: right; }
