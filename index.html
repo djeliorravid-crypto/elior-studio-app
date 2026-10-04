@@ -7489,7 +7489,7 @@
     <svg class="lobby-icon" id="lobby-icon" aria-hidden="true"><use href="#ic-sun-max"/></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v504</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v505</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8280,7 +8280,7 @@
   <!-- ===== INCOME ===== -->
   <div class="page" id="page-income">
     <div class="page-header">
-      <div><h2><svg class="icon-lg"><use href="#ic-trend-up"/></svg>הכנסה חודשית</h2><p>ניהול כל ההכנסות שלך</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-trend-up"/></svg>הכנסות</h2><p>ניהול כל ההכנסות שלך</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="month-selector">
           <button onclick="changeMonth(-1)">›</button>
@@ -8291,8 +8291,9 @@
       </div>
     </div>
 
+    <div id="inc-spent"></div>
     <!-- 1. ===== BANK DEPOSIT (manual) ===== -->
-    <div id="bank-deposit-card" class="income-extra inc-hidden" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;margin-bottom:14px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;transition:box-shadow .3s">
+    <div id="bank-deposit-card" class="income-extra inc-hidden" style="display:none !important;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px 24px;margin-bottom:14px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;transition:box-shadow .3s">
       <div style="position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-glow) 0%,transparent 60%);pointer-events:none"></div>
       <div style="position:relative;display:flex;align-items:center;gap:14px;flex:1;min-width:200px">
         <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 6px 18px var(--accent-glow)"><svg style="width:26px;height:26px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#ic-bank"/></svg></div>
@@ -8447,7 +8448,7 @@
   <!-- ===== EXPENSES ===== -->
   <div class="page" id="page-expenses">
     <div class="page-header">
-      <div><h2><svg class="icon-lg"><use href="#ic-trend-down"/></svg>הוצאה חודשית</h2><p>ניהול כל ההוצאות שלך</p></div>
+      <div><h2><svg class="icon-lg"><use href="#ic-trend-down"/></svg>הוצאות</h2><p>ניהול כל ההוצאות שלך</p></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="month-selector">
           <button onclick="changeMonth(-1)">›</button>
@@ -8465,6 +8466,7 @@
          Shortcut sends new transactions via ravidstudio:// URL scheme.
          Hidden until at least one pending item exists. -->
     <div id="tx-inbox" style="margin-bottom:18px"></div>
+    <div id="exp-spent"></div>
 
     <!-- Auto-detected fixed/recurring charges — "מה יורד לי כל חודש" -->
     <div id="fixed-exp-card" style="margin-bottom:18px"></div>
@@ -9553,6 +9555,7 @@
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="saveExpense()">שמירה</button>
       <button class="btn btn-ghost" onclick="closeModal('expense')">ביטול</button>
+      <button class="btn btn-danger" id="exp-del-btn" style="display:none" onclick="if (_editingExpenseId) { const id = _editingExpenseId; closeModal('expense'); deleteExpense(id); }">מחיקה</button>
     </div>
   </div>
 </div>
@@ -10400,6 +10403,7 @@ function openModal(type) {
   if (type === 'expense') {
     _editingExpenseId = null;  // fresh insert — not editing
     document.getElementById('exp-date').value = today;
+    { const db = document.getElementById('exp-del-btn'); if (db) db.style.display = 'none'; }
     ['exp-amount','exp-desc','exp-notes'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('exp-end-month').value = '';
     document.getElementById('exp-recurring').checked = false;
@@ -11089,6 +11093,37 @@ function renderGoalBar(paidAmt) {
   msg.style.color  = pctNum >= 100 ? 'var(--orange)' : 'var(--text-muted)';
 }
 
+// ── SPENT income hero (4.10): the four questions that matter, in one
+// card — how much came in, how much is still owed (tap → collect), how
+// close to the goal, and what's left after expenses. Replaces the stack of
+// goal card + five stat cards + net strip + "עוד נתונים" in the new skin. ──
+window.incSetGoal = function() {
+  let cur = 0; try { cur = (JSON.parse(localStorage.getItem('s_monthlyGoal') || '{}').v) || 0; } catch (_) {}
+  const v = prompt('מה היעד החודשי שלך? (₪)', cur ? String(cur) : ''); if (v === null) return;
+  saveGoal(v);
+};
+function renderIncomeSpent(o) {
+  const host = document.getElementById('inc-spent'); if (!host) return;
+  let goal = 0; try { goal = (JSON.parse(localStorage.getItem('s_monthlyGoal') || '{}').v) || 0; } catch (_) {}
+  const expected = o.totalPaid + o.totalNotPaid;
+  const net = o.totalPaid - o.paidExpenses;
+  const debtors = new Set(o.notPaid.map(i => i.clientId || i.clientName || i.id)).size;
+  let h = '<div class="is-hero">'
+    + '<div class="xs-k">נכנס ב' + MONTHS_HE[curMonth] + '</div>'
+    + '<div class="xs-n is-n">' + fmtMoney(o.totalPaid) + '</div>'
+    + '<div class="xs-sub">' + (expected > o.totalPaid ? 'מתוך ' + fmtMoney(expected) + ' שצפוי החודש' : (o.totalPaid ? 'כל מה שצפוי החודש נכנס 🎉' : 'עוד לא נכנס כסף החודש')) + '</div>';
+  if (goal > 0) {
+    const pct = Math.min(100, Math.round(o.totalPaid / goal * 100));
+    h += '<button class="is-goal" onclick="incSetGoal()"><span class="is-gt"><b>' + pct + '%</b> מהיעד ' + fmtMoney(goal) + '</span><span class="is-gb"><i style="width:' + pct + '%"></i></span></button>';
+  } else {
+    h += '<button class="is-goal is-goal-empty" onclick="incSetGoal()">🎯 קבע יעד חודשי</button>';
+  }
+  h += '<div class="is-pills">';
+  if (o.totalNotPaid > 0) h += '<button class="is-pill owe" onclick="openDunningModal()"><b>' + fmtMoney(o.totalNotPaid) + '</b><span>עוד לגבות · ' + debtors + (debtors === 1 ? ' לקוח' : ' לקוחות') + ' ‹</span></button>';
+  h += '<div class="is-pill ' + (net >= 0 ? 'pos' : 'neg') + '"><b>' + (net >= 0 ? '+' : '−') + fmtMoney(Math.abs(net)) + '</b><span>נשאר אחרי הוצאות</span></div>';
+  h += '</div></div>';
+  host.innerHTML = h;
+}
 function renderIncome() {
   const income = load('income');
   const plans  = load('plans');
@@ -11178,6 +11213,9 @@ function renderIncome() {
     </div>`;
   }
   try { renderBankCredits(); } catch (_) {}
+  if (document.documentElement.getAttribute('data-skin') === 'spent') {
+    try { renderIncomeSpent({ totalPaid, totalNotPaid, notPaid, monthEntries, paidExpenses }); } catch (e) { console.warn('renderIncomeSpent', e); }
+  }
 
   // "רווח נקי עתידי" = הכל צפוי (שולם + ממתין + תשלומים) פחות כל הוצאות החודש
   const monthExpensesTotal = load('expenses').filter(e => inCurMonth(e.date)).reduce((s,e) => s + Number(e.amount), 0);
@@ -11557,6 +11595,7 @@ window.editExpense = function(id) {
   if (recOpts) recOpts.style.display = 'none';
   const title = document.getElementById('exp-modal-title');
   if (title) title.textContent = 'עריכת הוצאה';
+  { const db = document.getElementById('exp-del-btn'); if (db) db.style.display = ''; }
   document.getElementById('modal-expense').classList.add('open');
 };
 
@@ -15682,9 +15721,155 @@ window._txScanClipboard = async function(opts) {
 // Wallet Diagnostics modal — same pill, but only when the user asks
 // for it.
 
+// ── SPENT expenses page (4.10): one clear story instead of six stacked
+// widgets — big "יצא החודש", category circles that filter, a list grouped
+// by day like a bank app, one fixed-costs card. Classic skin keeps the old
+// layout untouched. ──
+let _expCatFilter = 'all';
+const _SP_PAL = [['#fdede2', '#e0662f'], ['#dfe7fc', '#4b4fe0'], ['#e6f5ec', '#1f9d55'], ['#f4f1d8', '#8a8a1f'], ['#fbe4ef', '#c2407c'], ['#e3f3f6', '#1d8aa0']];
+function _spPal(cat) { let h = 0; String(cat).split('').forEach(c => { h = (h * 31 + c.charCodeAt(0)) | 0; }); return _SP_PAL[Math.abs(h) % _SP_PAL.length]; }
+function _spDayLabel(iso) {
+  const d = new Date(iso + 'T12:00:00'), t = new Date(); t.setHours(12, 0, 0, 0);
+  const diff = Math.round((t - d) / 864e5);
+  if (diff === 0) return 'היום';
+  if (diff === 1) return 'אתמול';
+  return 'יום ' + ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'][d.getDay()] + ', ' + d.getDate() + ' ב' + MONTHS_HE[d.getMonth()].slice(0, 4) + (MONTHS_HE[d.getMonth()].length > 4 ? '׳' : '');
+}
+// ── Monthly story (4.10): SPENT-style full-screen recap of a month —
+// colored slides with one big number each and a little "city" whose
+// buildings are the month's categories. Opened from the expenses hero. ──
+let _stIdx = 0, _stSlides = [];
+function _stCity(cats, colors) {
+  const max = Math.max(1, ...cats.map(c => c[1]));
+  return '<div class="st-city">' + cats.slice(0, 6).map(([c, v], i) => {
+    const hpx = 60 + Math.round(170 * v / max), col = colors[i % colors.length];
+    const rows = Math.max(2, Math.floor(hpx / 26));
+    return '<div class="st-bld" style="height:' + hpx + 'px;background:' + col + '"><div class="st-win" style="grid-template-rows:repeat(' + rows + ',1fr)">' + '<i></i>'.repeat(rows * 2) + '</div></div>';
+  }).join('') + '</div>';
+}
+window.storyOpen = function() {
+  const m = curMonth, y = curYear, mName = MONTHS_HE[m];
+  const exps = (load('expenses') || []).filter(e => inCurMonth(e.date));
+  const incs = (load('income') || []).filter(i => inCurMonth(i.date) && (i.status || 'pending') === 'paid');
+  const out = exps.reduce((t, e) => t + (Number(e.amount) || 0), 0);
+  const inn = incs.reduce((t, i) => t + (Number(i.amount) || 0), 0);
+  const byCat = {}; exps.forEach(e => { const c = e.category || 'אחר'; byCat[c] = (byCat[c] || 0) + (Number(e.amount) || 0); });
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  const top = cats[0], big = exps.slice().sort((a, b) => b.amount - a.amount)[0];
+  const byDay = {}; exps.forEach(e => { const k = String(e.date).slice(0, 10); byDay[k] = (byDay[k] || 0) + (Number(e.amount) || 0); });
+  const busiest = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
+  const net = inn - out;
+  const S = [];
+  if (!exps.length && !incs.length) { toast('עוד אין מספיק נתונים ל' + mName); return; }
+  S.push({ bg: '#cfd05e', k: 'יצא ב' + mName, n: fmtMoney(out), t: 'זה הסכום שעבר בעיר החודש.', art: _stCity(cats, ['#f2efe6', '#e4532f', '#4b4fe0', '#ffffff', '#e4532f', '#4b4fe0']) });
+  S.push({ bg: '#dfe7fc', k: 'עסקאות החודש', n: String(exps.length), t: exps.length + ' עסקאות נרשמו ב' + mName + '.', art: '<div class="st-tower"><div class="st-grid">' + Array.from({ length: 40 }, (_, i) => '<i class="' + (i < Math.min(40, exps.length) ? 'on' : '') + '"></i>').join('') + '</div></div>' });
+  if (top) S.push({ bg: '#fbf1e5', k: 'הרובע הבולט', n: _escape(top[0]), t: fmtMoney(top[1]) + ' · ' + Math.round(top[1] / Math.max(1, out) * 100) + '% מהחודש', art: _stCity([top], ['#e4532f']) });
+  if (big) S.push({ bg: '#dfe7fc', k: 'רכישה אחת בלטה מעל כולן', n: fmtMoney(big.amount), t: _escape(big.description || ''), art: _stCity(cats.length > 1 ? [[0, big.amount], ...cats.slice(1, 5).map(c => [0, c[1] * .5])] : [[0, big.amount]], ['#e4532f', '#f2efe6', '#e4532f', '#ffffff', '#e4532f']) });
+  if (busiest) S.push({ bg: '#ffffff', k: 'היום הכי עמוס', n: _spDayLabel(busiest[0]).replace('יום ', ''), t: 'יצאו בו ' + fmtMoney(busiest[1]) + '.', art: '<div class="st-street">' + '<span></span>'.repeat(4) + '</div>' });
+  S.push({ bg: net >= 0 ? '#e6f5ec' : '#fdece6', k: 'נכנס מול יצא', n: (net >= 0 ? '+' : '−') + fmtMoney(Math.abs(net)), t: 'נכנסו ' + fmtMoney(inn) + ' · יצאו ' + fmtMoney(out), art: '' });
+  S.push({ bg: '#fbf1e5', k: 'הסיכום', n: 'זה היה ' + mName + ' שלך.', t: '', small: true, list: [
+    fmtMoney(out) + ' · ' + exps.length + ' עסקאות',
+    top ? 'רובע מוביל: ' + top[0] + ' · ' + Math.round(top[1] / Math.max(1, out) * 100) + '%' : '',
+    big ? 'הכי גדול: ' + (big.description || '') + ' · ' + fmtMoney(big.amount) : '',
+    'נכנס ' + fmtMoney(inn) + ' · נטו ' + (net >= 0 ? '+' : '−') + fmtMoney(Math.abs(net))
+  ].filter(Boolean), art: _stCity(cats.length ? cats : [['', 1]], ['#1f9d55', '#ffffff', '#e4532f', '#f2efe6', '#4b4fe0', '#e4532f']) });
+  _stSlides = S; _stIdx = 0;
+  let ov = document.getElementById('story-ov');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'story-ov'; document.body.appendChild(ov); }
+  ov.classList.add('open'); _stRender();
+};
+function _stRender() {
+  const ov = document.getElementById('story-ov'); const sl = _stSlides[_stIdx]; if (!ov || !sl) return;
+  ov.style.background = sl.bg;
+  ov.innerHTML = '<div class="st-top"><div class="st-prog">' + _stSlides.map((_, i) => '<span class="' + (i < _stIdx ? 'done' : i === _stIdx ? 'cur' : '') + '"></span>').join('') + '</div>'
+    + '<div class="st-bar"><span class="st-brand">RAVID STUDIO</span><span class="st-ct" dir="ltr">' + String(_stIdx + 1).padStart(2, '0') + ' / ' + String(_stSlides.length).padStart(2, '0') + '</span><button class="st-x" onclick="storyClose()">✕</button></div></div>'
+    + '<div class="st-body" onclick="storyNext()"><div class="st-k">' + sl.k + '</div><div class="st-n' + (sl.small ? ' sm' : '') + '">' + sl.n + '</div>'
+    + (sl.t ? '<div class="st-t">' + sl.t + '</div>' : '')
+    + (sl.list ? '<ul class="st-list">' + sl.list.map(x => '<li>' + _escape(x) + '</li>').join('') + '</ul>' : '')
+    + '</div><div class="st-art" onclick="storyNext()">' + (sl.art || '') + '</div>'
+    + '<div class="st-nav"><button class="st-back" onclick="storyPrev()">→</button><span class="st-hint">הקשה להמשך</span><button class="st-next" onclick="storyNext()">' + (_stIdx === _stSlides.length - 1 ? 'סיום' : 'הבא') + '</button></div>';
+}
+window.storyNext = function() { if (_stIdx >= _stSlides.length - 1) return storyClose(); _stIdx++; _stRender(); try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {} };
+window.storyPrev = function() { if (_stIdx > 0) { _stIdx--; _stRender(); } };
+window.storyClose = function() { const ov = document.getElementById('story-ov'); if (ov) ov.classList.remove('open'); };
+window.expSetCat = function(c) { _expCatFilter = c || 'all'; renderExpenses(); try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {} };
+function renderExpensesSpent() {
+  const host = document.getElementById('exp-spent'); if (!host) return;
+  const monthExp = (load('expenses') || []).filter(e => inCurMonth(e.date));
+  const total = monthExp.reduce((t, e) => t + (Number(e.amount) || 0), 0);
+  const unpaid = monthExp.filter(e => !e.paid);
+  // categories, biggest first
+  const byCat = {};
+  monthExp.forEach(e => { const c = e.category || 'אחר'; byCat[c] = (byCat[c] || 0) + (Number(e.amount) || 0); });
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  if (_expCatFilter !== 'all' && !byCat[_expCatFilter]) _expCatFilter = 'all';
+  const isThisMonth = curYear === new Date().getFullYear() && curMonth === new Date().getMonth();
+  const daysSoFar = isThisMonth ? new Date().getDate() : new Date(curYear, curMonth + 1, 0).getDate();
+  // ── hero ──
+  let h = '<div class="xs-hero">'
+    + '<div class="xs-k">יצא ב' + MONTHS_HE[curMonth] + '</div>'
+    + '<div class="xs-n">' + fmtMoney(total) + '</div>'
+    + '<div class="xs-sub">' + monthExp.length + ' עסקאות' + (monthExp.length ? ' · בממוצע ' + fmtMoney(total / Math.max(1, daysSoFar)) + ' ליום' : '') + '</div>';
+  if (cats.length) {
+    h += '<div class="xs-bar">' + cats.map(([c, v]) => { const p = _spPal(c); return '<span style="flex:' + v + ';background:' + p[1] + '"></span>'; }).join('') + '</div>';
+  }
+  h += '<div class="xs-hrow">' + (unpaid.length ? '<span class="xs-due">🕓 ' + unpaid.length + ' עוד לא שולמו · ' + fmtMoney(unpaid.reduce((t, e) => t + (Number(e.amount) || 0), 0)) + '</span>' : '<span></span>')
+    + (monthExp.length ? '<button class="xs-story" onclick="storyOpen()">✨ הסיפור של ' + MONTHS_HE[curMonth] + '</button>' : '') + '</div>';
+  h += '</div>';
+  // ── category circles (filter) ──
+  if (cats.length > 1) {
+    h += '<div class="xs-cats">'
+      + '<button class="xs-cat' + (_expCatFilter === 'all' ? ' on' : '') + '" onclick="expSetCat(\'all\')"><span class="xs-ci" style="background:#f4f4f2;color:#0f0f0f"><svg viewBox="0 0 24 24"><use href="#ic-cat-other"/></svg></span><span class="xs-cl">הכל</span><span class="xs-cv">' + fmtMoney(total) + '</span></button>'
+      + cats.map(([c, v]) => { const p = _spPal(c); const ce = String(c).replace(/'/g, "\\'");
+          return '<button class="xs-cat' + (_expCatFilter === c ? ' on' : '') + '" onclick="expSetCat(\'' + ce + '\')"><span class="xs-ci" style="background:' + p[0] + ';color:' + p[1] + '">' + _txCatSvg(c) + '</span><span class="xs-cl">' + _escape(c) + '</span><span class="xs-cv">' + fmtMoney(v) + '</span></button>'; }).join('')
+      + '</div>';
+  }
+  // ── fixed costs card ──
+  try {
+    const fl = fcList();
+    if (fl.length) {
+      const nx = fl.filter(x => Number(x.day) >= 1).map(x => ({ x, d: _fcNextDate(Number(x.day)) })).filter(o => !_fcPaidFor(o.x, o.d)).sort((a, b) => a.d - b.d)[0];
+      h += '<button class="xs-fixed" onclick="showPage(\'fixed\')"><span class="xs-fi"><svg viewBox="0 0 24 24"><use href="#ic-repeat"/></svg></span>'
+        + '<span class="xs-fm"><b>הוצאות קבועות</b><small>' + (nx ? 'הבא: ' + _escape(nx.x.name) + ' · ' + _fcRelDay(nx.d) + ' · ' + fmtMoney(nx.x.amount) : fl.length + ' דברים שיורדים כל חודש') + '</small></span>'
+        + '<span class="xs-fv">' + fmtMoney(fcTotal()) + '<small>לחודש</small></span><span class="xs-fa">‹</span></button>';
+    }
+  } catch (_) {}
+  // ── unnamed recurring charges (only the actionable ones) ──
+  try {
+    const nameless = (detectFixedExpenses() || []).filter(f => f.nameless);
+    if (nameless.length) {
+      h += '<div class="xs-nudge"><b>' + nameless.length + ' חיובים חוזרים בלי שם</b>'
+        + nameless.slice(0, 4).map(f => '<div class="xs-nrow"><span>' + fmtMoney(f.amount) + ' · בערך ב-' + f.day + ' לחודש</span><button onclick="fxNameGroup(\'' + f.key.replace(/'/g, "\\'") + '\', ' + f.amount + ')">תן שם</button></div>').join('')
+        + '</div>';
+    }
+  } catch (_) {}
+  // ── list grouped by day ──
+  const list = monthExp.filter(e => _expCatFilter === 'all' || (e.category || 'אחר') === _expCatFilter)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)));
+  if (!list.length) {
+    h += '<div class="xs-empty"><span>🧾</span><b>אין הוצאות ב' + MONTHS_HE[curMonth] + '</b><small>מה שתוסיף ב-+ או שייכנס מהארנק יופיע כאן</small></div>';
+  } else {
+    const days = {};
+    list.forEach(e => { const k = String(e.date).slice(0, 10); (days[k] = days[k] || []).push(e); });
+    Object.keys(days).sort().reverse().forEach(k => {
+      const items = days[k], dt = items.reduce((t, e) => t + (Number(e.amount) || 0), 0);
+      h += '<div class="xs-day"><div class="xs-dh"><b>' + _spDayLabel(k) + '</b><span>סה״כ ' + fmtMoney(dt) + '</span></div>'
+        + items.map(e => { const c = e.category || 'אחר', p = _spPal(c);
+            return '<div class="xs-row" onclick="editExpense(\'' + e.id + '\')">'
+              + '<span class="xs-ri" style="background:' + p[0] + ';color:' + p[1] + '">' + _txCatSvg(c) + '</span>'
+              + '<span class="xs-rm"><b>' + _escape(e.description || '—') + '</b><small>' + _escape(c) + (e.projectName ? ' · ' + _escape(e.projectName) : '') + '</small></span>'
+              + (e.paid ? '' : '<button class="xs-pay" onclick="event.stopPropagation();toggleExpensePaid(\'' + e.id + '\')">לתשלום</button>')
+              + '<span class="xs-ra">' + fmtMoney(e.amount) + '</span></div>'; }).join('')
+        + '</div>';
+    });
+  }
+  h += '<button class="xs-import" onclick="bankPasteOpen()">📥 ייבוא תנועות מהבנק</button>';
+  host.innerHTML = h;
+}
 function renderExpenses() {
   // Update the pending-TX inbox above the expense list
   _txRenderInbox();
+  if (document.documentElement.getAttribute('data-skin') === 'spent') { try { renderExpensesSpent(); } catch (e) { console.warn('renderExpensesSpent', e); } }
   const expenses   = load('expenses');
   const income     = load('income');
   const plans      = load('plans');
@@ -17813,6 +17998,40 @@ function fcScheduleReminders() {
     } catch (e) { console.warn('fcScheduleReminders', e); }
   }, 800);
 }
+// ── One fixed-costs system (4.10): the older "recurring_expenses" list
+// (e.g. the previous flat's rent) duplicated fixed_costs and kept adding a
+// phantom "נשאר להוציא". Each still-active recurring item is copied into
+// fixed_costs (unless a same-named item already exists there) and ended, so
+// it stops counting from now on. Data is kept (endMonth), nothing deleted.
+// Idempotent: ended items are no longer active; folded ones are marked. ──
+function fcFoldRecurring2610() {
+  try {
+    const rec = load('recurring_expenses') || [];
+    if (!rec.length) return;
+    const now = new Date(), cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const prevD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prev = prevD.getFullYear() + '-' + String(prevD.getMonth() + 1).padStart(2, '0');
+    const fc = load('fixed_costs') || [];
+    const has = n => fc.some(x => x && String(x.name || '').trim() === String(n || '').trim());
+    let changed = 0, added = 0;
+    rec.forEach(r => {
+      if (!r || r.foldedToFixed) return;
+      if (r.endMonth && r.endMonth < cur) return;            // already over
+      const name = String(r.description || '').trim(); if (!name) return;
+      if (!has(name)) {
+        const cat = String(r.category || '');
+        fc.push({ id: 'fc_rec_' + r.id, name, amount: Number(r.amount) || 0,
+          group: /שכירות|חשמל|מים|ארנונה|גז/.test(cat + name) ? 'living' : 'service', note: '', until: '' });
+        added++;
+      }
+      r.endMonth = (r.paidMonths && r.paidMonths[cur]) ? cur : prev;
+      r.foldedToFixed = true; changed++;
+    });
+    if (!changed) return;
+    save('recurring_expenses', rec);
+    if (added) save('fixed_costs', fc);
+  } catch (e) { console.warn('fcFoldRecurring2610', e); }
+}
 // ── New flat (10.2026): his personal outflows are now the transfer to the
 // joint account with Dari (2nd) + the studio rent (28th). The old flat's
 // rent and bills (now paid from the joint account) move to "כבר לא" —
@@ -18118,6 +18337,7 @@ initFirebase().then(() => {
   try { fcSeedOnce(); } catch (_) {}
   try { fcTopUps(); } catch (_) {}
   try { fcMoveFlat2610(); } catch (_) {}
+  try { fcFoldRecurring2610(); } catch (_) {}
   try { fcEntryCard(); } catch (_) {}
   try { fcScheduleReminders(); } catch (_) {}
   refreshAll();
@@ -26446,7 +26666,6 @@ function renderHome() {
   if (stripEl) stripEl.innerHTML = `
     <div class="today-tile"><div class="today-tile-label">הכנסות החודש</div><div class="today-tile-value" style="color:var(--green)">${fmtMoney(monthIncome)}</div><div class="today-tile-sub">${income.filter(i => inMonth(i.date)).length} עסקאות</div></div>
     <div class="today-tile"><div class="today-tile-label">ממתין להכנסה</div><div class="today-tile-value" style="color:var(--accent)">${fmtMoney(pendingIncome)}</div><div class="today-tile-sub">${income.filter(i => (i.status||'pending')!=='paid').length} פתוחות</div></div>
-    <div class="today-tile"><div class="today-tile-label">פיקדון בבנק</div><div class="today-tile-value" style="color:var(--accent2)">${fmtMoney(bank)}</div><div class="today-tile-sub">עדכון ידני</div></div>
     <div class="today-tile"><div class="today-tile-label">משימות פתוחות</div><div class="today-tile-value">${openTasks}</div><div class="today-tile-sub">${todayTasks} להיום</div></div>
   `;
 
@@ -26467,14 +26686,7 @@ function renderHome() {
     alerts.push({type:'warn', icon:'📌', title:`${todayTasks} משימות להיום`, sub:'הקלק כדי לראות', action:'tasks'});
   }
 
-  // Bank deposit not updated in 30+ days
-  if (bankRaw) {
-    const updatedAt = new Date(JSON.parse(bankRaw).updatedAt);
-    const age = Math.floor((now - updatedAt) / dayMs);
-    if (age > 30) alerts.push({type:'info', icon:'🏦', title:'עדכן את הפיקדון בבנק', sub:`לא עודכן כבר ${age} ימים`, action:'income'});
-  } else {
-    alerts.push({type:'info', icon:'🏦', title:'עדכן פיקדון בבנק', sub:'הוסף את הסכום הנוכחי', action:'income'});
-  }
+  // (bank-deposit nag removed 4.10 — the deposit card is gone)
 
   const alertsEl = document.getElementById('home-alerts');
   if (alertsEl) {
@@ -30352,6 +30564,139 @@ html[data-skin="spent"] .toast { bottom: calc(env(safe-area-inset-bottom, 0px) +
   transition: transform .34s cubic-bezier(.22,1.3,.4,1), opacity .2s ease !important; }
 html[data-skin="spent"] .toast.show { transform: translateX(-50%) translateY(0) !important; opacity: 1; }
 html[data-skin="spent"] .goal-bar-wrap::before, html[data-skin="spent"] .goal-bar-wrap::after { display: none !important; }
+
+/* ══ v505: clarity pass ════════════════════════════════════════════ */
+/* page subtitles add noise — the titles say it */
+html[data-skin="spent"] .page-header p { display: none !important; }
+#exp-spent { display: none; }
+html[data-skin="spent"] #exp-spent { display: block; }
+html[data-skin="spent"] #page-expenses > .fc-entry,
+html[data-skin="spent"] #page-expenses #fixed-exp-card,
+html[data-skin="spent"] #page-expenses > .btn-ghost,
+html[data-skin="spent"] #page-expenses #e-projects-list { display: none !important; }
+
+/* hero: "יצא באוקטובר ₪4,213" */
+.xs-hero { background: #fff; border: 1px solid var(--sp-line); border-radius: 24px; padding: 20px 20px 18px; box-shadow: var(--sp-shadow); margin-bottom: 16px; }
+.xs-k { font-size: 13px; font-weight: 800; color: var(--sp-muted); }
+.xs-n { font-size: 48px; font-weight: 900; color: var(--sp-ink); letter-spacing: -0.045em; line-height: 1.05; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+.xs-sub { font-size: 13px; font-weight: 600; color: var(--sp-muted); }
+.xs-bar { display: flex; gap: 3px; height: 10px; margin-top: 14px; border-radius: 6px; overflow: hidden; }
+.xs-bar span { min-width: 4px; border-radius: 3px; }
+.xs-due { margin-top: 12px; font-size: 12.5px; font-weight: 800; color: #b8661c; background: #fff4e6; border-radius: 999px; padding: 6px 12px; display: inline-block; }
+/* category circles */
+.xs-cats { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 8px; margin: 0 -2px 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.xs-cats::-webkit-scrollbar { display: none; }
+.xs-cat { flex: 0 0 auto; width: 74px; background: none; border: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-family: inherit; }
+.xs-ci { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px transparent; transition: box-shadow .15s; }
+.xs-ci svg { width: 25px; height: 25px; stroke: currentColor; fill: none; }
+.xs-cat.on .xs-ci { box-shadow: 0 0 0 2.5px #fff, 0 0 0 4.5px var(--sp-ink); }
+.xs-cl { font-size: 11.5px; font-weight: 800; color: var(--sp-ink); max-width: 72px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xs-cv { font-size: 10.5px; font-weight: 700; color: var(--sp-muted); font-variant-numeric: tabular-nums; }
+.xs-cat.on .xs-cl { font-weight: 900; }
+/* fixed costs card */
+.xs-fixed { width: 100%; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--sp-line); border-radius: 20px; padding: 14px 16px; box-shadow: var(--sp-shadow); margin-bottom: 14px; cursor: pointer; font-family: inherit; text-align: right; }
+.xs-fi { width: 44px; height: 44px; border-radius: 50%; background: var(--sp-blue-soft); color: var(--sp-blue); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.xs-fi svg { width: 22px; height: 22px; stroke: currentColor; fill: none; }
+.xs-fm { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.xs-fm b { font-size: 15px; font-weight: 900; color: var(--sp-ink); }
+.xs-fm small { font-size: 12px; font-weight: 600; color: var(--sp-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xs-fv { font-size: 17px; font-weight: 900; color: var(--sp-ink); display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.xs-fv small { font-size: 10.5px; font-weight: 700; color: var(--sp-muted); }
+.xs-fa { color: var(--sp-muted); font-size: 20px; font-weight: 700; }
+/* unnamed charges nudge */
+.xs-nudge { background: #fff8ec; border-radius: 18px; padding: 12px 14px; margin-bottom: 14px; }
+.xs-nudge > b { font-size: 13.5px; font-weight: 900; color: #8a5a12; }
+.xs-nrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--sp-ink2); }
+.xs-nrow button { border: none; background: #fff; border-radius: 999px; padding: 6px 12px; font-family: inherit; font-weight: 800; font-size: 12px; color: var(--sp-ink); cursor: pointer; box-shadow: var(--sp-shadow); }
+/* day-grouped list */
+.xs-day { margin-top: 8px; }
+.xs-dh { display: flex; align-items: baseline; justify-content: space-between; padding: 10px 4px 4px; }
+.xs-dh b { font-size: 16px; font-weight: 900; color: var(--sp-ink); }
+.xs-dh span { font-size: 12.5px; font-weight: 700; color: var(--sp-muted); font-variant-numeric: tabular-nums; }
+.xs-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; cursor: pointer; border-radius: 14px; }
+.xs-row:active { background: var(--sp-soft); }
+.xs-ri { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.xs-ri svg { width: 22px; height: 22px; stroke: currentColor; fill: none; }
+.xs-rm { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.xs-rm b { font-size: 15px; font-weight: 800; color: var(--sp-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xs-rm small { font-size: 12.5px; font-weight: 600; color: var(--sp-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xs-ra { font-size: 15.5px; font-weight: 900; color: var(--sp-ink); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.xs-pay { flex-shrink: 0; border: none; background: #fff4e6; color: #b8661c; font-family: inherit; font-weight: 800; font-size: 11.5px; border-radius: 999px; padding: 5px 10px; cursor: pointer; }
+.xs-empty { text-align: center; padding: 36px 10px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.xs-empty span { font-size: 34px; }
+.xs-empty b { font-size: 16px; font-weight: 900; color: var(--sp-ink); }
+.xs-empty small { font-size: 13px; font-weight: 600; color: var(--sp-muted); }
+.xs-import { display: block; margin: 22px auto 6px; border: none; background: none; color: var(--sp-muted); font-family: inherit; font-weight: 800; font-size: 13px; cursor: pointer; padding: 8px 14px; }
+
+/* income hero */
+#inc-spent { display: none; }
+html[data-skin="spent"] #inc-spent { display: block; }
+html[data-skin="spent"] #page-income #goal-bar-section,
+html[data-skin="spent"] #page-income .income-month-grid,
+html[data-skin="spent"] #page-income #truth-strip,
+html[data-skin="spent"] #page-income #income-extra-btn { display: none !important; }
+html[data-skin="spent"] #page-income .page-header .btn-primary,
+html[data-skin="spent"] #page-expenses .page-header .btn-primary { display: none !important; }
+.is-hero { background: #fff; border: 1px solid var(--sp-line); border-radius: 24px; padding: 20px 20px 16px; box-shadow: var(--sp-shadow); margin-bottom: 18px; }
+.is-n { color: var(--sp-green) !important; }
+.is-goal { width: 100%; margin-top: 14px; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; display: flex; flex-direction: column; gap: 6px; text-align: right; }
+.is-gt { font-size: 12.5px; font-weight: 700; color: var(--sp-muted); }
+.is-gt b { color: var(--sp-ink); font-weight: 900; }
+.is-gb { height: 10px; border-radius: 6px; background: var(--sp-soft); overflow: hidden; display: block; }
+.is-gb i { display: block; height: 100%; background: var(--sp-green); border-radius: 6px; min-width: 6px; }
+.is-goal-empty { flex-direction: row; justify-content: center; font-size: 13px; font-weight: 800; color: var(--sp-ink2); background: var(--sp-soft); border-radius: 999px; padding: 9px; }
+.is-pills { display: flex; gap: 8px; margin-top: 14px; }
+.is-pill { flex: 1; border: none; border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; gap: 1px; text-align: right; font-family: inherit; }
+.is-pill b { font-size: 17px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.is-pill span { font-size: 11.5px; font-weight: 700; }
+.is-pill.owe { background: #fff4e6; color: #b8661c; cursor: pointer; }
+.is-pill.pos { background: var(--sp-green-soft); color: #1b7a44; }
+.is-pill.neg { background: var(--sp-red-soft); color: #c9411f; }
+
+html[data-skin="spent"] #page-income .inc-dun { display: none !important; }
+.is-gb { display: flex !important; direction: rtl; }
+.is-gb i { flex: none; }
+.xs-hrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.xs-hrow .xs-due { margin-top: 0; }
+.xs-story { border: none; background: var(--sp-green); color: #fff; font-family: inherit; font-weight: 800; font-size: 12.5px; border-radius: 999px; padding: 7px 13px; cursor: pointer; }
+
+/* ── Monthly story (full screen, SPENT stories) ─────────────────── */
+#story-ov { position: fixed; inset: 0; z-index: 100002; display: none; flex-direction: column; color: #0f0f0f; font-family: 'Heebo', sans-serif; transition: background .35s ease; overflow: hidden; }
+#story-ov.open { display: flex; }
+#story-ov .st-top { padding: calc(env(safe-area-inset-top, 0px) + 12px) 18px 0; }
+#story-ov .st-prog { display: flex; gap: 5px; direction: rtl; }
+#story-ov .st-prog span { flex: 1; height: 3px; border-radius: 2px; background: rgba(15,15,15,.15); }
+#story-ov .st-prog span.done, #story-ov .st-prog span.cur { background: #0f0f0f; }
+#story-ov .st-bar { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+#story-ov .st-brand { font-size: 11px; font-weight: 900; letter-spacing: .12em; }
+#story-ov .st-ct { margin-inline-start: auto; font-size: 11px; font-weight: 800; opacity: .6; font-variant-numeric: tabular-nums; }
+#story-ov .st-x { width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(15,15,15,.08); font-size: 13px; cursor: pointer; }
+#story-ov .st-body { padding: 26px 24px 0; cursor: pointer; }
+#story-ov .st-k { font-size: 14px; font-weight: 800; opacity: .7; }
+#story-ov .st-n { font-size: 64px; font-weight: 900; letter-spacing: -0.05em; line-height: 1; margin: 6px 0 10px; font-variant-numeric: tabular-nums; word-break: break-word; }
+#story-ov .st-n.sm { font-size: 42px; letter-spacing: -0.03em; line-height: 1.1; }
+#story-ov .st-t { font-size: 15px; font-weight: 600; opacity: .8; line-height: 1.5; }
+#story-ov .st-list { list-style: none; padding: 0; margin: 18px 0 0; display: flex; flex-direction: column; gap: 10px; }
+#story-ov .st-list li { font-size: 15px; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid rgba(15,15,15,.12); }
+#story-ov .st-art { flex: 1; display: flex; align-items: flex-end; justify-content: center; cursor: pointer; padding: 0 16px; overflow: hidden; }
+#story-ov .st-city { display: flex; align-items: flex-end; gap: 10px; width: 100%; justify-content: center; }
+#story-ov .st-bld { width: 52px; border: 2.5px solid #0f0f0f; border-bottom: none; border-radius: 3px 3px 0 0; padding: 8px 6px 0; animation: stRise .6s cubic-bezier(.2,1.2,.3,1) both; transform-origin: bottom; }
+#story-ov .st-bld:nth-child(2) { animation-delay: .06s; } #story-ov .st-bld:nth-child(3) { animation-delay: .12s; } #story-ov .st-bld:nth-child(4) { animation-delay: .18s; } #story-ov .st-bld:nth-child(5) { animation-delay: .24s; }
+#story-ov .st-win { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; height: calc(100% - 8px); }
+#story-ov .st-win i { background: #0f0f0f; border-radius: 1px; opacity: .9; }
+#story-ov .st-win i:nth-child(3n) { background: #ffffff; }
+#story-ov .st-tower { width: 220px; height: 300px; background: #4b4fe0; border: 2.5px solid #0f0f0f; border-bottom: none; padding: 14px; animation: stRise .6s cubic-bezier(.2,1.2,.3,1) both; transform-origin: bottom; }
+#story-ov .st-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+#story-ov .st-grid i { aspect-ratio: 1; background: #0f0f0f; }
+#story-ov .st-grid i.on { background: #ffffff; }
+#story-ov .st-street { display: flex; gap: 0; width: 100%; height: 110px; }
+#story-ov .st-street span { flex: 1; background: #e4532f; border: 2.5px solid #0f0f0f; border-bottom: none; margin-top: 30px; position: relative; }
+#story-ov .st-street span::before { content: ''; position: absolute; inset: 14px 10px 30px; background: repeating-linear-gradient(90deg, #fff 0 14px, #0f0f0f 14px 20px); }
+#story-ov .st-nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px calc(env(safe-area-inset-bottom, 0px) + 18px); background: inherit; }
+#story-ov .st-back { width: 40px; height: 40px; border-radius: 50%; border: none; background: #fff; font-size: 18px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+#story-ov .st-hint { font-size: 12px; font-weight: 700; background: #fff; border-radius: 999px; padding: 6px 14px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+#story-ov .st-next { border: none; background: #0f0f0f; color: #fff; font-family: inherit; font-weight: 800; font-size: 14px; border-radius: 999px; padding: 10px 22px; cursor: pointer; }
+@keyframes stRise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 </style>
 <!--SPENT-END-->
 </body>
