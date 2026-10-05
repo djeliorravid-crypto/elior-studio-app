@@ -46,6 +46,12 @@
       if (native && isWide && !isPhone) {
         document.documentElement.classList.add('cap-wide-native');
       }
+      // Computer view (5.10): only a desktop browser — never the phone app
+      // (native), never a phone/tablet (needs ≥1000px AND a mouse pointer).
+      try {
+        var mouse = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        if (!native && !isPhone && window.innerWidth >= 1000 && mouse) document.documentElement.classList.add('desk');
+      } catch (e) {}
     })();
   </script>
   <style>
@@ -7536,7 +7542,7 @@
     <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG3)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v518</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v519</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -19102,6 +19108,11 @@ document.addEventListener('visibilitychange', () => {
     autoMarkOverdue();
     _syncFromCloud('חזרה למסך');
   }
+});
+
+// 1b. מחשב (5.10): גם כשחוזרים לחלון של הדפדפן — אותו סנכרון בדיוק
+window.addEventListener('focus', () => {
+  if (document.documentElement.classList.contains('desk')) _syncFromCloud('חזרה לחלון במחשב');
 });
 
 // 2. כל 3 דקות — ריענון שקט
@@ -31729,6 +31740,42 @@ html[data-skin="spent"] .pdc.done .pdc-lbl { color: #2f5fd0; }
 html[data-skin="spent"] .pdc.paused .pdc-lbl, html[data-skin="spent"] .pdc.none .pdc-lbl { color: var(--sp-muted); }
 html[data-skin="spent"] .pdc.paused { opacity: .75; }
 html[data-skin="spent"] .pdc-empty { text-align: center; color: var(--sp-muted); font-weight: 700; padding: 34px 10px; background: var(--sp-soft); border-radius: 22px; }
+/* v519 — computer view. Everything below is scoped to html.desk, which is
+   only set in a desktop browser (never the phone app, needs ≥1000px + mouse). */
+html.desk[data-skin="spent"] .main { padding: 36px 48px 60px !important; }
+html.desk[data-skin="spent"] .main > .page { max-width: 1120px; margin-left: auto; margin-right: auto; }
+/* lobby: bigger, two columns */
+html.desk[data-skin="spent"] #mode-screen { padding-top: 70px !important; }
+html.desk[data-skin="spent"] #mode-screen .mode-screen-title,
+html.desk[data-skin="spent"] .lobby-year-card,
+html.desk[data-skin="spent"] #lobby-wa-badge { max-width: 920px !important; }
+html.desk[data-skin="spent"] #sp-lobby { max-width: 920px; display: grid; grid-template-columns: 1.15fr 1fr; column-gap: 24px; row-gap: 18px; align-items: start; }
+html.desk[data-skin="spent"] #sp-lobby .spl-card { grid-column: 1; grid-row: 1 / span 3; }
+html.desk[data-skin="spent"] #sp-lobby .spl-qa { grid-column: 2; grid-row: 1; }
+html.desk[data-skin="spent"] #sp-lobby .spl-h { grid-column: 2; grid-row: 2; margin: 0 2px -8px; }
+html.desk[data-skin="spent"] #sp-lobby .spl-acc { grid-column: 2; grid-row: 3; }
+html.desk[data-skin="spent"] .spl-card { padding: 28px 28px 22px; }
+html.desk[data-skin="spent"] .spl-bal { font-size: 54px; }
+html.desk[data-skin="spent"] #lobby-greet { font-size: 32px !important; }
+html.desk[data-skin="spent"] .spl-qa button, html.desk[data-skin="spent"] .spl-acc button,
+html.desk[data-skin="spent"] .spl-card, html.desk[data-skin="spent"] .pdc { transition: transform .12s, box-shadow .15s, background .15s; }
+html.desk[data-skin="spent"] .spl-qa button:hover i { transform: translateY(-2px); }
+html.desk[data-skin="spent"] .spl-acc button:hover { background: var(--sp-soft); }
+html.desk[data-skin="spent"] .spl-card:hover { box-shadow: 0 22px 48px rgba(15,122,64,.32); }
+/* productions: two cards per row */
+html.desk[data-skin="spent"] #prod-list { display: grid !important; grid-template-columns: 1fr 1fr; gap: 16px !important; }
+html.desk[data-skin="spent"] #prod-list .pdc-tabs, html.desk[data-skin="spent"] #prod-list .pdc-empty { grid-column: 1 / -1; }
+html.desk[data-skin="spent"] .pdc:hover { box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+/* step-by-step screens + sheets become centered windows */
+html.desk #sp-flow { inset: auto; top: 50%; left: 50%; width: 560px; height: min(780px, 90vh); transform: translate(-50%, -50%);
+  border-radius: 30px; box-shadow: 0 0 0 100vmax rgba(15,15,15,.32), 0 30px 80px rgba(0,0,0,.25); overflow: hidden; }
+html.desk #sp-flow.open { animation: none; }
+html.desk #spent-sheet { align-items: center; justify-content: center; }
+html.desk #spent-sheet .ss-box { max-width: 460px; border-radius: 28px; transform: translateY(24px); opacity: 0; transition: transform .2s, opacity .2s; }
+html.desk #spent-sheet.open .ss-box { transform: none; opacity: 1; }
+html.desk #spent-more .sm-box, html.desk #spent-more > div { max-width: 460px; margin-left: auto; margin-right: auto; }
+/* the + on a computer: same place as the sidebar buttons, never over content */
+html.desk[data-skin="spent"] .fab-container { left: 28px !important; bottom: 28px !important; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
