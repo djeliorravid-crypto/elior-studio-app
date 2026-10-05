@@ -7542,7 +7542,7 @@
     <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG3)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v519</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v520</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -19712,6 +19712,31 @@ window.spLobbyToggleHide = function() {
   spLobbyRender();
 };
 
+// ── Computer view sidebar (5.10, html.desk only): brand + "+ חדש" menu,
+// footer buttons become a compact icon row. Phone never runs this. ──
+function deskSidebarInit() {
+  if (!document.documentElement.classList.contains('desk')) return;
+  const sb = document.getElementById('business-sidebar'); if (!sb || sb.querySelector('.dk-brand')) return;
+  const top = document.createElement('div'); top.className = 'dk-top';
+  top.innerHTML = '<button type="button" class="dk-brand" onclick="switchMode()" title="חזרה ללובי">'
+    + '<span class="dk-logo"><svg viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="dkLogoG" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#dkLogoG)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg></span>'
+    + '<span class="dk-bt"><b>Ravid Studio</b><small>← חזרה ללובי</small></span></button>'
+    + '<div class="dk-new-wrap"><button type="button" class="dk-new" onclick="deskNewToggle(event)"><span>+</span> חדש</button>'
+    + '<div class="dk-menu" id="dk-menu">'
+    + [['income', 'הכנסה', '#e3f6eb', '#138a4a', _SPL_IC.inc], ['expense', 'הוצאה', '#fdecea', '#d0402b', _SPL_IC.exp],
+       ['schedule', 'פגישה בלו״ז', '#f0e9fd', '#7246d6', _SPL_IC.cal], ['paylink', 'לינק תשלום', '#e5edfd', '#2f5fd0', _SPL_IC.pay],
+       ['task', 'משימה', '#fdede2', '#e0662f', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>'],
+       ['search', 'חיפוש', '#f4f4f2', '#0f0f0f', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>']]
+      .map(a => '<button type="button" onclick="deskNewGo(\'' + a[0] + '\')"><i style="background:' + a[2] + ';color:' + a[3] + '">' + a[4] + '</i>' + a[1] + '</button>').join('')
+    + '</div></div>';
+  sb.insertBefore(top, sb.firstChild);
+  sb.querySelectorAll('.sidebar-footer-btn').forEach(b => { const t = (b.querySelector('span') || {}).textContent; if (t) b.title = t; });
+}
+window.deskNewToggle = function(e) { if (e) e.stopPropagation(); const m = document.getElementById('dk-menu'); if (m) m.classList.toggle('open'); };
+window.deskNewGo = function(t) { const m = document.getElementById('dk-menu'); if (m) m.classList.remove('open'); quickAction(t); };
+document.addEventListener('click', e => { const m = document.getElementById('dk-menu'); if (m && m.classList.contains('open') && !e.target.closest('.dk-new-wrap')) m.classList.remove('open'); });
+document.addEventListener('DOMContentLoaded', () => { try { deskSidebarInit(); } catch (e) { console.warn('deskSidebarInit', e); } });
+
 function doLogin() {
   const val = document.getElementById('login-pass').value;
   if (val === PASS) {
@@ -31776,6 +31801,57 @@ html.desk #spent-sheet.open .ss-box { transform: none; opacity: 1; }
 html.desk #spent-more .sm-box, html.desk #spent-more > div { max-width: 460px; margin-left: auto; margin-right: auto; }
 /* the + on a computer: same place as the sidebar buttons, never over content */
 html.desk[data-skin="spent"] .fab-container { left: 28px !important; bottom: 28px !important; }
+/* v520 — computer sidebar, same look & feel as the phone */
+html.desk[data-skin="spent"] { --sidebar-w: 268px; }
+html.desk[data-skin="spent"] #business-sidebar { width: 268px !important; padding: 18px 14px 16px !important; background: #fbfbfa !important; border-left: 1px solid var(--sp-line) !important; box-shadow: none !important; }
+html.desk[data-skin="spent"] #business-sidebar .sidebar-logo { display: none !important; }
+html.desk[data-skin="spent"] .dk-top { display: flex; flex-direction: column; gap: 14px; padding: 4px 4px 16px; border-bottom: 1px solid var(--sp-line); margin-bottom: 12px; }
+html.desk[data-skin="spent"] .dk-brand { display: flex; align-items: center; gap: 12px; background: none; border: none; cursor: pointer; text-align: right; font-family: inherit; padding: 4px; border-radius: 16px; }
+html.desk[data-skin="spent"] .dk-brand:hover { background: var(--sp-soft); }
+html.desk[data-skin="spent"] .dk-logo { width: 46px; height: 46px; border-radius: 15px; background: #fff; border: 1px solid var(--sp-line); box-shadow: 0 4px 12px rgba(15,122,64,.10); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+html.desk[data-skin="spent"] .dk-logo svg { width: 28px; height: 28px; }
+html.desk[data-skin="spent"] .dk-bt { display: flex; flex-direction: column; }
+html.desk[data-skin="spent"] .dk-bt b { font-size: 17px; font-weight: 900; color: var(--sp-ink); letter-spacing: -0.01em; }
+html.desk[data-skin="spent"] .dk-bt small { font-size: 12.5px; font-weight: 700; color: var(--sp-muted); }
+html.desk[data-skin="spent"] .dk-new-wrap { position: relative; }
+html.desk[data-skin="spent"] .dk-new { width: 100%; height: 48px; border: none; border-radius: 16px; cursor: pointer; font-family: inherit; font-size: 16px; font-weight: 900; color: #fff;
+  background: linear-gradient(135deg, #26b86a, #138a4a); box-shadow: 0 8px 20px rgba(19,138,74,.28); display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform .12s, box-shadow .15s; }
+html.desk[data-skin="spent"] .dk-new span { font-size: 22px; line-height: 1; }
+html.desk[data-skin="spent"] .dk-new:hover { box-shadow: 0 12px 26px rgba(19,138,74,.34); transform: translateY(-1px); }
+html.desk[data-skin="spent"] .dk-menu { display: none; position: absolute; top: 56px; right: 0; left: 0; z-index: 50; background: #fff; border: 1px solid var(--sp-line); border-radius: 20px; padding: 8px; box-shadow: 0 18px 44px rgba(0,0,0,.14); }
+html.desk[data-skin="spent"] .dk-menu.open { display: block; animation: spfIn .16s ease; }
+html.desk[data-skin="spent"] .dk-menu button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 9px 10px; border: none; background: none; border-radius: 14px; cursor: pointer; font-family: inherit; font-size: 15px; font-weight: 800; color: var(--sp-ink); text-align: right; }
+html.desk[data-skin="spent"] .dk-menu button:hover { background: var(--sp-soft); }
+html.desk[data-skin="spent"] .dk-menu i { width: 36px; height: 36px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+html.desk[data-skin="spent"] .dk-menu i svg { width: 19px; height: 19px; }
+/* nav */
+html.desk[data-skin="spent"] #sidebar-nav { gap: 3px !important; padding: 0 !important; }
+html.desk[data-skin="spent"] #sidebar-nav a { display: flex !important; align-items: center; gap: 12px; padding: 7px 8px !important; border-radius: 14px !important; border: none !important; font-size: 15px !important; font-weight: 700 !important; color: var(--sp-ink2) !important; margin: 0 !important; }
+html.desk[data-skin="spent"] #sidebar-nav a .nav-icon { width: 36px; height: 36px; border-radius: 12px; background: #fff; border: 1px solid var(--sp-line); display: flex !important; align-items: center; justify-content: center; flex-shrink: 0; margin: 0 !important; }
+html.desk[data-skin="spent"] #sidebar-nav a .nav-icon svg { width: 18px !important; height: 18px !important; }
+html.desk[data-skin="spent"] #sidebar-nav a:hover { background: var(--sp-soft) !important; color: var(--sp-ink) !important; }
+html.desk[data-skin="spent"] #sidebar-nav a.active { background: #e3f6eb !important; color: #0f6b39 !important; font-weight: 900 !important; }
+html.desk[data-skin="spent"] #sidebar-nav a.active .nav-icon { background: linear-gradient(135deg, #26b86a, #138a4a); border-color: transparent; color: #fff; box-shadow: 0 4px 10px rgba(19,138,74,.25); }
+html.desk[data-skin="spent"] #sidebar-nav a[data-page="dashboard"] { margin-top: 10px !important; }
+html.desk[data-skin="spent"] #sidebar-nav .mobile-theme-nav { display: none !important; }
+/* footer → compact icon row */
+html.desk[data-skin="spent"] .sidebar-footer { border-top: 1px solid var(--sp-line) !important; padding: 12px 4px 0 !important; background: none !important; }
+html.desk[data-skin="spent"] .sidebar-footer > div { flex-direction: row !important; justify-content: flex-start; gap: 8px !important; }
+html.desk[data-skin="spent"] .sidebar-footer-btn { width: 40px !important; height: 40px !important; padding: 0 !important; border-radius: 12px !important; justify-content: center !important; background: #fff !important; border: 1px solid var(--sp-line) !important; color: var(--sp-ink2) !important; }
+html.desk[data-skin="spent"] .sidebar-footer-btn span { display: none !important; }
+html.desk[data-skin="spent"] .sidebar-footer-btn:hover { background: var(--sp-soft) !important; color: var(--sp-ink) !important; }
+html.desk[data-skin="spent"] #theme-toggle-btn { display: none !important; }
+/* the floating + is replaced by "+ חדש" in the sidebar (lobby keeps it) */
+html.desk[data-skin="spent"] body:has(#business-main[style*="block"]) .fab-container { display: none !important; }
+/* content cards respond to the mouse */
+html.desk[data-skin="spent"] .exp-cat-box, html.desk[data-skin="spent"] .fc-card { transition: box-shadow .15s; }
+html.desk[data-skin="spent"] .exp-cat-box:hover, html.desk[data-skin="spent"] .fc-card:hover { box-shadow: 0 10px 30px rgba(0,0,0,.08) !important; }
+html.desk[data-skin="spent"] #sidebar-nav .nav-more { display: none !important; }
+html.desk[data-skin="spent"] #business-sidebar { display: flex; flex-direction: column; overflow-y: auto; }
+html.desk[data-skin="spent"] #sidebar-nav { flex: 1 1 auto; min-height: 0; }
+html.desk[data-skin="spent"] #sidebar-nav a { padding: 5px 8px !important; font-size: 14.5px !important; }
+html.desk[data-skin="spent"] #sidebar-nav a .nav-icon { width: 32px; height: 32px; border-radius: 10px; }
+html.desk[data-skin="spent"] .sidebar-footer { flex-shrink: 0; margin-top: 10px; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
