@@ -56,6 +56,18 @@
     html:not(.cap-native):not(.cap-web) #mode-screen { visibility: hidden !important; }
 
     html.cap-native #login-screen { display: none !important; }
+    /* New design: paint white from the very first frame. The full skin
+       stylesheet sits at the end of <body>, so without this the old brown
+       login/lobby backgrounds flashed for a moment on every app open. The
+       screens' contents stay hidden until that stylesheet is in (sp-ready). */
+    html[data-skin="spent"], html[data-skin="spent"] body,
+    html[data-skin="spent"] #login-screen, html[data-skin="spent"] #mode-screen,
+    html[data-skin="spent"] #face-id-lock { background: #ffffff !important; }
+    html[data-skin="spent"] #login-screen::before, html[data-skin="spent"] #login-screen::after,
+    html[data-skin="spent"] #mode-screen::before, html[data-skin="spent"] #mode-screen::after { display: none !important; }
+    html[data-skin="spent"]:not(.sp-ready) #login-screen > *,
+    html[data-skin="spent"]:not(.sp-ready) #mode-screen > *,
+    html[data-skin="spent"]:not(.sp-ready) #face-id-lock > * { visibility: hidden !important; }
     /* Don't override #mode-screen here — JS handles the initial
        show on native via autoLoginOnNative(). A CSS override of
        `.hidden` would prevent the page from EVER hiding the lobby
@@ -120,7 +132,7 @@
 
   <!-- ===== PWA ===== -->
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#2a1f17" />
+  <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -7524,7 +7536,7 @@
     <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG3)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v517</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v518</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -31718,6 +31730,7 @@ html[data-skin="spent"] .pdc.paused .pdc-lbl, html[data-skin="spent"] .pdc.none 
 html[data-skin="spent"] .pdc.paused { opacity: .75; }
 html[data-skin="spent"] .pdc-empty { text-align: center; color: var(--sp-muted); font-weight: 700; padding: 34px 10px; background: var(--sp-soft); border-radius: 22px; }
 </style>
+<script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
 </body>
 </html>
