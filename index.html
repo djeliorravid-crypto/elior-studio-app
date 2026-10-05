@@ -7542,7 +7542,7 @@
     <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG3)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v521</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v522</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11494,7 +11494,7 @@ function spFlowStart(kind) {
 })();
 
 // ── fixed costs: add + edit (replaces the iPhone prompt() popups) ──
-const _FC_GROUP_OPTS = [{ v: 'living', t: 'מגורים וקבוע', ic: '🏠' }, { v: 'studio', t: 'אולפן ותוכנות', ic: '🎛️' }, { v: 'service', t: 'שירותים ומנויים', ic: '🔁' }];
+const _FC_GROUP_OPTS = [{ v: 'living', t: 'שכירויות ומגורים', ic: '🏠' }, { v: 'studio', t: 'אולפן ותוכנות', ic: '🎛️' }, { v: 'service', t: 'שירותים ומנויים', ic: '🔁' }];
 function spFlowFixedAdd() {
   spFlowOpen({ title: 'הוצאה קבועה חדשה', vals: { name: '', amount: '', group: 'studio', freq: '1', day: '' },
     steps: [
@@ -11515,12 +11515,13 @@ function spFlowFixedAdd() {
 function spFlowFixedEdit(id, startAt) {
   const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
   spFlowOpen({ title: 'עריכת ' + x.name, editing: true, startAt: startAt || 0,
-    vals: { name: x.name, amount: String(x.amount), freq: _fcFreqVal(x), day: x.day ? String(x.day) : '' },
+    vals: { name: x.name, amount: String(x.amount), freq: _fcFreqVal(x), day: x.day ? String(x.day) : '', group: x.group || 'service' },
     steps: [
       { k: 'name', type: 'text', q: 'איך לקרוא לזה?', req: 'כתוב שם' },
       { k: 'amount', type: 'money', q: 'כמה יורד בכל חיוב?' },
       { k: 'freq', type: 'choice', q: 'כל כמה זמן זה יורד?', opts: _FC_FREQ_OPTS, icons: true },
-      { k: 'day', type: 'day', q: 'באיזה יום בחודש זה יורד?', optional: true }
+      { k: 'day', type: 'day', q: 'באיזה יום בחודש זה יורד?', optional: true },
+      { k: 'group', type: 'choice', q: 'באיזו קבוצה?', opts: _FC_GROUP_OPTS, icons: true }
     ],
     deleteLabel: '🗑️ כבר לא משלם על זה', onDelete: () => fcArchive(id),
     onSave: v => {
@@ -11529,6 +11530,7 @@ function spFlowFixedEdit(id, startAt) {
       it.name = String(v.name).trim(); it.amount = parseFloat(String(v.amount).replace(',', '.'));
       const d = parseInt(v.day, 10); if (d >= 1 && d <= 31) it.day = d; else delete it.day;
       _fcApplyFreq(it, v.freq);
+      if (v.group && FC_GROUPS[v.group]) it.group = v.group;
       save('fixed_costs', l2); fcRender();
       if (renamed && _fcResearchStore()[id] && localStorage.getItem('wa_send_secret')) { toast('✓ עודכן — בודק מחיר מחדש…'); fcResearchOne(id, 1); }
       else spDone('עודכן', fmtMoney(it.amount) + (_fcFreqLabel(it) ? ' · ' + _fcFreqLabel(it) : ' בחודש'), it.name);
@@ -18360,7 +18362,7 @@ function autoMarkOverdue() {
 // cleaned up with RiseUp. Its own page + insights. Stored in
 // `fixed_costs` (cloud-synced). Seeded once from his list. ══════════
 const FC_GROUPS = {
-  living:  { name: 'מגורים וקבוע', icon: '🏠' },
+  living:  { name: 'שכירויות והוצאות מגורים', icon: '🏠' },
   studio:  { name: 'אולפן ותוכנות', icon: '🎛️' },
   service: { name: 'שירותים ומנויים', icon: '🔁' }
 };
@@ -18591,6 +18593,21 @@ function fcFoldRecurring2610() {
 // joint account with Dari (2nd) + the studio rent (28th). The old flat's
 // rent and bills (now paid from the joint account) move to "כבר לא" —
 // restorable. Idempotent across devices via fixed ids (fixed_costs syncs). ──
+// 6.10 (Elior): "שכירויות והוצאות מגורים" holds both rents, the joint-account
+// transfer and the home internet/router. Moves only those, once.
+function fcRentsToLiving0610() {
+  if (!firebaseReady) return;
+  try {
+    if (localStorage.getItem('fc_rents_living_0610') === '1') return;
+    const list = load('fixed_costs') || []; let n = 0;
+    list.forEach(x => {
+      if (!x || !x.name || x.deleted || x.group === 'living') return;
+      if (/שכירות|שכר דירה|חשבון המשותף|ראוטר|אינטרנט|בזק/.test(x.name)) { x.group = 'living'; n++; }
+    });
+    if (n) save('fixed_costs', list);
+    localStorage.setItem('fc_rents_living_0610', '1');
+  } catch (e) { console.warn('fcRentsToLiving0610', e); }
+}
 function fcMoveFlat2610() {
   try {
   if (!firebaseReady) return;   // 6.10: only on top of real cloud data
@@ -19058,6 +19075,7 @@ initFirebase().then(() => {
   try { fcTopUps(); } catch (_) {}
   try { fcMoveFlat2610(); } catch (_) {}
   try { fcFoldRecurring2610(); } catch (_) {}
+  try { fcRentsToLiving0610(); } catch (_) {}
   try { fcEntryCard(); } catch (_) {}
   try { fcScheduleReminders(); } catch (_) {}
   refreshAll();
