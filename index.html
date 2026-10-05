@@ -3660,6 +3660,8 @@
     .prod-edit[open] > summary::after { content: '⌃'; }
     /* fixed-cost cards: summary row, details on tap (4.10) */
     .fc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; margin-bottom: 8px; box-shadow: var(--shadow); overflow: hidden; }
+    .fc-card.off .fc-line { opacity: .5; }
+    .fc-card.off.open .fc-line { opacity: .75; }
     .fc-line { width: 100%; display: flex; align-items: center; gap: 11px; padding: 12px 14px; background: none; border: none; cursor: pointer; font-family: inherit; text-align: right; color: var(--text); }
     .fc-ic { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
     .fc-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -7522,7 +7524,7 @@
     <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG3)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v515</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v516</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11353,27 +11355,30 @@ function spFlowStart(kind) {
 // ── fixed costs: add + edit (replaces the iPhone prompt() popups) ──
 const _FC_GROUP_OPTS = [{ v: 'living', t: 'מגורים וקבוע', ic: '🏠' }, { v: 'studio', t: 'אולפן ותוכנות', ic: '🎛️' }, { v: 'service', t: 'שירותים ומנויים', ic: '🔁' }];
 function spFlowFixedAdd() {
-  spFlowOpen({ title: 'הוצאה קבועה חדשה', vals: { name: '', amount: '', group: 'studio', day: '' },
+  spFlowOpen({ title: 'הוצאה קבועה חדשה', vals: { name: '', amount: '', group: 'studio', freq: '1', day: '' },
     steps: [
       { k: 'name', type: 'text', q: 'מה זה?', ph: 'נטפליקס, ביטוח, שכירות…', req: 'כתוב שם' },
-      { k: 'amount', type: 'money', q: 'כמה זה עולה בחודש?' },
+      { k: 'amount', type: 'money', q: 'כמה יורד בכל חיוב?' },
       { k: 'group', type: 'choice', q: 'לאיזו קבוצה?', opts: _FC_GROUP_OPTS, icons: true },
+      { k: 'freq', type: 'choice', q: 'כל כמה זמן זה יורד?', opts: _FC_FREQ_OPTS, icons: true },
       { k: 'day', type: 'day', q: 'באיזה יום בחודש זה יורד?', optional: true, hint: 'כדי לקבל תזכורת יום לפני' }
     ],
     onSave: v => {
       const list = load('fixed_costs') || [];
       const item = { id: genId(), name: String(v.name).trim(), amount: parseFloat(String(v.amount).replace(',', '.')), group: v.group || 'studio', note: '', until: '' };
       const d = parseInt(v.day, 10); if (d >= 1 && d <= 31) item.day = d;
+      _fcApplyFreq(item, v.freq);
       list.push(item); save('fixed_costs', list); fcRender(); spDone('נוסף להוצאות הקבועות', fmtMoney(item.amount) + ' בחודש', item.name + (item.day ? ' · יורד ב-' + item.day + ' לחודש' : ''));
     } });
 }
 function spFlowFixedEdit(id, startAt) {
   const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
   spFlowOpen({ title: 'עריכת ' + x.name, editing: true, startAt: startAt || 0,
-    vals: { name: x.name, amount: String(x.amount), day: x.day ? String(x.day) : '' },
+    vals: { name: x.name, amount: String(x.amount), freq: _fcFreqVal(x), day: x.day ? String(x.day) : '' },
     steps: [
       { k: 'name', type: 'text', q: 'איך לקרוא לזה?', req: 'כתוב שם' },
-      { k: 'amount', type: 'money', q: 'כמה זה עולה בחודש?' },
+      { k: 'amount', type: 'money', q: 'כמה יורד בכל חיוב?' },
+      { k: 'freq', type: 'choice', q: 'כל כמה זמן זה יורד?', opts: _FC_FREQ_OPTS, icons: true },
       { k: 'day', type: 'day', q: 'באיזה יום בחודש זה יורד?', optional: true }
     ],
     deleteLabel: '🗑️ כבר לא משלם על זה', onDelete: () => fcArchive(id),
@@ -11382,9 +11387,10 @@ function spFlowFixedEdit(id, startAt) {
       const renamed = _fcNameKey(v.name) !== _fcNameKey(it.name);
       it.name = String(v.name).trim(); it.amount = parseFloat(String(v.amount).replace(',', '.'));
       const d = parseInt(v.day, 10); if (d >= 1 && d <= 31) it.day = d; else delete it.day;
+      _fcApplyFreq(it, v.freq);
       save('fixed_costs', l2); fcRender();
       if (renamed && _fcResearchStore()[id] && localStorage.getItem('wa_send_secret')) { toast('✓ עודכן — בודק מחיר מחדש…'); fcResearchOne(id, 1); }
-      else spDone('עודכן', fmtMoney(it.amount) + ' בחודש', it.name);
+      else spDone('עודכן', fmtMoney(it.amount) + (_fcFreqLabel(it) ? ' · ' + _fcFreqLabel(it) : ' בחודש'), it.name);
     } });
 }
 
@@ -16170,7 +16176,7 @@ function renderExpensesSpent() {
   try {
     const fl = fcList();
     if (fl.length) {
-      const nx = fl.filter(x => Number(x.day) >= 1).map(x => ({ x, d: _fcNextDate(Number(x.day)) })).filter(o => !_fcPaidFor(o.x, o.d)).sort((a, b) => a.d - b.d)[0];
+      const nx = fl.filter(x => Number(x.day) >= 1).map(x => ({ x, d: _fcNextDue(x) })).filter(o => !_fcPaidFor(o.x, o.d)).sort((a, b) => a.d - b.d)[0];
       h += '<button class="xs-fixed" onclick="showPage(\'fixed\')"><span class="xs-fi"><svg viewBox="0 0 24 24"><use href="#ic-repeat"/></svg></span>'
         + '<span class="xs-fm"><b>הוצאות קבועות</b><small>' + (nx ? 'הבא: ' + _escape(nx.x.name) + ' · ' + _fcRelDay(nx.d) + ' · ' + fmtMoney(nx.x.amount) : fl.length + ' דברים שיורדים כל חודש') + '</small></span>'
         + '<span class="xs-fv">' + fmtMoney(fcTotal()) + '<small>לחודש</small></span><span class="xs-fa">‹</span></button>';
@@ -18230,7 +18236,19 @@ function fcTopUps() {
 }
 function fcList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && !x.archived); } catch (_) { return []; } }
 function fcArchivedList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && x.archived); } catch (_) { return []; } }
-function fcTotal() { return fcList().reduce((t, x) => t + (Number(x.amount) || 0), 0); }
+// Billing cycle (5.10): `every` = months between charges (1 = monthly,
+// 2 = bi-monthly like electricity) and `anchor` = a "YYYY-MM" month in
+// which it IS charged, so the app knows the on/off rhythm.
+function _fcEvery(x) { const n = parseInt(x && x.every, 10); return n >= 2 ? n : 1; }
+function _fcDueIn(x, d) {
+  const e = _fcEvery(x); if (e < 2 || !x.anchor) return true;
+  const p = String(x.anchor).split('-').map(Number);
+  const diff = (d.getFullYear() * 12 + d.getMonth()) - (p[0] * 12 + p[1] - 1);
+  return ((diff % e) + e) % e === 0;
+}
+function _fcMonthly(x) { return (Number(x.amount) || 0) / _fcEvery(x); }
+function _fcFreqLabel(x) { const e = _fcEvery(x); return e === 2 ? 'כל חודשיים' : e > 2 ? 'כל ' + e + ' חודשים' : ''; }
+function fcTotal() { return Math.round(fcList().reduce((t, x) => t + _fcMonthly(x), 0)); }
 // ── Charge day (4.10): each fixed cost can carry the day of the month it
 // leaves the account. Drives the "upcoming charges" strip + reminders. ──
 const _FC_DOW = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
@@ -18243,9 +18261,31 @@ function _fcNextDate(day, from) {
   if (d < t) d = at(t.getFullYear(), t.getMonth() + 1);
   return d;
 }
+// next charge date that falls in a billing month
+function _fcNextDue(x, from) {
+  let d = _fcNextDate(Number(x.day), from);
+  for (let k = 0; k < 13 && !_fcDueIn(x, d); k++) d = _fcNextDate(Number(x.day), new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  return d;
+}
+window.fcEditFreq = function(id) {
+  if (_spSkin()) { spFlowFixedEdit(id, 2); return; }
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  const v = prompt('כל כמה חודשים זה יורד? (1 = כל חודש, 2 = כל חודשיים)', String(_fcEvery(x))); if (v === null) return;
+  const n = parseInt(v, 10); if (!(n >= 1 && n <= 12)) { toast('מספר לא תקין'); return; }
+  if (n === 1) { delete x.every; delete x.anchor; }
+  else { const nx = confirm('זה יורד החודש? (אישור = החודש, ביטול = חודש הבא)'); const d = new Date(); d.setDate(1); if (!nx) d.setMonth(d.getMonth() + 1); x.every = n; x.anchor = _fcMonthKey(d); }
+  save('fixed_costs', list); fcRender();
+};
+function _fcFreqVal(x) { if (_fcEvery(x) < 2) return '1'; return _fcDueIn(x, new Date()) ? '2:0' : '2:1'; }
+function _fcApplyFreq(it, v) {
+  if (!v || v === '1') { delete it.every; delete it.anchor; return; }
+  const k = parseInt(String(v).split(':')[1], 10) || 0; const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + k);
+  it.every = 2; it.anchor = _fcMonthKey(d);
+}
+const _FC_FREQ_OPTS = [{ v: '1', t: 'כל חודש', ic: '🔁' }, { v: '2:0', t: 'כל חודשיים · יורד החודש', ic: '📆' }, { v: '2:1', t: 'כל חודשיים · יורד חודש הבא', ic: '⏭️' }];
 function _fcPaidFor(x, d) { return !!(x.paidMonths && x.paidMonths[_fcMonthKey(d)]); }
 window.fcEditDay = function(id) {
-  if (_spSkin()) { spFlowFixedEdit(id, 2); return; }
+  if (_spSkin()) { spFlowFixedEdit(id, 3); return; }
   const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
   const v = prompt('באיזה יום בחודש זה יורד? (1–31, ריק = בלי יום)', x.day ? String(x.day) : ''); if (v === null) return;
   const n = parseInt(v, 10);
@@ -18270,7 +18310,7 @@ function fcRenderUpcoming() {
   let host = document.getElementById('fc-upcoming');
   if (!host) { host = document.createElement('div'); host.id = 'fc-upcoming'; const f = document.getElementById('fc-filter'); if (f && f.parentNode) f.parentNode.insertBefore(host, f); else return; }
   const items = fcList().filter(x => Number(x.day) >= 1)
-    .map(x => ({ x, d: _fcNextDate(Number(x.day)) }))
+    .map(x => ({ x, d: _fcNextDue(x) }))
     .filter(o => (o.d - new Date()) / 864e5 < 31)
     .sort((a, b) => a.d - b.d);
   const noDay = fcList().filter(x => !(Number(x.day) >= 1)).length;
@@ -18311,7 +18351,7 @@ function fcScheduleReminders() {
       if (prefs.enabled === false || prefs.expenses === false) { localStorage.setItem('fc_notif_ids', '[]'); return; }
       const now = new Date(), out = [];
       fcList().filter(x => Number(x.day) >= 1).forEach(x => {
-        let d = _fcNextDate(Number(x.day));
+        let d = _fcNextDue(x);
         for (let k = 0; k < 2; k++) {               // this occurrence + the next one
           if (!_fcPaidFor(x, d)) {
             const eve = new Date(d); eve.setDate(eve.getDate() - 1); eve.setHours(19, 0, 0, 0);
@@ -18323,7 +18363,7 @@ function fcScheduleReminders() {
                 body: x.name + ' · אחרי ההעברה סמן ✓ באפליקציה', schedule: { at: morn, allowWhileIdle: true }, sound: 'default' });
             }
           }
-          d = _fcNextDate(Number(x.day), new Date(d.getFullYear(), d.getMonth() + 1, 1));
+          d = _fcNextDue(x, new Date(d.getFullYear(), d.getMonth() + 1, 1));
         }
       });
       if (out.length) await LN.schedule({ notifications: out }).catch(e => console.warn('fc notif', e));
@@ -18404,8 +18444,11 @@ function _fcTagOf(x) {
 }
 function _fcRowHtml(x, g) {
   const open = _fcOpenId === x.id, pal = _FC_GPAL[g] || _FC_GPAL.service, id = x.id;
-  const sub = [x.day ? 'ב-' + x.day + ' לחודש' : '', x.until ? 'עד ' + fcUntilLabel(x.until) : '', x.note ? _escape(x.note) : ''].filter(Boolean).join(' · ');
-  let h = '<div class="fc-card' + (open ? ' open' : '') + '">'
+  const off = !_fcDueIn(x, new Date());
+  let when = x.day ? 'ב-' + x.day + ' לחודש' : '';
+  if (off) { const nd = x.day ? _fcNextDue(x) : null; when = 'חודש הבא' + (nd ? ' · ' + nd.getDate() + ' ב' + nd.toLocaleDateString('he-IL', { month: 'long' }) : ''); }
+  const sub = [when, off ? '' : _fcFreqLabel(x), x.until ? 'עד ' + fcUntilLabel(x.until) : '', x.note ? _escape(x.note) : ''].filter(Boolean).join(' · ');
+  let h = '<div class="fc-card' + (open ? ' open' : '') + (off ? ' off' : '') + '">'
     + '<button class="fc-line" onclick="fcToggle(\'' + id + '\')">'
     + '<span class="fc-ic" style="background:' + pal[0] + ';color:' + pal[1] + '">' + (FC_GROUPS[g] ? FC_GROUPS[g].icon : '•') + '</span>'
     + '<span class="fc-mid"><b>' + _escape(x.name) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>'
@@ -18421,6 +18464,7 @@ function _fcRowHtml(x, g) {
       + '<button onclick="fcRenameOne(\'' + id + '\')">✏️ שם</button>'
       + '<button onclick="fcEditAmount(\'' + id + '\')">₪ סכום</button>'
       + '<button onclick="fcEditDay(\'' + id + '\')">📅 ' + (x.day ? 'ב-' + x.day : 'יום חיוב') + '</button>'
+      + '<button onclick="fcEditFreq(\'' + id + '\')">🔁 ' + (_fcFreqLabel(x) || 'כל חודש') + '</button>'
       + '<button class="danger" onclick="fcArchive(\'' + id + '\')">🗑️ כבר לא</button>'
       + '</div></div>';
   }
@@ -18438,7 +18482,7 @@ window.fcRender = function() {
     + (saveSum >= 5 ? '<div class="fc-hero-save">💰 אפשר לחסוך עד ' + fmtMoney(Math.round(saveSum)) + ' בחודש</div>' : '')
     + '</div>';
   // stats
-  const sumG = g => list.filter(x => x.group === g).reduce((t, x) => t + (Number(x.amount) || 0), 0);
+  const sumG = g => list.filter(x => x.group === g).reduce((t, x) => t + _fcMonthly(x), 0);
   const software = sumG('studio'), living = sumG('living');
   const ending = list.filter(x => x.until);
   const big = list[0];
@@ -18465,9 +18509,10 @@ window.fcRender = function() {
   // groups
   let html = '';
   Object.keys(FC_GROUPS).forEach(g => {
-    const items = list.filter(x => x.group === g && pass(x));
+    const now = new Date();
+    const items = list.filter(x => x.group === g && pass(x)).sort((a, b) => (_fcDueIn(a, now) ? 0 : 1) - (_fcDueIn(b, now) ? 0 : 1));
     if (!items.length) return;
-    const gt = items.reduce((t, x) => t + (Number(x.amount) || 0), 0);
+    const gt = Math.round(items.reduce((t, x) => t + _fcMonthly(x), 0));
     html += '<div class="fc-group"><div class="fc-group-head"><span>' + FC_GROUPS[g].icon + ' ' + FC_GROUPS[g].name + '</span><span class="fc-group-sum">' + fmtMoney(gt) + '</span></div>'
       + items.map(x => _fcRowHtml(x, g)).join('')
       + '</div>';
@@ -31554,6 +31599,9 @@ html[data-skin="spent"] #lobby-wa-badge .wr-ic { border-radius: 16px !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.2A8 8 0 1 1 20 11.5z'/%3E%3C/svg%3E"), linear-gradient(135deg, #3fd47f, #1a9a52) !important;
   background-size: 24px 24px, cover !important; background-repeat: no-repeat !important; background-position: center !important; }
 html[data-skin="spent"] .lobby-year-card .ar, html[data-skin="spent"] #lobby-wa-badge .wr-ar { color: #b5b5b0 !important; }
+/* v516 — bi-monthly fixed cost that isn't charged this month */
+html[data-skin="spent"] .fc-card.off { background: var(--sp-soft) !important; box-shadow: none !important; border-color: transparent !important; }
+html[data-skin="spent"] .fc-card.off .fc-ic { filter: grayscale(1); }
 </style>
 <!--SPENT-END-->
 </body>
