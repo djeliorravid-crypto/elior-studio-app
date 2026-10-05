@@ -7524,7 +7524,7 @@
     <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG3)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v516</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v517</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11396,20 +11396,46 @@ function spFlowFixedEdit(id, startAt) {
 
 // ── production: add ──
 function spFlowProductionAdd() {
-  spFlowOpen({ title: 'הפקה חדשה', vals: { 'prod-title': '', 'prod-artist': '', 'prod-price': '', 'prod-deadline': '' },
+  spFlowOpen({ title: 'הפקה חדשה', vals: { title: '', artist: '', start: _spISO(0), deadline: '' },
     steps: [
-      { k: 'prod-title', type: 'text', q: 'איך קוראים לשיר?', ph: 'שם השיר', req: 'שם השיר חובה' },
-      { k: 'prod-artist', type: 'text', q: 'של מי?', ph: 'שם האמן', optional: true, recent: _spRecentDescs('productions', 'artist') },
-      { k: 'prod-price', type: 'money', q: 'כמה זה שווה?', optional: true, hint: 'אפשר לדלג ולהוסיף אחר כך' },
-      { k: 'prod-deadline', type: 'date', q: 'עד מתי?', future: true, optional: true, noneLabel: 'בלי דד-ליין' }
+      { k: 'title', type: 'text', q: 'איך קוראים לשיר?', ph: 'שם השיר', req: 'שם השיר חובה' },
+      { k: 'artist', type: 'text', q: 'של מי?', ph: 'שם האמן', optional: true, recent: _spRecentDescs('productions', 'artist') },
+      { k: 'start', type: 'date', q: 'מתי התחלת?' },
+      { k: 'deadline', type: 'date', q: 'מה הדד-ליין?', future: true, optional: true, noneLabel: 'בלי דד-ליין' }
     ],
     onSave: v => {
-      prodOpenAddModal(true);
-      Object.keys(v).forEach(k => { const el = document.getElementById(k); if (el) el.value = v[k] || ''; });
-      prodSaveFromModal();
-      setTimeout(() => spDone('ההפקה נוספה', '', [v['prod-title'], v['prod-artist']].filter(Boolean).join(' · ')), 60);
-    },
-    onFull: v => { prodOpenAddModal(true); Object.keys(v).forEach(k => { const el = document.getElementById(k); if (el) el.value = v[k] || ''; }); } });
+      const now = new Date().toISOString();
+      const arr = prodList();
+      arr.push({ id: 'prod_' + Date.now(), title: String(v.title).trim(), artist: String(v.artist || '').trim(), stage: 'prod',
+        startDate: v.start || _spISO(0), deadline: v.deadline || null, notes: '', price: null, priority: 'normal',
+        sessions: [], payments: [], createdAt: now, touchedAt: now });
+      prodSaveAll(arr); _prodTab = 'active'; renderProductions();
+      setTimeout(() => spDone('ההפקה נוספה', '', [v.title, v.artist].filter(Boolean).join(' · ')), 60);
+    } });
+}
+// ── production: edit one detail per screen (5.10) ──
+const _PROD_STATUS_OPTS = [{ v: 'active', t: 'פעיל', ic: '▶️' }, { v: 'paused', t: 'לא פעיל', ic: '⏸️' }, { v: 'ready', t: 'מוכן', ic: '✅' }];
+function spFlowProductionEdit(id, startAt) {
+  const p = prodById(id); if (!p) return;
+  spFlowOpen({ title: p.title, editing: true, startAt: startAt || 0,
+    vals: { title: p.title, artist: p.artist || '', status: _prodStatus(p), start: _prodStart(p), deadline: p.deadline || '' },
+    steps: [
+      { k: 'title', type: 'text', q: 'איך קוראים לשיר?', req: 'שם השיר חובה' },
+      { k: 'artist', type: 'text', q: 'של מי?', ph: 'שם האמן', optional: true, recent: _spRecentDescs('productions', 'artist') },
+      { k: 'status', type: 'choice', q: 'מה המצב?', opts: _PROD_STATUS_OPTS, icons: true },
+      { k: 'start', type: 'date', q: 'מתי התחלת?' },
+      { k: 'deadline', type: 'date', q: 'מה הדד-ליין?', future: true, optional: true, noneLabel: 'בלי דד-ליין' }
+    ],
+    deleteLabel: '🗑️ מחק הפקה',
+    onDelete: () => { prodDelete(id); renderProductions(); toast('ההפקה נמחקה'); },
+    onSave: v => {
+      const cur = prodById(id) || {};
+      const patch = { title: String(v.title).trim() || cur.title, artist: String(v.artist || '').trim(), startDate: v.start || _prodStart(cur), deadline: v.deadline || null };
+      if (v.status === 'ready') { patch.stage = 'sent'; patch.status = null; }
+      else { patch.status = v.status === 'paused' ? 'paused' : null; if (cur.stage === 'sent') patch.stage = 'prod'; }
+      prodUpdate(id, patch); _prodTab = v.status || 'active'; renderProductions();
+      spDone(v.status === 'ready' ? 'ההפקה מוכנה' : 'עודכן', '', patch.title + (patch.artist ? ' · ' + patch.artist : ''));
+    } });
 }
 
 // ── calendar event (from the +) ──
@@ -22818,6 +22844,59 @@ function prodDelete(id) {
   prodSaveAll(prodList().filter(p => p.id !== id));
 }
 function prodStageMeta(k) { return PROD_STAGES.find(s => s.k === k) || PROD_STAGES[0]; }
+// ── New design (5.10): status = פעיל / לא פעיל / מוכן, with a start date
+// and a deadline. "מוכן" is the old "sent" stage, so classic still agrees. ──
+function _prodStatus(p) { return p.stage === 'sent' ? 'ready' : p.status === 'paused' ? 'paused' : 'active'; }
+function _prodStart(p) { return p.startDate || String(p.createdAt || '').slice(0, 10) || _spISO(0); }
+let _prodTab = 'active';
+window.prodSetTab = function(t) { _prodTab = t; renderProductions(); };
+function _prodShortDate(iso) { const d = new Date(iso); return isNaN(d) ? '' : d.getDate() + ' ב' + d.toLocaleDateString('he-IL', { month: 'short' }); }
+function renderProductionsSpent() {
+  const wrap = document.getElementById('prod-list'); if (!wrap) return;
+  const all = prodList();
+  const by = { active: [], paused: [], ready: [] };
+  all.forEach(p => by[_prodStatus(p)].push(p));
+  const sub = document.getElementById('prod-page-sub');
+  if (sub) sub.textContent = by.active.length ? by.active.length + ' פעילות' : 'אין הפקות פעילות';
+  const dw = document.getElementById('prod-delivered-wrap'); if (dw) dw.innerHTML = '';
+  const tabs = [['active', 'פעילים'], ['paused', 'לא פעילים'], ['ready', 'מוכנים']];
+  const list = by[_prodTab].slice().sort((a, b) => {
+    if (_prodTab === 'ready') return String(b.touchedAt || '').localeCompare(String(a.touchedAt || ''));
+    const da = a.deadline ? new Date(a.deadline) : null, db = b.deadline ? new Date(b.deadline) : null;
+    if (!da && !db) return String(_prodStart(b)).localeCompare(String(_prodStart(a)));
+    if (!da) return 1; if (!db) return -1; return da - db;
+  });
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const card = p => {
+    const st = _prodStatus(p), start = _prodStart(p), sd = new Date(start); sd.setHours(0, 0, 0, 0);
+    const daysIn = Math.max(0, Math.round((today - sd) / 864e5));
+    const du = _prodDaysUntil(p.deadline);
+    let pct = 0, cls = 'ok', label;
+    if (st === 'ready') { pct = 100; cls = 'done'; label = 'מוכן ✓'; }
+    else if (du === null) { label = daysIn === 0 ? 'התחיל היום' : daysIn + ' ימים מאז שהתחלת'; cls = 'none'; }
+    else {
+      const ed = new Date(p.deadline); ed.setHours(0, 0, 0, 0);
+      const span = Math.max(1, Math.round((ed - sd) / 864e5));
+      pct = Math.max(4, Math.min(100, Math.round(daysIn / span * 100)));
+      if (du < 0) { cls = 'late'; label = 'באיחור ' + (-du === 1 ? 'יום' : -du + ' ימים'); pct = 100; }
+      else if (du === 0) { cls = 'late'; label = 'הדד-ליין היום'; }
+      else { cls = du <= 3 ? 'late' : du <= 7 ? 'warn' : 'ok'; label = du === 1 ? 'נשאר יום' : 'נשארו ' + du + ' ימים'; }
+    }
+    if (st === 'paused') cls = 'paused';
+    const chip = { active: ['פעיל', 'a'], paused: ['לא פעיל', 'p'], ready: ['מוכן', 'r'] }[st];
+    return '<button type="button" class="pdc ' + cls + '" onclick="spFlowProductionEdit(\'' + _escape(p.id) + '\')">'
+      + '<span class="pdc-top"><span class="pdc-t"><b>' + _escape(p.title) + '</b><small>' + _escape(p.artist || 'בלי אמן') + '</small></span>'
+      + '<span class="pdc-chip ' + chip[1] + '">' + chip[0] + '</span></span>'
+      + '<span class="pdc-dates"><span><small>התחלתי</small><b>' + _prodShortDate(start) + '</b></span>'
+      + '<span class="pdc-dl"><small>דד-ליין</small><b>' + (p.deadline ? _prodShortDate(p.deadline) : '—') + '</b></span></span>'
+      + '<span class="pdc-bar"><i style="width:' + pct + '%"></i></span>'
+      + '<span class="pdc-lbl">' + label + '</span>'
+      + '</button>';
+  };
+  wrap.innerHTML = '<div class="pdc-tabs">' + tabs.map(([k, t]) => '<button type="button" class="' + (_prodTab === k ? 'on' : '') + '" onclick="prodSetTab(\'' + k + '\')">' + t + ' <span>' + by[k].length + '</span></button>').join('') + '</div>'
+    + (list.length ? list.map(card).join('')
+      : '<div class="pdc-empty">' + (_prodTab === 'active' ? 'אין הפקות פעילות — לחץ "+ הפקה חדשה"' : _prodTab === 'paused' ? 'אין הפקות מושהות' : 'עוד אין הפקות מוכנות') + '</div>');
+}
 
 function _prodDaysBetween(a, b) {
   if (!a) return 0;
@@ -22888,6 +22967,7 @@ function _escape(s) {
 function renderProductions() {
   const wrap = document.getElementById('prod-list');
   if (!wrap) return;
+  if (_spSkin()) { renderProductionsSpent(); return; }
   const all = prodList();
   const active = all.filter(p => p.stage !== 'sent');
   const done   = all.filter(p => p.stage === 'sent');
@@ -31602,6 +31682,41 @@ html[data-skin="spent"] .lobby-year-card .ar, html[data-skin="spent"] #lobby-wa-
 /* v516 — bi-monthly fixed cost that isn't charged this month */
 html[data-skin="spent"] .fc-card.off { background: var(--sp-soft) !important; box-shadow: none !important; border-color: transparent !important; }
 html[data-skin="spent"] .fc-card.off .fc-ic { filter: grayscale(1); }
+/* v517 — productions: status tabs + clean timeline cards */
+html[data-skin="spent"] .pdc-tabs { display: flex; gap: 6px; background: var(--sp-soft); border-radius: 18px; padding: 5px; margin-bottom: 4px; }
+html[data-skin="spent"] .pdc-tabs button { flex: 1; border: none; background: none; border-radius: 14px; padding: 10px 4px; font-family: inherit; font-size: 14px; font-weight: 800; color: var(--sp-muted); cursor: pointer; }
+html[data-skin="spent"] .pdc-tabs button span { font-weight: 700; opacity: .7; margin-right: 3px; }
+html[data-skin="spent"] .pdc-tabs button.on { background: #fff; color: var(--sp-ink); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+html[data-skin="spent"] .pdc { width: 100%; text-align: right; font-family: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 12px;
+  background: #fff; border: 1px solid var(--sp-line); border-radius: 24px; padding: 18px 18px 16px; box-shadow: var(--sp-shadow); transition: transform .12s; }
+html[data-skin="spent"] .pdc:active { transform: scale(.985); }
+html[data-skin="spent"] .pdc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+html[data-skin="spent"] .pdc-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+html[data-skin="spent"] .pdc-t b { font-size: 18px; font-weight: 900; color: var(--sp-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="spent"] .pdc-t small { font-size: 13.5px; font-weight: 600; color: var(--sp-muted); }
+html[data-skin="spent"] .pdc-chip { flex-shrink: 0; font-size: 12.5px; font-weight: 800; padding: 5px 12px; border-radius: 999px; }
+html[data-skin="spent"] .pdc-chip.a { background: #e3f6eb; color: #138a4a; }
+html[data-skin="spent"] .pdc-chip.p { background: var(--sp-soft); color: var(--sp-muted); }
+html[data-skin="spent"] .pdc-chip.r { background: #e5edfd; color: #2f5fd0; }
+html[data-skin="spent"] .pdc-dates { display: flex; justify-content: space-between; }
+html[data-skin="spent"] .pdc-dates span { display: flex; flex-direction: column; gap: 1px; }
+html[data-skin="spent"] .pdc-dates .pdc-dl { text-align: left; }
+html[data-skin="spent"] .pdc-dates small { font-size: 11.5px; font-weight: 700; color: var(--sp-muted); }
+html[data-skin="spent"] .pdc-dates b { font-size: 15px; font-weight: 900; color: var(--sp-ink); }
+html[data-skin="spent"] .pdc-bar { height: 8px; border-radius: 99px; background: var(--sp-soft); overflow: hidden; display: block; }
+html[data-skin="spent"] .pdc-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #2fc472, #138a4a); margin-right: 0; margin-left: auto; }
+html[data-skin="spent"] .pdc.warn .pdc-bar i { background: linear-gradient(90deg, #ffb86b, #f0762f); }
+html[data-skin="spent"] .pdc.late .pdc-bar i { background: linear-gradient(90deg, #ff8a7a, #d0402b); }
+html[data-skin="spent"] .pdc.done .pdc-bar i { background: linear-gradient(90deg, #6f9bff, #2f5fd0); }
+html[data-skin="spent"] .pdc.paused .pdc-bar i { background: #c9c9c4; }
+html[data-skin="spent"] .pdc.none .pdc-bar { display: none; }
+html[data-skin="spent"] .pdc-lbl { font-size: 13px; font-weight: 800; color: #138a4a; margin-top: -4px; }
+html[data-skin="spent"] .pdc.warn .pdc-lbl { color: #e0662f; }
+html[data-skin="spent"] .pdc.late .pdc-lbl { color: #d0402b; }
+html[data-skin="spent"] .pdc.done .pdc-lbl { color: #2f5fd0; }
+html[data-skin="spent"] .pdc.paused .pdc-lbl, html[data-skin="spent"] .pdc.none .pdc-lbl { color: var(--sp-muted); }
+html[data-skin="spent"] .pdc.paused { opacity: .75; }
+html[data-skin="spent"] .pdc-empty { text-align: center; color: var(--sp-muted); font-weight: 700; padding: 34px 10px; background: var(--sp-soft); border-radius: 22px; }
 </style>
 <!--SPENT-END-->
 </body>
