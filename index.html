@@ -7542,7 +7542,7 @@
     <svg class="sp-logo" viewBox="250 226 572 572" aria-hidden="true"><defs><linearGradient id="spLogoG3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0f7a40"/><stop offset="1" stop-color="#22b366"/></linearGradient></defs><g transform="translate(-22 0)"><path d="M322 748 V276 H520 a142 142 0 0 1 0 284 H322 M508 560 L620 748" fill="none" stroke="url(#spLogoG3)" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/><circle cx="742" cy="716" r="54" fill="#2fc472"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v520</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v521</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -8542,9 +8542,11 @@
       </div>
     </div>
     <div id="fc-hero"></div>
+    <div id="fc-ask"></div>
     <div id="fc-stats"></div>
     <div id="fc-filter"></div>
     <div id="fc-groups"></div>
+    <button class="fc-restore-link" onclick="fcRestoreOpen()">🛟 שחזור מגיבוי</button>
     <div class="fc-note">💡 הוצאה קבועה היא כל דבר שיורד אוטומטית כל חודש. לחיצה על 🔎 בודקת מחיר טיפוסי, נחיצות וחלופות זולות. אפשר לשאול שאלה על כל הוצאה בכפתור 💬 (מידע לבדיקה, לא ייעוץ — מחירים משתנים).</div>
   </div>
 
@@ -9990,7 +9992,16 @@ function initFirebase() {
       const cloudMeta = root.studio_meta || {};
       ALL_KEYS.forEach(key => {
         if (_pending[key]) {
-          // pending changes from previous session — newer than cloud
+          // pending changes from a previous session. Only "newer than cloud"
+          // if they really are — otherwise merge (6.10, see _syncMerge).
+          const pTs = _pending[key].ts || 0, cTs = parseInt(cloudMeta[key] || '0', 10);
+          const pBase = parseInt(localStorage.getItem('s_' + key + '_base') || '0', 10);
+          if (cloudData[key] != null && cTs > 0 && cTs !== pTs && (cTs > pTs || (pBase > 0 && cTs > pBase))) {
+            try { localStorage.setItem('s_' + key + '_base', String(cTs)); } catch (_) {}
+            _syncStashConflict(key, _pending[key].data, pTs);
+            _pending[key] = { data: _syncMerge(key, _pending[key].data, pTs, cloudData[key], cTs), ts: Date.now(), _checked: true };
+            _savePending();
+          }
           localStorage.setItem('s_' + key, JSON.stringify(_pending[key].data));
           if (_pending[key].ts) localStorage.setItem('s_' + key + '_ts', String(_pending[key].ts));
           _pushKey(key);
@@ -10003,8 +10014,13 @@ function initFirebase() {
           if (hasCloud) {
             // Use cloud only if it's newer OR if we don't have a local timestamp (first load)
             if (cloudTs === 0 || localTs === 0 || cloudTs > localTs) {
-              localStorage.setItem('s_' + key, JSON.stringify(cloudVal));
-              if (cloudTs > 0) localStorage.setItem('s_' + key + '_ts', String(cloudTs));
+              let take = cloudVal;
+              if (key === 'fixed_costs') {
+                try { take = _fcMerge(cloudVal, JSON.parse(localStorage.getItem('s_fixed_costs') || '[]')); } catch (_) {}
+              }
+              localStorage.setItem('s_' + key, JSON.stringify(take));
+              if (cloudTs > 0) { localStorage.setItem('s_' + key + '_ts', String(cloudTs)); localStorage.setItem('s_' + key + '_base', String(cloudTs)); }
+              if (take !== cloudVal && JSON.stringify(take) !== JSON.stringify(cloudVal)) { _markDirty(key, take); _pushKey(key); }
             }
             // else: local is newer, push it back to cloud
             else if (localTs > cloudTs) {
@@ -10069,7 +10085,110 @@ function _markClean(key) {
   _savePending();
 }
 
+// ── Conflict-safe sync (6.10) ─────────────────────────────────────────
+// A device that sat with an old copy (e.g. the iPhone, whose Firebase
+// socket freezes in the background and leaves a stale "pending" save, or
+// a computer tab left open) used to push that whole old copy over newer
+// edits made elsewhere — that is how a night of fixed-cost charge days
+// vanished. Now: before pushing, compare with the cloud's timestamp; if
+// the cloud is newer, MERGE instead of overwrite.
+//  • fixed_costs — every item carries updatedAt (stamped in save()), so
+//    the newer version of each item wins and removals are tombstones.
+//  • other lists of {id} items — union by id (newer side wins per id), so
+//    nothing either side added is lost.
+//  • anything else — the newer timestamp wins (was: the stale one won).
+const _SYNC_REST = 'https://elior-studio-default-rtdb.firebaseio.com';
+// stamp changed / new fixed-cost items, and turn removed ones into
+// tombstones so a merge can't bring them back (6.10)
+function _fcStamp(next) {
+  if (!Array.isArray(next)) return;
+  let prev = []; try { prev = JSON.parse(localStorage.getItem('s_fixed_costs') || '[]'); } catch (_) {}
+  if (!Array.isArray(prev)) prev = Object.values(prev || {});
+  const strip = x => { const c = Object.assign({}, x); delete c.updatedAt; return JSON.stringify(c); };
+  const pm = {}; prev.forEach(x => { if (x && x.id) pm[x.id] = x; });
+  const now = Date.now(), seen = {};
+  next.forEach(x => { if (!x || !x.id) return; seen[x.id] = 1; const p0 = pm[x.id]; if (!p0 || strip(p0) !== strip(x)) x.updatedAt = now; });
+  prev.forEach(x => { if (x && x.id && !seen[x.id] && !x.deleted) next.push({ id: x.id, deleted: true, updatedAt: now }); });
+  // keep tombstones that are already there
+  prev.forEach(x => { if (x && x.id && !seen[x.id] && x.deleted) next.push(x); });
+}
+function _fcMerge(a, b) {
+  const m = new Map();
+  [a, b].forEach(arr => (Array.isArray(arr) ? arr : (arr ? Object.values(arr) : [])).forEach(x => {
+    if (!x || !x.id) return;
+    const c = m.get(x.id);
+    if (!c || (Number(x.updatedAt) || 0) > (Number(c.updatedAt) || 0)) m.set(x.id, x);
+  }));
+  return [...m.values()];
+}
+const _isIdList = v => Array.isArray(v) && v.length > 0 && v.every(x => x && typeof x === 'object' && x.id != null);
+// Merge my copy with a cloud copy that changed since mine was based on it.
+// Per item the newer stamp wins (ties → cloud); items only one side has
+// are kept. Non-list values: the cloud (the other device's newer save)
+// wins and my version is kept in _sync_conflicts.
+function _syncMerge(key, mine, mineTs, cloud, cloudTs) {
+  if (key === 'fixed_costs') return _fcMerge(cloud, mine);
+  if (_isIdList(mine) && _isIdList(cloud)) {
+    const m = new Map(); cloud.forEach(x => m.set(String(x.id), x));
+    mine.forEach(x => { const k = String(x.id), c = m.get(k); if (!c || (Number(x._u) || 0) > (Number(c._u) || 0)) m.set(k, x); });
+    return [...m.values()];
+  }
+  return cloud;
+}
+// stamp changed / new items of a list of {id} objects (6.10)
+function _stampList(key, next) {
+  if (!_isIdList(next)) return;
+  let prev = []; try { prev = JSON.parse(localStorage.getItem('s_' + key) || '[]'); } catch (_) {}
+  if (!Array.isArray(prev)) return;
+  const strip = x => { const c = Object.assign({}, x); delete c._u; return JSON.stringify(c); };
+  const pm = {}; prev.forEach(x => { if (x && x.id != null) pm[String(x.id)] = x; });
+  const now = Date.now();
+  next.forEach(x => { const p0 = pm[String(x.id)]; if (!p0 || strip(p0) !== strip(x)) x._u = now; });
+}
+function _syncStashConflict(key, data, ts) {
+  try {
+    const c = JSON.parse(localStorage.getItem('_sync_conflicts') || '[]');
+    c.push({ key, ts, at: Date.now(), data });
+    localStorage.setItem('_sync_conflicts', JSON.stringify(c.slice(-6)));
+  } catch (_) {}
+}
 function _pushKey(key) {
+  if (!firebaseDB || !_pending[key]) return;
+  const snap0 = _pending[key];
+  if (snap0._checked) return _pushKeyNow(key);
+  // ask the cloud (plain HTTPS — works even when the SDK socket is frozen)
+  fetch(_SYNC_REST + '/studio_meta/' + key + '.json', { cache: 'no-store' })
+    .then(r => r.json()).catch(() => null)
+    .then(async cloudTsRaw => {
+      if (_pending[key] !== snap0) return;                    // superseded by a newer save
+      const cloudTs = parseInt(cloudTsRaw || '0', 10), myTs = snap0.ts || 0;
+      const base = parseInt(localStorage.getItem('s_' + key + '_base') || '0', 10);
+      // conflict = the cloud changed since the copy this edit was made on
+      if (cloudTs > 0 && base > 0 && cloudTs > base && cloudTs !== myTs) {
+        let cloud = null;
+        try { cloud = await fetch(_SYNC_REST + '/studio_data/' + key + '.json', { cache: 'no-store' }).then(r => r.json()); } catch (_) {}
+        if (_pending[key] !== snap0) return;
+        if (cloud != null) {
+          _syncStashConflict(key, snap0.data, myTs);
+          const merged = _syncMerge(key, snap0.data, myTs, cloud, cloudTs);
+          const now = Date.now();
+          try { localStorage.setItem('s_' + key, JSON.stringify(merged)); localStorage.setItem('s_' + key + '_ts', String(now)); } catch (_) {}
+          if (JSON.stringify(merged) === JSON.stringify(cloud)) {   // cloud already had everything
+            try { localStorage.setItem('s_' + key + '_ts', String(cloudTs)); localStorage.setItem('s_' + key + '_base', String(cloudTs)); } catch (_) {}
+            _markClean(key);
+          } else {
+            try { localStorage.setItem('s_' + key + '_base', String(cloudTs)); } catch (_) {}
+            _pending[key] = { data: merged, ts: now, _checked: true }; _savePending();
+            _pushKeyNow(key);
+          }
+          try { refreshAll(); } catch (_) {}
+          return;
+        }
+      }
+      if (_pending[key] === snap0) { snap0._checked = true; _pushKeyNow(key); }
+    });
+}
+function _pushKeyNow(key) {
   if (!firebaseDB || !_pending[key]) return;
   const snap = _pending[key];
   const ts = snap.ts || Date.now();
@@ -10079,6 +10198,7 @@ function _pushKey(key) {
   updates['studio_meta/' + key] = ts;
   firebaseDB.ref().update(updates)
     .then(() => {
+      try { if (_pending[key] === snap) localStorage.setItem('s_' + key + '_base', String(ts)); } catch (_) {}
       // Delay clearing pending by 8 seconds — Firebase replication takes time
       // and we don't want a stale cloud read to overwrite our fresh local write
       setTimeout(() => _markClean(key), 8000);
@@ -10108,6 +10228,9 @@ const load = key => {
 
 function save(key, val) {
   const ts = Date.now();
+  if (key === 'fixed_costs') { try { _fcStamp(val); } catch (e) { console.warn('_fcStamp', e); } try { setTimeout(() => { try { fcSnapshot(); } catch (_) {} }, 0); } catch (_) {} }
+  else { try { _stampList(key, val); } catch (_) {} }
+  try { if (localStorage.getItem('s_' + key + '_base') == null) localStorage.setItem('s_' + key + '_base', localStorage.getItem('s_' + key + '_ts') || '0'); } catch (_) {}
   // 1. כתוב מקומית מיד — שמור בתוך try כדי לתפוס QuotaExceededError
   try {
     localStorage.setItem('s_' + key, JSON.stringify(val));
@@ -16208,6 +16331,7 @@ function renderExpensesSpent() {
   h += '<div class="xs-hrow">' + (unpaid.length ? '<span class="xs-due">🕓 ' + unpaid.length + ' עוד לא שולמו · ' + fmtMoney(unpaid.reduce((t, e) => t + (Number(e.amount) || 0), 0)) + '</span>' : '<span></span>')
     + (monthExp.length ? '<button class="xs-story" onclick="storyOpen()">✨ הסיפור של ' + MONTHS_HE[curMonth] + '</button>' : '') + '</div>';
   h += '</div>';
+  h += '<div id="xs-ask"></div>';
   // ── category circles (filter) ──
   if (cats.length > 1) {
     h += '<div class="xs-cats">'
@@ -16238,17 +16362,28 @@ function renderExpensesSpent() {
       const items = days[k], dt = items.reduce((t, e) => t + (Number(e.amount) || 0), 0);
       h += '<div class="xs-day"><div class="xs-dh"><b>' + _spDayLabel(k) + '</b><span>סה״כ ' + fmtMoney(dt) + '</span></div>'
         + items.map(e => { const c = e.category || 'אחר', p = _spPal(c);
-            return '<div class="xs-row" onclick="editExpense(\'' + e.id + '\')">'
+            return '<div class="xs-row' + (e.paid ? '' : ' unpaid') + '" onclick="expRowTap(\'' + e.id + '\')">'
               + '<span class="xs-ri" style="background:' + p[0] + ';color:' + p[1] + '">' + _txCatSvg(c) + '</span>'
               + '<span class="xs-rm"><b>' + _escape(e.description || '—') + '</b><small>' + _escape(c) + (e.projectName ? ' · ' + _escape(e.projectName) : '') + '</small></span>'
-              + (e.paid ? '' : '<button class="xs-pay" onclick="event.stopPropagation();toggleExpensePaid(\'' + e.id + '\')">לתשלום</button>')
+              + (e.paid ? '<span class="xs-paid">✓ שולם</span>' : '<button class="xs-pay" onclick="event.stopPropagation();toggleExpensePaid(\'' + e.id + '\')">סמן שולם</button>')
               + '<span class="xs-ra">' + fmtMoney(e.amount) + '</span></div>'; }).join('')
         + '</div>';
     });
   }
   h += '<button class="xs-import" onclick="bankPasteOpen()">📥 ייבוא תנועות מהבנק</button>';
   host.innerHTML = h;
+  try { fcAskRenderAll(); } catch (_) {}
 }
+// tap an expense → its actions: mark paid / not paid, edit, delete (6.10)
+window.expRowTap = function(id) {
+  const e = (load('expenses') || []).find(x => x.id === id); if (!e) return;
+  spentSheet(e.description || 'הוצאה', fmtMoney(e.amount) + ' · ' + (e.category || 'אחר') + ' · ' + (e.paid ? 'שולם ✓' : 'עוד לא שולם'), [
+    e.paid ? { label: 'סמן שעוד לא שולם', run: () => { toggleExpensePaid(id); toast('סומן: עוד לא שולם'); } }
+           : { label: '✓ שולם', pri: true, run: () => { toggleExpensePaid(id); spDone('ההוצאה סומנה כשולמה', fmtMoney(e.amount), e.description || ''); } },
+    { label: 'עריכה', run: () => editExpense(id) },
+    { label: 'מחיקה', danger: true, run: () => deleteExpense(id) }
+  ]);
+};
 function renderExpenses() {
   // Update the pending-TX inbox above the expense list
   _txRenderInbox();
@@ -18252,6 +18387,7 @@ const FC_SEED = [
 function fcSeedOnce() {
   try {
     if (localStorage.getItem('fc_seeded_2709') === '1') return;
+    if (!firebaseReady) return;   // 6.10: cloud didn't load → never seed over real data
     const cur = load('fixed_costs') || [];
     if (!cur.length) {
       const list = FC_SEED.map(x => ({ id: genId(), name: x.n, amount: x.a, group: x.g, note: x.note || '', until: x.until || '' }));
@@ -18263,6 +18399,7 @@ function fcSeedOnce() {
 // Additive top-ups to the fixed list (run after seed). Each keyed by a
 // flag so it adds exactly once, without disturbing edits.
 function fcTopUps() {
+  if (!firebaseReady) return;   // 6.10: only on top of real cloud data
   const adds = [
     { flag: 'fc_add_mayim', name: 'מים · מי עדן', amount: 180, group: 'living' }
   ];
@@ -18278,8 +18415,8 @@ function fcTopUps() {
     } catch (_) {}
   });
 }
-function fcList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && !x.archived); } catch (_) { return []; } }
-function fcArchivedList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && x.archived); } catch (_) { return []; } }
+function fcList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && !x.archived && !x.deleted); } catch (_) { return []; } }
+function fcArchivedList() { try { return (load('fixed_costs') || []).filter(x => x && x.name && x.archived && !x.deleted); } catch (_) { return []; } }
 // Billing cycle (5.10): `every` = months between charges (1 = monthly,
 // 2 = bi-monthly like electricity) and `anchor` = a "YYYY-MM" month in
 // which it IS charged, so the app knows the on/off rhythm.
@@ -18423,6 +18560,7 @@ function fcScheduleReminders() {
 // Idempotent: ended items are no longer active; folded ones are marked. ──
 function fcFoldRecurring2610() {
   try {
+  if (!firebaseReady) return;   // 6.10: only on top of real cloud data
     const rec = load('recurring_expenses') || [];
     if (!rec.length) return;
     const now = new Date(), cur = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
@@ -18455,6 +18593,7 @@ function fcFoldRecurring2610() {
 // restorable. Idempotent across devices via fixed ids (fixed_costs syncs). ──
 function fcMoveFlat2610() {
   try {
+  if (!firebaseReady) return;   // 6.10: only on top of real cloud data
     const list = load('fixed_costs') || [];
     if (!list.length || list.some(x => x && x.id === 'fc_joint_acct')) return;
     const isOld = n => { n = String(n || '').trim(); return n === 'שכירות' || n === 'ארנונה' || n === 'חשמל' || n.indexOf('מים') === 0; };
@@ -18499,6 +18638,11 @@ function _fcRowHtml(x, g) {
     + _fcTagOf(x)
     + '<span class="fc-sum">' + fmtMoney(x.amount) + '</span>'
     + '<span class="fc-chev">' + (open ? '⌃' : '⌄') + '</span></button>';
+  if (!off) {
+    const mk = _fcMonthKey(new Date()), paid = !!(x.paidMonths && x.paidMonths[mk]);
+    h += '<button class="fc-month' + (paid ? ' on' : '') + '" onclick="fcMarkPaid(\'' + id + '\',\'' + mk + '\')">'
+      + (paid ? '✓ ירד החודש' : '○ עוד לא ירד החודש · לחץ כשירד') + '</button>';
+  }
   if (open) {
     const r = _fcResearchStore()[id];
     h += '<div class="fc-detail">';
@@ -18514,6 +18658,124 @@ function _fcRowHtml(x, g) {
   }
   return h + '</div>';
 }
+
+// ── "ירד כבר?" (6.10): when a fixed cost's charge day arrives, ask on the
+// lobby, the expenses page and the fixed page whether it went out. ✓ marks
+// this month's occurrence paid (paidMonths); "עוד לא" asks again tomorrow. ──
+function _fcThisMonthDate(x, now) {
+  const t = now || new Date(); const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+  return new Date(t.getFullYear(), t.getMonth(), Math.min(Number(x.day), last));
+}
+function fcDueToAsk() {
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const mk = _fcMonthKey(now), today = now.toISOString().slice(0, 10);
+  let snz = {}; try { snz = JSON.parse(localStorage.getItem('fc_ask_snooze') || '{}'); } catch (_) {}
+  return fcList().filter(x => Number(x.day) >= 1 && _fcDueIn(x, now))
+    .map(x => ({ x, d: _fcThisMonthDate(x, now) }))
+    .filter(o => o.d <= now && !_fcPaidFor(o.x, o.d) && snz[o.x.id + '|' + mk] !== today)
+    .sort((a, b) => a.d - b.d);
+}
+window.fcAskYes = function(id) {
+  const mk = _fcMonthKey(new Date());
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  x.paidMonths = x.paidMonths || {}; x.paidMonths[mk] = Date.now();
+  save('fixed_costs', list);
+  try { if (window.haptic && window.haptic.success) window.haptic.success(); } catch (_) {}
+  toast('✓ ' + x.name + ' — סומן שירד');
+  fcAskRenderAll(); try { fcRender(); } catch (_) {}
+};
+window.fcAskLater = function(id) {
+  const mk = _fcMonthKey(new Date()), today = new Date(); today.setHours(0, 0, 0, 0);
+  let snz = {}; try { snz = JSON.parse(localStorage.getItem('fc_ask_snooze') || '{}'); } catch (_) {}
+  snz[id + '|' + mk] = today.toISOString().slice(0, 10);
+  try { localStorage.setItem('fc_ask_snooze', JSON.stringify(snz)); } catch (_) {}
+  toast('אשאל שוב מחר'); fcAskRenderAll();
+};
+function fcAskHtml() {
+  const due = fcDueToAsk(); if (!due.length) return '';
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  return '<div class="fca"><div class="fca-h"><span class="fca-ic">🔔</span><span><b>ירד כבר?</b><small>' + (due.length === 1 ? 'חיוב קבוע אחד מחכה לאישור' : due.length + ' חיובים קבועים מחכים לאישור') + '</small></span></div>'
+    + due.slice(0, 4).map(o => {
+        const n = Math.round((now - o.d) / 864e5);
+        return '<div class="fca-row"><span class="fca-m"><b>' + _escape(o.x.name) + '</b><small>' + fmtMoney(o.x.amount) + ' · ' + (n === 0 ? 'היום' : n === 1 ? 'אתמול' : 'ב-' + o.d.getDate() + ' לחודש') + (o.x.manual ? ' · העברה ידנית' : '') + '</small></span>'
+          + '<button class="fca-no" onclick="fcAskLater(\'' + o.x.id + '\')">עוד לא</button>'
+          + '<button class="fca-yes" onclick="fcAskYes(\'' + o.x.id + '\')">✓ ירד</button></div>';
+      }).join('')
+    + (due.length > 4 ? '<button class="fca-more" onclick="chooseMode(\'business\');showPage(\'fixed\')">עוד ' + (due.length - 4) + ' ←</button>' : '')
+    + '</div>';
+}
+function fcAskRenderAll() {
+  const h = fcAskHtml();
+  ['fc-ask', 'sp-lobby-ask', 'xs-ask'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = h; });
+}
+
+// ── 🛟 restore fixed costs from a backup (6.10) — read-only until he picks
+// a version and confirms. Sources: daily cloud backups, the per-save
+// snapshots, this device's local copy and any merge-conflict copies. ──
+let _fcSnapTimer = 0;
+function fcSnapshot() {
+  clearTimeout(_fcSnapTimer);
+  _fcSnapTimer = setTimeout(() => {
+    try {
+      if (!firebaseDB) return;
+      const d = new Date(), k = d.toISOString().slice(0, 10) + '_' + String(d.getHours()).padStart(2, '0');
+      const list = load('fixed_costs') || [];
+      if (!list.some(x => x && x.name && !x.deleted)) return;
+      firebaseDB.ref('studio_backups_fc/' + k).set({ ts: Date.now(), list }).catch(() => {});
+    } catch (_) {}
+  }, 4000);
+}
+function _fcSum(list) {
+  const l = (Array.isArray(list) ? list : Object.values(list || {})).filter(x => x && x.name && !x.archived && !x.deleted);
+  return { list: l, n: l.length, days: l.filter(x => Number(x.day) >= 1).length };
+}
+window.fcRestoreOpen = async function() {
+  toast('🔎 מחפש גיבויים…');
+  const R = _SYNC_REST, out = [];
+  const add = (label, ts, list) => { const sm = _fcSum(list); if (sm.n) out.push({ label, ts: ts || 0, sm }); };
+  try {
+    const snaps = await fetch(R + '/studio_backups_fc.json', { cache: 'no-store' }).then(r => r.json()) || {};
+    Object.keys(snaps).forEach(k => add('שמירה ' + k.slice(8, 10) + '.' + k.slice(5, 7) + ' · ' + k.slice(11) + ':00', snaps[k].ts, snaps[k].list));
+  } catch (_) {}
+  try {
+    const keys = Object.keys(await fetch(R + '/studio_backups.json?shallow=true', { cache: 'no-store' }).then(r => r.json()) || {}).sort().reverse().slice(0, 14);
+    const lists = await Promise.all(keys.map(k => Promise.all([
+      fetch(R + '/studio_backups/' + k + '/data/fixed_costs.json', { cache: 'no-store' }).then(r => r.json()).catch(() => null),
+      fetch(R + '/studio_backups/' + k + '/ts.json', { cache: 'no-store' }).then(r => r.json()).catch(() => 0)])));
+    keys.forEach((k, i) => add('גיבוי יומי ' + k.slice(8, 10) + '.' + k.slice(5, 7), lists[i][1], lists[i][0]));
+  } catch (_) {}
+  try { const lb = JSON.parse(localStorage.getItem('_local_backup') || 'null'); if (lb && lb.data) add('גיבוי במכשיר הזה · ' + (lb.date || ''), lb.ts, lb.data.fixed_costs); } catch (_) {}
+  try { JSON.parse(localStorage.getItem('_sync_conflicts') || '[]').filter(c => c.key === 'fixed_costs').forEach(c => add('גרסה שנשמרה בצד בסנכרון', c.at, c.data)); } catch (_) {}
+  if (!out.length) { toast('לא נמצאו גיבויים'); return; }
+  out.sort((a, b) => b.ts - a.ts);
+  window._fcRestoreList = out;
+  const fmtT = ts => ts ? new Date(ts).toLocaleString('he-IL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+  const cur = _fcSum(load('fixed_costs'));
+  spentSheet('שחזור הוצאות קבועות', 'עכשיו: ' + cur.n + ' הוצאות · ' + cur.days + ' עם יום חיוב. בחר גרסה כדי לראות אותה.',
+    out.slice(0, 18).map((o, i) => ({ label: (o.ts ? fmtT(o.ts) : o.label) + ' — ' + o.sm.n + ' הוצאות · ' + o.sm.days + ' עם יום', run: () => fcRestorePreview(i) })));
+};
+window.fcRestorePreview = function(i) {
+  const o = (window._fcRestoreList || [])[i]; if (!o) return;
+  const lines = o.sm.list.slice(0, 40).map(x => x.name + ' · ' + fmtMoney(x.amount) + (x.day ? ' · ב-' + x.day : '') + (Number(x.every) >= 2 ? ' · כל חודשיים' : '')).join('\n');
+  spentSheet(o.label, lines, [
+    { label: '🛟 שחזר את הגרסה הזאת', pri: true, run: () => fcRestoreApply(i) },
+    { label: 'חזרה לרשימה', run: () => fcRestoreOpen() }
+  ]);
+};
+window.fcRestoreApply = function(i) {
+  const o = (window._fcRestoreList || [])[i]; if (!o) return;
+  const cur = load('fixed_costs') || [];
+  try { localStorage.setItem('_fc_before_restore', JSON.stringify({ at: Date.now(), list: cur })); } catch (_) {}
+  // backup items (keeping archived ones as they were) + current items that the backup doesn't know
+  const backAll = (Array.isArray(o.sm.list) ? o.sm.list : []).map(x => Object.assign({}, x));
+  const ids = new Set(backAll.map(x => x.id));
+  const extra = cur.filter(x => x && x.id && !ids.has(x.id) && !x.deleted && x.name);
+  const merged = backAll.concat(extra);
+  const now = Date.now(); merged.forEach(x => { x.updatedAt = now; });
+  save('fixed_costs', merged);
+  fcRender(); fcAskRenderAll();
+  spDone('שוחזר', o.sm.n + ' הוצאות', o.sm.days + ' עם יום חיוב');
+};
 window.fcRender = function() {
   const list = fcList().slice().sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0));
   const total = fcTotal(), yearly = total * 12;
@@ -18523,6 +18785,10 @@ window.fcRender = function() {
   hero.innerHTML = '<div class="fc-hero"><div class="fc-hero-k">סך הכל קבוע בחודש</div>'
     + '<div class="fc-hero-n">' + fmtMoney(total) + '</div>'
     + '<div class="fc-hero-sub">שווה ל-<b>' + fmtMoney(yearly) + '</b> בשנה · ' + list.length + ' הוצאות</div>'
+    + (function () { const now = new Date(), mk = _fcMonthKey(now); const dueM = list.filter(x => _fcDueIn(x, now)); const paidM = dueM.filter(x => x.paidMonths && x.paidMonths[mk]);
+        if (!dueM.length) return ''; const left = dueM.filter(x => !(x.paidMonths && x.paidMonths[mk])).reduce((t, x) => t + (Number(x.amount) || 0), 0);
+        return '<div class="fc-hero-month"><span>ירד החודש <b>' + paidM.length + '</b> מתוך ' + dueM.length + '</span>' + (left > 0 ? '<span>נשאר לרדת ' + fmtMoney(left) + '</span>' : '<span>הכל ירד ✓</span>') + '</div>'
+          + '<div class="fc-hero-bar"><i style="width:' + Math.round(paidM.length / dueM.length * 100) + '%"></i></div>'; })()
     + (saveSum >= 5 ? '<div class="fc-hero-save">💰 אפשר לחסוך עד ' + fmtMoney(Math.round(saveSum)) + ' בחודש</div>' : '')
     + '</div>';
   // stats
@@ -18566,6 +18832,7 @@ window.fcRender = function() {
   fcRenderArchive();
   fcEntryCard();
   fcScheduleReminders();
+  try { fcAskRenderAll(); } catch (_) {}
 };
 // "כבר לא" — cancelled expenses kept for reference (soft delete). Shows a
 // collapsible folder under the list with restore / delete-forever.
@@ -18833,16 +19100,23 @@ function _syncFromCloud(reason) {
         // (covers replication lag + protects local changes)
         if (cloudTs > 0 && localTs > 0 && cloudTs <= localTs) continue;
         try {
-          const val = await fetch(_DB_REST + '/studio_data/' + key + '.json', { cache: 'no-store' }).then(r => r.json());
+          let val = await fetch(_DB_REST + '/studio_data/' + key + '.json', { cache: 'no-store' }).then(r => r.json());
           if (val === null || val === undefined) continue;
+          let fcKeep = false;
+          if (key === 'fixed_costs') {   // keep any item this device has a newer version of
+            const merged = _fcMerge(val, JSON.parse(localStorage.getItem('s_fixed_costs') || '[]'));
+            if (JSON.stringify(merged) !== JSON.stringify(val)) { val = merged; fcKeep = true; }
+          }
           const cur  = localStorage.getItem('s_' + key);
           const next = JSON.stringify(val);
           if (cur !== next) {
             localStorage.setItem('s_' + key, next);
-            if (cloudTs > 0) localStorage.setItem('s_' + key + '_ts', String(cloudTs));
+            if (cloudTs > 0) { localStorage.setItem('s_' + key + '_ts', String(cloudTs)); localStorage.setItem('s_' + key + '_base', String(cloudTs)); }
             changed = true;
+            if (fcKeep) { _markDirty(key, val); _pushKey(key); }
           } else if (cloudTs > 0) {
             localStorage.setItem('s_' + key + '_ts', String(cloudTs));
+            localStorage.setItem('s_' + key + '_base', String(cloudTs));
           }
         } catch (_) {}
       }
@@ -19691,6 +19965,7 @@ function spLobbyRender() {
   +     '<div><small>נטו</small><b class="' + (net >= 0 ? 'pos' : 'neg') + '">' + (hide ? '•••' : (net >= 0 ? '+' : '−') + money(Math.abs(net))) + '</b></div>'
   +   '</div>'
   + '</div>'
+  + '<div id="sp-lobby-ask"></div>'
   + '<div class="spl-qa">'
   +   '<button type="button" onclick="quickAction(\'income\')"><i class="g">' + _SPL_IC.inc + '</i><span>הכנסה</span></button>'
   +   '<button type="button" onclick="quickAction(\'expense\')"><i class="r">' + _SPL_IC.exp + '</i><span>הוצאה</span></button>'
@@ -19706,6 +19981,7 @@ function spLobbyRender() {
   +     '<span class="t"><b>כושר ותזונה</b><small>משקל · תזונה · מאמן</small></span>'
   +     '<span class="ar">' + _SPL_IC.chev + '</span></button>'
   + '</div>';
+  try { fcAskRenderAll(); } catch (_) {}
 }
 window.spLobbyToggleHide = function() {
   try { localStorage.setItem('sp_hide_bal', localStorage.getItem('sp_hide_bal') === '1' ? '0' : '1'); } catch (_) {}
@@ -31852,6 +32128,34 @@ html.desk[data-skin="spent"] #sidebar-nav { flex: 1 1 auto; min-height: 0; }
 html.desk[data-skin="spent"] #sidebar-nav a { padding: 5px 8px !important; font-size: 14.5px !important; }
 html.desk[data-skin="spent"] #sidebar-nav a .nav-icon { width: 32px; height: 32px; border-radius: 10px; }
 html.desk[data-skin="spent"] .sidebar-footer { flex-shrink: 0; margin-top: 10px; }
+/* v521 — "ירד כבר?" card, month check on fixed rows, expense paid states */
+.fca { background: #fff; border: 1px solid var(--sp-line, #ededeb); border-radius: 24px; padding: 16px 16px 10px; box-shadow: 0 2px 6px rgba(0,0,0,.04), 0 12px 30px rgba(0,0,0,.06); margin: 0 0 14px; font-family: 'Heebo', sans-serif; }
+.fca-h { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.fca-ic { width: 42px; height: 42px; border-radius: 14px; background: linear-gradient(135deg, #ffd27a, #f5a524); display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; box-shadow: 0 6px 14px rgba(245,165,36,.25); }
+.fca-h span:last-child { display: flex; flex-direction: column; }
+.fca-h b { font-size: 17px; font-weight: 900; color: #0f0f0f; }
+.fca-h small { font-size: 12.5px; font-weight: 600; color: #8a8a85; }
+.fca-row { display: flex; align-items: center; gap: 8px; padding: 11px 0; border-top: 1px solid #f0f0ee; }
+.fca-m { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fca-m b { font-size: 15px; font-weight: 800; color: #0f0f0f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fca-m small { font-size: 12.5px; font-weight: 600; color: #8a8a85; }
+.fca-yes, .fca-no { border: none; border-radius: 999px; padding: 9px 14px; font-family: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; flex-shrink: 0; }
+.fca-yes { background: #1f9d55; color: #fff; box-shadow: 0 4px 10px rgba(31,157,85,.25); }
+.fca-no { background: #f4f4f2; color: #555; }
+.fca-more { width: 100%; background: none; border: none; color: #1f9d55; font-weight: 800; font-family: inherit; font-size: 13.5px; padding: 8px 0 4px; cursor: pointer; }
+#sp-lobby-ask:empty, #xs-ask:empty, #fc-ask:empty { display: none; }
+#sp-lobby-ask .fca { margin: 0; }
+html.desk #sp-lobby #sp-lobby-ask { grid-column: 1 / -1; }
+.fc-month { display: block; width: calc(100% - 28px); margin: -4px 14px 12px; padding: 9px 12px; border-radius: 14px; border: 1.5px dashed #d9d9d4; background: #fafaf8; color: #77776f; font-family: inherit; font-size: 13px; font-weight: 800; text-align: center; cursor: pointer; }
+.fc-month.on { border: 1.5px solid transparent; background: #e3f6eb; color: #138a4a; }
+.fc-hero-month { display: flex; justify-content: space-between; gap: 10px; margin-top: 14px; font-size: 13.5px; font-weight: 700; color: #6b6b66; }
+.fc-hero-month b { color: #0f0f0f; font-weight: 900; }
+.fc-hero-bar { height: 8px; border-radius: 99px; background: #f0f0ee; overflow: hidden; margin-top: 8px; }
+.fc-hero-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #2fc472, #138a4a); margin-left: auto; }
+.fc-restore-link { display: block; margin: 18px auto 4px; background: none; border: none; color: #8a8a85; font-family: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+html[data-skin="spent"] .xs-pay { background: #fff4e5 !important; color: #c46a00 !important; border: 1.5px solid #ffd8a8 !important; font-weight: 800 !important; }
+html[data-skin="spent"] .xs-paid { font-size: 12px; font-weight: 800; color: #138a4a; background: #e3f6eb; padding: 4px 10px; border-radius: 999px; flex-shrink: 0; }
+#spent-sheet .ss-s { white-space: pre-line; max-height: 46vh; overflow-y: auto; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
