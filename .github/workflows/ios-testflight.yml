@@ -283,6 +283,9 @@ jobs:
 
       - name: Create distribution cert + App Store profile (main app)
         run: |
+          set -o pipefail
+          exec > >(tee -a /tmp/step.log) 2>&1
+          trap 'rc=$?; if [ $rc -ne 0 ]; then tail -n 25 /tmp/step.log | grep -v "^\s*$" | tail -n 12 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; fi' EXIT
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --strict-match-identifier \
@@ -291,6 +294,9 @@ jobs:
 
       - name: Create App Store profile for the widget extension
         run: |
+          set -o pipefail
+          exec > >(tee -a /tmp/step.log) 2>&1
+          trap 'rc=$?; if [ $rc -ne 0 ]; then tail -n 25 /tmp/step.log | grep -v "^\s*$" | tail -n 12 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; fi' EXIT
           app-store-connect fetch-signing-files "${BUNDLE_ID}.TaskWidget" \
             --type IOS_APP_STORE \
             --strict-match-identifier \
@@ -299,10 +305,16 @@ jobs:
 
       - name: Install certificates into keychain
         run: |
+          set -o pipefail
+          exec > >(tee -a /tmp/step.log) 2>&1
+          trap 'rc=$?; if [ $rc -ne 0 ]; then tail -n 25 /tmp/step.log | grep -v "^\s*$" | tail -n 12 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; fi' EXIT
           keychain add-certificates
 
       - name: Apply the provisioning profile to the Xcode project
         run: |
+          set -o pipefail
+          exec > >(tee -a /tmp/step.log) 2>&1
+          trap 'rc=$?; if [ $rc -ne 0 ]; then tail -n 25 /tmp/step.log | grep -v "^\s*$" | tail -n 12 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; fi' EXIT
           xcode-project use-profiles
 
       - name: Set build number (timestamp)
@@ -315,6 +327,9 @@ jobs:
 
       - name: Build IPA
         run: |
+          set -o pipefail
+          exec > >(tee -a /tmp/step.log) 2>&1
+          trap 'rc=$?; if [ $rc -ne 0 ]; then tail -n 25 /tmp/step.log | grep -v "^\s*$" | tail -n 12 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; fi' EXIT
           cd ios/App
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
@@ -322,6 +337,9 @@ jobs:
 
       - name: Upload to TestFlight
         run: |
+          set -o pipefail
+          exec > >(tee -a /tmp/step.log) 2>&1
+          trap 'rc=$?; if [ $rc -ne 0 ]; then tail -n 25 /tmp/step.log | grep -v "^\s*$" | tail -n 12 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; fi' EXIT
           IPA=$(ls ios/App/build/ios/ipa/*.ipa | head -1)
           echo "Uploading $IPA"
           app-store-connect publish --path "$IPA"
