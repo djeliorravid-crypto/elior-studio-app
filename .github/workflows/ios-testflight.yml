@@ -231,6 +231,8 @@ jobs:
 
       - name: Revoke existing distribution certs to free a slot
         run: |
+          exec > >(tee -a /tmp/revoke.log) 2>&1
+          trap 'grep -v "^\s*$" /tmp/revoke.log | tail -n 30 | while IFS= read -r l; do echo "::warning::${l//%/%25}"; done' EXIT
           # Verbose, no-silent-fail revoke. The previous version piped
           # `--json` through python3 with 2>/dev/null on both stages,
           # so a wrong JSON shape or missing python3 looked like "no
