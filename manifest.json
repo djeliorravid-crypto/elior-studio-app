@@ -1,6 +1,6 @@
 {
-  "name": "mystudio — ניהול העסק",
-  "short_name": "mystudio",
+  "name": "maestro — ניהול העסק",
+  "short_name": "maestro",
   "description": "ניהול הכנסות, הוצאות, לקוחות, משימות ושירים לסטודיו",
   "start_url": "/elior-studio-app/",
   "scope": "/elior-studio-app/",

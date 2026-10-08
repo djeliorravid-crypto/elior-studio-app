@@ -1,6 +1,6 @@
 {
   "appId": "com.ravidstudio.app",
-  "appName": "mystudio",
+  "appName": "maestro",
   "webDir": "www",
   "server": {
     "url": "https://djeliorravid-crypto.github.io/elior-studio-app/",
