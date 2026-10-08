@@ -7545,7 +7545,7 @@
     <svg class="sp-logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="spLogoB3" gradientUnits="userSpaceOnUse" x1="90" y1="360" x2="430" y2="170"><stop offset="0" stop-color="#0c6b37"/><stop offset="1" stop-color="#2fd17a"/></linearGradient></defs><rect x="4" y="4" width="504" height="504" rx="113" fill="#fff" stroke="#e6e6e2" stroke-width="8"/><g transform="translate(256 256) scale(1.2) translate(-262 -268)"><line x1="104" y1="242" x2="104" y2="282" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="148" y1="216" x2="148" y2="308" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="192" y1="187" x2="192" y2="337" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="236" y1="227" x2="236" y2="297" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><path d="M262 300 L300 340 L420 196" fill="none" stroke="url(#spLogoB3)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v527</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v528</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -22322,6 +22322,35 @@ window.waShowSecret = async function() {
   else if (res === 'notoken') toast('הקוד תקין, אבל חסר WHATSAPP_TOKEN בענן.');
   else toast('לא הצלחתי לבדוק (רשת). הקוד נשמר — נסה לשלוח.');
 };
+// ── Device-code vault (8.10.2026): the codes that live only on this
+// device (WhatsApp send code, Morning keys, AI key, Google client…) are
+// mirrored into the iPhone Keychain via BiometricBridge.vaultSet/Get.
+// The Keychain survives app updates/reinstalls; localStorage may not.
+// On launch: anything missing locally is restored from the Keychain;
+// anything present is backed up. No-op on the web / older native builds.
+const _VAULT_KEYS = ['wa_send_secret', 'morning_api_id', 'morning_api_secret', 'morning_plugin_id', 'ai_api_key',
+  'gcal_client_id', 'gcal_w_client_id', 'gcal_w_client_secret', 'gcal_w_tokens', 'ui_skin'];
+const _vaultSeen = {};
+async function vaultSync() {
+  try {
+    const BB = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.BiometricBridge;
+    if (!BB || !(Capacitor.isNativePlatform && Capacitor.isNativePlatform())) return;
+    let restored = 0;
+    for (const k of _VAULT_KEYS) {
+      let local = null; try { local = localStorage.getItem(k); } catch (_) {}
+      if (local) {
+        if (_vaultSeen[k] !== local) { await BB.vaultSet({ key: k, value: local }).catch(() => {}); _vaultSeen[k] = local; }
+      } else {
+        const r = await BB.vaultGet({ key: k }).catch(() => null);
+        if (r && r.value) { try { localStorage.setItem(k, r.value); restored++; _vaultSeen[k] = r.value; } catch (_) {} }
+      }
+    }
+    if (restored) console.log('vault: restored', restored, 'device codes');
+  } catch (e) { console.warn('vaultSync', e); }
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(vaultSync, 300));
+document.addEventListener('visibilitychange', () => { if (document.hidden) vaultSync(); });
+setInterval(vaultSync, 60000);
 function _waSecret() {
   let sec = '';
   try { sec = localStorage.getItem('wa_send_secret') || ''; } catch (_) {}

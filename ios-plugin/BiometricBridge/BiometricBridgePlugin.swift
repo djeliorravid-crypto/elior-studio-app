@@ -22,8 +22,50 @@ public class BiometricBridgePlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName      = "BiometricBridge"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "authenticate", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "isAvailable",  returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "isAvailable",  returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "vaultSet",     returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "vaultGet",     returnType: CAPPluginReturnPromise)
     ]
+
+    // ── Vault (8.10.2026): device-only codes (WhatsApp send code, Morning
+    // keys, AI key…) mirrored into the iOS Keychain, which survives app
+    // updates and reinstalls — the WebView's localStorage does not always.
+    private let vaultService = "com.ravidstudio.app.vault"
+
+    @objc func vaultSet(_ call: CAPPluginCall) {
+        guard let key = call.getString("key") else { call.reject("missing key"); return }
+        let value = call.getString("value") ?? ""
+        let base: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: vaultService,
+            kSecAttrAccount as String: key
+        ]
+        SecItemDelete(base as CFDictionary)
+        if value.isEmpty { call.resolve(["ok": true]); return }
+        var add = base
+        add[kSecValueData as String] = Data(value.utf8)
+        add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        let st = SecItemAdd(add as CFDictionary, nil)
+        call.resolve(["ok": st == errSecSuccess, "status": Int(st)])
+    }
+
+    @objc func vaultGet(_ call: CAPPluginCall) {
+        guard let key = call.getString("key") else { call.reject("missing key"); return }
+        let q: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: vaultService,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var out: AnyObject?
+        let st = SecItemCopyMatching(q as CFDictionary, &out)
+        if st == errSecSuccess, let d = out as? Data, let v = String(data: d, encoding: .utf8) {
+            call.resolve(["value": v])
+        } else {
+            call.resolve(["value": NSNull()])
+        }
+    }
 
     @objc func isAvailable(_ call: CAPPluginCall) {
         let context = LAContext()
