@@ -247,7 +247,7 @@ jobs:
             | tee /tmp/_certs_human.txt
           echo ""
           echo "=== certs list (JSON, for parsing) ==="
-          app-store-connect certificates list --type IOS_DISTRIBUTION --json 2>&1 \
+          { app-store-connect certificates list --type IOS_DISTRIBUTION --json 2>&1; app-store-connect certificates list --type DISTRIBUTION --json 2>&1; } \
             | tee /tmp/_certs.json
           # IDs in App Store Connect API are 10-char alphanumeric.
           # Extract every "id":"XXXXXXXXXX" pair from the JSON dump
