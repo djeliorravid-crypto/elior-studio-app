@@ -13,13 +13,8 @@ workflows:
       node: 22
       xcode: latest
 
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: mobile
-          include: true
-          source: true
+    # Auto-trigger removed 8.10.2026 — builds now run on GitHub Actions
+    # (.github/workflows/ios-testflight.yml). Manual runs still possible.
 
     scripts:
       - name: Install npm dependencies
@@ -127,7 +122,7 @@ workflows:
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST"
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'ravidstudio'" "$PLIST"
 
-      - name: Install Ravid Studio app icon
+      - name: Install app icon
         # `cap add ios` ships a Capacitor placeholder AppIcon set. Copy
         # our pre-rendered iPhone sizes AND generate iPad sizes from
         # icon-1024.png so the bundle satisfies Apple's full set
@@ -175,7 +170,7 @@ workflows:
           EOF
           ls "$ICONSET"
 
-      - name: Install white launch splash (new "R." logo)
+      - name: Install white launch splash
         # `cap add ios` ships Capacitor's placeholder splash; replace
         # all three slots with our white splash + green mark.
         script: |
