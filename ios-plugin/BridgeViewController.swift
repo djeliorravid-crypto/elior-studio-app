@@ -23,6 +23,20 @@ class BridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(HealthKitBridgePlugin())
         bridge?.registerPluginInstance(ContactsBridgePlugin())
 
+        // 9.10: iOS 26 draws a whitish "scroll edge" fade behind the status
+        // bar, which showed as a white strip over the app's lavender top.
+        // Turn it off and give the web view the same base colour.
+        let lavender = UIColor(red: 223/255, green: 231/255, blue: 251/255, alpha: 1)
+        webView?.isOpaque = false
+        webView?.backgroundColor = lavender
+        webView?.scrollView.backgroundColor = lavender
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            webView?.scrollView.topEdgeEffect.isHidden = true
+            webView?.scrollView.bottomEdgeEffect.isHidden = true
+        }
+        #endif
+
         // Warm-launch quick action: AppDelegate posts to this
         // NotificationCenter name; we forward to JS so the right
         // modal opens immediately.
