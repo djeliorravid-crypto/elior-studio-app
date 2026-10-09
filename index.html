@@ -7545,7 +7545,7 @@
     <svg class="sp-logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="spLogoB3" gradientUnits="userSpaceOnUse" x1="90" y1="360" x2="430" y2="170"><stop offset="0" stop-color="#0c6b37"/><stop offset="1" stop-color="#2fd17a"/></linearGradient></defs><rect x="4" y="4" width="504" height="504" rx="113" fill="#fff" stroke="#e6e6e2" stroke-width="8"/><g transform="translate(256 256) scale(1.2) translate(-262 -268)"><line x1="104" y1="242" x2="104" y2="282" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="148" y1="216" x2="148" y2="308" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="192" y1="187" x2="192" y2="337" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="236" y1="227" x2="236" y2="297" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><path d="M262 300 L300 340 L420 196" fill="none" stroke="url(#spLogoB3)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v530</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v531</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -20031,7 +20031,7 @@ function spLobbyRender() {
   } catch (_) {}
   let wa = 0; try { wa = _waWaitingCount(); } catch (_) {}
   if (wa) rows.push('<button class="sl-row" onclick="waGoInbox()">' + ic('chat', '#e3f6eb', '#12804a') + '<span class="sl-m"><b>' + (wa === 1 ? 'הודעה חדשה' : wa + ' הודעות חדשות') + '</b><small>וואטסאפ · מחכות לתשובה</small></span><span class="sl-ch">‹</span></button>');
-  if (!rows.length) rows.push('<div class="sl-row">' + ic('check', '#e3f6eb', '#12804a') + '<span class="sl-m"><b>הכל מסודר להיום</b><small>אין תשלומים, דד-ליינים או הודעות שמחכים לך</small></span></div>');
+  if (!rows.length) rows.push('<div class="sl-row">' + ic('check', '#e3f6eb', '#12804a') + '<span class="sl-m"><b>יום פנוי</b><small>אין משהו שמחכה לך היום</small></span></div>');
   const todoN = rows.filter(r => r.indexOf('הכל מסודר להיום') < 0).length;
   let activeN = 0, todaySched = 0;
   try { activeN = prodList().filter(p => _prodStatus(p) === 'active').length; } catch (_) {}
@@ -20040,22 +20040,13 @@ function spLobbyRender() {
   let goalSub = 'מה אני רוצה שיקרה השנה?';
   try { const st = _ygState(), n = st.goals.length, d = st.goals.filter(g => g.done).length; if (n) goalSub = d + ' מתוך ' + n + ' הושגו'; } catch (_) {}
   box.innerHTML =
-    '<div class="sl-hero">'
-  +   '<div class="sl-top"><span class="sl-date"><img class="sl-logo" src="icon-192.png" alt=""><span>' + _escape(dateTxt) + '</span></span>'
-  +   '<span class="sl-bsd">בס״ד</span></div>'
-  +   '<div class="sl-hi">' + _escape(greet) + '</div>'
-  +   '<div class="sl-k">' + (todoN ? (todoN === 1 ? 'דבר אחד מחכה לך היום' : todoN + ' דברים מחכים לך היום') : 'הכל מסודר להיום ✓') + '</div>'
-  +   '<div class="sl-pills"><button onclick="chooseMode(\'business\');showPage(\'productions\')"><small>הפקות פעילות</small><b>' + activeN + '</b></button>'
-  +   '<button onclick="chooseMode(\'business\');showPage(\'schedule\')"><small>היום בלו״ז</small><b>' + todaySched + '</b></button>'
-  +   '<button onclick="waGoInbox()"><small>הודעות</small><b>' + wa + '</b></button></div>'
-  + '</div>'
-  + '<div class="sl-body">'
-  +   '<div class="sl-sec">דורש ממך היום</div><div class="sl-grp">' + rows.join('') + '</div>'
-  +   '<div class="sl-sec">אזורים</div><div class="sl-grp">'
-  +     '<button class="sl-row" onclick="chooseMode(\'business\')">' + ic('clock', '#e3f6eb', '#12804a').replace(IC.clock, '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/></svg>') + '<span class="sl-m"><b>עסקי</b><small>הפקות · כסף · לו״ז · לקוחות</small></span><span class="sl-ch">‹</span></button>'
-  +     '<button class="sl-row" onclick="chooseMode(\'goals\')">' + ic('target', '#fdede2', '#e0662f') + '<span class="sl-m"><b>מטרות לשנה החדשה</b><small>' + goalSub + '</small></span><span class="sl-ch">‹</span></button>'
-  +   '</div>'
-  + '</div>';
+    '<div class="sl-top2"><img class="sl-logo" src="icon-192.png" alt=""><span class="sl-bsd">בס״ד</span></div>'
+  + '<div class="sl-hi">' + _escape(greet) + '</div>'
+  + '<div class="sl-date2">' + _escape(dateTxt) + '</div>'
+  + '<div class="sl-sec">' + (todoN ? 'היום' : 'היום') + '</div>'
+  + '<div class="sl-list">' + rows.join('') + '</div>'
+  + '<button class="sl-enter" onclick="chooseMode(\'business\')">כניסה לעסק</button>'
+  + '<button class="sl-link" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה · ' + goalSub + '</button>';
   const gear = document.getElementById('lobby-settings-btn'); if (gear && gear.parentNode !== box) box.appendChild(gear);
 }
 window.spLobbyToggleHide = function() {
@@ -22368,7 +22359,7 @@ window.waShowSecret = async function() {
 // On launch: anything missing locally is restored from the Keychain;
 // anything present is backed up. No-op on the web / older native builds.
 const _VAULT_KEYS = ['wa_send_secret', 'morning_api_id', 'morning_api_secret', 'morning_plugin_id', 'ai_api_key',
-  'gcal_client_id', 'gcal_w_client_id', 'gcal_w_client_secret', 'gcal_w_tokens', 'ui_skin'];
+  'gcal_client_id', 'gcal_w_client_id', 'gcal_w_client_secret', 'gcal_w_tokens', 'ui_skin', 'face_id_enabled_v1'];
 const _vaultSeen = {};
 async function vaultSync() {
   try {
@@ -30717,8 +30708,10 @@ if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.is
 // don't need to load the plugin's ESM wrapper.
 window.FACE_ID_PREF_KEY = 'face_id_enabled_v1';
 window.getFaceIdEnabled = function() {
-  try { return localStorage.getItem(window.FACE_ID_PREF_KEY) === '1'; }
-  catch (e) { return false; }
+  // 9.10: ON unless he explicitly turned it off — a wiped localStorage
+  // (app reinstall/update) must never silently drop the lock.
+  try { return localStorage.getItem(window.FACE_ID_PREF_KEY) !== '0'; }
+  catch (e) { return true; }
 };
 window.setFaceIdEnabled = function(on) {
   try { localStorage.setItem(window.FACE_ID_PREF_KEY, on ? '1' : '0'); }
@@ -32320,6 +32313,25 @@ html.desk[data-skin="spent"] #sp-lobby { display: block !important; margin-top: 
 html.desk .sl-hero { border-radius: 30px; }
 .sl-hi { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
 .sl-hero .sl-k { margin: 6px 0 18px; font-size: 15.5px; }
+/* v531 — ultra-minimal lobby: white, greeting, today, one button */
+html[data-skin="spent"] #mode-screen { background: #ffffff !important; }
+html[data-skin="spent"] #sp-lobby { padding: calc(env(safe-area-inset-top, 0px) + 18px) 24px calc(env(safe-area-inset-bottom, 0px) + 40px) !important; min-height: 100%; display: flex !important; flex-direction: column; }
+.sl-top2 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+.sl-top2 .sl-logo { width: 34px; height: 34px; border-radius: 10px; box-shadow: 0 0 0 1px #ececea; }
+.sl-top2 .sl-bsd { font-size: 12px; color: #a8a8a3; margin: 0 0 0 54px; }
+#sp-lobby .sl-hi { font-size: 34px; font-weight: 800; color: #111; letter-spacing: -0.02em; line-height: 1.15; }
+.sl-date2 { font-size: 15px; color: #9a9a95; font-weight: 500; margin-top: 4px; }
+#sp-lobby .sl-sec { margin: 40px 0 4px; font-size: 13px; color: #a3a39e; font-weight: 700; }
+.sl-list .sl-row { padding: 15px 0; border-bottom: 1px solid #f1f1ef; background: transparent; }
+.sl-list .sl-row:last-child { border-bottom: none; }
+.sl-list .sl-ic { width: 34px; height: 34px; border-radius: 11px; }
+.sl-list .sl-ic svg { width: 18px; height: 18px; }
+.sl-enter { margin-top: auto; width: 100%; height: 56px; border: none; border-radius: 18px; background: #1a9a55; color: #fff; font-family: inherit; font-size: 17px; font-weight: 800; cursor: pointer; box-shadow: 0 8px 20px rgba(26,154,85,.25); }
+.sl-enter:active { transform: scale(.98); }
+.sl-link { margin-top: 14px; background: none; border: none; color: #9a9a95; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+html[data-skin="spent"] #sp-lobby #lobby-settings-btn { background: #f4f4f2 !important; color: #555 !important; top: calc(env(safe-area-inset-top, 0px) + 16px) !important; left: 24px !important; }
+html[data-skin="spent"] body:has(#mode-screen:not(.hidden)) .fab-container { display: none !important; }
+html.desk[data-skin="spent"] #sp-lobby { max-width: 520px; margin: 40px auto; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
