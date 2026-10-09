@@ -7545,7 +7545,7 @@
     <svg class="sp-logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="spLogoB3" gradientUnits="userSpaceOnUse" x1="90" y1="360" x2="430" y2="170"><stop offset="0" stop-color="#0c6b37"/><stop offset="1" stop-color="#2fd17a"/></linearGradient></defs><rect x="4" y="4" width="504" height="504" rx="113" fill="#fff" stroke="#e6e6e2" stroke-width="8"/><g transform="translate(256 256) scale(1.2) translate(-262 -268)"><line x1="104" y1="242" x2="104" y2="282" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="148" y1="216" x2="148" y2="308" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="192" y1="187" x2="192" y2="337" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="236" y1="227" x2="236" y2="297" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><path d="M262 300 L300 340 L420 196" fill="none" stroke="url(#spLogoB3)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v532</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v533</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16310,68 +16310,43 @@ window.storyPrev = function() { if (_stIdx > 0) { _stIdx--; _stRender(); } };
 window.storyClose = function() { const ov = document.getElementById('story-ov'); if (ov) ov.classList.remove('open'); };
 window.expSetCat = function(c) { _expCatFilter = c || 'all'; renderExpenses(); try { if (window.haptic && window.haptic.light) window.haptic.light(); } catch (_) {} };
 function renderExpensesSpent() {
+  // v533 (9.10): calm expenses — one number, small text filters, a clean
+  // list. Details (category, paid/unpaid, edit, delete) on tap.
   const host = document.getElementById('exp-spent'); if (!host) return;
   const monthExp = (load('expenses') || []).filter(e => inCurMonth(e.date));
   const total = monthExp.reduce((t, e) => t + (Number(e.amount) || 0), 0);
   const unpaid = monthExp.filter(e => !e.paid);
-  // categories, biggest first
   const byCat = {};
   monthExp.forEach(e => { const c = e.category || 'אחר'; byCat[c] = (byCat[c] || 0) + (Number(e.amount) || 0); });
   const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
   if (_expCatFilter !== 'all' && !byCat[_expCatFilter]) _expCatFilter = 'all';
-  const isThisMonth = curYear === new Date().getFullYear() && curMonth === new Date().getMonth();
-  const daysSoFar = isThisMonth ? new Date().getDate() : new Date(curYear, curMonth + 1, 0).getDate();
-  // ── hero ──
-  let h = '<div class="xs-hero">'
-    + '<div class="xs-k">יצא ב' + MONTHS_HE[curMonth] + '</div>'
-    + '<div class="xs-n">' + fmtMoney(total) + '</div>'
-    + '<div class="xs-sub">' + monthExp.length + ' עסקאות' + (monthExp.length ? ' · בממוצע ' + fmtMoney(total / Math.max(1, daysSoFar)) + ' ליום' : '') + '</div>';
-  if (cats.length) {
-    h += '<div class="xs-bar">' + cats.map(([c, v]) => { const p = _spPal(c); return '<span style="flex:' + v + ';background:' + p[1] + '"></span>'; }).join('') + '</div>';
-  }
-  h += '<div class="xs-hrow">' + (unpaid.length ? '<span class="xs-due">🕓 ' + unpaid.length + ' עוד לא שולמו · ' + fmtMoney(unpaid.reduce((t, e) => t + (Number(e.amount) || 0), 0)) + '</span>' : '<span></span>')
-    + (monthExp.length ? '<button class="xs-story" onclick="storyOpen()">✨ הסיפור של ' + MONTHS_HE[curMonth] + '</button>' : '') + '</div>';
-  h += '</div>';
+  let h = '<div class="mx-hero"><div class="mi-k">יצא ב' + MONTHS_HE[curMonth] + '</div>'
+    + '<div class="mx-n">' + fmtMoney(total) + '</div>'
+    + '<div class="mi-sub">' + monthExp.length + ' הוצאות'
+    + (unpaid.length ? ' · <span class="mx-due">' + unpaid.length + ' עוד לא שולמו</span>' : '') + '</div></div>';
   h += '<div id="xs-ask"></div>';
-  // ── category circles (filter) ──
   if (cats.length > 1) {
-    h += '<div class="xs-cats">'
-      + '<button class="xs-cat' + (_expCatFilter === 'all' ? ' on' : '') + '" onclick="expSetCat(\'all\')"><span class="xs-ci" style="background:#f4f4f2;color:#0f0f0f"><svg viewBox="0 0 24 24"><use href="#ic-cat-other"/></svg></span><span class="xs-cl">הכל</span><span class="xs-cv">' + fmtMoney(total) + '</span></button>'
-      + cats.map(([c, v]) => { const p = _spPal(c); const ce = String(c).replace(/'/g, "\\'");
-          return '<button class="xs-cat' + (_expCatFilter === c ? ' on' : '') + '" onclick="expSetCat(\'' + ce + '\')"><span class="xs-ci" style="background:' + p[0] + ';color:' + p[1] + '">' + _txCatSvg(c) + '</span><span class="xs-cl">' + _escape(c) + '</span><span class="xs-cv">' + fmtMoney(v) + '</span></button>'; }).join('')
-      + '</div>';
+    h += '<div class="mx-chips"><button class="' + (_expCatFilter === 'all' ? 'on' : '') + '" onclick="expSetCat(\'all\')">הכל</button>'
+      + cats.map(([c, v]) => '<button class="' + (_expCatFilter === c ? 'on' : '') + '" onclick="expSetCat(\'' + String(c).replace(/'/g, "\\'") + '\')">' + _escape(c) + ' · ' + fmtMoney(v) + '</button>').join('') + '</div>';
   }
-  // ── fixed costs card ──
   try {
-    const fl = fcList();
-    if (fl.length) {
-      const nx = fl.filter(x => Number(x.day) >= 1).map(x => ({ x, d: _fcNextDue(x) })).filter(o => !_fcPaidFor(o.x, o.d)).sort((a, b) => a.d - b.d)[0];
-      h += '<button class="xs-fixed" onclick="showPage(\'fixed\')"><span class="xs-fi"><svg viewBox="0 0 24 24"><use href="#ic-repeat"/></svg></span>'
-        + '<span class="xs-fm"><b>הוצאות קבועות</b><small>' + (nx ? 'הבא: ' + _escape(nx.x.name) + ' · ' + _fcRelDay(nx.d) + ' · ' + fmtMoney(nx.x.amount) : fl.length + ' דברים שיורדים כל חודש') + '</small></span>'
-        + '<span class="xs-fv">' + fmtMoney(fcTotal()) + '<small>לחודש</small></span><span class="xs-fa">‹</span></button>';
-    }
+    if (fcList().length) h += '<button class="mi-row mx-fixed" onclick="showPage(\'fixed\')"><span class="mx-fi">↻</span><span class="mi-t">הוצאות קבועות</span><span class="mx-fv">' + fmtMoney(fcTotal()) + ' לחודש</span><span class="mi-ch">‹</span></button>';
   } catch (_) {}
-  // ── list grouped by day ──
   const list = monthExp.filter(e => _expCatFilter === 'all' || (e.category || 'אחר') === _expCatFilter)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)));
   if (!list.length) {
-    h += '<div class="xs-empty"><span>🧾</span><b>אין הוצאות ב' + MONTHS_HE[curMonth] + '</b><small>מה שתוסיף ב-+ או שייכנס מהארנק יופיע כאן</small></div>';
+    h += '<div class="mx-empty">אין הוצאות ב' + MONTHS_HE[curMonth] + '</div>';
   } else {
     const days = {};
     list.forEach(e => { const k = String(e.date).slice(0, 10); (days[k] = days[k] || []).push(e); });
     Object.keys(days).sort().reverse().forEach(k => {
-      const items = days[k], dt = items.reduce((t, e) => t + (Number(e.amount) || 0), 0);
-      h += '<div class="xs-day"><div class="xs-dh"><b>' + _spDayLabel(k) + '</b><span>סה״כ ' + fmtMoney(dt) + '</span></div>'
-        + items.map(e => { const c = e.category || 'אחר', p = _spPal(c);
-            return '<div class="xs-row' + (e.paid ? '' : ' unpaid') + '" onclick="expRowTap(\'' + e.id + '\')">'
-              + '<span class="xs-ri" style="background:' + p[0] + ';color:' + p[1] + '">' + _txCatSvg(c) + '</span>'
-              + '<span class="xs-rm"><b>' + _escape(e.description || '—') + '</b><small>' + _escape(c) + (e.projectName ? ' · ' + _escape(e.projectName) : '') + '</small></span>'
-              + (e.paid ? '<span class="xs-paid">✓ שולם</span>' : '<button class="xs-pay" onclick="event.stopPropagation();toggleExpensePaid(\'' + e.id + '\')">סמן שולם</button>')
-              + '<span class="xs-ra">' + fmtMoney(e.amount) + '</span></div>'; }).join('')
-        + '</div>';
+      h += '<div class="mx-day">' + _spDayLabel(k) + '</div>'
+        + days[k].map(e => '<button class="mx-row" onclick="expRowTap(\'' + e.id + '\')">'
+            + '<span class="mx-m"><b>' + _escape(e.description || 'הוצאה') + '</b><small>' + _escape(e.category || 'אחר') + (e.paid ? '' : ' · <em>לא שולם</em>') + '</small></span>'
+            + '<span class="mx-v">' + fmtMoney(e.amount) + '</span></button>').join('');
     });
   }
-  h += '<button class="xs-import" onclick="bankPasteOpen()">📥 ייבוא תנועות מהבנק</button>';
+  h += '<div class="mx-foot">' + (monthExp.length ? '<button onclick="storyOpen()">הסיפור של ' + MONTHS_HE[curMonth] + '</button> · ' : '') + '<button onclick="bankPasteOpen()">ייבוא מהבנק</button></div>';
   host.innerHTML = h;
   try { fcAskRenderAll(); } catch (_) {}
 }
@@ -22355,7 +22330,8 @@ window.waShowSecret = async function() {
 // On launch: anything missing locally is restored from the Keychain;
 // anything present is backed up. No-op on the web / older native builds.
 const _VAULT_KEYS = ['wa_send_secret', 'morning_api_id', 'morning_api_secret', 'morning_plugin_id', 'ai_api_key',
-  'gcal_client_id', 'gcal_w_client_id', 'gcal_w_client_secret', 'gcal_w_tokens', 'ui_skin', 'face_id_enabled_v1'];
+  'gcal_client_id', 'gcal_w_client_id', 'gcal_w_client_secret', 'gcal_w_tokens', 'ui_skin', 'face_id_enabled_v1',
+  'gcal_ics_url', 'gcal_user_email', 'ios_cal_id', 'ios_cal_granted', 'ios_cal_off'];
 const _vaultSeen = {};
 async function vaultSync() {
   try {
@@ -28872,6 +28848,7 @@ async function disconnectGcalWrite() {
   // Native users — drop the cached permission flag (iOS keeps the
   // grant in Settings, but our integration goes silent). Also clear
   // any legacy OAuth tokens so the bar reverts to "off".
+  try { localStorage.setItem('ios_cal_off', '1'); } catch (_) {}
   localStorage.removeItem('ios_cal_granted');
   localStorage.removeItem('ios_cal_id');
   localStorage.removeItem('gcal_w_tokens');
@@ -28919,6 +28896,7 @@ async function gcalWriteEnable() {
         }
       } catch (e) {}
       localStorage.setItem('ios_cal_granted', '1');
+      try { localStorage.removeItem('ios_cal_off'); } catch (_) {}
       renderScheduleGcalBar();
       toast('✓ סנכרון יומן הופעל');
       if (window.haptic) window.haptic.success();
@@ -29217,6 +29195,24 @@ function _scheduleGcalConnected() {
   return _icsConnected() || !!(_gcalToken && localStorage.getItem('gcal_token') &&
             Date.now() < parseInt(localStorage.getItem('gcal_token_exp') || '0'));
 }
+// 9.10: reconnect the iPhone calendar by itself. iOS keeps the calendar
+// permission per app, so after an update/reinstall that wiped the app's
+// memory we just ask EventKit again (no prompt if already allowed) —
+// he never has to tap "הפעל" again unless he turned it off himself.
+async function iosCalAutoReconnect() {
+  try {
+    if (!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform())) return;
+    if (_iosCalGranted() || localStorage.getItem('ios_cal_off') === '1') return;
+    const Cal = _iosCalPlugin(); if (!Cal || !Cal.requestAccess) return;
+    const res = await Cal.requestAccess();
+    if (!res || !res.granted) return;
+    try { const def = await Cal.getDefaultCalendarId(); if (def && def.id) { localStorage.setItem('ios_cal_id', def.id); localStorage.setItem('ios_cal_source', def.source || ''); } } catch (_) {}
+    localStorage.setItem('ios_cal_granted', '1');
+    try { renderScheduleGcalBar(); } catch (_) {}
+    try { if (typeof renderSchedule === 'function') renderSchedule(); } catch (_) {}
+  } catch (e) { console.warn('iosCalAutoReconnect', e); }
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(iosCalAutoReconnect, 1500));
 function renderScheduleGcalBar() {
   const bar = document.getElementById('schedule-gcal-bar');
   if (!bar) return;
@@ -32371,6 +32367,27 @@ html[data-skin="spent"] .main .fc-up { background: transparent !important; paddi
 html[data-skin="spent"] .main .fc-month { border: none !important; background: none !important; text-align: right !important; width: auto !important; margin: -6px 64px 10px 0 !important; padding: 0 !important; font-size: 13px !important; color: #a3a39e !important; }
 html[data-skin="spent"] .main .fc-month.on { color: #12804a !important; background: none !important; }
 html[data-skin="spent"] .main .fc-group-head { margin-top: 18px; }
+/* v533 — calm expenses */
+.mx-hero { padding: 6px 2px 14px; }
+.mx-n { font-size: 46px; font-weight: 800; letter-spacing: -0.03em; color: #141414; direction: ltr; text-align: right; line-height: 1.1; margin: 2px 0 6px; }
+.mx-due { color: #c46a00; font-weight: 700; }
+.mx-chips { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 14px; scrollbar-width: none; }
+.mx-chips::-webkit-scrollbar { display: none; }
+.mx-chips button { flex-shrink: 0; border: none; background: #f2f3f2; color: #555; border-radius: 999px; padding: 8px 14px; font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.mx-chips button.on { background: #141414; color: #fff; }
+.mx-fixed .mx-fi { width: 8px; color: #2f5fd0; font-weight: 900; }
+.mx-fv { font-size: 14.5px; font-weight: 700; color: #555; direction: ltr; }
+.mx-day { font-size: 13px; color: #a3a39e; font-weight: 700; margin: 18px 2px 2px; }
+.mx-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 13px 2px; background: none; border: none; border-bottom: 1px solid #f1f1ef; font-family: inherit; text-align: right; cursor: pointer; }
+.mx-row:active { background: #f7f7f5; }
+.mx-m { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mx-m b { font-size: 15.5px; font-weight: 700; color: #141414; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mx-m small { font-size: 13px; color: #9a9a95; margin-top: 2px; }
+.mx-m em { font-style: normal; color: #c46a00; font-weight: 700; }
+.mx-v { font-size: 15.5px; font-weight: 800; color: #141414; direction: ltr; white-space: nowrap; }
+.mx-empty { text-align: center; color: #a3a39e; padding: 40px 0; font-weight: 600; }
+.mx-foot { text-align: center; margin: 22px 0 10px; color: #c4c4bf; font-size: 13.5px; }
+.mx-foot button { background: none; border: none; color: #8c8c87; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
