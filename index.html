@@ -7545,7 +7545,7 @@
     <svg class="sp-logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="spLogoB3" gradientUnits="userSpaceOnUse" x1="90" y1="360" x2="430" y2="170"><stop offset="0" stop-color="#0c6b37"/><stop offset="1" stop-color="#2fd17a"/></linearGradient></defs><rect x="4" y="4" width="504" height="504" rx="113" fill="#fff" stroke="#e6e6e2" stroke-width="8"/><g transform="translate(256 256) scale(1.2) translate(-262 -268)"><line x1="104" y1="242" x2="104" y2="282" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="148" y1="216" x2="148" y2="308" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="192" y1="187" x2="192" y2="337" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="236" y1="227" x2="236" y2="297" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><path d="M262 300 L300 340 L420 196" fill="none" stroke="url(#spLogoB3)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v531</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v532</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11280,20 +11280,16 @@ function renderIncomeSpent(o) {
   const expected = o.totalPaid + o.totalNotPaid;
   const net = o.totalPaid - o.paidExpenses;
   const debtors = new Set(o.notPaid.map(i => i.clientId || i.clientName || i.id)).size;
-  let h = '<div class="is-hero">'
-    + '<div class="xs-k">נכנס ב' + MONTHS_HE[curMonth] + '</div>'
-    + '<div class="xs-n is-n">' + fmtMoney(o.totalPaid) + '</div>'
-    + '<div class="xs-sub">' + (expected > o.totalPaid ? 'מתוך ' + fmtMoney(expected) + ' שצפוי החודש' : (o.totalPaid ? 'כל מה שצפוי החודש נכנס 🎉' : 'עוד לא נכנס כסף החודש')) + '</div>';
-  if (goal > 0) {
-    const pct = Math.min(100, Math.round(o.totalPaid / goal * 100));
-    h += '<button class="is-goal" onclick="incSetGoal()"><span class="is-gt"><b>' + pct + '%</b> מהיעד ' + fmtMoney(goal) + '</span><span class="is-gb"><i style="width:' + pct + '%"></i></span></button>';
-  } else {
-    h += '<button class="is-goal is-goal-empty" onclick="incSetGoal()">🎯 קבע יעד חודשי</button>';
-  }
-  h += '<div class="is-pills">';
-  if (o.totalNotPaid > 0) h += '<button class="is-pill owe" onclick="openDunningModal()"><b>' + fmtMoney(o.totalNotPaid) + '</b><span>עוד לגבות · ' + debtors + (debtors === 1 ? ' לקוח' : ' לקוחות') + ' ‹</span></button>';
-  h += '<div class="is-pill ' + (net >= 0 ? 'pos' : 'neg') + '"><b>' + (net >= 0 ? '+' : '−') + fmtMoney(Math.abs(net)) + '</b><span>נשאר אחרי הוצאות</span></div>';
-  h += '</div></div>';
+  // v532: calm header — one green number, one quiet line, one action row
+  const pct = goal > 0 ? Math.min(100, Math.round(o.totalPaid / goal * 100)) : 0;
+  let h = '<div class="mi-hero">'
+    + '<div class="mi-k">נכנס ב' + MONTHS_HE[curMonth] + '</div>'
+    + '<div class="mi-n">' + fmtMoney(o.totalPaid) + '</div>'
+    + '<div class="mi-sub">' + (o.totalNotPaid > 0 ? 'עוד <b>' + fmtMoney(o.totalNotPaid) + '</b> בדרך' : (o.totalPaid ? 'כל מה שצפוי נכנס' : 'עוד לא נכנס כסף החודש'))
+    + (goal > 0 ? ' · <button class="mi-goal" onclick="incSetGoal()">' + pct + '% מהיעד</button>' : ' · <button class="mi-goal" onclick="incSetGoal()">קבע יעד</button>') + '</div>'
+    + (goal > 0 ? '<div class="mi-bar"><i style="width:' + pct + '%"></i></div>' : '')
+    + '</div>';
+  if (o.totalNotPaid > 0) h += '<button class="mi-row" onclick="openDunningModal()"><span class="mi-dot"></span><span class="mi-t">לגבות מ-' + debtors + (debtors === 1 ? ' לקוח' : ' לקוחות') + '</span><span class="mi-v">' + fmtMoney(o.totalNotPaid) + '</span><span class="mi-ch">‹</span></button>';
   host.innerHTML = h;
 }
 // ── Step flow (4.10, new design): one question per screen, each step
@@ -23304,17 +23300,15 @@ function renderProductionsSpent() {
     }
     if (st === 'paused') cls = 'paused';
     const chip = { active: ['פעיל', 'a'], paused: ['לא פעיל', 'p'], ready: ['מוכן', 'r'] }[st];
-    return '<button type="button" class="pdc ' + cls + '" onclick="spFlowProductionEdit(\'' + _escape(p.id) + '\')">'
-      + '<span class="pdc-top"><span class="pdc-t"><b>' + _escape(p.title) + '</b><small>' + _escape(p.artist || 'בלי אמן') + '</small></span>'
-      + '<span class="pdc-chip ' + chip[1] + '">' + chip[0] + '</span></span>'
-      + '<span class="pdc-dates"><span><small>התחלתי</small><b>' + _prodShortDate(start) + '</b></span>'
-      + '<span class="pdc-dl"><small>דד-ליין</small><b>' + (p.deadline ? _prodShortDate(p.deadline) : '—') + '</b></span></span>'
-      + '<span class="pdc-bar"><i style="width:' + pct + '%"></i></span>'
-      + '<span class="pdc-lbl">' + label + '</span>'
-      + '</button>';
+    const val = st === 'ready' ? 'מוכן ✓' : st === 'paused' ? 'מושהה' : du === null ? (daysIn === 0 ? 'התחיל היום' : daysIn + ' ימים') : du < 0 ? 'באיחור ' + (-du === 1 ? 'יום' : -du + ' ימים') : du === 0 ? 'היום' : du === 1 ? 'מחר' : 'עוד ' + du + ' ימים';
+    const vcls = st !== 'active' ? 'm' : du !== null && du < 0 ? 'r' : du !== null && du <= 3 ? 'o' : '';
+    return '<button type="button" class="pr-row" onclick="spFlowProductionEdit(\'' + _escape(p.id) + '\')">'
+      + '<span class="pr-ic ' + vcls + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg></span>'
+      + '<span class="pr-m"><b>' + _escape(p.title) + '</b><small>' + _escape(p.artist || 'בלי אמן') + '</small></span>'
+      + '<span class="pr-v ' + vcls + '">' + val + '</span></button>';
   };
   wrap.innerHTML = '<div class="pdc-tabs">' + tabs.map(([k, t]) => '<button type="button" class="' + (_prodTab === k ? 'on' : '') + '" onclick="prodSetTab(\'' + k + '\')">' + t + ' <span>' + by[k].length + '</span></button>').join('') + '</div>'
-    + (list.length ? list.map(card).join('')
+    + (list.length ? '<div class="pr-list">' + list.map(card).join('') + '</div>'
       : '<div class="pdc-empty">' + (_prodTab === 'active' ? 'אין הפקות פעילות — לחץ "+ הפקה חדשה"' : _prodTab === 'paused' ? 'אין הפקות מושהות' : 'עוד אין הפקות מוכנות') + '</div>');
 }
 
@@ -32332,6 +32326,51 @@ html[data-skin="spent"] #sp-lobby { padding: calc(env(safe-area-inset-top, 0px) 
 html[data-skin="spent"] #sp-lobby #lobby-settings-btn { background: #f4f4f2 !important; color: #555 !important; top: calc(env(safe-area-inset-top, 0px) + 16px) !important; left: 24px !important; }
 html[data-skin="spent"] body:has(#mode-screen:not(.hidden)) .fab-container { display: none !important; }
 html.desk[data-skin="spent"] #sp-lobby { max-width: 520px; margin: 40px auto; }
+/* v532 — calm inner pages: one green number, flat rows, thin dividers */
+html[data-skin="spent"] #inc-spent .mi-hero { padding: 6px 2px 18px; }
+.mi-k { font-size: 15px; color: #8c8c87; font-weight: 600; }
+.mi-n { font-size: 46px; font-weight: 800; letter-spacing: -0.03em; color: #12804a; direction: ltr; text-align: right; line-height: 1.1; margin: 2px 0 6px; }
+.mi-sub { font-size: 14.5px; color: #8c8c87; font-weight: 500; }
+.mi-sub b { color: #141414; font-weight: 800; }
+.mi-goal { background: none; border: none; padding: 0; font: inherit; color: #12804a; font-weight: 700; cursor: pointer; }
+.mi-bar { height: 4px; background: #eef0ee; border-radius: 2px; margin-top: 14px; overflow: hidden; }
+.mi-bar i { display: block; height: 100%; background: #1a9a55; border-radius: 2px; margin-right: 0; margin-left: auto; }
+.mi-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 15px 2px; background: none; border: none; border-top: 1px solid #f1f1ef; border-bottom: 1px solid #f1f1ef; font-family: inherit; cursor: pointer; margin-bottom: 8px; }
+.mi-dot { width: 8px; height: 8px; border-radius: 4px; background: #e08a00; flex-shrink: 0; }
+.mi-t { flex: 1; text-align: right; font-size: 15.5px; font-weight: 700; color: #141414; }
+.mi-v { font-size: 15.5px; font-weight: 800; color: #c46a00; direction: ltr; }
+.mi-ch { color: #c4c4bf; font-size: 20px; }
+/* productions list */
+.pr-list { margin-top: 6px; }
+.pr-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 15px 2px; background: none; border: none; border-bottom: 1px solid #f1f1ef; font-family: inherit; text-align: right; cursor: pointer; }
+.pr-row:active { background: #f7f7f5; }
+.pr-ic { width: 36px; height: 36px; border-radius: 11px; background: #e3f6eb; color: #12804a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pr-ic svg { width: 18px; height: 18px; }
+.pr-ic.r { background: #fdecea; color: #d0402b; } .pr-ic.o { background: #fff4e5; color: #c46a00; } .pr-ic.m { background: #f2f2f0; color: #8c8c87; }
+.pr-m { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pr-m b { font-size: 16px; font-weight: 700; color: #141414; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-m small { font-size: 13px; color: #8c8c87; margin-top: 2px; }
+.pr-v { font-size: 14.5px; font-weight: 800; color: #141414; white-space: nowrap; }
+.pr-v.r { color: #d0402b; } .pr-v.o { color: #c46a00; } .pr-v.m { color: #8c8c87; font-weight: 700; }
+html.desk[data-skin="spent"] #prod-list { display: block !important; }
+/* flatten the remaining cards on inner pages */
+html[data-skin="spent"] .main .exp-cat-box,
+html[data-skin="spent"] .main .fc-card { box-shadow: none !important; border: none !important; border-bottom: 1px solid #f1f1ef !important; border-radius: 0 !important; background: transparent !important; }
+html[data-skin="spent"] .main .fc-card.off { background: transparent !important; opacity: .55; }
+html[data-skin="spent"] .main .exp-cat-grid { gap: 0 !important; grid-template-columns: 1fr !important; }
+html[data-skin="spent"] .main .fc-hero, html[data-skin="spent"] .main .fc-up, html[data-skin="spent"] .main .fca { box-shadow: none !important; border: none !important; background: #fafaf9 !important; }
+/* v532b — expenses + fixed: same calm header */
+html[data-skin="spent"] .main .xs-hero { background: transparent !important; border: none !important; box-shadow: none !important; padding: 6px 2px 14px !important; border-radius: 0 !important; }
+html[data-skin="spent"] .main .xs-n { font-size: 46px !important; color: #141414 !important; }
+html[data-skin="spent"] .main .xs-bar { height: 4px !important; margin-top: 12px !important; border-radius: 2px !important; opacity: .85; }
+html[data-skin="spent"] .main .xs-due { background: none !important; border: none !important; padding: 0 !important; color: #c46a00 !important; font-weight: 700 !important; }
+html[data-skin="spent"] .main .xs-story { background: none !important; color: #12804a !important; box-shadow: none !important; padding: 0 !important; font-weight: 700 !important; }
+html[data-skin="spent"] .main .xs-fixed { box-shadow: none !important; border: none !important; border-top: 1px solid #f1f1ef !important; border-bottom: 1px solid #f1f1ef !important; border-radius: 0 !important; background: transparent !important; }
+html[data-skin="spent"] .main .fc-hero { background: transparent !important; padding: 6px 2px 14px !important; }
+html[data-skin="spent"] .main .fc-up { background: transparent !important; padding: 0 !important; }
+html[data-skin="spent"] .main .fc-month { border: none !important; background: none !important; text-align: right !important; width: auto !important; margin: -6px 64px 10px 0 !important; padding: 0 !important; font-size: 13px !important; color: #a3a39e !important; }
+html[data-skin="spent"] .main .fc-month.on { color: #12804a !important; background: none !important; }
+html[data-skin="spent"] .main .fc-group-head { margin-top: 18px; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
