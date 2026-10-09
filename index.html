@@ -7548,7 +7548,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spLV3bg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#3f55c9"/><stop offset=".55" stop-color="#5a73e6"/><stop offset="1" stop-color="#93a6f6"/></linearGradient><radialGradient id="spLV3hl" cx=".22" cy=".12" r=".75"><stop offset="0" stop-color="#ffffff" stop-opacity=".28"/><stop offset=".6" stop-color="#ffffff" stop-opacity="0"/></radialGradient><radialGradient id="spLV3lo" cx=".85" cy="1" r=".7"><stop offset="0" stop-color="#18298a" stop-opacity=".35"/><stop offset="1" stop-color="#18298a" stop-opacity="0"/></radialGradient><filter id="spLV3sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#18298a" flood-opacity=".28"/></filter></defs><rect width="1024" height="1024" rx="230" fill="url(#spLV3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spLV3lo)"/><rect width="1024" height="1024" rx="230" fill="url(#spLV3hl)"/><g transform="scale(2)" filter="url(#spLV3sh)"><g transform="translate(256 256) scale(1.2) translate(-262 -268)"><line x1="104" y1="242" x2="104" y2="282" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/><line x1="148" y1="216" x2="148" y2="308" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/><line x1="192" y1="187" x2="192" y2="337" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/><line x1="236" y1="227" x2="236" y2="297" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/><path d="M262 300 L300 340 L420 196" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v545</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v546</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -19957,6 +19957,72 @@ const FZ = {
 const FZ_TINT = { violet: ['#e7ecfd', '#4a63d9'], peach: ['#ffe9e1', '#e0703f'], mint: ['#e0f4ec', '#2f9e6f'], sun: ['#fff3df', '#b8770a'], rose: ['#ffe9e4', '#d2553a'] };
 const fzIc = (k, t) => '<span class="fz-ri" style="background:' + FZ_TINT[t][0] + ';color:' + FZ_TINT[t][1] + '">' + FZ[k] + '</span>';
 const fzMonthName = (y, m) => new Date(y, m, 1).toLocaleDateString('he-IL', { month: 'long' });
+// ── Payment reminder → straight into the client's WhatsApp chat (10.10).
+// He writes the text himself. No phone yet → pick from contacts / type it. ──
+function _unpaidClientNames() {
+  const out = []; const now = new Date();
+  try { load('income').forEach(i => { if ((i.status || 'pending') !== 'paid' && i.date && new Date(i.date) <= now) { const n = (i.clientName || i.client || '').trim(); if (n && out.indexOf(n) < 0) out.push(n); } }); } catch (_) {}
+  return out;
+}
+function _clientByName(name) { return (load('clients') || []).find(c => (c.name || '').trim() === String(name || '').trim()); }
+window.payRemindOpen = function() {
+  const names = _unpaidClientNames();
+  if (!names.length) { toast('אין תשלומים פתוחים'); return; }
+  if (names.length === 1) { chatClient(names[0]); return; }
+  spentSheet('למי לשלוח תזכורת?', 'לחיצה פותחת את הצ׳אט', names.map(n => ({ label: n + (_clientByName(n) && _clientByName(n).phone ? '' : ' · אין מספר'), run: () => chatClient(n) })));
+};
+window.chatClient = function(name) {
+  const c = _clientByName(name), ph = c && c.phone ? _waPhone(c.phone) : '';
+  if (ph) { window.open('https://wa.me/' + ph, '_blank'); return; }
+  askClientPhone(name, () => chatClient(name));
+};
+window.askClientPhone = function(name, then) {
+  const hasC = !!(window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.ContactsBridge);
+  const acts = [];
+  if (hasC) acts.push({ label: 'לבחור מאנשי הקשר', pri: true, run: () => contactPick(name, ph => { setClientPhone(name, ph); then && then(); }) });
+  acts.push({ label: 'להקליד מספר', pri: !hasC, run: () => phoneTypeSheet(name, ph => { setClientPhone(name, ph); then && then(); }) });
+  spentSheet('אין מספר ל' + name, 'נשמור אותו בכרטיס הלקוח, ומעכשיו זה ייפתח ישר', acts);
+};
+function setClientPhone(name, phone) {
+  const list = load('clients') || []; let c = list.find(x => (x.name || '').trim() === String(name).trim());
+  if (!c) { c = { id: genId(), name: String(name).trim(), phone: '', type: '', status: 'active', email: '', location: '', notes: '', photo: '' }; list.push(c); }
+  c.phone = phone; save('clients', list); toast('✓ המספר נשמר ל' + name);
+}
+window.phoneTypeSheet = function(name, done) {
+  let ov = document.getElementById('fz-phone'); if (!ov) { ov = document.createElement('div'); ov.id = 'fz-phone'; document.body.appendChild(ov); }
+  ov.innerHTML = '<div class="fzp-box"><div class="fzp-t">המספר של ' + _escape(name) + '</div><input id="fzp-in" type="tel" inputmode="tel" placeholder="05X-XXXXXXX" autocomplete="tel"/><div class="fzp-act"><button class="no">ביטול</button><button class="ok">שמור</button></div></div>';
+  ov.classList.add('open');
+  const inp = ov.querySelector('#fzp-in'); setTimeout(() => inp.focus(), 50);
+  ov.querySelector('.no').onclick = () => ov.classList.remove('open');
+  ov.querySelector('.ok').onclick = () => { const v = inp.value.replace(/[^\d+]/g, ''); if (v.length < 9) { toast('מספר לא תקין'); return; } ov.classList.remove('open'); done(v); };
+  ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); };
+};
+window.contactPick = async function(name, done) {
+  const C = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.ContactsBridge;
+  if (!C) { phoneTypeSheet(name, done); return; }
+  let res; try { res = await C.getAll(); } catch (_) {}
+  if (!res || !res.granted) { toast('אין גישה לאנשי הקשר — אפשר בהגדרות האייפון'); phoneTypeSheet(name, done); return; }
+  const all = []; (res.contacts || []).forEach(ct => (ct.phones || []).forEach(ph => all.push({ n: ct.name, ph })));
+  all.sort((a, b) => a.n.localeCompare(b.n, 'he'));
+  let ov = document.getElementById('fz-contacts'); if (!ov) { ov = document.createElement('div'); ov.id = 'fz-contacts'; document.body.appendChild(ov); }
+  ov.innerHTML = '<div class="fzc-box"><div class="fzc-hd"><b>אנשי קשר</b><button class="x">סגור</button></div><input class="fzc-q" placeholder="חיפוש…" value="' + _escape(String(name || '').split(' ')[0]) + '"/><div class="fzc-list"></div></div>';
+  ov.classList.add('open');
+  const list = ov.querySelector('.fzc-list'), q = ov.querySelector('.fzc-q');
+  const paint = () => { const t = q.value.trim(); const f = all.filter(x => !t || x.n.indexOf(t) >= 0 || x.ph.replace(/\D/g, '').indexOf(t.replace(/\D/g, '') || '§') >= 0).slice(0, 80);
+    list.innerHTML = f.length ? f.map((x, i) => '<button data-i="' + all.indexOf(x) + '"><b>' + _escape(x.n) + '</b><small>' + _escape(x.ph) + '</small></button>').join('') : '<div class="fzc-empty">לא נמצא</div>'; };
+  q.oninput = paint; paint();
+  list.onclick = e => { const b = e.target.closest('button[data-i]'); if (!b) return; const x = all[+b.dataset.i]; ov.classList.remove('open'); done(x.ph); };
+  ov.querySelector('.x').onclick = () => ov.classList.remove('open');
+};
+// contacts button next to the phone field in the client forms
+document.addEventListener('DOMContentLoaded', () => {
+  ['cli-phone', 'qc-phone'].forEach(id => {
+    const inp = document.getElementById(id); if (!inp || inp.dataset.fzc) return; inp.dataset.fzc = '1';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'fzc-btn'; b.textContent = 'מאנשי הקשר';
+    b.onclick = () => contactPick((document.getElementById(id === 'cli-phone' ? 'cli-name' : 'qc-name') || {}).value || '', ph => { inp.value = ph; });
+    inp.parentNode.appendChild(b);
+  });
+});
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
@@ -19988,7 +20054,7 @@ function spLobbyRender() {
   // money waiting — by name, no amount
   try {
     const names = []; load('income').forEach(i => { if ((i.status || 'pending') !== 'paid' && i.date && new Date(i.date) <= now) { const n = (i.clientName || i.client || '').trim(); if (n && names.indexOf(n) < 0) names.push(n); } });
-    if (names.length) items.push({ id: 'pay', k: 'coin', tint: 'violet', t: names.length === 1 ? 'תזכורת תשלום ל' + names[0] : 'תזכורת תשלום ל-' + names.length + ' לקוחות', s: 'אני אשלח בשבילך', go: 'openDunningModal()', cta: 'לשלוח תזכורת' });
+    if (names.length) items.push({ id: 'pay', k: 'coin', tint: 'violet', t: names.length === 1 ? 'תזכורת תשלום ל' + names[0] : 'תזכורת תשלום ל-' + names.length + ' לקוחות', s: 'לחיצה פותחת את הצ׳אט בוואטסאפ', go: 'payRemindOpen()', cta: 'לפתוח צ׳אט' });
   } catch (_) {}
   try { fcDueToAsk().slice(0, 2).forEach(o => items.push({ id: 'f_' + o.x.id, k: 'repeat', tint: 'sun', t: o.x.name + ' ירד?', s: 'רק לאשר', fc: o.x.id })); } catch (_) {}
   let wa = 0; try { wa = _waWaitingCount(); } catch (_) {}
@@ -23313,7 +23379,7 @@ function renderProductionsSpent() {
     return '<div class="fz-row fz-drag" data-id="' + _escape(p.id) + '" onclick="if(!window._prodDragJust)spFlowProductionEdit(\'' + _escape(p.id) + '\')">' + fzIc('note', tint)
       + '<span class="fz-m"><b>' + _escape(p.title) + '</b><small>' + _escape(p.artist || 'בלי אמן') + '</small></span>'
       + (pill[0] ? '<span class="fz-pill ' + pill[1] + '">' + pill[0] + '</span>' : '')
-      + (st === 'active' ? '<span class="fz-grip" aria-label="גרירה"><i></i><i></i><i></i></span>' : '') + '</div>';
+      + '</div>';
   };
   wrap.innerHTML = '<div class="fz-ttl">הפקות</div><div class="fz-seg">' + tabs.map(([k, t]) => '<button type="button" class="' + (_prodTab === k ? 'on' : '') + '" onclick="prodSetTab(\'' + k + '\')">' + t + (by[k].length ? ' · ' + by[k].length : '') + '</button>').join('') + '</div>'
     + (_prodTab === 'active' ? (() => {
@@ -23383,15 +23449,15 @@ function prodDragInit(wrap) {
     renderProductionsSpent();
   };
   wrap.querySelectorAll('.fz-drag').forEach(row => {
-    const grip = row.querySelector('.fz-grip');
-    if (grip) {
-      grip.addEventListener('touchstart', e => { e.preventDefault(); begin(row, e); }, { passive: false });
-      grip.addEventListener('mousedown', e => { e.preventDefault(); begin(row, e); });
-      grip.addEventListener('click', e => e.stopPropagation());
-    }
-    let sx = 0, sy = 0;
-    row.addEventListener('touchstart', e => { if (e.target.closest('.fz-grip')) return; const p = pt(e); sx = p.clientX; sy = p.clientY; clearTimeout(pressT); pressT = setTimeout(() => begin(row, e), 320); }, { passive: true });
+    let sx = 0, sy = 0, mdown = false;
+    // touch: hold ~0.2s anywhere on the row, then drag (a quick swipe still scrolls)
+    row.addEventListener('touchstart', e => { const p = pt(e); sx = p.clientX; sy = p.clientY; clearTimeout(pressT); pressT = setTimeout(() => begin(row, e), 200); }, { passive: true });
     row.addEventListener('touchmove', e => { if (drag) return; const p = pt(e); if (Math.abs(p.clientX - sx) > 8 || Math.abs(p.clientY - sy) > 8) clearTimeout(pressT); }, { passive: true });
+    row.addEventListener('contextmenu', e => e.preventDefault());
+    // mouse: press and move a few pixels
+    row.addEventListener('mousedown', e => { mdown = true; sx = e.clientX; sy = e.clientY; });
+    row.addEventListener('mousemove', e => { if (mdown && !drag && Math.abs(e.clientY - sy) > 6) { mdown = false; begin(row, e); } });
+    row.addEventListener('mouseup', () => { mdown = false; });
   });
   if (!window._prodDragDocBound) {
     window._prodDragDocBound = true;
@@ -32778,6 +32844,24 @@ html[data-skin="spent"] .sp-word span, html.desk[data-skin="spent"] .dk-word spa
 .fz-ph > * { visibility: hidden; }
 .fz-ph { background: #f1f3fc; border-radius: 18px; }
 .fz-ghost { z-index: 2147483000; background: #fff; border-radius: 22px; box-shadow: 0 18px 40px rgba(40,50,120,.22); padding: 0 16px !important; pointer-events: none; transition: none !important; display: flex; align-items: center; gap: 12px; }
+/* v546 — phone entry + contact picker */
+#fz-phone, #fz-contacts { position: fixed; inset: 0; z-index: 10080; background: rgba(20,22,40,.35); display: none; align-items: flex-end; justify-content: center; font-family: 'Rubik', 'Heebo', sans-serif; }
+#fz-phone.open, #fz-contacts.open { display: flex; }
+.fzp-box, .fzc-box { width: 100%; max-width: 520px; background: #fff; border-radius: 30px 30px 0 0; padding: 22px 20px calc(env(safe-area-inset-bottom, 0px) + 20px); }
+.fzp-t { font-size: 19px; font-weight: 700; color: #23232f; margin-bottom: 14px; }
+#fzp-in, .fzc-q { width: 100%; border: none; background: #f2f3f8; border-radius: 18px; padding: 15px 16px; font-size: 18px; font-family: inherit; direction: ltr; text-align: right; outline: none; }
+.fzc-q { direction: rtl; font-size: 16px; margin: 10px 0; }
+.fzp-act { display: flex; gap: 10px; margin-top: 16px; }
+.fzp-act button { flex: 1; height: 52px; border: none; border-radius: 18px; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer; }
+.fzp-act .ok { background: #4a63d9; color: #fff; } .fzp-act .no { background: #f2f3f8; color: #555; }
+.fzc-box { height: 82vh; display: flex; flex-direction: column; }
+.fzc-hd { display: flex; justify-content: space-between; align-items: center; } .fzc-hd b { font-size: 19px; color: #23232f; } .fzc-hd button { border: none; background: none; color: #4a63d9; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.fzc-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.fzc-list button { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 4px; border: none; border-bottom: 1px solid #f1f1f6; background: none; font-family: inherit; text-align: right; cursor: pointer; }
+.fzc-list b { font-size: 16px; font-weight: 600; color: #23232f; } .fzc-list small { font-size: 13.5px; color: #8a88a3; direction: ltr; }
+.fzc-empty { text-align: center; color: #a3a1b8; padding: 30px 0; }
+.fzc-btn { margin-top: 8px; border: none; background: #eaeffe; color: #4a63d9; border-radius: 999px; padding: 8px 14px; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.fz-drag { touch-action: pan-y; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
