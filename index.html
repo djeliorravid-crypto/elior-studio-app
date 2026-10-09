@@ -7545,7 +7545,7 @@
     <svg class="sp-logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="spLogoB3" gradientUnits="userSpaceOnUse" x1="90" y1="360" x2="430" y2="170"><stop offset="0" stop-color="#0c6b37"/><stop offset="1" stop-color="#2fd17a"/></linearGradient></defs><rect x="4" y="4" width="504" height="504" rx="113" fill="#fff" stroke="#e6e6e2" stroke-width="8"/><g transform="translate(256 256) scale(1.2) translate(-262 -268)"><line x1="104" y1="242" x2="104" y2="282" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="148" y1="216" x2="148" y2="308" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="192" y1="187" x2="192" y2="337" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="236" y1="227" x2="236" y2="297" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><path d="M262 300 L300 340 L420 196" fill="none" stroke="url(#spLogoB3)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v533</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v534</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16336,7 +16336,10 @@ function renderExpensesSpent() {
     .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)));
   if (!list.length) {
     h += '<div class="mx-empty">אין הוצאות ב' + MONTHS_HE[curMonth] + '</div>';
+  } else if (!window._expListOpen) {
+    h += '<button class="mi-row mx-open" onclick="window._expListOpen=true;renderExpensesSpent()"><span class="mi-t">כל ההוצאות · ' + list.length + '</span><span class="mx-ar">⌄</span></button>';
   } else {
+    h += '<button class="mi-row mx-open" onclick="window._expListOpen=false;renderExpensesSpent()"><span class="mi-t">כל ההוצאות · ' + list.length + '</span><span class="mx-ar">⌃</span></button>';
     const days = {};
     list.forEach(e => { const k = String(e.date).slice(0, 10); (days[k] = days[k] || []).push(e); });
     Object.keys(days).sort().reverse().forEach(k => {
@@ -27803,7 +27806,18 @@ function applyTheme(dark) {
 // tabs, the green + docked in the middle, and "עוד" opening a sheet with
 // the rest. Pure add-on: the original <a> links stay the source of truth
 // (classic keeps its scrolling strip; CSS gates everything on the skin). ──
-const _SPENT_SHORT = { 'הפקות פעילות': 'הפקות', 'לוז יומי': 'לוז', 'משימות יומיות': 'משימות', 'סיכומי הפקה': 'סיכומים', 'הצעות מחיר': 'הצעות', 'שירים שיצאו': 'שירים' };
+const _SPENT_SHORT = { 'הכנסות': 'כסף', 'הפקות פעילות': 'הפקות', 'לוז יומי': 'לוז', 'משימות יומיות': 'משימות', 'סיכומי הפקה': 'סיכומים', 'הצעות מחיר': 'הצעות', 'שירים שיצאו': 'שירים' };
+// 9.10: "כסף" = income + expenses behind one tab, with a two-way switch
+// at the top of both pages (Elior picked this bar from the mockup).
+function spMoneySeg() {
+  ['income', 'expenses'].forEach(pg => {
+    const page = document.getElementById('page-' + pg); if (!page || page.querySelector('.money-seg')) return;
+    const seg = document.createElement('div'); seg.className = 'money-seg';
+    seg.innerHTML = '<button class="' + (pg === 'income' ? 'on' : '') + '" onclick="showPage(\'income\')">הכנסות</button><button class="' + (pg === 'expenses' ? 'on' : '') + '" onclick="showPage(\'expenses\')">הוצאות</button>';
+    page.insertBefore(seg, page.firstChild);
+  });
+}
+document.addEventListener('DOMContentLoaded', () => { try { spMoneySeg(); } catch (_) {} });
 function spentNavInit() {
   document.querySelectorAll('.sidebar nav').forEach(nav => {
     nav.querySelectorAll('a').forEach(a => {
@@ -32388,6 +32402,31 @@ html[data-skin="spent"] .main .fc-group-head { margin-top: 18px; }
 .mx-empty { text-align: center; color: #a3a39e; padding: 40px 0; font-weight: 600; }
 .mx-foot { text-align: center; margin: 22px 0 10px; color: #c4c4bf; font-size: 13.5px; }
 .mx-foot button { background: none; border: none; color: #8c8c87; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+/* v534 — bottom bar from the mockup: הפקות · כסף · לו״ז · וואטסאפ · עוד,
+   green active tab, the + floats on its own (bottom-left) */
+@media (max-width: 768px) {
+  html[data-skin="spent"] #business-sidebar nav::before { display: none !important; content: none !important; }
+  html[data-skin="spent"] #business-sidebar nav a { order: 0 !important; }
+  html[data-skin="spent"] #business-sidebar nav a[data-page="expenses"] { display: none !important; }
+  html[data-skin="spent"] #business-sidebar nav a.active,
+  html[data-skin="spent"] #business-sidebar nav:has(a[data-page="expenses"].active) a[data-page="income"],
+  html[data-skin="spent"] body:has(#page-fixed.active) #business-sidebar nav a[data-page="income"],
+  html[data-skin="spent"] #business-sidebar nav:has(a:nth-child(n+6).active) .nav-more { color: #12804a !important; background-image: none !important; }
+  html[data-skin="spent"] #business-sidebar nav:has(a[data-page="expenses"].active) a[data-page="income"] .nav-icon svg { stroke-width: 2.2 !important; }
+  html[data-skin="spent"] #business-sidebar { border-radius: 26px !important; }
+  html[data-skin="spent"] .fab-container { left: 18px !important; right: auto !important; transform: none !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 92px) !important; }
+  html[data-skin="spent"] .fab-main { width: 56px !important; height: 56px !important; font-size: 28px !important; box-shadow: 0 8px 20px rgba(26,154,85,.35) !important; }
+}
+.money-seg { display: none; }
+html[data-skin="spent"] .money-seg { display: flex; background: #f0f1f0; border-radius: 12px; padding: 3px; margin: 0 0 14px; }
+html[data-skin="spent"] .money-seg button { flex: 1; border: none; background: none; border-radius: 10px; padding: 9px 0; font-family: inherit; font-size: 14.5px; font-weight: 800; color: #8c8c87; cursor: pointer; }
+html[data-skin="spent"] .money-seg button.on { background: #fff; color: #141414; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.mx-open { border-bottom: none !important; }
+.mx-ar { color: #9a9a95; font-size: 18px; font-weight: 800; }
+html[data-skin="spent"] .money-seg { margin: 52px 0 12px !important; }
+html[data-skin="spent"] #page-income > .page-header > div:first-child,
+html[data-skin="spent"] #page-expenses > .page-header > div:first-child { display: none !important; }
+html.desk[data-skin="spent"] .money-seg { margin-top: 0 !important; max-width: 360px; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
