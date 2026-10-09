@@ -7548,7 +7548,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spLV3bg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#3f55c9"/><stop offset=".55" stop-color="#5a73e6"/><stop offset="1" stop-color="#93a6f6"/></linearGradient><radialGradient id="spLV3hl" cx=".22" cy=".12" r=".75"><stop offset="0" stop-color="#ffffff" stop-opacity=".28"/><stop offset=".6" stop-color="#ffffff" stop-opacity="0"/></radialGradient><radialGradient id="spLV3lo" cx=".85" cy="1" r=".7"><stop offset="0" stop-color="#18298a" stop-opacity=".35"/><stop offset="1" stop-color="#18298a" stop-opacity="0"/></radialGradient><filter id="spLV3sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#18298a" flood-opacity=".28"/></filter></defs><rect width="1024" height="1024" rx="230" fill="url(#spLV3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spLV3lo)"/><rect width="1024" height="1024" rx="230" fill="url(#spLV3hl)"/><g transform="scale(2)" filter="url(#spLV3sh)"><g transform="translate(256 256) scale(1.2) translate(-262 -268)"><line x1="104" y1="242" x2="104" y2="282" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/><line x1="148" y1="216" x2="148" y2="308" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/><line x1="192" y1="187" x2="192" y2="337" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/><line x1="236" y1="227" x2="236" y2="297" stroke="#ffffff" stroke-width="28" stroke-linecap="round"/><path d="M262 300 L300 340 L420 196" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v546</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v547</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -23407,46 +23407,72 @@ function _prodLanes(list) {
 }
 window.prodUrgentList = function() { try { return _prodLanes(prodList().filter(p => _prodStatus(p) === 'active')).urgent; } catch (_) { return []; } };
 function prodDragInit(wrap) {
-  let drag = null, pressT = 0;
+  // v547: 60fps drag — rAF-throttled, positions cached, ghost on the GPU,
+  // neighbours slide (FLIP) instead of jumping.
+  let drag = null, pressT = 0, raf = 0, lastY = 0, lastX = 0;
   const pt = e => (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
+  const measure = () => {
+    drag.zones = [...wrap.querySelectorAll('.fz-dz')].map(dz => ({ dz, r: dz.getBoundingClientRect(),
+      rows: [...dz.querySelectorAll('.fz-drag:not(.fz-ph)')].map(x => { const rr = x.getBoundingClientRect(); return { x, mid: rr.top + rr.height / 2 }; }) }));
+  };
+  const flip = (dz, fn) => {
+    const rows = [...dz.querySelectorAll('.fz-drag:not(.fz-ph)')], before = new Map(rows.map(x => [x, x.getBoundingClientRect().top]));
+    fn();
+    rows.forEach(x => { const d = before.get(x) - x.getBoundingClientRect().top; if (!d) return;
+      x.style.transition = 'none'; x.style.transform = 'translate3d(0,' + d + 'px,0)';
+      requestAnimationFrame(() => { x.style.transition = 'transform .18s cubic-bezier(.2,.8,.3,1)'; x.style.transform = ''; }); });
+  };
   const begin = (row, e) => {
     const r = row.getBoundingClientRect(), p0 = pt(e);
     const ghost = row.cloneNode(true); ghost.classList.add('fz-ghost');
-    ghost.style.cssText = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px;';
+    ghost.style.cssText = 'position:fixed;left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px;transform:translate3d(0,0,0) scale(1.03)';
     document.body.appendChild(ghost);
     row.classList.add('fz-ph');
-    drag = { row, ghost, dy: p0.clientY - r.top, top0: r.top };
+    drag = { row, ghost, dy: p0.clientY - r.top, top0: r.top, slot: null };
+    measure();
     try { window.haptic && window.haptic.light && window.haptic.light(); } catch (_) {}
+  };
+  const frame = () => {
+    raf = 0; if (!drag) return;
+    const y = lastY;
+    drag.ghost.style.transform = 'translate3d(0,' + (y - drag.dy - drag.top0) + 'px,0) scale(1.03)';
+    const z = drag.zones.find(o => y >= o.r.top - 30 && y <= o.r.bottom + 30) || (y < drag.zones[0].r.top ? drag.zones[0] : drag.zones[drag.zones.length - 1]);
+    if (!z) return;
+    const before = z.rows.find(o => y < o.mid);
+    const key = (z.dz.dataset.lane) + ':' + (before ? before.x.dataset.id : 'end');
+    if (key !== drag.slot) {
+      drag.slot = key;
+      flip(z.dz, () => {
+        const em = z.dz.querySelector('.fz-dzempty'); if (em) em.remove();
+        if (before) z.dz.insertBefore(drag.row, before.x); else z.dz.appendChild(drag.row);
+      });
+      measure();
+    }
+    if (y < 90) { window.scrollBy(0, -10); measure(); } else if (y > window.innerHeight - 150) { window.scrollBy(0, 10); measure(); }
   };
   const move = e => {
     if (!drag) return;
     if (e.cancelable) e.preventDefault();
-    const p = pt(e), y = p.clientY;
-    drag.ghost.style.transform = 'translateY(' + (y - drag.dy - drag.top0) + 'px) scale(1.03)';
-    drag.ghost.style.pointerEvents = 'none';
-    const el = document.elementFromPoint(p.clientX, y);
-    const dz = el && el.closest('.fz-dz'); if (!dz) return;
-    const em = dz.querySelector('.fz-dzempty'); if (em) em.remove();
-    const rows = [...dz.querySelectorAll('.fz-drag:not(.fz-ph)')];
-    const before = rows.find(x => { const b = x.getBoundingClientRect(); return y < b.top + b.height / 2; });
-    if (before) { if (before.previousElementSibling !== drag.row) dz.insertBefore(drag.row, before); }
-    else if (dz.lastElementChild !== drag.row) dz.appendChild(drag.row);
-    if (y < 90) window.scrollBy(0, -8); else if (y > window.innerHeight - 140) window.scrollBy(0, 8);
+    const p = pt(e); lastY = p.clientY; lastX = p.clientX;
+    if (!raf) raf = requestAnimationFrame(frame);
   };
   const end = () => {
     clearTimeout(pressT);
     if (!drag) return;
-    const d = drag; drag = null;
-    d.ghost.remove(); d.row.classList.remove('fz-ph');
-    window._prodDragJust = true; setTimeout(() => { window._prodDragJust = false; }, 350);
-    const arr = prodList(), byId = {}; arr.forEach(p => { byId[p.id] = p; });
-    wrap.querySelectorAll('.fz-dz').forEach(dz => {
-      const ln = dz.dataset.lane;
-      [...dz.querySelectorAll('.fz-drag')].forEach((r, i) => { const p = byId[r.dataset.id]; if (p) { p.lane = ln; p.laneOrder = i; } });
-    });
-    prodSaveAll(arr);
-    try { window.haptic && window.haptic.success && window.haptic.success(); } catch (_) {}
-    renderProductionsSpent();
+    const d = drag; drag = null; if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    const tr = d.row.getBoundingClientRect();
+    d.ghost.style.transition = 'transform .16s ease-out';
+    d.ghost.style.transform = 'translate3d(0,' + (tr.top - d.top0) + 'px,0) scale(1)';
+    setTimeout(() => {
+      d.ghost.remove(); d.row.classList.remove('fz-ph');
+      const arr = prodList(), byId = {}; arr.forEach(p => { byId[p.id] = p; });
+      wrap.querySelectorAll('.fz-dz').forEach(dz => { const ln = dz.dataset.lane;
+        [...dz.querySelectorAll('.fz-drag')].forEach((r, i) => { const p = byId[r.dataset.id]; if (p) { p.lane = ln; p.laneOrder = i; } }); });
+      prodSaveAll(arr);
+      try { window.haptic && window.haptic.success && window.haptic.success(); } catch (_) {}
+      renderProductionsSpent();
+    }, 170);
+    window._prodDragJust = true; setTimeout(() => { window._prodDragJust = false; }, 450);
   };
   wrap.querySelectorAll('.fz-drag').forEach(row => {
     let sx = 0, sy = 0, mdown = false;
@@ -32837,13 +32863,13 @@ html[data-skin="spent"] .sp-word span, html.desk[data-skin="spent"] .dk-word spa
 .fz-dz { min-height: 74px; transition: background .2s, box-shadow .2s; }
 .fz-dz[data-lane="urgent"] { box-shadow: 0 4px 20px rgba(60,50,120,.07), inset 4px 0 0 #f0a080; }
 .fz-dzempty { text-align: center; color: #b3b1c6; font-size: 14px; font-weight: 500; padding: 24px 0; border: 2px dashed #e6e4f0; border-radius: 20px; margin: 8px 0; }
-.fz-drag { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: transform .18s ease; }
+.fz-drag { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .fz-grip { width: 30px; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; touch-action: none; cursor: grab; margin-left: -6px; }
 .fz-grip i { width: 16px; height: 2.5px; border-radius: 2px; background: #cfcde0; }
 .fz-ph { opacity: .25; }
 .fz-ph > * { visibility: hidden; }
 .fz-ph { background: #f1f3fc; border-radius: 18px; }
-.fz-ghost { z-index: 2147483000; background: #fff; border-radius: 22px; box-shadow: 0 18px 40px rgba(40,50,120,.22); padding: 0 16px !important; pointer-events: none; transition: none !important; display: flex; align-items: center; gap: 12px; }
+.fz-ghost { z-index: 2147483000; background: #fff; border-radius: 22px; box-shadow: 0 10px 24px rgba(40,50,120,.18); will-change: transform; backface-visibility: hidden; contain: layout paint; padding: 0 16px !important; pointer-events: none; transition: none !important; display: flex; align-items: center; gap: 12px; }
 /* v546 — phone entry + contact picker */
 #fz-phone, #fz-contacts { position: fixed; inset: 0; z-index: 10080; background: rgba(20,22,40,.35); display: none; align-items: flex-end; justify-content: center; font-family: 'Rubik', 'Heebo', sans-serif; }
 #fz-phone.open, #fz-contacts.open { display: flex; }
