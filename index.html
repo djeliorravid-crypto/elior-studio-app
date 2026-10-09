@@ -7548,7 +7548,7 @@
     <svg class="sp-logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="spLogoB3" gradientUnits="userSpaceOnUse" x1="90" y1="360" x2="430" y2="170"><stop offset="0" stop-color="#0c6b37"/><stop offset="1" stop-color="#2fd17a"/></linearGradient></defs><rect x="4" y="4" width="504" height="504" rx="113" fill="#fff" stroke="#e6e6e2" stroke-width="8"/><g transform="translate(256 256) scale(1.2) translate(-262 -268)"><line x1="104" y1="242" x2="104" y2="282" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="148" y1="216" x2="148" y2="308" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="192" y1="187" x2="192" y2="337" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="236" y1="227" x2="236" y2="297" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><path d="M262 300 L300 340 L420 196" fill="none" stroke="url(#spLogoB3)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v540</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v541</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -19966,6 +19966,7 @@ function spLobbyRender() {
     bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
     home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/></svg>',
     money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
     dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>'
   };
   const now = new Date(), today = new Date(); today.setHours(0, 0, 0, 0);
@@ -19973,7 +19974,6 @@ function spLobbyRender() {
   const h = now.getHours();
   const tod = h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 17 ? 'noon' : h >= 17 && h < 21 ? 'evening' : 'night';
   const hello = { morning: 'בוקר טוב', noon: 'צהריים טובים', evening: 'ערב טוב', night: 'לילה טוב' }[tod];
-  const emoji = { morning: '☀️', noon: '🌤️', evening: '🌇', night: '🌙' }[tod];
   const ils = n => '₪' + Math.round(n).toLocaleString('he-IL');
   // ── wins (the good news first) ──
   const wk = new Date(today); wk.setDate(wk.getDate() - 6);
@@ -20003,25 +20003,25 @@ function spLobbyRender() {
     todaySched.sort((a, b) => String(a.time || '99').localeCompare(String(b.time || '99')));
   } catch (_) {}
   // one warm sentence, picked from what's true
-  let line = 'יום טוב לעשות מוזיקה 🎶';
-  if (paidMonth > paidLastSame && paidLastSame > 0) line = 'אתה מקדים את החודש שעבר ב-' + ils(paidMonth - paidLastSame) + ' 🔥';
-  else if (paidWeek > 0) line = 'השבוע נכנסו לך ' + ils(paidWeek) + ' — יפה מאוד 💸';
-  else if (readyMonth > 0) line = 'סיימת ' + (readyMonth === 1 ? 'הפקה אחת' : readyMonth + ' הפקות') + ' החודש 🎧';
-  else if (sessWeek > 0) line = (sessWeek === 1 ? 'סשן אחד' : sessWeek + ' סשנים') + ' השבוע — ממשיך לזוז 💪';
+  let line = 'יום טוב לעשות מוזיקה.';
+  if (paidMonth > paidLastSame && paidLastSame > 0) line = 'אתה מקדים את החודש שעבר ב-' + ils(paidMonth - paidLastSame) + '.';
+  else if (paidWeek > 0) line = 'השבוע נכנסו לך ' + ils(paidWeek) + '. עבודה טובה.';
+  else if (readyMonth > 0) line = 'סיימת ' + (readyMonth === 1 ? 'הפקה אחת' : readyMonth + ' הפקות') + ' החודש.';
+  else if (sessWeek > 0) line = (sessWeek === 1 ? 'סשן אחד' : sessWeek + ' סשנים') + ' השבוע. ממשיך לזוז.';
   const wins = [];
-  if (paidMonth > 0) wins.push(['💸', ils(paidMonth), 'נכנסו החודש', 'chooseMode(\'business\');showPage(\'income\')']);
-  if (readyMonth > 0) wins.push(['🎧', String(readyMonth), readyMonth === 1 ? 'הפקה הושלמה' : 'הפקות הושלמו', 'chooseMode(\'business\');showPage(\'productions\');prodSetTab(\'ready\')']);
-  if (sessWeek > 0) wins.push(['🎙️', String(sessWeek), 'סשנים השבוע', 'chooseMode(\'business\');showPage(\'schedule\')']);
-  if (activeN > 0) wins.push(['🎶', String(activeN), 'הפקות בעבודה', 'chooseMode(\'business\');showPage(\'productions\')']);
+  if (paidMonth > 0) wins.push(['coin', ils(paidMonth), 'נכנסו החודש', 'chooseMode(\'business\');showPage(\'income\')']);
+  if (readyMonth > 0) wins.push(['note', String(readyMonth), readyMonth === 1 ? 'הפקה הושלמה' : 'הפקות הושלמו', 'chooseMode(\'business\');showPage(\'productions\');prodSetTab(\'ready\')']);
+  if (sessWeek > 0) wins.push(['cal', String(sessWeek), 'סשנים השבוע', 'chooseMode(\'business\');showPage(\'schedule\')']);
+  if (activeN > 0) wins.push(['note', String(activeN), 'הפקות בעבודה', 'chooseMode(\'business\');showPage(\'productions\')']);
   // ── today's small steps — each can be ticked off ──
   let doneMap = {}; try { doneMap = JSON.parse(localStorage.getItem('sp_today_done') || '{}'); if (doneMap.d !== tk) doneMap = { d: tk, ids: [] }; } catch (_) { doneMap = { d: tk, ids: [] }; }
   const isDone = id => doneMap.ids.indexOf(id) >= 0;
   const steps = [];
-  todaySched.slice(0, 4).forEach(x => steps.push({ id: 's_' + x.id, ic: 'cal', t: x.title || 'פגישה', s: (x.time ? 'ב-' + x.time : 'היום') + ' · בהצלחה!', go: 'chooseMode(\'business\');showPage(\'schedule\')' }));
+  todaySched.slice(0, 4).forEach(x => steps.push({ id: 's_' + x.id, ic: 'cal', t: x.title || 'פגישה', s: (x.time ? 'ב-' + x.time : 'היום') + '', go: 'chooseMode(\'business\');showPage(\'schedule\')' }));
   if (pendN) steps.push({ id: 'pay', ic: 'coin', t: ils(pendAll) + ' מחכים לך', s: pendN === 1 ? 'תזכורת עדינה ללקוח וזה אצלך' : pendN + ' לקוחות · תזכורת עדינה וזה אצלך', go: 'openDunningModal()' });
   try {
     prodList().filter(p => _prodStatus(p) === 'active' && p.deadline).map(p => ({ p, du: _prodDaysUntil(p.deadline) })).filter(o => o.du !== null && o.du <= 3)
-      .sort((a, b) => a.du - b.du).slice(0, 2).forEach(o => steps.push({ id: 'p_' + o.p.id, ic: 'note', t: o.p.title, s: o.du < 0 ? 'עוד דחיפה קטנה וזה מוכן 💪' : o.du === 0 ? 'מגיע היום — אתה בכיוון' : 'מגיע ' + (o.du === 1 ? 'מחר' : 'בעוד ' + o.du + ' ימים'), go: 'chooseMode(\'business\');showPage(\'productions\')' }));
+      .sort((a, b) => a.du - b.du).slice(0, 2).forEach(o => steps.push({ id: 'p_' + o.p.id, ic: 'note', t: o.p.title, s: o.du < 0 ? 'עוד דחיפה קטנה וזה מוכן' : o.du === 0 ? 'מגיע היום' : 'מגיע ' + (o.du === 1 ? 'מחר' : 'בעוד ' + o.du + ' ימים'), go: 'chooseMode(\'business\');showPage(\'productions\')' }));
   } catch (_) {}
   try { fcDueToAsk().slice(0, 2).forEach(o => steps.push({ id: 'f_' + o.x.id, ic: 'repeat', t: o.x.name, s: 'ירד כבר? · ' + ils(o.x.amount), fc: o.x.id })); } catch (_) {}
   let wa = 0; try { wa = _waWaitingCount(); } catch (_) {}
@@ -20043,18 +20043,18 @@ function spLobbyRender() {
     '<div class="oz-hd"><span class="wz-logo"><img src="icon-192.png" alt=""></span><span class="oz-hic">'
   +   '<button onclick="quickAction(\'search\')" aria-label="חיפוש">' + SV.search + '</button>'
   +   '<button onclick="openNotifSettings()" aria-label="הגדרות">' + SV.bell + '</button></span></div>'
-  + '<div class="wz-hello">' + hello + ', אליאור ' + emoji + '</div>'
+  + '<div class="wz-hello">' + hello + ', אליאור</div>'
   + '<div class="wz-line">' + _escape(line) + '</div>'
-  + (wins.length ? '<div class="wz-wins">' + wins.map(w => '<button onclick="' + w[3] + '"><span class="e">' + w[0] + '</span><b>' + w[1] + '</b><small>' + w[2] + '</small></button>').join('') + '</div>' : '')
+  + (wins.length ? '<div class="wz-wins">' + wins.map(w => '<button onclick="' + w[3] + '"><span class="e">' + SV[w[0]] + '</span><b>' + w[1] + '</b><small>' + w[2] + '</small></button>').join('') + '</div>' : '')
   + '<div class="oz-qa">'
   +   '<button class="pri" onclick="spLobbyAdd()"><i>' + SV.plus + '</i>הוספה</button>'
   +   '<button onclick="quickAction(\'schedule\')"><i>' + SV.cal + '</i>פגישה</button>'
   +   '<button onclick="quickAction(\'paylink\')"><i>' + SV.link + '</i>לינק תשלום</button>'
   +   '<button onclick="quickAction(\'search\')"><i>' + SV.search + '</i>חיפוש</button></div>'
   + (allDone || !total
-      ? '<div class="wz-card wz-clear"><div class="wz-big">' + (total ? '🎉' : '🌿') + '</div><b>' + (total ? 'הכל סגור להיום!' : 'יום פנוי') + '</b><small>' + (total ? 'עבודה יפה. מגיע לך רגע לנשום.' : 'זמן טוב ליצור משהו חדש.') + '</small></div>'
+      ? '<div class="wz-card wz-clear"><div class="wz-big">' + SV.check + '</div><b>' + (total ? 'הכל סגור להיום!' : 'יום פנוי') + '</b><small>' + (total ? 'עבודה טובה. אפשר לנשום.' : 'זמן טוב ליצור משהו חדש.') + '</small></div>'
       : '<div class="wz-card"><div class="wz-ch"><span>הצעדים של היום</span><span class="wz-prog"><i style="width:' + pct + '%"></i></span><span class="wz-cnt">' + doneN + '/' + total + '</span></div>' + steps.map(rowHtml).join('') + '</div>')
-  + '<button class="oz-link" onclick="chooseMode(\'goals\')">🎯 מטרות לשנה החדשה · ' + goalSub + ' ‹</button>'
+  + '<button class="oz-link" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה · ' + goalSub + ' ‹</button>'
   + '<div class="oz-nav">'
   +   '<button class="on">' + SV.home + '<span>בית</span></button>'
   +   '<button onclick="chooseMode(\'business\');showPage(\'productions\')">' + SV.note + '<span>הפקות</span></button>'
@@ -20072,10 +20072,8 @@ window.spTick = function(id, el) {
   if (was) m.ids = m.ids.filter(x => x !== id); else m.ids.push(id);
   try { localStorage.setItem('sp_today_done', JSON.stringify(m)); } catch (_) {}
   try { if (window.haptic) (was ? window.haptic.light : window.haptic.success) && (was ? window.haptic.light() : window.haptic.success()); } catch (_) {}
-  if (!was && el) { const r = el.getBoundingClientRect(); spConfetti(r.left + r.width / 2, r.top + r.height / 2, 14); }
   setTimeout(() => {
     spLobbyRender();
-    if (!was && document.querySelector('#sp-lobby .wz-clear')) { spConfetti(window.innerWidth / 2, window.innerHeight * 0.55, 60); try { window.haptic && window.haptic.success && window.haptic.success(); } catch (_) {} }
   }, was ? 0 : 420);
 };
 window.spConfetti = function(x, y, n) {
@@ -32563,10 +32561,6 @@ html[data-skin="spent"] #mode-screen > #lobby-settings-btn { display: none !impo
 html[data-skin="spent"] .exp-cat-icon { background: #e8eefd !important; color: #2f6be0 !important; }
 html[data-skin="spent"] .pr-ic.o, html[data-skin="spent"] .pr-ic.r, html[data-skin="spent"] .pr-ic { background: #e8eefd !important; color: #2f6be0 !important; }
 /* v540 — warm home: sky by time of day, wins, tick-off with confetti */
-html[data-skin="spent"] #mode-screen:has(#sp-lobby[data-tod="morning"]) { background-image: linear-gradient(180deg, #ffe7d1 0px, #fbe9f0 220px, #eef0fb 460px, #f7f7fa 640px) !important; }
-html[data-skin="spent"] #mode-screen:has(#sp-lobby[data-tod="noon"]) { background-image: linear-gradient(180deg, #dfeafd 0px, #eaeefc 240px, #f7f7fa 560px) !important; }
-html[data-skin="spent"] #mode-screen:has(#sp-lobby[data-tod="evening"]) { background-image: linear-gradient(180deg, #ffd9c4 0px, #f6dbe8 200px, #e8e3fa 420px, #f7f7fa 640px) !important; }
-html[data-skin="spent"] #mode-screen:has(#sp-lobby[data-tod="night"]) { background-image: linear-gradient(180deg, #d9dcf7 0px, #e6e2f8 240px, #f4f4f9 560px) !important; }
 .wz-logo img { width: 36px; height: 36px; border-radius: 11px; box-shadow: 0 2px 10px rgba(30,40,80,.12); display: block; }
 .wz-hello { font-size: 30px; font-weight: 800; color: #141414; letter-spacing: -0.02em; margin: 6px 4px 6px; }
 .wz-line { font-size: 16px; font-weight: 600; color: #4a4b55; margin: 0 4px 18px; }
@@ -32603,6 +32597,12 @@ html[data-skin="spent"] #mode-screen:has(#sp-lobby[data-tod="night"]) { backgrou
 @keyframes wzPop { 0% { transform: scale(.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
 .wz-conf { position: fixed; width: 8px; height: 12px; border-radius: 2px; z-index: 2147483646; pointer-events: none; animation: wzConf 1s cubic-bezier(.2,.7,.4,1) forwards; }
 @keyframes wzConf { to { transform: translate(var(--dx), calc(var(--dy) + 160px)) rotate(var(--r)); opacity: 0; } }
+/* v541 — calm warmth: no emoji/confetti, lavender kept, quiet icons */
+.wz-wins .e { width: 30px; height: 30px; border-radius: 15px; background: #eef2fd; color: #2f6be0; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+.wz-wins .e svg { width: 16px; height: 16px; }
+.wz-clear .wz-big { width: 52px; height: 52px; border-radius: 26px; background: #eef2fd; color: #2f6be0; display: flex; align-items: center; justify-content: center; animation: none; margin-bottom: 6px; }
+.wz-clear .wz-big svg { width: 24px; height: 24px; }
+.wz-tick.on { animation: none; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
