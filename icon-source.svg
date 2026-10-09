@@ -4,17 +4,18 @@
 <linearGradient id="wf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e3e9ff"/></linearGradient>
 <linearGradient id="bat" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffffff" stop-opacity=".95"/></linearGradient>
 <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".35" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-<filter id="sh" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#0d1766" flood-opacity=".34"/></filter></defs><rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#lo)"/><rect width="1024" height="1024" fill="url(#hl)"/><g opacity=".85"><g transform="translate(186 340) scale(1.75) translate(-186 -340)"><text x="186" y="357" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="50" fill="#fff">₪</text></g><g transform="translate(186 450) scale(1.75) translate(-186 -450)"><g fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><rect x="164" y="432" width="44" height="40" rx="9"/><path d="M164 446 H208 M175 424 V438 M197 424 V438"/></g></g><g transform="translate(186 560) scale(1.75) translate(-186 -560)"><g fill="#fff"><path d="M192 574 V536 L210 542" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="182" cy="576" rx="13" ry="10" transform="rotate(-20 182 576)"/></g></g><g transform="translate(186 670) scale(1.75) translate(-186 -670)"><g fill="#fff"><circle cx="186" cy="660" r="11"/><path d="M166 692 C166 674 176 670 186 670 C196 670 206 674 206 692 Z"/></g></g></g><g stroke="#fff" stroke-width="12" stroke-linecap="round" opacity=".22"><line x1="262" y1="340" x2="874" y2="340"/><line x1="262" y1="450" x2="874" y2="450"/><line x1="262" y1="560" x2="874" y2="560"/><line x1="262" y1="670" x2="874" y2="670"/><line x1="150" y1="720" x2="874" y2="720"/></g><g filter="url(#sh)">
-  <!-- note head: classic tilted oval with subtle inner highlight -->
-  <ellipse cx="402" cy="694" rx="134" ry="98" transform="rotate(-24 402 694)" fill="url(#wf)"/>
-  <!-- stem (body) + head -->
-  <path d="M500 668 V330" stroke="#fff" stroke-width="58" stroke-linecap="round"/>
-  <circle cx="500" cy="238" r="62" fill="url(#wf)"/>
-  <!-- check that grows out of the stem -->
-  <path d="M500 452 L594 546 L772 336" fill="none" stroke="#fff" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- baton: tapered, continuing the check's last stroke -->
-  <path d="M760 334 L878 196 L886 204 L790 362 Z" fill="url(#bat)"/>
+<filter id="sh" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#0d1766" flood-opacity=".34"/></filter></defs><rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#lo)"/><rect width="1024" height="1024" fill="url(#hl)"/><g opacity=".85"><g transform="translate(180 300) scale(2.15) translate(-186 -300)"><text x="186" y="317" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="50" fill="#fff">₪</text></g><g transform="translate(180 440) scale(2.15) translate(-186 -440)"><g fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><rect x="164" y="422" width="44" height="40" rx="9"/><path d="M164 436 H208 M175 414 V428 M197 414 V428"/></g></g><g transform="translate(180 580) scale(2.15) translate(-186 -580)"><g fill="#fff"><path d="M192 594 V556 L210 562" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="182" cy="596" rx="13" ry="10" transform="rotate(-20 182 596)"/></g></g><g transform="translate(180 720) scale(2.15) translate(-186 -720)"><g fill="#fff"><circle cx="186" cy="710" r="11"/><path d="M166 742 C166 724 176 720 186 720 C196 720 206 724 206 742 Z"/></g></g></g><g stroke="#fff" stroke-width="12" stroke-linecap="round" opacity=".22"><line x1="292" y1="300" x2="874" y2="300"/><line x1="292" y1="440" x2="874" y2="440"/><line x1="292" y1="580" x2="874" y2="580"/><line x1="292" y1="720" x2="874" y2="720"/></g><g filter="url(#sh)">
+  <!-- note head (base) -->
+  <ellipse cx="404" cy="702" rx="132" ry="96" transform="rotate(-24 404 702)" fill="url(#wf)"/>
+  <!-- body: tapered stem, slimmer at the shoulders -->
+  <path d="M478 690 L482 352 Q484 326 506 326 Q528 326 530 352 L534 690 Z" fill="#fff"/>
+  <!-- head with swept conductor hair, a little gap above the shoulders -->
+  <circle cx="506" cy="252" r="54" fill="url(#wf)"/>
+  <!-- raised arm = the check, tapering toward the hand -->
+  <path d="M512 446 L600 548 L772 340" fill="none" stroke="#fff" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- baton -->
+  <path d="M762 336 L878 198 L886 206 L788 360 Z" fill="url(#bat)"/>
 </g>
-<circle cx="884" cy="198" r="64" fill="url(#glow)"/>
-<circle cx="884" cy="198" r="12" fill="#fff"/>
-<g fill="#fff" opacity=".9"><path d="M944 120 l6 16 16 6 -16 6 -6 16 -6 -16 -16 -6 16 -6z"/><path d="M820 128 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4z" opacity=".7"/></g></svg>
+<circle cx="884" cy="200" r="64" fill="url(#glow)"/>
+<circle cx="884" cy="200" r="12" fill="#fff"/>
+<g fill="#fff" opacity=".9"><path d="M944 122 l6 16 16 6 -16 6 -6 16 -6 -16 -16 -6 16 -6z"/><path d="M820 130 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4z" opacity=".7"/></g></svg>
