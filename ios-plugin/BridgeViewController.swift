@@ -30,12 +30,14 @@ class BridgeViewController: CAPBridgeViewController {
         webView?.isOpaque = false
         webView?.backgroundColor = lavender
         webView?.scrollView.backgroundColor = lavender
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            webView?.scrollView.topEdgeEffect.isHidden = true
-            webView?.scrollView.bottomEdgeEffect.isHidden = true
+        view.backgroundColor = lavender
+        // Hide iOS 26's scroll-edge fade at runtime (works whatever Xcode
+        // built the app — no compile-time SDK check that could drop it).
+        if let sv = webView?.scrollView {
+            for key in ["topEdgeEffect", "bottomEdgeEffect"] where sv.responds(to: NSSelectorFromString(key)) {
+                (sv.value(forKey: key) as? NSObject)?.setValue(true, forKey: "hidden")
+            }
         }
-        #endif
 
         // Warm-launch quick action: AppDelegate posts to this
         // NotificationCenter name; we forward to JS so the right
