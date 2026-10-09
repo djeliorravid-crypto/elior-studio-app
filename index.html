@@ -7545,7 +7545,7 @@
     <svg class="sp-logo" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="spLogoB3" gradientUnits="userSpaceOnUse" x1="90" y1="360" x2="430" y2="170"><stop offset="0" stop-color="#0c6b37"/><stop offset="1" stop-color="#2fd17a"/></linearGradient></defs><rect x="4" y="4" width="504" height="504" rx="113" fill="#fff" stroke="#e6e6e2" stroke-width="8"/><g transform="translate(256 256) scale(1.2) translate(-262 -268)"><line x1="104" y1="242" x2="104" y2="282" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="148" y1="216" x2="148" y2="308" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="192" y1="187" x2="192" y2="337" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><line x1="236" y1="227" x2="236" y2="297" stroke="url(#spLogoB3)" stroke-width="28" stroke-linecap="round"/><path d="M262 300 L300 340 L420 196" fill="none" stroke="url(#spLogoB3)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v528</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v529</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -18742,6 +18742,7 @@ function fcAskHtml() {
 function fcAskRenderAll() {
   const h = fcAskHtml();
   ['fc-ask', 'sp-lobby-ask', 'xs-ask'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = h; });
+  try { if (!document.getElementById('mode-screen').classList.contains('hidden')) spLobbyRender(); } catch (_) {}
 }
 
 // ── 🛟 restore fixed costs from a backup (6.10) — read-only until he picks
@@ -19970,55 +19971,79 @@ const _SPL_IC = {
   chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>'
 };
 function spLobbyRender() {
+  // v529 (9.10): calm lobby — green header with ONE number (what's left
+  // this month), then only what needs him today, then areas. Fitness is
+  // hidden (Elior: "לא צריך את זה יותר"); its data/code stay intact.
   const ms = document.getElementById('mode-screen');
   if (!ms || document.documentElement.getAttribute('data-skin') !== 'spent') return;
   let box = document.getElementById('sp-lobby');
-  if (!box) {
-    box = document.createElement('div'); box.id = 'sp-lobby';
-    const row = ms.querySelector('.mode-cards-row');
-    ms.insertBefore(box, row);
-  }
-  let paid = 0, pending = 0, out = 0, pendN = 0;
+  if (!box) { box = document.createElement('div'); box.id = 'sp-lobby'; ms.insertBefore(box, ms.querySelector('.mode-cards-row')); }
+  const IC = {
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+    note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg>',
+    chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.2A8 8 0 1 1 20 11.5z"/></svg>',
+    repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8" fill="currentColor"/></svg>'
+  };
+  const ic = (k, bg, fg) => '<span class="sl-ic" style="background:' + bg + ';color:' + fg + '">' + IC[k] + '</span>';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let paid = 0, pendM = 0, out = 0, pendAll = 0, pendN = 0, oldest = 0;
   try {
     load('income').forEach(i => {
-      if (!inCurMonth(i.date)) return;
-      const a = Number(i.amount) || 0;
-      if ((i.status || 'pending') === 'paid') paid += a; else { pending += a; pendN++; }
+      const a = Number(i.amount) || 0, isPaid = (i.status || 'pending') === 'paid';
+      if (inCurMonth(i.date)) { if (isPaid) paid += a; else pendM += a; }
+      if (!isPaid && i.date) { const d = new Date(i.date); d.setHours(0, 0, 0, 0); if (d <= today) { pendAll += a; pendN++; oldest = Math.max(oldest, Math.round((today - d) / 864e5)); } }
     });
     out = load('expenses').filter(e => inCurMonth(e.date)).reduce((t, e) => t + (Number(e.amount) || 0), 0);
   } catch (_) {}
   let hide = false; try { hide = localStorage.getItem('sp_hide_bal') === '1'; } catch (_) {}
-  const money = n => hide ? '₪ •••••' : '₪' + Math.round(n).toLocaleString('he-IL');
+  const money = n => hide ? '₪ •••' : '₪' + Math.round(n).toLocaleString('he-IL');
   const net = paid - out;
-  const month = new Date().toLocaleDateString('he-IL', { month: 'long' });
+  const greet = (document.getElementById('lobby-greet') || {}).textContent || 'שלום, אליאור';
+  const dateTxt = (document.getElementById('lobby-sub') || {}).textContent || '';
+  // ── today's to-dos ──
+  const rows = [];
+  if (pendN) rows.push('<button class="sl-row" onclick="chooseMode(\'business\');showPage(\'income\')">' + ic('clock', '#fff4e5', '#c46a00')
+    + '<span class="sl-m"><b>' + (pendN === 1 ? 'תשלום ממתין' : pendN + ' תשלומים ממתינים') + '</b><small>' + (oldest ? 'הכי ישן ממתין ' + oldest + ' ימים' : 'מהיום') + '</small></span><span class="sl-v o">' + money(pendAll) + '</span></button>');
+  try {
+    prodList().filter(p => _prodStatus(p) === 'active' && p.deadline).map(p => ({ p, du: _prodDaysUntil(p.deadline) })).filter(o => o.du !== null && o.du <= 3)
+      .sort((a, b) => a.du - b.du).slice(0, 3).forEach(o => {
+        const lbl = o.du < 0 ? 'באיחור ' + (-o.du === 1 ? 'יום' : -o.du + ' ימים') : o.du === 0 ? 'היום' : o.du === 1 ? 'מחר' : 'עוד ' + o.du + ' ימים';
+        rows.push('<button class="sl-row" onclick="chooseMode(\'business\');showPage(\'productions\')">' + ic('note', o.du < 0 ? '#fdecea' : '#fff4e5', o.du < 0 ? '#d0402b' : '#c46a00')
+          + '<span class="sl-m"><b>' + _escape(o.p.title) + '</b><small>' + _escape(o.p.artist || 'הפקה') + '</small></span><span class="sl-v ' + (o.du < 0 ? 'r' : 'o') + '">' + lbl + '</span></button>');
+      });
+  } catch (_) {}
+  try {
+    fcDueToAsk().slice(0, 3).forEach(o => {
+      rows.push('<div class="sl-row">' + ic('repeat', '#e5edfd', '#2f5fd0') + '<span class="sl-m"><b>' + _escape(o.x.name) + '</b><small>ירד כבר? · ' + money(o.x.amount) + ' · ב-' + o.d.getDate() + '</small></span>'
+        + '<button class="sl-no" onclick="fcAskLater(\'' + o.x.id + '\')">עוד לא</button><button class="sl-yes" onclick="fcAskYes(\'' + o.x.id + '\')">ירד</button></div>');
+    });
+  } catch (_) {}
+  let wa = 0; try { wa = _waWaitingCount(); } catch (_) {}
+  if (wa) rows.push('<button class="sl-row" onclick="waGoInbox()">' + ic('chat', '#e3f6eb', '#12804a') + '<span class="sl-m"><b>' + (wa === 1 ? 'הודעה חדשה' : wa + ' הודעות חדשות') + '</b><small>וואטסאפ · מחכות לתשובה</small></span><span class="sl-ch">‹</span></button>');
+  if (!rows.length) rows.push('<div class="sl-row">' + ic('check', '#e3f6eb', '#12804a') + '<span class="sl-m"><b>הכל מסודר להיום</b><small>אין תשלומים, דד-ליינים או הודעות שמחכים לך</small></span></div>');
+  // ── goals line ──
+  let goalSub = 'מה אני רוצה שיקרה השנה?';
+  try { const st = _ygState(), n = st.goals.length, d = st.goals.filter(g => g.done).length; if (n) goalSub = d + ' מתוך ' + n + ' הושגו'; } catch (_) {}
   box.innerHTML =
-    '<div class="spl-card" onclick="chooseMode(\'business\'); showPage(\'income\')">'
-  +   '<div class="spl-top"><span class="spl-lbl">נכנס ב' + month + '</span>'
-  +   '<button type="button" class="spl-eye" onclick="event.stopPropagation(); spLobbyToggleHide()" aria-label="הסתר סכומים">' + (hide ? _SPL_IC.eyeOff : _SPL_IC.eye) + '</button></div>'
-  +   '<div class="spl-bal">' + money(paid) + '</div>'
-  +   '<div class="spl-row">'
-  +     '<div><small>ממתין' + (pendN ? ' · ' + pendN : '') + '</small><b>' + money(pending) + '</b></div>'
-  +     '<div><small>יצא</small><b>' + money(out) + '</b></div>'
-  +     '<div><small>נטו</small><b class="' + (net >= 0 ? 'pos' : 'neg') + '">' + (hide ? '•••' : (net >= 0 ? '+' : '−') + money(Math.abs(net))) + '</b></div>'
+    '<div class="sl-hero">'
+  +   '<div class="sl-top"><span class="sl-date"><img class="sl-logo" src="icon-192.png" alt=""><span>' + _escape(dateTxt) + '</span></span>'
+  +   '<span class="sl-bsd">בס״ד</span></div>'
+  +   '<div class="sl-k">' + _escape(greet) + ' · נשאר לך החודש</div>'
+  +   '<div class="sl-big" onclick="spLobbyToggleHide()">' + (hide ? '₪ •••••' : (net < 0 ? '−' : '') + '₪' + Math.abs(Math.round(net)).toLocaleString('he-IL')) + '</div>'
+  +   '<div class="sl-pills"><button onclick="chooseMode(\'business\');showPage(\'income\')"><small>נכנס</small><b>' + money(paid) + '</b></button>'
+  +   '<button onclick="chooseMode(\'business\');showPage(\'expenses\')"><small>יצא</small><b>' + money(out) + '</b></button>'
+  +   '<button onclick="chooseMode(\'business\');showPage(\'income\')"><small>ממתין</small><b>' + money(pendM) + '</b></button></div>'
+  + '</div>'
+  + '<div class="sl-body">'
+  +   '<div class="sl-sec">דורש ממך היום</div><div class="sl-grp">' + rows.join('') + '</div>'
+  +   '<div class="sl-sec">אזורים</div><div class="sl-grp">'
+  +     '<button class="sl-row" onclick="chooseMode(\'business\')">' + ic('clock', '#e3f6eb', '#12804a').replace(IC.clock, '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="3"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/></svg>') + '<span class="sl-m"><b>עסקי</b><small>הפקות · כסף · לו״ז · לקוחות</small></span><span class="sl-ch">‹</span></button>'
+  +     '<button class="sl-row" onclick="chooseMode(\'goals\')">' + ic('target', '#fdede2', '#e0662f') + '<span class="sl-m"><b>מטרות לשנה החדשה</b><small>' + goalSub + '</small></span><span class="sl-ch">‹</span></button>'
   +   '</div>'
-  + '</div>'
-  + '<div id="sp-lobby-ask"></div>'
-  + '<div class="spl-qa">'
-  +   '<button type="button" onclick="quickAction(\'income\')"><i class="g">' + _SPL_IC.inc + '</i><span>הכנסה</span></button>'
-  +   '<button type="button" onclick="quickAction(\'expense\')"><i class="r">' + _SPL_IC.exp + '</i><span>הוצאה</span></button>'
-  +   '<button type="button" onclick="quickAction(\'paylink\')"><i class="b">' + _SPL_IC.pay + '</i><span>לינק תשלום</span></button>'
-  +   '<button type="button" onclick="quickAction(\'schedule\')"><i class="p">' + _SPL_IC.cal + '</i><span>פגישה</span></button>'
-  + '</div>'
-  + '<div class="spl-h">החשבונות שלי</div>'
-  + '<div class="spl-acc">'
-  +   '<button type="button" onclick="chooseMode(\'business\')"><i class="biz">' + _SPL_IC.biz + '</i>'
-  +     '<span class="t"><b>עסקי ואישי</b><small>' + (pendN ? pendN + ' תשלומים ממתינים · ' : '') + 'הכנסות · הוצאות · לקוחות</small></span>'
-  +     '<span class="ar">' + _SPL_IC.chev + '</span></button>'
-  +   '<button type="button" onclick="chooseMode(\'path\')"><i class="fit">' + _SPL_IC.fit + '</i>'
-  +     '<span class="t"><b>כושר ותזונה</b><small>משקל · תזונה · מאמן</small></span>'
-  +     '<span class="ar">' + _SPL_IC.chev + '</span></button>'
   + '</div>';
-  try { fcAskRenderAll(); } catch (_) {}
+  const gear = document.getElementById('lobby-settings-btn'); if (gear && gear.parentNode !== box) box.appendChild(gear);
 }
 window.spLobbyToggleHide = function() {
   try { localStorage.setItem('sp_hide_bal', localStorage.getItem('sp_hide_bal') === '1' ? '0' : '1'); } catch (_) {}
@@ -20756,6 +20781,7 @@ function _waWaitingCount() {
   return (_waConvs || []).filter(c => c.waiting && (c.cls === 'client' || c.cls === 'lead') && !_waSnoozeActive(c)).length;
 }
 function _waLobbyBadge() {
+  try { if (document.documentElement.getAttribute('data-skin') === 'spent' && !document.getElementById('mode-screen').classList.contains('hidden')) spLobbyRender(); } catch (_) {}
   const el = document.getElementById('lobby-wa-badge');
   if (!el) return;
   const n = _waWaitingCount();
@@ -32237,6 +32263,47 @@ html[data-skin="spent"] .sp-word-sub { display: block; font-size: 14px; font-wei
 html[data-skin="spent"] #login-screen .login-signature, html[data-skin="spent"] #login-screen .login-sub, html[data-skin="spent"] #face-id-lock .face-id-logo { display: none !important; }
 html[data-skin="spent"] #face-id-lock .sp-word { font-size: 40px; margin: 6px 0 4px; }
 html.desk[data-skin="spent"] .dk-word { font-size: 21px !important; font-weight: 900 !important; letter-spacing: -0.03em; }
+/* v529 — calm lobby (RiseUp / ONE ZERO style). Old lobby pieces are
+   hidden, not deleted; fitness card hidden (data kept). */
+html[data-skin="spent"] #mode-screen { display: block !important; padding: 0 !important; background: #f4f5f4 !important; overflow-y: auto !important; gap: 0 !important; }
+html[data-skin="spent"] #mode-screen > .mode-screen-title,
+html[data-skin="spent"] #mode-screen > .bsd-mark,
+html[data-skin="spent"] #mode-screen > .lobby-year-card,
+html[data-skin="spent"] #mode-screen > #lobby-wa-badge,
+html[data-skin="spent"] #mode-screen > .mode-cards-row { display: none !important; }
+html[data-skin="spent"] #sp-lobby { display: block !important; max-width: 560px; margin: 0 auto; position: relative; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); }
+.sl-hero { background: linear-gradient(168deg, #1fa85c 0%, #12804a 100%); color: #fff; padding: calc(env(safe-area-inset-top, 0px) + 18px) 22px 24px; border-radius: 0 0 30px 30px; }
+.sl-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; }
+.sl-date { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 600; opacity: .95; }
+.sl-logo { width: 32px; height: 32px; border-radius: 9px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+.sl-bsd { font-size: 12px; opacity: .7; margin-left: 52px; }
+.sl-k { font-size: 15px; font-weight: 600; opacity: .88; }
+.sl-big { font-size: 50px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; margin: 4px 0 18px; direction: ltr; text-align: right; cursor: pointer; }
+.sl-pills { display: flex; gap: 8px; }
+.sl-pills button { flex: 1; background: rgba(255,255,255,.14); border: none; border-radius: 14px; padding: 9px 12px; color: #fff; text-align: right; font-family: inherit; cursor: pointer; }
+.sl-pills small { display: block; font-size: 12px; opacity: .85; font-weight: 600; }
+.sl-pills b { display: block; font-size: 16px; font-weight: 800; direction: ltr; text-align: right; }
+.sl-body { padding: 0 16px; }
+.sl-sec { font-size: 13px; color: #8c8c87; font-weight: 700; margin: 22px 8px 8px; }
+.sl-grp { background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.sl-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px; border: none; border-bottom: 1px solid #f1f1ef; background: #fff; font-family: inherit; text-align: right; cursor: pointer; }
+.sl-row:last-child { border-bottom: none; }
+button.sl-row:active { background: #f7f7f5; }
+.sl-ic { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sl-ic svg { width: 20px; height: 20px; }
+.sl-m { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sl-m b { font-size: 16px; font-weight: 700; color: #141414; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sl-m small { font-size: 13px; color: #8c8c87; margin-top: 2px; font-weight: 500; }
+.sl-v { font-size: 15.5px; font-weight: 800; color: #141414; direction: ltr; white-space: nowrap; }
+.sl-v.o { color: #c46a00; } .sl-v.r { color: #d0402b; }
+.sl-ch { color: #c4c4bf; font-size: 22px; }
+.sl-yes, .sl-no { border: none; border-radius: 999px; padding: 8px 13px; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; flex-shrink: 0; }
+.sl-yes { background: #1a9a55; color: #fff; } .sl-no { background: #f1f2f1; color: #666; }
+html[data-skin="spent"] #sp-lobby #lobby-settings-btn { position: absolute !important; top: calc(env(safe-area-inset-top, 0px) + 14px) !important; left: 20px !important; right: auto !important;
+  width: 38px !important; height: 38px !important; background: rgba(255,255,255,.16) !important; border: none !important; box-shadow: none !important; color: #fff !important; }
+html[data-skin="spent"] #sp-lobby #lobby-settings-btn svg { width: 20px; height: 20px; }
+html.desk[data-skin="spent"] #sp-lobby { display: block !important; margin-top: 30px; }
+html.desk .sl-hero { border-radius: 30px; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
