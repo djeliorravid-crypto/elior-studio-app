@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v567</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v568</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -33110,6 +33110,9 @@ html[data-skin="spent"] #fz-week .fz-mo-top { justify-content: center; }
 .fz-ri.fz-g .fz-bd.late { width: 11px; height: 11px; background: #e0603f; bottom: auto; top: -2px; left: -2px; }
 /* v567 — icon tiles filled like the logo: night-blue, white glyph */
 .fz-ri.fz-g { background: linear-gradient(180deg, #1e265e 0%, #151a41 100%) !important; color: #ffffff !important; box-shadow: 0 4px 10px rgba(22,28,69,.18), inset 0 1px 0 rgba(255,255,255,.08) !important; }
+/* v568 — the logo's soft sheen on the tiles */
+.fz-ri.fz-g { background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38) 0%, rgba(120,135,220,.14) 32%, rgba(30,38,94,0) 62%), linear-gradient(180deg, #232c6a 0%, #151a41 100%) !important;
+  box-shadow: 0 5px 12px rgba(22,28,69,.22), inset 0 1px 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(0,0,0,.18) !important; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
