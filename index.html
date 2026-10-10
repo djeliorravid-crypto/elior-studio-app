@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v564</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v565</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -19958,7 +19958,7 @@ const FZ = {
 };
 const FZ_TINT = { violet: ['#e1e5f4', '#161c45'], peach: ['#ffe9e1', '#e0703f'], mint: ['#e0f4ec', '#2f9e6f'], sun: ['#fff3df', '#b8770a'], rose: ['#ffe9e4', '#d2553a'] };
 // v555: production mark — a small navy tile with a live waveform (state tints the tile)
-const fzProdIc = (st) => '<span class="fz-ri fz-pd ' + st + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10.5v3"/><path d="M8 7.5v9"/><path d="M12 4.5v15"/><path d="M16 8.5v7"/><path d="M20 10.5v3"/></svg></span>';
+const fzProdIc = (st) => '<span class="fz-ri fz-g fz-pd ' + st + '">' + FZG.note + (st === 'late' ? '<i class="fz-bd late"></i>' : st === 'ready' ? '<i class="fz-bd ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4 4L18.5 8"/></svg></i>' : '') + '</span>';
 // v555: payment-state mark — coin + badge: clock (waiting), check (paid), and a receipt-minus badge when paid without a receipt
 const FZ_COIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.3 16V8.2h3.3a2.4 2.4 0 0 1 2.4 2.4v2.6"/><path d="M15.7 8v7.8h-3.3a2.4 2.4 0 0 1-2.4-2.4v-2.6"/></svg>';
 const FZ_BADGE = {
@@ -19971,8 +19971,17 @@ window.fzPayState = function(i) {
   let mc = false; try { mc = !!(window.morningConnected && window.morningConnected()); } catch (_) {}
   return mc && !i.morningDocId ? 'norc' : 'ok';
 };
-const fzPayIc = (i) => { const k = fzPayState(i); return '<span class="fz-ri fz-pay ' + k + '">' + FZ_COIN + (k === 'wait' ? FZ_BADGE.wait : FZ_BADGE.ok) + (k === 'norc' ? FZ_BADGE.norc : '') + '</span>'; };
-const fzIc = (k, t) => '<span class="fz-ri" style="background:' + FZ_TINT[t][0] + ';color:' + FZ_TINT[t][1] + '">' + FZ[k] + '</span>';
+const fzPayIc = (i) => { const k = fzPayState(i); return '<span class="fz-ri fz-g fz-pay ' + k + '">' + FZG.coin + (k === 'wait' ? FZ_BADGE.wait : FZ_BADGE.ok) + (k === 'norc' ? FZ_BADGE.norc : '') + '</span>'; };
+// v565: one refined glyph set for every row icon (fine 1.75 strokes, navy on a soft tile)
+const _g = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+const FZG = {
+  cal: _g('<rect x="3.75" y="5" width="16.5" height="15.25" rx="3.5"/><path d="M3.75 9.75h16.5M8.25 3.25v3.5M15.75 3.25v3.5"/><path d="M8.5 14h.01M12 14h.01M15.5 14h.01" stroke-width="2.4"/>'),
+  note: _g('<path d="M4.75 10.5v3M8.37 7.5v9M12 4.75v14.5M15.63 8.25v7.5M19.25 10.5v3"/>'),
+  coin: _g('<path d="M7.25 17.75V6.75h4.5a3 3 0 0 1 3 3v4.5"/><path d="M16.75 6.25v11h-4.5a3 3 0 0 1-3-3v-4.5"/>'),
+  repeat: _g('<path d="M19.25 12a7.25 7.25 0 0 1-12.6 4.9M4.75 12a7.25 7.25 0 0 1 12.6-4.9"/><path d="M17.6 3.9v3.3h-3.3M6.4 20.1v-3.3h3.3"/>'),
+  chat: _g('<path d="M19.75 11.6a7.6 7.6 0 0 1-11 6.8L4.5 19.5l1.15-3.9a7.6 7.6 0 1 1 14.1-4z"/>')
+};
+const fzIc = (k, t) => '<span class="fz-ri fz-g" data-t="' + t + '">' + (FZG[k] || FZ[k]) + '</span>';
 const fzMonthName = (y, m) => new Date(y, m, 1).toLocaleDateString('he-IL', { month: 'long' });
 // ── Payment reminder → straight into the client's WhatsApp chat (10.10).
 // He writes the text himself. No phone yet → pick from contacts / type it. ──
@@ -33089,6 +33098,16 @@ html[data-skin="spent"] #fz-week .fz-mo-top { justify-content: center; }
 .fz-addday { width: auto !important; display: inline-flex !important; gap: 6px !important; margin: 6px 58px 130px 0 !important; padding: 8px 4px !important; border: none !important; border-radius: 0 !important; background: none !important; font-size: 14.5px !important; font-weight: 500 !important; color: #6b7299 !important; }
 .fz-addday svg { width: 15px; height: 15px; }
 .fz-addday:active { opacity: .6; transform: none !important; }
+/* v565 — one icon language: navy hairline glyph on a soft navy tile (like the logo, quiet) */
+.fz-ri.fz-g { position: relative; display: flex !important; align-items: center !important; justify-content: center !important; width: 44px !important; height: 44px !important; flex: 0 0 44px; border-radius: 14px !important;
+  background: linear-gradient(180deg, #f1f3fa 0%, #e7eaf5 100%) !important; color: #1d2560 !important; box-shadow: inset 0 0 0 1px rgba(22,28,69,.05) !important; padding: 0 !important; }
+.fz-ri.fz-g > svg { display: block; width: 22px !important; height: 22px !important; margin: 0 !important; }
+.fz-ri.fz-g.fz-pd.paused { opacity: .5; }
+.fz-ri.fz-g .fz-bd { width: 16px; height: 16px; border-radius: 8px; bottom: -3px; left: -3px; top: auto; box-shadow: 0 0 0 2px #fff; }
+.fz-ri.fz-g .fz-bd svg { width: 9px !important; height: 9px !important; }
+.fz-ri.fz-g .fz-bd.wait { background: #e3a13a; } .fz-ri.fz-g .fz-bd.ok { background: #2f9e6c; }
+.fz-ri.fz-g .fz-bd.norc { background: #e0603f; top: -3px; bottom: auto; }
+.fz-ri.fz-g .fz-bd.late { width: 11px; height: 11px; background: #e0603f; bottom: auto; top: -2px; left: -2px; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
