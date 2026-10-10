@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v562</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v563</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11599,8 +11599,8 @@ function spFlowProductionEdit(id, startAt) {
 }
 
 // ── calendar event (from the +) ──
-function spFlowScheduleAdd() {
-  spFlowOpen({ title: 'אירוע חדש בלוז', vals: { title: '', time: '', date: _spISO(0) },
+function spFlowScheduleAdd(day) {
+  spFlowOpen({ title: 'אירוע חדש בלוז', vals: { title: '', time: '', date: (typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day)) ? day : _spISO(0) },
     steps: [
       { k: 'title', type: 'text', q: 'מה יש?', ph: 'סשן עם…, פגישה…', req: 'כתוב מה יש', recent: _spRecentDescs('schedule', 'title') },
       { k: 'time', type: 'time', q: 'באיזו שעה?' },
@@ -30608,7 +30608,7 @@ function _schedSpent(items, listEl) {
   const arw = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="' + (d > 0 ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7') + '"/></svg>';
   const wEnd = new Date(start); wEnd.setDate(start.getDate() + 6);
   const range = start.getMonth() === wEnd.getMonth() ? start.getDate() + '–' + wEnd.getDate() + ' ב' + MONTHS_HE[wEnd.getMonth()] : start.getDate() + ' ב' + MONTHS_HE[start.getMonth()] + ' – ' + wEnd.getDate() + ' ב' + MONTHS_HE[wEnd.getMonth()];
-  const keepX = window._fzKeep ? (wk.querySelector('.fz-days') || {}).scrollLeft : null; window._fzKeep = 0;
+  const keepX = (window._fzKeep || wk.dataset.sel === _scheduleDate) ? (wk.querySelector('.fz-days') || {}).scrollLeft : null; window._fzKeep = 0; wk.dataset.sel = _scheduleDate;
   wk.innerHTML = '<div class="fz-mo fz-mo-top">'
     + '<span class="fz-mid"><span class="fz-dd">' + dRel + '</span><span class="fz-rel' + (mDiff ? ' away' : '') + '"><b>' + rel + '</b><span>' + MONTHS_HE[cur.getMonth()] + (cur.getFullYear() !== new Date().getFullYear() ? ' ' + cur.getFullYear() : '') + '</span></span></span>'
     + '</div>'
@@ -30617,14 +30617,30 @@ function _schedSpent(items, listEl) {
     + '<div class="fz-lbl">' + label + (_scheduleDate !== todayK ? ' · <button class="fz-today" onclick="goScheduleToday()">חזרה להיום</button>' : '') + '</div>';
   { const sc = wk.querySelector('.fz-days');
     if (sc) { if (keepX !== null && keepX !== undefined) sc.scrollLeft = keepX;
-      else { const on = sc.querySelector('button.on'); if (on) { const r = on.offsetLeft - (sc.clientWidth - on.offsetWidth) / 2; sc.scrollLeft = r; } } } }
+      // make sure the chosen day is on screen (centre it if it isn't) — after layout
+      const fit = () => { const on = sc.querySelector('button.on'); if (!on || !sc.clientWidth) return false;
+        const r = sc.getBoundingClientRect(), q = on.getBoundingClientRect();
+        if (keepX === null || keepX === undefined || q.left < r.left || q.right > r.right) sc.scrollLeft += (q.left + q.width / 2) - (r.left + r.width / 2);
+        return true; };
+      if (!fit()) requestAnimationFrame(() => { if (!fit()) setTimeout(fit, 120); }); } }
   const tints = ['violet', 'mint', 'peach', 'sun'];
-  listEl.innerHTML = items.length ? items.map((it, n) => {
+  const _tm = t => /^\d{1,2}:\d{2}$/.test(t || '') && t !== '00:00' ? (+t.split(':')[0]) * 60 + (+t.split(':')[1]) : null;
+  const _gapTxt = m => { if (m < 60) return m + ' דק׳'; const h = Math.floor(m / 60), r = m % 60;
+    const hs = h === 1 ? 'שעה' : h === 2 ? 'שעתיים' : h + ' שעות';
+    return r === 0 ? hs : r === 30 ? (h === 1 ? 'שעה וחצי' : h === 2 ? 'שעתיים וחצי' : h + ' וחצי שעות') : h + ':' + String(r).padStart(2, '0') + ' ש׳'; };
+  const dLong = _scheduleDate === todayK ? 'להיום' : 'ל' + cur.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
+  const addBox = '<button class="fz-addday" onclick="spFlowScheduleAdd(_scheduleDate)"><span class="p">' + FZ.plus + '</span><span>הוספת אירוע ' + dLong + '</span></button>';
+  listEl.innerHTML = (items.length ? items.map((it, n) => {
+    let gap = '';
+    if (n > 0) { const a = _tm(items[n - 1].time), b = _tm(it.time);
+      if (a !== null && b !== null && b > a) gap = '<div class="fz-gap"><div class="h"><i></i><span>' + _gapTxt(b - a) + '</span><i></i></div></div>'; }
+    return gap + _tlRow(it, n); }).join('') : '<div class="fz-empty">' + (_scheduleDate === todayK ? 'יום פנוי היום' : 'אין כלום ביום הזה') + '</div>') + addBox;
+  function _tlRow(it, n) {
     const t = FZ_TINT[tints[n % tints.length]];
     const editable = it._source !== 'gcal' || (typeof it.id === 'string' && it.id.indexOf('gcal_ek_') === 0);
     return '<div class="fz-tl"' + (editable ? ' onclick="editScheduleItem(\'' + it.id + '\')"' : '') + '><div class="h">' + (it.time && it.time !== '00:00' ? it.time : '') + '</div>'
       + '<div class="c" style="background:' + (tints[n % tints.length] === 'violet' ? '#fff' : t[0]) + '"><b>' + _escHtml(it.title) + '</b>' + (it.notes ? '<small>' + _escHtml(String(it.notes).slice(0, 60)) + '</small>' : '') + '</div></div>';
-  }).join('') : '<div class="fz-empty">' + (_scheduleDate === todayK ? 'יום פנוי היום' : 'אין כלום ביום הזה') + '</div>';
+  }
 }
 function renderSchedule() {
   const listEl  = document.getElementById('schedule-list');
@@ -33055,6 +33071,20 @@ html[data-skin="spent"] #fz-week .fz-mo-top { justify-content: center; }
 .fz-days.fz-scroll button { flex: 0 0 46px; scroll-snap-align: center; }
 .fz-msep { flex: 0 0 auto; align-self: stretch; display: flex; align-items: center; padding: 0 4px; font-family: 'Rubik', 'Heebo', sans-serif; font-size: 13px; font-weight: 700; color: #8a8fae; writing-mode: vertical-rl; transform: rotate(180deg); border-inline-start: 1.5px solid #d6dbee; margin: 8px 2px; }
 .fz-days button.on i.no { background: transparent !important; }
+/* v563 — free-flowing day scroll, gaps between events, add-to-this-day */
+.fz-days.fz-scroll { scroll-snap-type: none !important; }
+.fz-days.fz-scroll button { scroll-snap-align: none !important; }
+.fz-tl .h { width: 58px; }
+.fz-gap { display: flex; margin: -4px 0 6px; pointer-events: none; }
+.fz-gap .h { width: 58px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.fz-gap .h i { width: 2px; height: 10px; border-radius: 1px; background: linear-gradient(180deg, rgba(37,46,107,.10), rgba(37,46,107,.35)); }
+.fz-gap .h i:last-child { background: linear-gradient(180deg, rgba(37,46,107,.35), rgba(37,46,107,.10)); }
+.fz-gap .h span { font-family: 'Rubik', 'Heebo', sans-serif; font-size: 12px; font-weight: 600; color: #252e6b; background: #e1e5f4; border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
+.fz-addday { width: 100%; margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border-radius: 24px; border: 1.5px dashed #c3c9e3; background: rgba(255,255,255,.55); font-family: 'Rubik', 'Heebo', sans-serif; font-size: 16px; font-weight: 600; color: #252e6b; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .12s, background .12s; }
+.fz-addday:active { transform: scale(.98); background: #fff; }
+.fz-addday .p { width: 30px; height: 30px; border-radius: 15px; background: linear-gradient(135deg,#252e6b,#141a3c); color: #fff; display: flex; align-items: center; justify-content: center; }
+.fz-addday .p svg { width: 17px; height: 17px; }
+.fz-addday { margin-bottom: 130px; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
