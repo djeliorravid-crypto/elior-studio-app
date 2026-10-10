@@ -7552,7 +7552,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v555</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v556</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -32942,8 +32942,8 @@ html[data-skin] body .fz-days button.on { background: linear-gradient(135deg,#25
 /* v554 — welcome screen before Face ID */
 html[data-skin="spent"] #face-id-lock { justify-content: flex-start !important; gap: 0 !important; padding: calc(env(safe-area-inset-top, 0px) + 13vh) 28px calc(env(safe-area-inset-bottom, 0px) + 34px) !important;
   background: #f8f8fb !important; background-image: radial-gradient(120% 60% at 50% 0%, #dfe4f6 0%, rgba(223,228,246,0) 70%), linear-gradient(180deg, #e6e9f6 0%, #f8f8fb 60%) !important; }
-html[data-skin="spent"] #face-id-lock .sp-logo { width: 92px !important; height: 92px !important; margin: 0 auto 18px !important; filter: drop-shadow(0 16px 30px rgba(22,28,69,.28)) !important; animation: flUp .7s cubic-bezier(.2,.8,.2,1) both; }
-html[data-skin="spent"] #face-id-lock .sp-word { margin: 0 0 6px !important; animation: flUp .7s .05s cubic-bezier(.2,.8,.2,1) both; }
+html[data-skin="spent"] #face-id-lock .sp-logo { width: 92px !important; height: 92px !important; margin: 0 auto 18px !important; filter: none !important; border-radius: 22.5% !important; box-shadow: 0 16px 30px rgba(22,28,69,.26) !important; animation: none !important; }
+html[data-skin="spent"] #face-id-lock .sp-word { margin: 0 0 6px !important; animation: none !important; background: none !important; }
 html[data-skin="spent"] #face-id-lock .face-id-sub, html[data-skin="spent"] #face-id-lock .face-id-icon { display: none !important; }
 html[data-skin="spent"] #face-id-lock .face-id-mark { color: #9aa0bd !important; }
 .fl-date, .fl-hello, .fl-line, .fl-note { display: none; }
@@ -32969,6 +32969,8 @@ html[data-skin="spent"] .fl-note { display: block; margin-top: 12px; font-size: 
 .fz-bd svg { width: 12px !important; height: 12px !important; }
 .fz-bd.wait { background: #f0a024; } .fz-bd.ok { background: #22a06b; }
 .fz-bd.norc { background: #e4532f; bottom: auto; top: -3px; }
+/* v556 — iOS WebKit paints a grey box around filtered/animated SVG: plain box-shadow instead */
+html[data-skin="spent"] .sp-logo { filter: none !important; border-radius: 22.5% !important; box-shadow: 0 10px 24px rgba(22,28,69,.22) !important; overflow: hidden; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
