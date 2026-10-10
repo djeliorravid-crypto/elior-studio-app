@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v581</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v582</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -18794,7 +18794,74 @@ window.fcRestoreApply = function(i) {
   fcRender(); fcAskRenderAll();
   spDone('שוחזר', o.sm.n + ' הוצאות', o.sm.days + ' עם יום חיוב');
 };
+// v582: the fixed-costs page, rebuilt — one number, one sentence, one list in
+// charge-day order with a tick per item; what isn't charged this month sits
+// apart. Tap an item for its actions. Same data, same functions underneath.
+let _fcArch2 = false;
+function _fcIcon(g) { return g === 'living' ? FZG.home2 : g === 'studio' ? FZG.note : FZG.repeat; }
+function fcRenderSpent() {
+  const pg = document.getElementById('page-fixed'); if (!pg) return;
+  let host = document.getElementById('fc-spent');
+  if (!host) { host = document.createElement('div'); host.id = 'fc-spent'; pg.insertBefore(host, pg.firstChild); }
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const mk = _fcMonthKey(now), list = fcList();
+  const due = list.filter(x => _fcDueIn(x, now)), off = list.filter(x => !_fcDueIn(x, now));
+  const total = fcTotal(), left = due.filter(x => !_fcPaidFor(x, now)).reduce((t, x) => t + (Number(x.amount) || 0), 0);
+  const paidN = due.filter(x => _fcPaidFor(x, now)).length;
+  const dOf = x => Number(x.day) >= 1 ? _fcThisMonthDate(x, now) : null;
+  due.sort((a, b) => (dOf(a) ? dOf(a).getTime() : 9e15) - (dOf(b) ? dOf(b).getTime() : 9e15));
+  const dueOpen = due.filter(x => !_fcPaidFor(x, now)), duePaid = due.filter(x => _fcPaidFor(x, now));
+  const until = x => x.until ? ' · עד ' + fcUntilLabel(x.until) : '';
+  const row = (x, isOff) => {
+    const paid = !isOff && _fcPaidFor(x, now), d = dOf(x);
+    let sub, cls = '';
+    if (isOff) { const nd = x.day ? _fcNextDue(x) : null; sub = (nd ? 'הבא: ' + nd.getDate() + ' ב' + nd.toLocaleDateString('he-IL', { month: 'long' }) : 'לא החודש') + ' · ' + (_fcFreqLabel(x) || 'כל חודש'); }
+    else if (paid) { sub = 'ירד החודש'; cls = ' paid'; }
+    else if (!d) sub = 'בלי יום קבוע';
+    else { const n = Math.round((d - now) / 864e5);
+      if (n < 0) { sub = 'היה אמור לרדת ב-' + d.getDate() + ' · ירד?'; cls = ' late'; }
+      else if (n === 0) { sub = 'יורד היום'; cls = ' today'; }
+      else sub = 'ב-' + d.getDate() + ' לחודש · ' + (n === 1 ? 'מחר' : 'עוד ' + n + ' ימים'); }
+    sub += (isOff ? '' : (_fcFreqLabel(x) ? ' · ' + _fcFreqLabel(x) : '')) + until(x);
+    return '<div class="fz-row fcs-row' + cls + (isOff ? ' off' : '') + '" onclick="fcItemSheet(\'' + x.id + '\')">'
+      + '<span class="fz-ri fz-g">' + _fcIcon(x.group) + '</span>'
+      + '<span class="fz-m"><b>' + _escape(x.name) + '</b><small>' + sub + '</small></span>'
+      + '<span class="fz-v">' + fmtMoney(x.amount) + '</span>'
+      + (isOff ? '' : '<button class="fcs-tick' + (paid ? ' on' : '') + '" aria-label="ירד" onclick="event.stopPropagation();fcMarkPaid(\'' + x.id + '\',\'' + mk + '\')">' + FZ.check + '</button>')
+      + '</div>';
+  };
+  const say = !due.length ? 'אין חיובים החודש' : left > 0 ? 'נשארו לרדת ' + fmtMoney(left) + ' החודש' : 'הכל ירד החודש';
+  const arch = fcArchivedList();
+  host.innerHTML = '<div class="fz-ttl fcs-ttl"><span>הוצאות קבועות</span><button class="fz-free" onclick="fcAdd()">+ הוספה</button></div>'
+    + '<div class="fz-big"><div class="k">בחודש</div><div class="n">' + fmtMoney(total) + '</div></div>'
+    + '<div class="fz-say">' + say + '</div>'
+    + '<div class="fcs-meta">' + (due.length ? 'ירדו ' + paidN + ' מתוך ' + due.length + ' · ' : '') + fmtMoney(total * 12) + ' בשנה</div>'
+    + (dueOpen.length ? '<div class="fz-lbl">עוד ירד החודש</div><div class="fz-card">' + dueOpen.map(x => row(x, false)).join('') + '</div>' : (due.length ? '<div class="fz-lbl">החודש</div>' : ''))
+    + (duePaid.length ? '<div class="fz-lbl">כבר ירד · ' + duePaid.length + '</div><div class="fz-card fcs-done">' + duePaid.map(x => row(x, false)).join('') + '</div>' : '')
+    + (off.length ? '<div class="fz-lbl">לא יורד החודש</div><div class="fz-card">' + off.map(x => row(x, true)).join('') + '</div>' : '')
+    + (!list.length ? '<div class="fz-empty">עוד אין הוצאות קבועות</div>' : '')
+    + '<div class="fcs-links">'
+    + (arch.length ? '<button onclick="_fcArch2=!_fcArch2;fcRenderSpent()">כבר לא משלם · ' + arch.length + (_fcArch2 ? ' ⌃' : ' ›') + '</button>' : '')
+    + '<button onclick="fcResearchAll()">לבדוק מחירים</button><button onclick="fcRestoreOpen()">שחזור מגיבוי</button></div>'
+    + (_fcArch2 && arch.length ? '<div class="fz-card fcs-arch">' + arch.map(x => '<div class="fz-row"><span class="fz-m"><b>' + _escape(x.name) + '</b><small>חוסך ' + fmtMoney(x.amount) + ' בחודש</small></span>'
+        + '<button class="fcs-mini" onclick="fcRestore(\'' + x.id + '\')">להחזיר</button><button class="fcs-mini" onclick="fcDeleteForever(\'' + x.id + '\')">למחוק</button></div>').join('') + '</div>' : '');
+}
+window.fcItemSheet = function(id) {
+  const x = fcList().find(i => i.id === id); if (!x) return;
+  const r = _fcResearchStore()[id], d = r && r.data;
+  const mk = _fcMonthKey(new Date()), due = _fcDueIn(x, new Date()), paid = due && _fcPaidFor(x, new Date());
+  const sub = [fmtMoney(x.amount) + (x.day ? ' · ב-' + x.day + ' לחודש' : ''), _fcFreqLabel(x) || 'כל חודש',
+    d ? (_fcVerdict(d.verdict).t + (d.typical ? ' · טיפוסי ' + d.typical : '')) : ''].filter(Boolean).join(' · ');
+  const acts = [];
+  if (due) acts.push({ label: paid ? 'בעצם עוד לא ירד' : 'ירד החודש', pri: !paid, run: () => fcMarkPaid(id, mk) });
+  acts.push({ label: 'עריכה — שם, סכום, יום, תדירות', run: () => spFlowFixedEdit(id, 0) });
+  if (d && d.tip) acts.push({ label: 'טיפ: ' + String(d.tip).slice(0, 70), run: () => fcAskOpen(id) });
+  acts.push({ label: d ? 'לבדוק שוב את המחיר' : 'לבדוק אם אני משלם יותר מדי', run: () => fcResearchOne(id, d ? 1 : 0) });
+  acts.push({ label: 'כבר לא משלם על זה', danger: true, run: () => fcArchive(id) });
+  spentSheet(x.name, sub, acts);
+};
 window.fcRender = function() {
+  if (_spSkin()) { try { fcRenderSpent(); } catch (e) { console.warn(e); } try { fcScheduleReminders(); } catch (_) {} try { fcAskRenderAll(); } catch (_) {} try { fcEntryCard(); } catch (_) {} return; }
   const list = fcList().slice().sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0));
   const total = fcTotal(), yearly = total * 12;
   const hero = document.getElementById('fc-hero'); if (!hero) return;
@@ -19990,6 +20057,7 @@ const FZG = {
   note: _g('<path d="M4.75 10.5v3M8.37 7.5v9M12 4.75v14.5M15.63 8.25v7.5M19.25 10.5v3"/>'),
   coin: _g('<path d="M4.75 18.25V5.75h6a3.25 3.25 0 0 1 3.25 3.25v4.5"/><path d="M19.25 5.75v12.5h-6A3.25 3.25 0 0 1 10 15v-4.5"/>'),
   repeat: _g('<path d="M19.25 12a7.25 7.25 0 0 1-12.6 4.9M4.75 12a7.25 7.25 0 0 1 12.6-4.9"/><path d="M17.6 3.9v3.3h-3.3M6.4 20.1v-3.3h3.3"/>'),
+  home2: _g('<path d="M4.75 10.5 12 4.75l7.25 5.75V18a1.5 1.5 0 0 1-1.5 1.5h-3.5v-5h-4.5v5h-3.5a1.5 1.5 0 0 1-1.5-1.5z"/>'),
   chat: _g('<path d="M19.75 11.6a7.6 7.6 0 0 1-11 6.8L4.5 19.5l1.15-3.9a7.6 7.6 0 1 1 14.1-4z"/>')
 };
 const fzIc = (k, t) => '<span class="fz-ri fz-g" data-t="' + t + '">' + (FZG[k] || FZ[k]) + '</span>';
@@ -33345,6 +33413,31 @@ button.ff-row.off .ff-tx small { color: #a3a8c3; }
 .ff-rng label input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; -webkit-appearance: none; appearance: none; }
 .fz-tlinks { display: flex; gap: 14px; align-items: center; }
 .fz-tlinks .fz-free:first-child { color: #8a8fae; font-weight: 500; }
+/* v582 — fixed costs, rebuilt */
+html[data-skin="spent"] #page-fixed > .page-header, html[data-skin="spent"] #page-fixed #fc-hero, html[data-skin="spent"] #page-fixed #fc-ask,
+html[data-skin="spent"] #page-fixed #fc-stats, html[data-skin="spent"] #page-fixed #fc-filter, html[data-skin="spent"] #page-fixed #fc-upcoming,
+html[data-skin="spent"] #page-fixed #fc-groups, html[data-skin="spent"] #page-fixed #fc-archive, html[data-skin="spent"] #page-fixed .fc-restore-link { display: none !important; }
+#fc-spent { display: none; }
+html[data-skin="spent"] #fc-spent { display: block; padding-bottom: 130px; }
+html[data-skin="spent"] #fc-spent .fcs-ttl { margin-top: 58px; display: flex; align-items: center; justify-content: space-between; }
+.fcs-meta { text-align: center; font-size: 13.5px; color: #8a8fae; margin: 8px 0 6px; }
+.fcs-row { position: relative; }
+.fcs-row .fz-v { margin-inline-start: auto; }
+.fcs-row small { color: #8a8fae; }
+.fcs-row.late small { color: #c9821a; font-weight: 600; }
+.fcs-row.today small { color: #252e6b; font-weight: 600; }
+.fcs-row.paid b, .fcs-row.paid .fz-v { color: #a3a8c3; }
+.fcs-row.paid .fz-ri { opacity: .55; }
+.fcs-row.off { opacity: .6; }
+.fcs-tick { width: 30px; height: 30px; flex: 0 0 30px; margin-inline-start: 12px; border-radius: 15px; border: none; background: #fff; box-shadow: inset 0 0 0 1.75px #c9cee3; color: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .12s; }
+.fcs-tick svg { width: 15px; height: 15px; }
+.fcs-tick:active { transform: scale(.88); }
+.fcs-tick.on { background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); box-shadow: none; color: #fff; }
+.fcs-row.late .fcs-tick { box-shadow: inset 0 0 0 1.75px #e3a13a; }
+.fcs-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin: 18px 0 8px; }
+.fcs-links button { border: none; background: none; font-family: inherit; font-size: 14px; color: #6b7299; padding: 6px 2px; cursor: pointer; }
+.fcs-arch .fz-row { gap: 8px; }
+.fcs-mini { border: none; background: #eef0f8; color: #252e6b; border-radius: 999px; padding: 7px 12px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
