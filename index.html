@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v570</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v571</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -20136,15 +20136,16 @@ window.spConfetti = function(x, y, n) {
 // v569: "מתי אתה פנוי?" — find free blocks (3h+) in the calendar and send them
 // on WhatsApp. Busy = manual schedule + studio sessions + iPhone/Google
 // calendar. An event without an end time counts as 2 hours.
-window._freeOpt = window._freeOpt || { part: 'am', range: 'this', min: 3 };
+window._freeOpt = window._freeOpt || { from: 600, range: 'next', min: 3 };
+// v571: you pick the start hour; per day it finds the first free block of
+// min hours from that hour on (busy = schedule + sessions + iPhone/Google).
 function _freeSlots(o) {
-  const W = { am: [9 * 60, 14 * 60], mid: [12 * 60, 18 * 60], pm: [18 * 60, 23 * 60] }[o.part];
   const pad = n => String(n).padStart(2, '0'), hm = m => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
   const toM = t => { const x = /^(\d{1,2}):(\d{2})/.exec(t || ''); return x ? (+x[1]) * 60 + (+x[2]) : null; };
   const now = new Date(), today = new Date(now); today.setHours(12, 0, 0, 0);
   const sun = new Date(today); sun.setDate(today.getDate() - today.getDay());
-  const from = new Date(o.range === 'next' ? new Date(sun.getTime() + 7 * 864e5) : today);
-  const to = new Date(sun); to.setDate(sun.getDate() + (o.range === 'this' ? 6 : o.range === 'next' ? 13 : 13));
+  const from = o.range === 'next' ? new Date(sun.getTime() + 7 * 864e5) : new Date(today);
+  const to = new Date(sun); to.setDate(sun.getDate() + (o.range === 'this' ? 6 : 13));
   const busyFor = key => {
     const B = [];
     (load('schedule') || []).filter(x => x && x.date === key).forEach(x => { const a = toM(x.time); if (a === null) return; const e = toM(x.endTime); B.push([a, e && e > a ? e : a + 120, x.title || 'אירוע']); });
@@ -20154,36 +20155,42 @@ function _freeSlots(o) {
       const a = toM(x.time); if (a === null) return; let e = toM(x.endTime); if (x.endDate && x.endDate !== key) e = 24 * 60; B.push([a, e && e > a ? e : a + 120, x.title || 'אירוע']); });
     return B.sort((p, q) => p[0] - q[0]);
   };
-  const out = [];
+  const out = [], need = o.min * 60;
   for (const d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
-    const dow = d.getDay(); if (dow === 6) continue;               // שבת
-    let [ws, we] = W; if (dow === 5) we = Math.min(we, 13 * 60);   // שישי — עד 13:00
+    const dow = d.getDay(); if (dow === 6) continue;                   // שבת
+    const dayEnd = dow === 5 ? 13 * 60 : 23 * 60;                       // שישי — עד 13:00
     const key = dailyDateStr(d);
-    if (key === dailyDateStr(now)) ws = Math.max(ws, Math.ceil((now.getHours() * 60 + now.getMinutes() + 15) / 30) * 30);
-    if (we - ws < o.min * 60) continue;
-    let cur = ws; const busy = busyFor(key);
-    const nextAfter = m => { const n = busy.find(b => b[0] >= m); return n ? { t: n[2], at: hm(n[0]) } : null; };
-    busy.forEach(([a, e]) => { if (e <= cur || a >= we) return; if (a - cur >= o.min * 60) out.push({ d: new Date(d), key, a: cur, e: Math.min(a, we), nx: nextAfter(Math.min(a, we)) }); cur = Math.max(cur, e); });
-    if (we - cur >= o.min * 60) out.push({ d: new Date(d), key, a: cur, e: we, nx: nextAfter(we) });
+    let cur = o.from;
+    if (key === dailyDateStr(now)) cur = Math.max(cur, Math.ceil((now.getHours() * 60 + now.getMinutes() + 15) / 30) * 30);
+    const busy = busyFor(key);
+    for (const [a, e] of busy) { if (e <= cur) continue; if (a - cur >= need) break; cur = Math.max(cur, e); }
+    if (cur + need > dayEnd) continue;
+    const nx = busy.find(b => b[0] >= cur + need);
+    const freeTo = nx ? nx[0] : dayEnd;
+    out.push({ d: new Date(d), key, a: cur, e: cur + need, freeTo, nx: nx ? { t: nx[2], at: hm(nx[0]) } : null, id: key });
   }
-  return out.map(x => ({ ...x, id: x.key + '_' + x.a, txt: 'יום ' + 'אבגדהוש'[x.d.getDay()] + '׳ ' + x.d.getDate() + '.' + (x.d.getMonth() + 1) + ' · \u2066' + hm(x.a) + '–' + hm(x.e) + '\u2069' }));
+  return out.map(x => ({ ...x, txt: 'יום ' + 'אבגדהוש'[x.d.getDay()] + '׳ ' + x.d.getDate() + '.' + (x.d.getMonth() + 1) + ' · ⁦' + hm(x.a) + '–' + hm(x.e) + '⁩',
+    sub: x.nx ? 'פנוי עד ⁦' + hm(x.freeTo) + '⁩ · אחרי: ' + x.nx.t : 'פנוי עד סוף היום' }));
 }
 function _freeMsg(o, slots) {
-  const part = { am: 'הבקרים', mid: 'הצהריים', pm: 'הערבים' }[o.part], when = { this: 'השבוע', next: 'בשבוע הבא', two: 'בשבועיים הקרובים' }[o.range];
-  if (!slots.length) return 'היי, ' + when + ' ' + part + ' שלי די מלאים. אפשר לבדוק זמן אחר?';
-  return 'היי, אלה ' + part + ' הפנויים שלי ' + when + ':\n' + slots.map(x => x.txt).join('\n') + '\nמה מתאים לך?';
+  const when = { this: 'השבוע', next: 'בשבוע הבא', two: 'בשבועיים הקרובים' }[o.range];
+  if (!slots.length) return 'היי, ' + when + ' אני די מלא. אפשר לבדוק זמן אחר?';
+  return 'היי, אלה הזמנים שאני פנוי בהם ' + when + ':\n' + slots.map(x => x.txt).join('\n') + '\nמה מתאים לך?';
 }
 window.freeTimesOpen = function() {
   try { gcalRefreshEventKit(); } catch (_) {}
   let ov = document.getElementById('fz-free'); if (!ov) { ov = document.createElement('div'); ov.id = 'fz-free'; ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); }; document.body.appendChild(ov); }
   const o = window._freeOpt, slots = _freeSlots(o); window._freeOff = window._freeOff || {};
   const chosen = slots.filter(x => !window._freeOff[x.id]);
+  const pad = n => String(n).padStart(2, '0');
   const seg = (k, opts) => '<div class="ff-seg">' + opts.map(([v, l]) => '<button class="' + (o[k] === v ? 'on' : '') + '" onclick="window._freeOpt.' + k + '=' + (typeof v === 'number' ? v : '\'' + v + '\'') + ';freeTimesOpen()">' + l + '</button>').join('') + '</div>';
   ov.innerHTML = '<div class="ff-box"><div class="sm-grab"></div><div class="ff-t">מתי אני פנוי</div>'
-    + seg('part', [['am', 'בקרים'], ['mid', 'צהריים'], ['pm', 'ערבים']])
+    + '<div class="ff-from"><span class="k">משעה</span><button class="st" aria-label="מוקדם יותר" onclick="window._freeOpt.from=Math.max(420,window._freeOpt.from-30);freeTimesOpen()">−</button>'
+    + '<b dir="ltr">' + pad(Math.floor(o.from / 60)) + ':' + pad(o.from % 60) + '</b>'
+    + '<button class="st" aria-label="מאוחר יותר" onclick="window._freeOpt.from=Math.min(1260,window._freeOpt.from+30);freeTimesOpen()">+</button></div>'
+    + seg('min', [[3, '3 שעות'], [4, '4 שעות']])
     + seg('range', [['this', 'השבוע'], ['next', 'שבוע הבא'], ['two', 'שבועיים']])
-    + seg('min', [[3, '3 שעות לפחות'], [4, '4 שעות לפחות']])
-    + '<div class="ff-list">' + (slots.length ? slots.map(x => '<button class="ff-row' + (window._freeOff[x.id] ? ' off' : '') + '" onclick="window._freeOff[\'' + x.id + '\']=!window._freeOff[\'' + x.id + '\'];freeTimesOpen()"><span class="ff-ck">' + FZ.check + '</span><span class="ff-tx"><b>' + x.txt + '</b><small>' + (x.nx ? 'אחרי: ' + _escape(x.nx.t) + ' · \u2066' + x.nx.at + '\u2069' : 'אין כלום אחרי') + '</small></span></button>').join('') : '<div class="ff-empty">אין חלון פנוי כזה</div>') + '</div>'
+    + '<div class="ff-list">' + (slots.length ? slots.map(x => '<button class="ff-row' + (window._freeOff[x.id] ? ' off' : '') + '" onclick="window._freeOff[\'' + x.id + '\']=!window._freeOff[\'' + x.id + '\'];freeTimesOpen()"><span class="ff-ck">' + FZ.check + '</span><span class="ff-tx"><b>' + x.txt + '</b><small>' + _escape(x.sub) + '</small></span></button>').join('') : '<div class="ff-empty">אין זמן פנוי כזה — נסה שעה אחרת</div>') + '</div>'
     + '<button class="ff-go">שליחה בוואטסאפ</button><button class="ff-copy">העתקת ההודעה</button></div>';
   const msg = _freeMsg(o, chosen);
   ov.querySelector('.ff-go').onclick = () => contactPick('', ph => { ov.classList.remove('open'); window.open('https://wa.me/' + _waPhone(ph) + '?text=' + encodeURIComponent(msg), '_blank'); });
@@ -33197,6 +33204,12 @@ button.ff-row:last-child { border-bottom: none; }
 .ff-tx small { font-size: 13.5px; color: #8a8fae; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 button.ff-row.off .ff-ck { background: #fff; box-shadow: inset 0 0 0 1.5px #c9cee3; color: transparent; }
 button.ff-row.off .ff-tx b { color: #a3a8c3; text-decoration: line-through; text-decoration-color: rgba(163,168,195,.6); }
+/* v571 — start-hour stepper */
+.ff-from { display: flex; align-items: center; gap: 14px; background: #fff; border-radius: 22px; padding: 10px 12px 10px 16px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(22,28,69,.05); }
+.ff-from .k { flex: 1; font-size: 16px; font-weight: 600; color: #6b7299; }
+.ff-from b { font-size: 26px; font-weight: 700; color: #161c45; min-width: 84px; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.ff-from .st { width: 42px; height: 42px; border-radius: 21px; border: none; background: #eef0f8; color: #161c45; font-size: 24px; font-weight: 500; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ff-from .st:active { transform: scale(.92); background: #e1e5f4; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
