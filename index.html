@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v577</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v578</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -20137,6 +20137,7 @@ window.spConfetti = function(x, y, n) {
 // on WhatsApp. Busy = manual schedule + studio sessions + iPhone/Google
 // calendar. An event without an end time counts as 2 hours.
 window._freeOpt = window._freeOpt || { from: 600, range: 'next', min: 3 };
+if (window._freeOpt.range === 'two') window._freeOpt.range = 'month';
 // v571: you pick the start hour; per day it finds the first free block of
 // min hours from that hour on (busy = schedule + sessions + iPhone/Google).
 function _freeSlots(o) {
@@ -20144,8 +20145,10 @@ function _freeSlots(o) {
   const toM = t => { const x = /^(\d{1,2}):(\d{2})/.exec(t || ''); return x ? (+x[1]) * 60 + (+x[2]) : null; };
   const now = new Date(), today = new Date(now); today.setHours(12, 0, 0, 0);
   const sun = new Date(today); sun.setDate(today.getDate() - today.getDay());
-  const from = o.range === 'next' ? new Date(sun.getTime() + 7 * 864e5) : new Date(today);
-  const to = new Date(sun); to.setDate(sun.getDate() + (o.range === 'this' ? 6 : 13));
+  let from, to;
+  if (o.range === 'date' && o.date) { from = new Date(o.date + 'T12:00:00'); to = new Date(from); }
+  else if (o.range === 'month') { from = new Date(today); to = new Date(today); to.setDate(today.getDate() + 30); }
+  else { from = o.range === 'next' ? new Date(sun.getTime() + 7 * 864e5) : new Date(today); to = new Date(sun); to.setDate(sun.getDate() + (o.range === 'this' ? 6 : 13)); }
   const busyFor = key => {
     const B = [];
     (load('schedule') || []).filter(x => x && x.date === key).forEach(x => { const a = toM(x.time); if (a === null) return; const e = toM(x.endTime); B.push([a, e && e > a ? e : a + 120, x.title || 'אירוע']); });
@@ -20165,7 +20168,7 @@ function _freeSlots(o) {
     if (key === dailyDateStr(now)) cur = Math.max(cur, Math.ceil((now.getHours() * 60 + now.getMinutes() + 15) / 30) * 30);
     const busy = busyFor(key);
     for (const [a, e] of busy) { if (e <= cur) continue; if (a - cur >= need) break; cur = Math.max(cur, e); }
-    if (cur + need > dayEnd) { if (o.days && o.days.length) out.push({ d: new Date(d), key, none: true, id: key }); continue; }
+    if (cur + need > dayEnd) { if ((o.days && o.days.length) || o.range === 'date') out.push({ d: new Date(d), key, none: true, id: key }); continue; }
     const nx = busy.find(b => b[0] >= cur + need);
     const freeTo = nx ? nx[0] : dayEnd;
     out.push({ d: new Date(d), key, a: cur, e: cur + need, freeTo, nx: nx ? { t: nx[2], at: hm(nx[0]) } : null, id: key });
@@ -20181,7 +20184,7 @@ function _freeCalLink(x) {
     + '&dates=' + ymd + 'T' + t(x.a) + '/' + ymd + 'T' + t(x.e) + '&ctz=Asia%2FJerusalem';
 }
 function _freeMsg(o, slots) {
-  const when = { this: 'השבוע', next: 'בשבוע הבא', two: 'בשבועיים הקרובים' }[o.range];
+  const when = { this: 'השבוע', next: 'בשבוע הבא', two: 'בשבועיים הקרובים', month: 'בחודש הקרוב', date: 'ביום הזה' }[o.range] || '';
   if (!slots.length) return 'היי, ' + when + ' אני די מלא. אפשר לבדוק זמן אחר?';
   const inv = !!o.invite;
   const lines = slots.map(x => x.txt + (inv ? '\nלהוספה ליומן: ' + _freeCalLink(x) : ''));
@@ -20198,7 +20201,7 @@ window.freeTimesOpen = function() {
   o.count = o.count || 3; o.days = [];
   // all slots stay visible; the first 'count' are ticked. Ticking another
   // swaps out the one picked earliest, so the count stays what you chose.
-  const sig = [o.from, o.min, o.range, o.count].join('|');
+  const sig = [o.from, o.min, o.range, o.date, o.count].join('|');
   if (window._freeSig !== sig || !Array.isArray(window._freeSel)) { window._freeSig = sig; window._freeSel = slots.slice(0, o.count).map(x => x.id); }
   window._freeSel = window._freeSel.filter(id => slots.some(x => x.id === id));
   const shown = slots;
@@ -20216,7 +20219,8 @@ window.freeTimesOpen = function() {
     + '<b dir="ltr">' + pad(Math.floor(o.from / 60)) + ':' + pad(o.from % 60) + '</b>'
     + '<button class="st" aria-label="מאוחר יותר" onclick="window._freeOpt.from=Math.min(1260,window._freeOpt.from+30);freeTimesOpen()">+</button></div>'
     + seg('min', [[3, '3 שעות'], [4, '4 שעות']])
-    + seg('range', [['this', 'השבוע'], ['next', 'שבוע הבא'], ['two', 'שבועיים']])
+    + '<div class="ff-seg ff-rng">' + [['this', 'השבוע'], ['next', 'שבוע הבא'], ['month', 'חודש']].map(([v, l]) => '<button class="' + (o.range === v ? 'on' : '') + '" onclick="window._freeOpt.range=\'' + v + '\';freeTimesOpen()">' + l + '</button>').join('')
+    + '<label class="' + (o.range === 'date' ? 'on' : '') + '">' + (o.range === 'date' && o.date ? (+o.date.slice(8)) + '.' + (+o.date.slice(5, 7)) : 'תאריך') + '<input type="date" value="' + (o.date || '') + '" min="' + dailyDateStr() + '" onchange="if(this.value){window._freeOpt.date=this.value;window._freeOpt.range=\'date\';freeTimesOpen()}"></label></div>'
     + '<div class="ff-cnt"><span class="k">כמה אופציות</span><div class="ff-seg">' + [1, 2, 3, 4].map(n => '<button class="' + (o.count === n ? 'on' : '') + '" onclick="window._freeOpt.count=' + n + ';freeTimesOpen()">' + n + '</button>').join('') + '</div></div>'
     + '<div class="ff-list">' + (shown.length ? shown.map(x => x.none ? '<div class="ff-row none"><span class="ff-ck"></span><span class="ff-tx"><b>' + x.txt + '</b><small>' + x.sub + '</small></span></div>' : '<button class="ff-row' + (window._freeSel.indexOf(x.id) >= 0 ? '' : ' off') + '" onclick="window._freePick(\'' + x.id + '\')"><span class="ff-ck">' + FZ.check + '</span><span class="ff-tx"><b>' + x.txt + '</b><small>' + _escape(x.sub) + '</small></span></button>').join('') : '<div class="ff-empty">אין זמן פנוי כזה — נסה שעה אחרת</div>') + '</div>'
     + '<button class="ff-inv' + (o.invite ? ' on' : '') + '" onclick="window._freeOpt.invite=!window._freeOpt.invite;freeTimesOpen()"><span class="ff-ck">' + FZ.check + '</span><span>לצרף זימון ליומן</span></button>'
@@ -33264,6 +33268,10 @@ button.ff-row.off .ff-tx small { color: #a3a8c3; }
 .ff-inv .ff-ck { background: #fff; box-shadow: inset 0 0 0 1.5px #c9cee3; color: transparent; }
 .ff-inv.on { color: #161c45; }
 .ff-inv.on .ff-ck { background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); box-shadow: none; color: #fff; }
+/* v578 — month + pick a date */
+.ff-rng label { flex: 1; position: relative; border-radius: 999px; padding: 9px 4px; font-size: 14.5px; font-weight: 600; color: #6b7299; text-align: center; cursor: pointer; overflow: hidden; }
+.ff-rng label.on { background: #fff; color: #161c45; box-shadow: 0 2px 8px rgba(22,28,69,.10); }
+.ff-rng label input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; -webkit-appearance: none; appearance: none; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
