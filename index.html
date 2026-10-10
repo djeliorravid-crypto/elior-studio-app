@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v573</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v574</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -20160,16 +20160,17 @@ function _freeSlots(o) {
     const dow = d.getDay(); if (dow === 6) continue;                   // שבת
     const dayEnd = dow === 5 ? 13 * 60 : 23 * 60;                       // שישי — עד 13:00
     const key = dailyDateStr(d);
+    if (o.days && o.days.length && o.days.indexOf(key) < 0) continue;
     let cur = o.from;
     if (key === dailyDateStr(now)) cur = Math.max(cur, Math.ceil((now.getHours() * 60 + now.getMinutes() + 15) / 30) * 30);
     const busy = busyFor(key);
     for (const [a, e] of busy) { if (e <= cur) continue; if (a - cur >= need) break; cur = Math.max(cur, e); }
-    if (cur + need > dayEnd) continue;
+    if (cur + need > dayEnd) { if (o.days && o.days.length) out.push({ d: new Date(d), key, none: true, id: key }); continue; }
     const nx = busy.find(b => b[0] >= cur + need);
     const freeTo = nx ? nx[0] : dayEnd;
     out.push({ d: new Date(d), key, a: cur, e: cur + need, freeTo, nx: nx ? { t: nx[2], at: hm(nx[0]) } : null, id: key });
   }
-  return out.map(x => ({ ...x, txt: 'יום ' + 'אבגדהוש'[x.d.getDay()] + '׳ ' + x.d.getDate() + '.' + (x.d.getMonth() + 1) + ' · ⁦' + hm(x.a) + '–' + hm(x.e) + '⁩',
+  return out.map(x => x.none ? { ...x, txt: 'יום ' + 'אבגדהוש'[x.d.getDay()] + '׳ ' + x.d.getDate() + '.' + (x.d.getMonth() + 1), sub: 'אין חלון פנוי ביום הזה' } : ({ ...x, txt: 'יום ' + 'אבגדהוש'[x.d.getDay()] + '׳ ' + x.d.getDate() + '.' + (x.d.getMonth() + 1) + ' · ⁦' + hm(x.a) + '–' + hm(x.e) + '⁩',
     sub: x.nx ? 'פנוי עד ⁦' + hm(x.freeTo) + '⁩ · אחרי: ' + x.nx.t : 'פנוי עד סוף היום' }));
 }
 function _freeMsg(o, slots) {
@@ -20177,11 +20178,18 @@ function _freeMsg(o, slots) {
   if (!slots.length) return 'היי, ' + when + ' אני די מלא. אפשר לבדוק זמן אחר?';
   return slots.map(x => x.txt).join('\n') + '\n\nמה מתאים לך?';
 }
+window._freeDay = function(k) { const o = window._freeOpt; o.days = o.days || []; const i = o.days.indexOf(k); if (i >= 0) o.days.splice(i, 1); else o.days.push(k); freeTimesOpen(); };
 window.freeTimesOpen = function() {
   try { gcalRefreshEventKit(); } catch (_) {}
   let ov = document.getElementById('fz-free'); if (!ov) { ov = document.createElement('div'); ov.id = 'fz-free'; ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); }; document.body.appendChild(ov); }
   const o = window._freeOpt, slots = _freeSlots(o); window._freeOff = window._freeOff || {};
-  const chosen = slots.filter(x => !window._freeOff[x.id]);
+  const chosen = slots.filter(x => !x.none && !window._freeOff[x.id]);
+  // day chips for the chosen range (no Shabbat); none picked = every day
+  const dl = []; { const t = new Date(); t.setHours(12, 0, 0, 0); const su = new Date(t); su.setDate(t.getDate() - t.getDay());
+    const f = o.range === 'next' ? new Date(su.getTime() + 7 * 864e5) : new Date(t), e = new Date(su); e.setDate(su.getDate() + (o.range === 'this' ? 6 : 13));
+    for (const d = new Date(f); d <= e; d.setDate(d.getDate() + 1)) if (d.getDay() !== 6) dl.push({ k: dailyDateStr(d), w: 'אבגדהוש'[d.getDay()], n: d.getDate() }); }
+  o.days = (o.days || []).filter(k => dl.some(x => x.k === k));
+  const dayChips = '<div class="ff-days"><button class="' + (o.days.length ? '' : 'on') + '" onclick="window._freeOpt.days=[];freeTimesOpen()">כל הימים</button>' + dl.map(x => '<button class="' + (o.days.indexOf(x.k) >= 0 ? 'on' : '') + '" onclick="window._freeDay(\'' + x.k + '\')"><small>' + x.w + '</small>' + x.n + '</button>').join('') + '</div>';
   const pad = n => String(n).padStart(2, '0');
   const seg = (k, opts) => '<div class="ff-seg">' + opts.map(([v, l]) => '<button class="' + (o[k] === v ? 'on' : '') + '" onclick="window._freeOpt.' + k + '=' + (typeof v === 'number' ? v : '\'' + v + '\'') + ';freeTimesOpen()">' + l + '</button>').join('') + '</div>';
   ov.innerHTML = '<div class="ff-box"><div class="sm-grab"></div><div class="ff-t">מתי אני פנוי</div>'
@@ -20190,7 +20198,8 @@ window.freeTimesOpen = function() {
     + '<button class="st" aria-label="מאוחר יותר" onclick="window._freeOpt.from=Math.min(1260,window._freeOpt.from+30);freeTimesOpen()">+</button></div>'
     + seg('min', [[3, '3 שעות'], [4, '4 שעות']])
     + seg('range', [['this', 'השבוע'], ['next', 'שבוע הבא'], ['two', 'שבועיים']])
-    + '<div class="ff-list">' + (slots.length ? slots.map(x => '<button class="ff-row' + (window._freeOff[x.id] ? ' off' : '') + '" onclick="window._freeOff[\'' + x.id + '\']=!window._freeOff[\'' + x.id + '\'];freeTimesOpen()"><span class="ff-ck">' + FZ.check + '</span><span class="ff-tx"><b>' + x.txt + '</b><small>' + _escape(x.sub) + '</small></span></button>').join('') : '<div class="ff-empty">אין זמן פנוי כזה — נסה שעה אחרת</div>') + '</div>'
+    + dayChips
+    + '<div class="ff-list">' + (slots.length ? slots.map(x => x.none ? '<div class="ff-row none"><span class="ff-ck"></span><span class="ff-tx"><b>' + x.txt + '</b><small>' + x.sub + '</small></span></div>' : '<button class="ff-row' + (window._freeOff[x.id] ? ' off' : '') + '" onclick="window._freeOff[\'' + x.id + '\']=!window._freeOff[\'' + x.id + '\'];freeTimesOpen()"><span class="ff-ck">' + FZ.check + '</span><span class="ff-tx"><b>' + x.txt + '</b><small>' + _escape(x.sub) + '</small></span></button>').join('') : '<div class="ff-empty">אין זמן פנוי כזה — נסה שעה אחרת</div>') + '</div>'
     + '<button class="ff-go">שליחה בוואטסאפ</button><button class="ff-copy">העתקת ההודעה</button></div>';
   const msg = _freeMsg(o, chosen);
   ov.querySelector('.ff-go').onclick = () => { ov.classList.remove('open'); setTimeout(() => contactPick('', ph => window.open('https://wa.me/' + _waPhone(ph) + '?text=' + encodeURIComponent(msg), '_blank')), 220); };
@@ -33211,6 +33220,16 @@ button.ff-row.off .ff-tx b { color: #a3a8c3; text-decoration: line-through; text
 .ff-from .st { width: 42px; height: 42px; border-radius: 21px; border: none; background: #eef0f8; color: #161c45; font-size: 24px; font-weight: 500; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .ff-from .st:active { transform: scale(.92); background: #e1e5f4; }
 #fz-phone, #fz-contacts { z-index: 100100 !important; }
+/* v574 — pick specific days */
+.ff-days { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px 10px; padding: 2px 20px 4px; }
+.ff-days::-webkit-scrollbar { display: none; }
+.ff-days button { flex: 0 0 auto; min-width: 44px; height: 52px; border: none; border-radius: 16px; background: #fff; color: #161c45; font-family: inherit; font-size: 16px; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0 10px; box-shadow: 0 2px 8px rgba(22,28,69,.05); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ff-days button small { font-size: 11.5px; font-weight: 600; color: #8a8fae; }
+.ff-days button:first-child { font-size: 14px; padding: 0 14px; }
+.ff-days button.on { background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); color: #fff; }
+.ff-days button.on small { color: rgba(255,255,255,.7); }
+.ff-row.none { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eef0f6; opacity: .55; }
+.ff-row.none .ff-ck { background: #eef0f8; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
