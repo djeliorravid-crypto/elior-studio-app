@@ -6985,6 +6985,9 @@
   <div class="face-id-logo">אליאור רביד</div>
   <div class="sp-word" dir="ltr">Maes<span>tro</span></div>
   <div class="face-id-sub">נעול — נדרש Face ID</div>
+  <div class="fl-date" id="fl-date"></div>
+  <div class="fl-hello" id="fl-hello"></div>
+  <div class="fl-line" id="fl-line"></div>
   <div class="face-id-icon" aria-hidden="true">
     <svg viewBox="0 0 64 64" width="80" height="80" fill="none" stroke="#d4a574" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
       <path d="M8 22 V14 a6 6 0 0 1 6 -6 H22"/>
@@ -6997,7 +7000,8 @@
       <path d="M22 44 q4 4 10 4 t10 -4"/>
     </svg>
   </div>
-  <button class="face-id-retry-btn" id="face-id-retry-btn" type="button" onclick="tryFaceId()">פתח עם Face ID</button>
+  <button class="face-id-retry-btn" id="face-id-retry-btn" type="button" onclick="tryFaceId()"><span>לכניסה</span><svg viewBox="0 0 64 64" width="22" height="22" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 22 V14 a6 6 0 0 1 6 -6 H22"/><path d="M56 22 V14 a6 6 0 0 0 -6 -6 H42"/><path d="M8 42 V50 a6 6 0 0 0 6 6 H22"/><path d="M56 42 V50 a6 6 0 0 1 -6 6 H42"/><path d="M24 26 v4"/><path d="M40 26 v4"/><path d="M32 28 V38 q0 2 -2 2 H28"/><path d="M22 44 q4 4 10 4 t10 -4"/></svg></button>
+  <div class="fl-note">נכנסים עם Face ID</div>
 </div>
 
 <!-- ===== LOGIN ===== -->
@@ -7548,7 +7552,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v553</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v554</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -30991,6 +30995,27 @@ window._tryBiometricAuth = async function(reason) {
     return false;
   }
 };
+// welcome screen copy (shown on the lock screen before Face ID)
+window.flWelcomeFill = function() {
+  const d = new Date(), h = d.getHours();
+  const hello = h < 5 ? 'לילה טוב' : h < 12 ? 'בוקר טוב' : h < 17 ? 'צהריים טובים' : h < 21 ? 'ערב טוב' : 'לילה טוב';
+  const lines = [
+    'המנצח לא משמיע אף צליל.<br>הוא דואג שכולם ינגנו נכון.',
+    'הכל מסודר ומחכה לך.<br>הראש פנוי למוזיקה.',
+    'פחות ניהול, יותר מוזיקה.',
+    'כל הפקה גדולה מתחילה ביום רגיל.',
+    'האולפן שלך, בקצב שלך.',
+    'יום טוב ליצור משהו שיישאר.',
+    'הלקוחות, ההפקות והכסף —<br>הכל במקום אחד, בשקט.',
+    'מה שחשוב היום כבר מחכה בפנים.'
+  ];
+  const days = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const months = ['בינואר','בפברואר','במרץ','באפריל','במאי','ביוני','ביולי','באוגוסט','בספטמבר','באוקטובר','בנובמבר','בדצמבר'];
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  set('fl-date', 'יום ' + days[d.getDay()] + ', ' + d.getDate() + ' ' + months[d.getMonth()]);
+  set('fl-hello', hello + ', <b>אליאור</b>');
+  set('fl-line', lines[Math.floor(Math.random() * lines.length)]);
+};
 let _faInFlight = false;
 window.tryFaceId = async function() {
   // Serialize: a resume can fire visibilitychange more than once, and
@@ -31254,7 +31279,9 @@ window.addEventListener('app-shortcut', function(ev) {
   function armAndAuth() {
     if (!window.getFaceIdEnabled()) return;
     document.documentElement.classList.add('face-id-locked');
-    window.tryFaceId();
+    // No automatic prompt: the welcome screen shows first and the
+    // "לכניסה" button starts Face ID.
+    try { window.flWelcomeFill(); } catch (e) {}
   }
   armAndAuth();
   // Re-lock whenever the app comes back from background. iOS keeps
@@ -32897,6 +32924,24 @@ html[data-skin] body .fz-focus .fz-go { background: #ffffff !important; color: #
 html[data-skin] body .fz-days button.on { background: linear-gradient(135deg,#252e6b,#141a3c) !important; }
 .fz-av { background: linear-gradient(160deg,#252e6b,#141a3c) !important; }
 .fz-av svg path { stroke: #ffffff; } .fz-av svg circle { fill: #ffffff; }
+/* v554 — welcome screen before Face ID */
+html[data-skin="spent"] #face-id-lock { justify-content: flex-start !important; gap: 0 !important; padding: calc(env(safe-area-inset-top, 0px) + 13vh) 28px calc(env(safe-area-inset-bottom, 0px) + 34px) !important;
+  background: #f8f8fb !important; background-image: radial-gradient(120% 60% at 50% 0%, #dfe4f6 0%, rgba(223,228,246,0) 70%), linear-gradient(180deg, #e6e9f6 0%, #f8f8fb 60%) !important; }
+html[data-skin="spent"] #face-id-lock .sp-logo { width: 92px !important; height: 92px !important; margin: 0 auto 18px !important; filter: drop-shadow(0 16px 30px rgba(22,28,69,.28)) !important; animation: flUp .7s cubic-bezier(.2,.8,.2,1) both; }
+html[data-skin="spent"] #face-id-lock .sp-word { margin: 0 0 6px !important; animation: flUp .7s .05s cubic-bezier(.2,.8,.2,1) both; }
+html[data-skin="spent"] #face-id-lock .face-id-sub, html[data-skin="spent"] #face-id-lock .face-id-icon { display: none !important; }
+html[data-skin="spent"] #face-id-lock .face-id-mark { color: #9aa0bd !important; }
+.fl-date, .fl-hello, .fl-line, .fl-note { display: none; }
+html[data-skin="spent"] .fl-date { display: block; margin-top: 7vh; font-size: 14px; font-weight: 500; color: #8a8fae; letter-spacing: .02em; animation: flUp .7s .12s cubic-bezier(.2,.8,.2,1) both; }
+html[data-skin="spent"] .fl-hello { display: block; margin-top: 10px; font-size: 30px; font-weight: 400; color: #161c45; letter-spacing: -.01em; animation: flUp .7s .18s cubic-bezier(.2,.8,.2,1) both; }
+html[data-skin="spent"] .fl-hello b { font-weight: 700; }
+html[data-skin="spent"] .fl-line { display: block; margin-top: 14px; max-width: 300px; text-align: center; font-size: 18px; line-height: 1.55; color: #4a5078; animation: flUp .7s .26s cubic-bezier(.2,.8,.2,1) both; }
+html[data-skin="spent"] #face-id-lock .face-id-retry-btn { margin-top: auto !important; width: 100%; max-width: 340px; height: 58px; padding: 0 24px !important; display: flex !important; align-items: center; justify-content: center; gap: 10px;
+  font-family: 'Rubik', 'Heebo', sans-serif !important; font-size: 18px !important; font-weight: 600 !important; border-radius: 999px !important;
+  background: linear-gradient(135deg, #252e6b, #141a3c) !important; color: #fff !important; box-shadow: 0 14px 30px rgba(22,28,69,.30) !important; animation: flUp .7s .34s cubic-bezier(.2,.8,.2,1) both; }
+html[data-skin="spent"] #face-id-lock .face-id-retry-btn svg { opacity: .85; }
+html[data-skin="spent"] .fl-note { display: block; margin-top: 12px; font-size: 13px; color: #9aa0bd; animation: flUp .7s .4s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes flUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
