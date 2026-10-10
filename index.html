@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v589</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v590</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -18842,7 +18842,20 @@ function _fcIcon(g) { return g === 'living' ? FZG.home2 : g === 'studio' ? FZG.n
 const _FC_GDEF = { living: 'מגורים ושכירויות', studio: 'אולפן ותוכנות', service: 'שירותים ומנויים' };
 const _FC_CATS0 = ['מגורים ושכירויות', 'חשבונות (מים, חשמל, ארנונה, אינטרנט)', 'אולפן ותוכנות', 'מנויים', 'רכב ותחבורה', 'ביטוחים', 'שירותים'];
 function _fcCat(x) { return (x && x.cat) || _FC_GDEF[x && x.group] || 'שירותים ומנויים'; }
-function _fcCatList() { const set = new Set(_FC_CATS0); fcList().forEach(x => set.add(_fcCat(x))); return [...set]; }
+function _fcRen() { try { return JSON.parse(localStorage.getItem('fc_cat_renames') || '{}') || {}; } catch (_) { return {}; } }
+function _fcCatList() { const R = _fcRen(); const set = new Set(_FC_CATS0.map(n => R[n] || n)); fcList().forEach(x => set.add(_fcCat(x))); return [...set]; }
+// v590: rename a category — every item in it moves to the new name
+window.fcRenameCat = function(oldName) {
+  const n = (prompt('שם חדש לקטגוריה "' + oldName + '":', oldName) || '').trim();
+  if (!n || n === oldName) return;
+  const L = load('fixed_costs') || [];
+  L.forEach(x => { if (x && !x.deleted && _fcCat(x) === oldName) x.cat = n; });
+  save('fixed_costs', L);
+  const R = _fcRen(); Object.keys(R).forEach(k => { if (R[k] === oldName) R[k] = n; }); if (_FC_CATS0.indexOf(oldName) >= 0) R[oldName] = n;
+  try { localStorage.setItem('fc_cat_renames', JSON.stringify(R)); } catch (_) {}
+  if (window._fcOpenCat === oldName) window._fcOpenCat = n;
+  fcRender(); toast('הקטגוריה נקראת עכשיו "' + n + '"');
+};
 window.fcPickCat = function(id) {
   const x = fcList().find(i => i.id === id); if (!x) return;
   const cur = _fcCat(x);
@@ -18905,7 +18918,7 @@ function fcRenderSpent() {
       + '<span class="ex-cat-t"><b>' + _escape(g.k) + '</b><small>' + (g.n === 1 ? 'הוצאה אחת' : g.n + ' הוצאות') + ' · ' + st + '</small></span>'
       + '<span class="ex-cat-v">' + fmtMoney(Math.round(g.sum)) + '<small>' + Math.round(g.sum / (total || 1) * 100) + '%</small></span>'
       + '<span class="ex-cat-bar"><i style="width:' + Math.max(3, Math.round(g.sum / (gl[0].sum || 1) * 100)) + '%"></i></span></button>'
-      + (isOpen ? '<div class="fcs-items">' + dd.map(x => row(x, false)).join('') + oo.map(x => row(x, true)).join('') + '</div>' : '')
+      + (isOpen ? '<div class="fcs-items">' + dd.map(x => row(x, false)).join('') + oo.map(x => row(x, true)).join('') + '<button class="fcs-ren" onclick="fcRenameCat(\'' + _escape(g.k).replace(/'/g, '&#39;') + '\')">שינוי שם הקטגוריה</button></div>' : '')
       + '</div>';
   };
   host.innerHTML = '<div class="fz-ttl fcs-ttl"><span>הוצאות קבועות</span><button class="fz-free" onclick="fcAdd()">+ הוספה</button></div>'
@@ -33572,6 +33585,7 @@ html[data-skin="spent"] .page-header h2 svg.icon-lg { display: none !important; 
 .fcs-tick.on { background: radial-gradient(120% 100% at 28% 6%, rgba(190,230,205,.30) 0%, rgba(44,85,69,0) 62%), linear-gradient(180deg, #2c5545 0%, #18342a 100%) !important; box-shadow: 0 4px 10px rgba(24,52,42,.30), inset 0 1px 0 rgba(255,255,255,.12) !important; }
 .fcs-ok, .fcs-items .fcs-row.paid small { color: #24493b !important; }
 .fz-ri.fz-g .fz-bd.ok, .fz-bd.ok { background: linear-gradient(180deg, #2c5545, #18342a) !important; }
+.fcs-ren { display: block; width: 100%; border: none; border-top: 1px solid #e9ebf3; background: none; padding: 12px 0 10px; font-family: inherit; font-size: 14px; font-weight: 500; color: #6b7299; cursor: pointer; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
