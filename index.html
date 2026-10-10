@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v587</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v588</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -18862,7 +18862,7 @@ function fcRenderSpent() {
   const GN = new Proxy({}, { get: (_, k) => String(k) });
   const gsum = {}; list.forEach(x => { const g = _fcCat(x); gsum[g] = gsum[g] || { n: 0, sum: 0 }; gsum[g].n++; gsum[g].sum += _fcMonthly(x); });
   const gl = Object.keys(gsum).map(k => ({ k, ...gsum[k] })).sort((p, q) => q.sum - p.sum);
-  const fg = window._fcGroup && gsum[window._fcGroup] ? window._fcGroup : null;
+  const fg = null;
   const inG = x => !fg || _fcCat(x) === fg;
   const due = list.filter(x => _fcDueIn(x, now) && inG(x)), off = list.filter(x => !_fcDueIn(x, now) && inG(x));
   const total = fcTotal(), left = due.filter(x => !_fcPaidFor(x, now)).reduce((t, x) => t + _fcAmtIn(x, now), 0);
@@ -18884,7 +18884,6 @@ function fcRenderSpent() {
     sub += (isOff ? '' : (_fcFreqLabel(x) ? ' · ' + _fcFreqLabel(x) : '')) + until(x);
     if (window._fcSort) sub = '<span class="fcs-catpill">' + _escape(_fcCat(x)) + ' ⌄</span>';
     return '<div class="fz-row fcs-row' + cls + (isOff ? ' off' : '') + '" onclick="' + (window._fcSort ? 'fcPickCat' : 'fcItemSheet') + '(\'' + x.id + '\')">'
-      + '<span class="fz-ri fz-g">' + _fcIcon(x.group) + '</span>'
       + '<span class="fz-m"><b>' + _escape(x.name) + '</b><small>' + sub + '</small></span>'
       + '<span class="fz-v">' + fmtMoney(isOff ? _fcAmtIn(x, x.day ? _fcNextDue(x) : now) : _fcAmtIn(x, now)) + (_fcIsAlt(x) ? '<small class="fcs-alt">לסירוגין</small>' : '') + '</span>'
       + (isOff ? '' : '<button class="fcs-tick' + (paid ? ' on' : '') + '" aria-label="ירד" onclick="event.stopPropagation();fcMarkPaid(\'' + x.id + '\',\'' + mk + '\')">' + FZ.check + '</button>')
@@ -18892,26 +18891,37 @@ function fcRenderSpent() {
   };
   const say = !due.length ? 'אין חיובים החודש' : left > 0 ? 'נשארו לרדת ' + fmtMoney(left) + ' החודש' : 'הכל ירד החודש';
   const arch = fcArchivedList();
+  // v588: only the categories; tap one → its items open right under it, each with "ירד?" (green when it did)
+  const openCat = window._fcOpenCat && gsum[window._fcOpenCat] ? window._fcOpenCat : null;
+  const itemsOf = k => {
+    const all = list.filter(x => _fcCat(x) === k), dd = all.filter(x => _fcDueIn(x, now)), oo = all.filter(x => !_fcDueIn(x, now));
+    dd.sort((p, q) => (_fcPaidFor(p, now) ? 1 : 0) - (_fcPaidFor(q, now) ? 1 : 0) || (dOf(p) ? dOf(p).getTime() : 9e15) - (dOf(q) ? dOf(q).getTime() : 9e15));
+    return { dd, oo };
+  };
+  const catBlock = g => {
+    const { dd, oo } = itemsOf(g.k), pd = dd.filter(x => _fcPaidFor(x, now)).length, isOpen = openCat === g.k;
+    const st = !dd.length ? 'לא יורד החודש' : pd === dd.length ? '<span class="fcs-ok">הכל ירד ✓</span>' : pd + ' מתוך ' + dd.length + ' ירדו';
+    return '<div class="fcs-cat' + (isOpen ? ' open' : '') + '"><button class="ex-cat" onclick="window._fcOpenCat=window._fcOpenCat===\'' + _escape(g.k) + '\'?null:\'' + _escape(g.k) + '\';fcRenderSpent()">'
+      + '<span class="ex-cat-t"><b>' + _escape(g.k) + '</b><small>' + (g.n === 1 ? 'הוצאה אחת' : g.n + ' הוצאות') + ' · ' + st + '</small></span>'
+      + '<span class="ex-cat-v">' + fmtMoney(Math.round(g.sum)) + '<small>' + Math.round(g.sum / (total || 1) * 100) + '%</small></span>'
+      + '<span class="ex-cat-bar"><i style="width:' + Math.max(3, Math.round(g.sum / (gl[0].sum || 1) * 100)) + '%"></i></span></button>'
+      + (isOpen ? '<div class="fcs-items">' + dd.map(x => row(x, false)).join('') + oo.map(x => row(x, true)).join('') + '</div>' : '')
+      + '</div>';
+  };
   host.innerHTML = '<div class="fz-ttl fcs-ttl"><span>הוצאות קבועות</span><button class="fz-free" onclick="fcAdd()">+ הוספה</button></div>'
     + '<div class="fz-big"><div class="k">בחודש</div><div class="n">' + fmtMoney(total) + '</div></div>'
     + '<div class="fz-say">' + say + '</div>'
     + '<div class="fcs-meta">' + (due.length ? 'ירדו ' + paidN + ' מתוך ' + due.length + ' · ' : '') + fmtMoney(total * 12) + ' בשנה</div>'
-    + (window._fcSort ? '<div class="fcs-sortbar"><span>לחיצה על הוצאה ← בחירת קטגוריה</span><button onclick="window._fcSort=false;fcRenderSpent()">סיום</button></div>' : '')
-    + (gl.length >= 1 ? '<div class="fz-lbl fcs-lblrow"><span>לפי קטגוריה</span>' + (window._fcSort ? '' : '<button class="ex-clear" onclick="window._fcSort=true;window._fcGroup=null;fcRenderSpent()">לסדר קטגוריות</button>') + '</div><div class="fz-card ex-cats">' + gl.map(g => '<button class="ex-cat' + (fg === g.k ? ' on' : '') + '" onclick="window._fcGroup=window._fcGroup===\'' + _escape(g.k) + '\'?null:\'' + _escape(g.k) + '\';fcRenderSpent()">'
-        + '<span class="ex-cat-t"><b>' + _escape(g.k) + '</b><small>' + (g.n === 1 ? 'הוצאה אחת' : g.n + ' הוצאות') + '</small></span>'
-        + '<span class="ex-cat-v">' + fmtMoney(Math.round(g.sum)) + '<small>' + Math.round(g.sum / (total || 1) * 100) + '%</small></span>'
-        + '<span class="ex-cat-bar"><i style="width:' + Math.max(3, Math.round(g.sum / (gl[0].sum || 1) * 100)) + '%"></i></span></button>').join('') + '</div>'
-        + (fg ? '<div class="fz-lbl">' + _escape(fg) + ' · <button class="ex-clear" onclick="window._fcGroup=null;fcRenderSpent()">הכל</button></div>' : '') : '')
-    + (dueOpen.length ? '<div class="fz-lbl">עוד ירד החודש</div><div class="fz-card">' + dueOpen.map(x => row(x, false)).join('') + '</div>' : (due.length ? '<div class="fz-lbl">החודש</div>' : ''))
-    + (duePaid.length ? '<div class="fz-lbl">כבר ירד · ' + duePaid.length + '</div><div class="fz-card fcs-done">' + duePaid.map(x => row(x, false)).join('') + '</div>' : '')
-    + (off.length ? '<div class="fz-lbl">לא יורד החודש</div><div class="fz-card">' + off.map(x => row(x, true)).join('') + '</div>' : '')
-    + (!list.length ? '<div class="fz-empty">עוד אין הוצאות קבועות</div>' : '')
+    + (window._fcSort ? '<div class="fcs-sortbar"><span>פתח קטגוריה ← לחיצה על הוצאה ← בחירה</span><button onclick="window._fcSort=false;fcRenderSpent()">סיום</button></div>' : '')
+    + (gl.length ? '<div class="fz-lbl fcs-lblrow"><span>לפי קטגוריה</span>' + (window._fcSort ? '' : '<button class="ex-clear" onclick="window._fcSort=true;fcRenderSpent()">לסדר קטגוריות</button>') + '</div>'
+        + '<div class="fz-card ex-cats fcs-cats">' + gl.map(catBlock).join('') + '</div>' : '<div class="fz-empty">עוד אין הוצאות קבועות</div>')
     + '<div class="fcs-links">'
     + (arch.length ? '<button onclick="_fcArch2=!_fcArch2;fcRenderSpent()">כבר לא משלם · ' + arch.length + (_fcArch2 ? ' ⌃' : ' ›') + '</button>' : '')
     + '<button onclick="fcResearchAll()">לבדוק מחירים</button><button onclick="fcRestoreOpen()">שחזור מגיבוי</button></div>'
     + (_fcArch2 && arch.length ? '<div class="fz-card fcs-arch">' + arch.map(x => '<div class="fz-row"><span class="fz-m"><b>' + _escape(x.name) + '</b><small>חוסך ' + fmtMoney(x.amount) + ' בחודש</small></span>'
         + '<button class="fcs-mini" onclick="fcRestore(\'' + x.id + '\')">להחזיר</button><button class="fcs-mini" onclick="fcDeleteForever(\'' + x.id + '\')">למחוק</button></div>').join('') + '</div>' : '');
 }
+
 window.fcItemSheet = function(id) {
   const x = fcList().find(i => i.id === id); if (!x) return;
   const r = _fcResearchStore()[id], d = r && r.data;
@@ -33542,6 +33552,22 @@ html[data-skin="spent"] .page-header h2 svg.icon-lg { display: none !important; 
 .fcs-catpill { display: inline-block; background: #e8ebf6; color: #252e6b; font-weight: 600; font-size: 12.5px; border-radius: 999px; padding: 3px 10px; }
 .fcs-sortbar { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 8px); z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: linear-gradient(135deg,#252e6b,#141a3c); color: #fff; border-radius: 18px; padding: 10px 10px 10px 16px; margin: 6px 0 10px; font-size: 14.5px; font-weight: 500; box-shadow: 0 10px 24px rgba(22,28,69,.25); }
 .fcs-sortbar button { border: none; background: #fff; color: #161c45; border-radius: 999px; padding: 8px 16px; font-family: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+/* v588 — fixed costs: category accordion, green "ירד" */
+.fcs-cats { padding: 4px 14px !important; }
+.fcs-cat { border-bottom: 1px solid #eef0f6; }
+.fcs-cat:last-child { border-bottom: none; }
+.fcs-cat .ex-cat { border-bottom: none !important; }
+.fcs-cat.open .ex-cat { padding-bottom: 10px; }
+.fcs-ok { color: #1f8a5f; font-weight: 600; }
+.fcs-items { background: #f6f7fb; border-radius: 18px; padding: 2px 12px; margin: 0 0 12px; animation: fcsIn .22s ease-out; }
+@keyframes fcsIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.fcs-items .fcs-row { padding: 12px 0 !important; border-bottom: 1px solid #e9ebf3; gap: 10px; }
+.fcs-items .fcs-row:last-child { border-bottom: none; }
+.fcs-items .fcs-row .fz-m b { font-size: 15.5px; }
+.fcs-items .fcs-row .fz-v { font-size: 15.5px; }
+.fcs-items .fcs-row.paid b, .fcs-items .fcs-row.paid .fz-v { color: #161c45 !important; }
+.fcs-items .fcs-row.paid small { color: #1f8a5f !important; font-weight: 600; }
+.fcs-tick.on { background: radial-gradient(120% 100% at 28% 6%, rgba(255,255,255,.35), rgba(255,255,255,0) 60%), linear-gradient(180deg, #3cbf8a 0%, #1f8a5f 100%) !important; box-shadow: 0 4px 10px rgba(31,138,95,.28) !important; color: #fff !important; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
