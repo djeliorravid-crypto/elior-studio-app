@@ -7552,7 +7552,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v556</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v557</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -30549,6 +30549,7 @@ window.morningCancelPaymentRequest = async function(incomeId) {
 };
 
 // v542: calendar = the week in one row + today as a timeline
+window.schedShiftWeek = function(n) { const d = new Date(_scheduleDate + 'T00:00:00'); d.setDate(d.getDate() + 7 * n); _scheduleDate = dailyDateStr(d); renderSchedule(); };
 function _schedSpent(items, listEl) {
   let wk = document.getElementById('fz-week');
   if (!wk) { wk = document.createElement('div'); wk.id = 'fz-week'; listEl.parentNode.insertBefore(wk, listEl); }
@@ -30559,7 +30560,14 @@ function _schedSpent(items, listEl) {
     let has = manual.some(x => x && x.date === key); try { if (!has) has = gcalEventsForDate(key).length > 0; } catch (_) {}
     days.push('<button class="' + (key === _scheduleDate ? 'on' : '') + (key === todayK ? ' today' : '') + '" onclick="_scheduleDate=\'' + key + '\';renderSchedule()">' + 'אבגדהוש'[k] + '<b>' + d.getDate() + '</b>' + (has ? '<i></i>' : '<i class="no"></i>') + '</button>'); }
   const label = _scheduleDate === todayK ? 'היום' : cur.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
-  wk.innerHTML = '<div class="fz-ttl">לו״ז</div><div class="fz-days"><button class="nv" onclick="_scheduleDate=dailyDateStr(new Date(new Date(_scheduleDate+\'T00:00:00\').getTime()-7*864e5));renderSchedule()">›</button>' + days.join('') + '<button class="nv" onclick="_scheduleDate=dailyDateStr(new Date(new Date(_scheduleDate+\'T00:00:00\').getTime()+7*864e5));renderSchedule()">‹</button></div>'
+  const mDiff = (cur.getFullYear() * 12 + cur.getMonth()) - (new Date().getFullYear() * 12 + new Date().getMonth());
+  const rel = mDiff === 0 ? 'החודש' : mDiff === 1 ? 'חודש הבא' : mDiff === 2 ? 'עוד חודשיים' : mDiff === -1 ? 'לפני חודש' : mDiff === -2 ? 'לפני חודשיים' : mDiff > 0 ? 'עוד ' + mDiff + ' חודשים' : 'לפני ' + (-mDiff) + ' חודשים';
+  const arw = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="' + (d > 0 ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7') + '"/></svg>';
+  wk.innerHTML = '<div class="fz-ttl">לו״ז</div>'
+    + '<div class="fz-mo"><button class="fz-mv" aria-label="שבוע קודם" onclick="schedShiftWeek(-1)">' + arw(-1) + '</button>'
+    + '<span class="fz-rel' + (mDiff ? ' away' : '') + '"><b>' + rel + '</b><span>' + MONTHS_HE[cur.getMonth()] + (cur.getFullYear() !== new Date().getFullYear() ? ' ' + cur.getFullYear() : '') + '</span></span>'
+    + '<button class="fz-mv" aria-label="שבוע הבא" onclick="schedShiftWeek(1)">' + arw(1) + '</button></div>'
+    + '<div class="fz-days">' + days.join('') + '</div>'
     + '<div class="fz-lbl">' + label + (_scheduleDate !== todayK ? ' · <button class="fz-today" onclick="goScheduleToday()">חזרה להיום</button>' : '') + '</div>';
   const tints = ['violet', 'mint', 'peach', 'sun'];
   listEl.innerHTML = items.length ? items.map((it, n) => {
@@ -32971,6 +32979,17 @@ html[data-skin="spent"] .fl-note { display: block; margin-top: 12px; font-size: 
 .fz-bd.norc { background: #e4532f; bottom: auto; top: -3px; }
 /* v556 — iOS WebKit paints a grey box around filtered/animated SVG: plain box-shadow instead */
 html[data-skin="spent"] .sp-logo { filter: none !important; border-radius: 22.5% !important; box-shadow: 0 10px 24px rgba(22,28,69,.22) !important; overflow: hidden; }
+/* v557 — calendar: where am I (relative month) + comfortable week arrows */
+.fz-mo { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 14px; }
+.fz-mv { width: 46px; height: 46px; border-radius: 23px; border: none; background: #fff; color: #161c45; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(22,28,69,.10); cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; transition: transform .12s; }
+.fz-mv:active { transform: scale(.92); }
+.fz-mv svg { width: 22px; height: 22px; }
+.fz-rel { display: inline-flex; align-items: baseline; gap: 8px; padding: 11px 20px; border-radius: 999px; background: #fff; box-shadow: 0 4px 14px rgba(22,28,69,.08); font-family: 'Rubik', 'Heebo', sans-serif; }
+.fz-rel b { font-size: 18px; font-weight: 700; color: #161c45; }
+.fz-rel span { font-size: 15px; color: #8a8fae; }
+.fz-rel.away { background: linear-gradient(135deg,#252e6b,#141a3c); box-shadow: 0 8px 20px rgba(22,28,69,.25); }
+.fz-rel.away b { color: #fff; } .fz-rel.away span { color: rgba(255,255,255,.7); }
+.fz-days .nv { display: none; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
