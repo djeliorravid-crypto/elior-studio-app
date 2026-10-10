@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v563</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v564</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -30629,7 +30629,7 @@ function _schedSpent(items, listEl) {
     const hs = h === 1 ? 'שעה' : h === 2 ? 'שעתיים' : h + ' שעות';
     return r === 0 ? hs : r === 30 ? (h === 1 ? 'שעה וחצי' : h === 2 ? 'שעתיים וחצי' : h + ' וחצי שעות') : h + ':' + String(r).padStart(2, '0') + ' ש׳'; };
   const dLong = _scheduleDate === todayK ? 'להיום' : 'ל' + cur.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
-  const addBox = '<button class="fz-addday" onclick="spFlowScheduleAdd(_scheduleDate)"><span class="p">' + FZ.plus + '</span><span>הוספת אירוע ' + dLong + '</span></button>';
+  const addBox = '<button class="fz-addday" onclick="spFlowScheduleAdd(_scheduleDate)">' + FZ.plus + '<span>הוספה ' + (_scheduleDate === todayK ? 'להיום' : 'ליום הזה') + '</span></button>';
   listEl.innerHTML = (items.length ? items.map((it, n) => {
     let gap = '';
     if (n > 0) { const a = _tm(items[n - 1].time), b = _tm(it.time);
@@ -33085,6 +33085,10 @@ html[data-skin="spent"] #fz-week .fz-mo-top { justify-content: center; }
 .fz-addday .p { width: 30px; height: 30px; border-radius: 15px; background: linear-gradient(135deg,#252e6b,#141a3c); color: #fff; display: flex; align-items: center; justify-content: center; }
 .fz-addday .p svg { width: 17px; height: 17px; }
 .fz-addday { margin-bottom: 130px; }
+/* v564 — add link, minimal */
+.fz-addday { width: auto !important; display: inline-flex !important; gap: 6px !important; margin: 6px 58px 130px 0 !important; padding: 8px 4px !important; border: none !important; border-radius: 0 !important; background: none !important; font-size: 14.5px !important; font-weight: 500 !important; color: #6b7299 !important; }
+.fz-addday svg { width: 15px; height: 15px; }
+.fz-addday:active { opacity: .6; transform: none !important; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
