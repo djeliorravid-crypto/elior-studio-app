@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v578</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v579</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16010,6 +16010,11 @@ window.txCopyShortcutURL = async function() {
     try {
       const u = new URL(url);
       const host = (u.host || u.hostname || '').toLowerCase();
+      if (host === 'offer' || host === 'slot') {
+        const t = u.searchParams.get('text') || u.searchParams.get('body') || '';
+        setTimeout(() => { try { offerImport(t); } catch (_) {} }, 600);
+        return;
+      }
       if (host !== 'wallet' && host !== 'expense' && host !== 'tx') {
         try { if (typeof _txDiagPush === 'function') _txDiagPush('url-ignored', url, 'host=' + host); } catch (_) {}
         return;
@@ -20190,6 +20195,43 @@ function _freeMsg(o, slots) {
   const lines = slots.map(x => x.txt + (inv ? '\nלהוספה ליומן: ' + _freeCalLink(x) : ''));
   return lines.join(inv ? '\n\n' : '\n') + (slots.length === 1 ? '\n\nמתאים לך?' : '\n\nמה מתאים לך?');
 }
+// v579: bring a sent offer back from WhatsApp — share the message to the app
+// (ravidstudio://offer?text=…, via a Shortcut) or copy it and tap "הדבקה".
+// Two questions — which date was picked, what's the event called — then it
+// goes into the calendar (and the iPhone/Google calendar) with its real length.
+function _offerParse(text) {
+  const t = String(text || '').replace(/[⁦-⁩‎‏]/g, '');
+  const re = /(\d{1,2})\.(\d{1,2})(?:\.\d{2,4})?\s*[·•\-–,]?\s*(\d{1,2}:\d{2})\s*[–\-]\s*(\d{1,2}:\d{2})/g;
+  const out = [], now = new Date(); now.setHours(0, 0, 0, 0); let m;
+  while ((m = re.exec(t))) {
+    const d = +m[1], mo = +m[2] - 1; let y = now.getFullYear();
+    let dt = new Date(y, mo, d, 12); if (dt < new Date(now.getTime() - 30 * 864e5)) dt = new Date(y + 1, mo, d, 12);
+    const p = n => String(n).padStart(2, '0'), a = m[3].padStart(5, '0'), e = m[4].padStart(5, '0');
+    const toM = x => (+x.slice(0, 2)) * 60 + (+x.slice(3));
+    out.push({ key: dailyDateStr(dt), a, e, dur: Math.max(30, toM(e) - toM(a)), label: 'יום ' + 'אבגדהוש'[dt.getDay()] + '׳ ' + d + '.' + (mo + 1) + ' · ⁦' + a + '–' + e + '⁩' });
+  }
+  return out;
+}
+window.offerImport = function(text) {
+  const opts = _offerParse(text);
+  if (!opts.length) { toast('לא מצאתי תאריך ושעות בהודעה'); return; }
+  const ask = o => spFlowOpen({ title: 'קביעה ביומן · ' + o.label, vals: { title: '' },
+    steps: [{ k: 'title', type: 'text', q: 'איך קוראים לאירוע?', ph: 'סשן עם…', req: 'כתוב שם לאירוע', recent: _spRecentDescs('schedule', 'title') }],
+    onSave: async v => {
+      const item = { id: genId(), date: o.key, time: o.a, endTime: o.e, durationMinutes: o.dur, title: v.title, notes: '', createdAt: new Date().toISOString() };
+      const all = load('schedule'); all.push(item); save('schedule', all);
+      try { chooseMode('business'); showPage('schedule'); _scheduleDate = o.key; renderSchedule(); } catch (_) {}
+      spDone('נקבע ביומן', '⁦' + o.a + '–' + o.e + '⁩', v.title);
+      if (gcalWriteConnected()) { const gid = await gcalWriteCreateEvent(item); if (gid) { const cur = load('schedule'), sv = cur.find(x => x.id === item.id); if (sv) { sv.gcalEventId = gid; save('schedule', cur); } } try { gcalRefreshEventKit(); } catch (_) {} }
+    } });
+  if (opts.length === 1) { spentSheet('איזה תאריך נבחר?', opts[0].label, [{ label: 'זה — להמשיך', pri: true, run: () => ask(opts[0]) }]); return; }
+  spentSheet('איזה תאריך נבחר?', 'מתוך ההצעה ששלחת', opts.map((o, i) => ({ label: o.label, pri: i === 0, run: () => ask(o) })));
+};
+window.offerPaste = async function() {
+  let t = ''; try { t = await navigator.clipboard.readText(); } catch (_) {}
+  if (!t) { toast('תעתיק קודם את ההודעה בוואטסאפ (לחיצה ארוכה ← העתקה)'); return; }
+  offerImport(t);
+};
 window._freePick = function(id) { const S = window._freeSel || [], o = window._freeOpt, i = S.indexOf(id);
   if (i >= 0) S.splice(i, 1); else { S.push(id); while (S.length > (o.count || 3)) S.shift(); }
   window._freeSel = S; freeTimesOpen(); };
@@ -20236,6 +20278,7 @@ window.spLobbyAdd = function() {
     { label: 'הוצאה', run: () => quickAction('expense') },
     { label: 'פגישה בלו״ז', run: () => quickAction('schedule') },
     { label: 'לשלוח מתי אני פנוי', run: () => freeTimesOpen() },
+    { label: 'לקבוע מהודעה שהעתקתי', run: () => offerPaste() },
     { label: 'הפקה חדשה', run: () => { chooseMode('business'); showPage('productions'); setTimeout(() => prodOpenAddModal(), 120); } },
     { label: 'משימה', run: () => quickAction('task') }
   ]);
@@ -29416,7 +29459,7 @@ async function gcalWriteCreateEvent(item) {
         title:           item.title,
         date:            item.date,
         time:            item.time,
-        durationMinutes: 60,
+        durationMinutes: item.durationMinutes || 60,
         calendarId:      localStorage.getItem('ios_cal_id') || '',
         notes:           item.notes || ''
       });
@@ -30719,7 +30762,7 @@ function _schedSpent(items, listEl) {
   wk.innerHTML = '<div class="fz-mo fz-mo-top">'
     + '<span class="fz-mid"><span class="fz-dd">' + dRel + '</span><span class="fz-rel' + (mDiff ? ' away' : '') + '"><b>' + rel + '</b><span>' + MONTHS_HE[cur.getMonth()] + (cur.getFullYear() !== new Date().getFullYear() ? ' ' + cur.getFullYear() : '') + '</span></span></span>'
     + '</div>'
-    + '<div class="fz-ttl fz-ttl-wk">יומן שבועי<button class="fz-free" onclick="freeTimesOpen()">מתי אני פנוי ›</button></div>'
+    + '<div class="fz-ttl fz-ttl-wk">יומן שבועי<span class="fz-tlinks"><button class="fz-free" onclick="offerPaste()">קביעה מהודעה</button><button class="fz-free" onclick="freeTimesOpen()">מתי אני פנוי ›</button></span></div>'
     + '<div class="fz-days fz-scroll">' + days.join('') + '</div>'
     + '<div class="fz-lbl">' + label + (_scheduleDate !== todayK ? ' · <button class="fz-today" onclick="goScheduleToday()">חזרה להיום</button>' : '') + '</div>';
   { const sc = wk.querySelector('.fz-days');
@@ -33272,6 +33315,8 @@ button.ff-row.off .ff-tx small { color: #a3a8c3; }
 .ff-rng label { flex: 1; position: relative; border-radius: 999px; padding: 9px 4px; font-size: 14.5px; font-weight: 600; color: #6b7299; text-align: center; cursor: pointer; overflow: hidden; }
 .ff-rng label.on { background: #fff; color: #161c45; box-shadow: 0 2px 8px rgba(22,28,69,.10); }
 .ff-rng label input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; -webkit-appearance: none; appearance: none; }
+.fz-tlinks { display: flex; gap: 14px; align-items: center; }
+.fz-tlinks .fz-free:first-child { color: #8a8fae; font-weight: 500; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
