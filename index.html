@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v583</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v584</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16343,17 +16343,31 @@ function renderExpensesSpent() {
   const monthExp = (load('expenses') || []).filter(e => inCurMonth(e.date));
   const total = monthExp.reduce((t, e) => t + (Number(e.amount) || 0), 0);
   const unpaid = monthExp.filter(e => !e.paid).length;
-  const latest = monthExp.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)));
+  // v584: where the money went — by category; anything unknown counts as food
+  const _ecat = e => { const c = String(e.category || '').trim(); return !c || c === 'אחר' || c === 'כללי' || c === 'לא מסווג' ? 'מזון' : c; };
+  const byCat = {}; monthExp.forEach(e => { const c = _ecat(e); byCat[c] = byCat[c] || { n: 0, sum: 0, guess: 0 }; byCat[c].n++; byCat[c].sum += Number(e.amount) || 0; if (c === 'מזון' && _ecat(e) !== String(e.category || '').trim()) byCat[c].guess++; });
+  const cats = Object.keys(byCat).map(k => ({ k, ...byCat[k] })).sort((a, b) => b.sum - a.sum);
+  const fcat = window._expCat && byCat[window._expCat] ? window._expCat : null;
+  const latest = monthExp.filter(e => !fcat || _ecat(e) === fcat).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)));
   const allOpen = !!window._expListOpen;
   const say = unpaid ? (unpaid === 1 ? 'הוצאה אחת עוד לא שולמה' : unpaid + ' הוצאות עוד לא שולמו') : monthExp.length ? 'הכל שולם' : 'עוד אין הוצאות החודש';
   let h = '<div class="fz-ttl">כסף</div>' + '<div class="fz-seg"><button onclick="showPage(\'income\')">נכנס</button><button class="on">יצא</button></div>'
     + '<div class="fz-big"><div class="k"><button onclick="changeMonth(1)">‹</button>' + MONTHS_HE[curMonth] + '<button onclick="changeMonth(-1)">›</button></div><div class="n">' + fmtMoney(total) + '</div></div>'
     + '<div class="fz-say">' + say + '</div>';
   try { if (fcList().length) h += '<button class="fz-link" onclick="showPage(\'fixed\')">' + fzIc('repeat', 'violet') + '<span class="fz-m"><b>הוצאות קבועות</b><small>' + fmtMoney(fcTotal()) + ' בחודש</small></span><span class="fz-ch">‹</span></button>'; } catch (_) {}
+  if (cats.length > 1 || (cats.length === 1 && monthExp.length > 1)) {
+    const top = cats[0].sum || 1, catOpen = !!window._expCatsOpen;
+    h += '<div class="fz-lbl">על מה זה יצא</div><div class="fz-card ex-cats">' + (catOpen ? cats : cats.slice(0, 5)).map(c =>
+        '<button class="ex-cat' + (fcat === c.k ? ' on' : '') + '" onclick="window._expCat=window._expCat===\'' + _escape(c.k) + '\'?null:\'' + _escape(c.k) + '\';window._expListOpen=!!window._expCat;renderExpensesSpent()">'
+        + '<span class="ex-cat-t"><b>' + _escape(c.k) + '</b><small>' + (c.n === 1 ? 'הוצאה אחת' : c.n + ' הוצאות') + (c.guess ? ' · כולל ' + c.guess + ' לא מזוהות' : '') + '</small></span>'
+        + '<span class="ex-cat-v">' + fmtMoney(c.sum) + '<small>' + Math.round(c.sum / (total || 1) * 100) + '%</small></span>'
+        + '<span class="ex-cat-bar"><i style="width:' + Math.max(3, Math.round(c.sum / top * 100)) + '%"></i></span></button>').join('')
+      + (cats.length > 5 ? '<button class="fz-more" onclick="window._expCatsOpen=!window._expCatsOpen;renderExpensesSpent()">' + (catOpen ? 'פחות' : 'עוד ' + (cats.length - 5) + ' ›') + '</button>' : '') + '</div>';
+  }
   if (latest.length) {
-    h += '<div class="fz-lbl">אחרונות</div><div class="fz-card">' + (allOpen ? latest : latest.slice(0, 3)).map(e =>
+    h += '<div class="fz-lbl">' + (fcat ? _escape(fcat) + ' · <button class="ex-clear" onclick="window._expCat=null;renderExpensesSpent()">כל ההוצאות</button>' : 'אחרונות') + '</div><div class="fz-card">' + (allOpen ? latest : latest.slice(0, 3)).map(e =>
         '<button class="fz-row" onclick="expRowTap(\'' + e.id + '\')">' + fzIc('coin', e.paid ? 'violet' : 'sun')
-        + '<span class="fz-m"><b>' + _escape(e.description || 'הוצאה') + '</b><small>' + _escape(e.category || 'אחר') + (e.paid ? '' : ' · לא שולם') + '</small></span>'
+        + '<span class="fz-m"><b>' + _escape(e.description || 'הוצאה') + '</b><small>' + _escape(_ecat(e)) + (e.paid ? '' : ' · לא שולם') + '</small></span>'
         + '<span class="fz-v">' + fmtMoney(e.amount) + '</span></button>').join('')
       + (latest.length > 3 ? '<button class="fz-more" onclick="window._expListOpen=!window._expListOpen;renderExpensesSpent()">' + (allOpen ? 'פחות' : 'הכל · ' + latest.length + ' ›') + '</button>' : '') + '</div>';
   } else h += '<div class="fz-empty">אין הוצאות ב' + MONTHS_HE[curMonth] + '</div>';
@@ -18414,7 +18428,27 @@ function _fcDueIn(x, d) {
   const diff = (d.getFullYear() * 12 + d.getMonth()) - (p[0] * 12 + p[1] - 1);
   return ((diff % e) + e) % e === 0;
 }
-function _fcMonthly(x) { return (Number(x.amount) || 0) / _fcEvery(x); }
+// v584: amounts that alternate month to month (e.g. מי עדן 180 / 44):
+// amount = the month of altAnchor (and every 2nd month from it), amount2 = the months in between
+function _fcIsAlt(x) { return x && x.amount2 != null && x.amount2 !== '' && !!x.altAnchor; }
+function _fcAmtIn(x, d) {
+  if (!_fcIsAlt(x)) return Number(x.amount) || 0;
+  const p = String(x.altAnchor).split('-').map(Number), dt = d || new Date();
+  const diff = (dt.getFullYear() * 12 + dt.getMonth()) - (p[0] * 12 + p[1] - 1);
+  return ((diff % 2) + 2) % 2 === 0 ? (Number(x.amount) || 0) : (Number(x.amount2) || 0);
+}
+function _fcMonthly(x) { return _fcIsAlt(x) ? ((Number(x.amount) || 0) + (Number(x.amount2) || 0)) / 2 : (Number(x.amount) || 0) / _fcEvery(x); }
+window.fcSetAlt = function(id) {
+  const list = load('fixed_costs') || []; const x = list.find(i => i.id === id); if (!x) return;
+  const now = new Date(), nx = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  spFlowOpen({ title: x.name + ' · סכום לסירוגין', vals: { a: String(_fcAmtIn(x, now)), b: String(_fcAmtIn(x, nx) === _fcAmtIn(x, now) && !_fcIsAlt(x) ? '' : _fcAmtIn(x, nx)) },
+    steps: [{ k: 'a', type: 'money', q: 'כמה יורד החודש?' }, { k: 'b', type: 'money', q: 'וכמה בחודש הבא?' }],
+    onSave: v => { const L = load('fixed_costs') || [], it = L.find(i => i.id === id); if (!it) return;
+      const a = Number(v.a) || 0, b = Number(v.b) || 0;
+      if (!b || a === b) { it.amount = a; delete it.amount2; delete it.altAnchor; }
+      else { it.amount = a; it.amount2 = b; it.altAnchor = _fcMonthKey(now); delete it.every; delete it.anchor; }
+      save('fixed_costs', L); fcRender(); spDone('נשמר', fmtMoney(a) + (b && a !== b ? ' / ' + fmtMoney(b) : ''), x.name); } });
+};
 function _fcFreqLabel(x) { const e = _fcEvery(x); return e === 2 ? 'כל חודשיים' : e > 2 ? 'כל ' + e + ' חודשים' : ''; }
 function fcTotal() { return Math.round(fcList().reduce((t, x) => t + _fcMonthly(x), 0)); }
 // ── Charge day (4.10): each fixed cost can carry the day of the month it
@@ -18487,7 +18521,7 @@ function fcRenderUpcoming() {
     return;
   }
   const due = items.filter(o => !_fcPaidFor(o.x, o.d));
-  const sum = due.reduce((t, o) => t + (Number(o.x.amount) || 0), 0);
+  const sum = due.reduce((t, o) => t + _fcAmtIn(o.x, o.d), 0);
   host.innerHTML = '<div class="fc-up"><div class="fc-up-head"><b>החיובים הקרובים</b><span>' + fmtMoney(sum) + ' ב-30 הימים הבאים</span></div>'
     + items.slice(0, _fcUpAll ? 12 : 3).map(o => {
         const paid = _fcPaidFor(o.x, o.d), mk = _fcMonthKey(o.d);
@@ -18495,7 +18529,7 @@ function fcRenderUpcoming() {
         return '<div class="fc-up-row' + (paid ? ' paid' : '') + (soon ? ' soon' : '') + '">'
           + '<span class="fc-up-date"><b>' + o.d.getDate() + '</b><small>' + _FC_DOW[o.d.getDay()] + '</small></span>'
           + '<span class="fc-up-main"><span class="t">' + _escape(o.x.name) + '</span><span class="s">' + (paid ? 'בוצע ✓' : _fcRelDay(o.d)) + '</span></span>'
-          + '<span class="fc-up-amt">' + fmtMoney(o.x.amount) + '</span>'
+          + '<span class="fc-up-amt">' + fmtMoney(_fcAmtIn(o.x, o.d)) + '</span>'
           + '<button class="fc-up-chk' + (paid ? ' on' : '') + '" onclick="fcMarkPaid(\'' + o.x.id + '\',\'' + mk + '\')" title="' + (paid ? 'בטל סימון' : 'סמן שבוצע') + '">✓</button>'
           + '</div>';
       }).join('')
@@ -18523,11 +18557,11 @@ function fcScheduleReminders() {
         for (let k = 0; k < 2; k++) {               // this occurrence + the next one
           if (!_fcPaidFor(x, d)) {
             const eve = new Date(d); eve.setDate(eve.getDate() - 1); eve.setHours(19, 0, 0, 0);
-            if (eve > now) out.push({ id: hid('fc-e-' + x.id + _fcMonthKey(d)), title: (x.manual ? '🔔 מחר להעביר ' : '💸 מחר יורדים ') + fmtMoney(x.amount),
+            if (eve > now) out.push({ id: hid('fc-e-' + x.id + _fcMonthKey(d)), title: (x.manual ? '🔔 מחר להעביר ' : '💸 מחר יורדים ') + fmtMoney(_fcAmtIn(x, d)),
               body: x.name + (x.manual ? ' · ב-' + d.getDate() + ' לחודש' : ' · תוודא שיש כיסוי בחשבון'), schedule: { at: eve, allowWhileIdle: true }, sound: 'default' });
             if (x.manual) {
               const morn = new Date(d); morn.setHours(9, 0, 0, 0);
-              if (morn > now) out.push({ id: hid('fc-m-' + x.id + _fcMonthKey(d)), title: '🔔 היום להעביר ' + fmtMoney(x.amount),
+              if (morn > now) out.push({ id: hid('fc-m-' + x.id + _fcMonthKey(d)), title: '🔔 היום להעביר ' + fmtMoney(_fcAmtIn(x, d)),
                 body: x.name + ' · אחרי ההעברה סמן ✓ באפליקציה', schedule: { at: morn, allowWhileIdle: true }, sound: 'default' });
             }
           }
@@ -18714,7 +18748,7 @@ function fcAskHtml() {
   return '<div class="fca"><div class="fca-h"><span class="fca-ic">🔔</span><span><b>ירד כבר?</b><small>' + (due.length === 1 ? 'חיוב קבוע אחד מחכה לאישור' : due.length + ' חיובים קבועים מחכים לאישור') + '</small></span></div>'
     + due.slice(0, 4).map(o => {
         const n = Math.round((now - o.d) / 864e5);
-        return '<div class="fca-row"><span class="fca-m"><b>' + _escape(o.x.name) + '</b><small>' + fmtMoney(o.x.amount) + ' · ' + (n === 0 ? 'היום' : n === 1 ? 'אתמול' : 'ב-' + o.d.getDate() + ' לחודש') + (o.x.manual ? ' · העברה ידנית' : '') + '</small></span>'
+        return '<div class="fca-row"><span class="fca-m"><b>' + _escape(o.x.name) + '</b><small>' + fmtMoney(_fcAmtIn(o.x, o.d)) + ' · ' + (n === 0 ? 'היום' : n === 1 ? 'אתמול' : 'ב-' + o.d.getDate() + ' לחודש') + (o.x.manual ? ' · העברה ידנית' : '') + '</small></span>'
           + '<button class="fca-no" onclick="fcAskLater(\'' + o.x.id + '\')">עוד לא</button>'
           + '<button class="fca-yes" onclick="fcAskYes(\'' + o.x.id + '\')">✓ ירד</button></div>';
       }).join('')
@@ -18806,7 +18840,7 @@ function fcRenderSpent() {
   const now = new Date(); now.setHours(0, 0, 0, 0);
   const mk = _fcMonthKey(now), list = fcList();
   const due = list.filter(x => _fcDueIn(x, now)), off = list.filter(x => !_fcDueIn(x, now));
-  const total = fcTotal(), left = due.filter(x => !_fcPaidFor(x, now)).reduce((t, x) => t + (Number(x.amount) || 0), 0);
+  const total = fcTotal(), left = due.filter(x => !_fcPaidFor(x, now)).reduce((t, x) => t + _fcAmtIn(x, now), 0);
   const paidN = due.filter(x => _fcPaidFor(x, now)).length;
   const dOf = x => Number(x.day) >= 1 ? _fcThisMonthDate(x, now) : null;
   due.sort((a, b) => (dOf(a) ? dOf(a).getTime() : 9e15) - (dOf(b) ? dOf(b).getTime() : 9e15));
@@ -18826,7 +18860,7 @@ function fcRenderSpent() {
     return '<div class="fz-row fcs-row' + cls + (isOff ? ' off' : '') + '" onclick="fcItemSheet(\'' + x.id + '\')">'
       + '<span class="fz-ri fz-g">' + _fcIcon(x.group) + '</span>'
       + '<span class="fz-m"><b>' + _escape(x.name) + '</b><small>' + sub + '</small></span>'
-      + '<span class="fz-v">' + fmtMoney(x.amount) + '</span>'
+      + '<span class="fz-v">' + fmtMoney(isOff ? _fcAmtIn(x, x.day ? _fcNextDue(x) : now) : _fcAmtIn(x, now)) + (_fcIsAlt(x) ? '<small class="fcs-alt">לסירוגין</small>' : '') + '</span>'
       + (isOff ? '' : '<button class="fcs-tick' + (paid ? ' on' : '') + '" aria-label="ירד" onclick="event.stopPropagation();fcMarkPaid(\'' + x.id + '\',\'' + mk + '\')">' + FZ.check + '</button>')
       + '</div>';
   };
@@ -18850,11 +18884,12 @@ window.fcItemSheet = function(id) {
   const x = fcList().find(i => i.id === id); if (!x) return;
   const r = _fcResearchStore()[id], d = r && r.data;
   const mk = _fcMonthKey(new Date()), due = _fcDueIn(x, new Date()), paid = due && _fcPaidFor(x, new Date());
-  const sub = [fmtMoney(x.amount) + (x.day ? ' · ב-' + x.day + ' לחודש' : ''), _fcFreqLabel(x) || 'כל חודש',
+  const sub = [(_fcIsAlt(x) ? 'החודש ' + fmtMoney(_fcAmtIn(x, new Date())) + ' · בחודש הבא ' + fmtMoney(_fcAmtIn(x, new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1))) : fmtMoney(x.amount)) + (x.day ? ' · ב-' + x.day + ' לחודש' : ''), _fcFreqLabel(x) || 'כל חודש',
     d ? (_fcVerdict(d.verdict).t + (d.typical ? ' · טיפוסי ' + d.typical : '')) : ''].filter(Boolean).join(' · ');
   const acts = [];
   if (due) acts.push({ label: paid ? 'בעצם עוד לא ירד' : 'ירד החודש', pri: !paid, run: () => fcMarkPaid(id, mk) });
   acts.push({ label: 'עריכה — שם, סכום, יום, תדירות', run: () => spFlowFixedEdit(id, 0) });
+  acts.push({ label: _fcIsAlt(x) ? 'סכום לסירוגין — לעדכן' : 'הסכום משתנה כל חודש (לסירוגין)', run: () => fcSetAlt(id) });
   if (d && d.tip) acts.push({ label: 'טיפ: ' + String(d.tip).slice(0, 70), run: () => fcAskOpen(id) });
   acts.push({ label: d ? 'לבדוק שוב את המחיר' : 'לבדוק אם אני משלם יותר מדי', run: () => fcResearchOne(id, d ? 1 : 0) });
   acts.push({ label: 'כבר לא משלם על זה', danger: true, run: () => fcArchive(id) });
@@ -33455,6 +33490,20 @@ html[data-skin="spent"] .wk-empty-emoji::after, html[data-skin="spent"] .ctr-emp
 html[data-skin="spent"] .pc-avatar { border-radius: 16px !important; font-weight: 600 !important; }
 html[data-skin="spent"] .wa-hero { background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38) 0%, rgba(120,135,220,.14) 32%, rgba(30,38,94,0) 62%), linear-gradient(180deg, #232c6a 0%, #151a41 100%) !important; box-shadow: 0 14px 30px rgba(22,28,69,.25) !important; }
 html[data-skin="spent"] .page-header h2 svg.icon-lg { display: none !important; }
+/* v584 — expenses by category; alternating fixed amounts */
+.ex-cats { padding-top: 4px !important; padding-bottom: 4px !important; }
+.ex-cat { width: 100%; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 6px 12px; align-items: center; border: none; background: none; border-bottom: 1px solid #eef0f6; padding: 13px 2px; font-family: inherit; text-align: right; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ex-cat:last-of-type { border-bottom: none; }
+.ex-cat-t { display: flex; flex-direction: column; gap: 2px; }
+.ex-cat-t b { font-size: 16px; font-weight: 600; color: #161c45; }
+.ex-cat-t small { font-size: 12.5px; color: #8a8fae; }
+.ex-cat-v { font-size: 16px; font-weight: 700; color: #161c45; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.ex-cat-v small { font-size: 12px; font-weight: 500; color: #8a8fae; }
+.ex-cat-bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: #eef0f8; overflow: hidden; }
+.ex-cat-bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #252e6b, #4a5aa8); margin-inline-start: 0; }
+.ex-cat.on { background: #f4f5fb; border-radius: 14px; }
+.ex-clear { border: none; background: none; font-family: inherit; font-size: inherit; color: #252e6b; font-weight: 600; padding: 0; cursor: pointer; }
+.fcs-alt { display: block; font-size: 11px; font-weight: 500; color: #8a8fae; text-align: left; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
