@@ -7552,7 +7552,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v557</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v558</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -30563,9 +30563,11 @@ function _schedSpent(items, listEl) {
   const mDiff = (cur.getFullYear() * 12 + cur.getMonth()) - (new Date().getFullYear() * 12 + new Date().getMonth());
   const rel = mDiff === 0 ? 'החודש' : mDiff === 1 ? 'חודש הבא' : mDiff === 2 ? 'עוד חודשיים' : mDiff === -1 ? 'לפני חודש' : mDiff === -2 ? 'לפני חודשיים' : mDiff > 0 ? 'עוד ' + mDiff + ' חודשים' : 'לפני ' + (-mDiff) + ' חודשים';
   const arw = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="' + (d > 0 ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7') + '"/></svg>';
-  wk.innerHTML = '<div class="fz-ttl">לו״ז</div>'
+  const wEnd = new Date(start); wEnd.setDate(start.getDate() + 6);
+  const range = start.getMonth() === wEnd.getMonth() ? start.getDate() + '–' + wEnd.getDate() + ' ב' + MONTHS_HE[wEnd.getMonth()] : start.getDate() + ' ב' + MONTHS_HE[start.getMonth()] + ' – ' + wEnd.getDate() + ' ב' + MONTHS_HE[wEnd.getMonth()];
+  wk.innerHTML = '<div class="fz-ttl fz-ttl-row"><span>לו״ז</span><span class="fz-rel' + (mDiff ? ' away' : '') + '"><b>' + rel + '</b><span>' + MONTHS_HE[cur.getMonth()] + (cur.getFullYear() !== new Date().getFullYear() ? ' ' + cur.getFullYear() : '') + '</span></span></div>'
     + '<div class="fz-mo"><button class="fz-mv" aria-label="שבוע קודם" onclick="schedShiftWeek(-1)">' + arw(-1) + '</button>'
-    + '<span class="fz-rel' + (mDiff ? ' away' : '') + '"><b>' + rel + '</b><span>' + MONTHS_HE[cur.getMonth()] + (cur.getFullYear() !== new Date().getFullYear() ? ' ' + cur.getFullYear() : '') + '</span></span>'
+    + '<span class="fz-range">' + range + '</span>'
     + '<button class="fz-mv" aria-label="שבוע הבא" onclick="schedShiftWeek(1)">' + arw(1) + '</button></div>'
     + '<div class="fz-days">' + days.join('') + '</div>'
     + '<div class="fz-lbl">' + label + (_scheduleDate !== todayK ? ' · <button class="fz-today" onclick="goScheduleToday()">חזרה להיום</button>' : '') + '</div>';
@@ -32990,6 +32992,10 @@ html[data-skin="spent"] .sp-logo { filter: none !important; border-radius: 22.5%
 .fz-rel.away { background: linear-gradient(135deg,#252e6b,#141a3c); box-shadow: 0 8px 20px rgba(22,28,69,.25); }
 .fz-rel.away b { color: #fff; } .fz-rel.away span { color: rgba(255,255,255,.7); }
 .fz-days .nv { display: none; }
+.fz-ttl-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fz-ttl-row .fz-rel { padding: 9px 16px; }
+.fz-ttl-row .fz-rel b { font-size: 17px; letter-spacing: 0; } .fz-ttl-row .fz-rel span { font-size: 14px; font-weight: 400; letter-spacing: 0; }
+.fz-range { font-family: 'Rubik', 'Heebo', sans-serif; font-size: 15px; font-weight: 500; color: #8a8fae; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
