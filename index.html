@@ -7552,7 +7552,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v554</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v555</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11300,8 +11300,8 @@ function renderIncomeSpent(o) {
     + '<div class="fz-say">' + say + '</div>';
   if (latest.length) {
     h += '<div class="fz-lbl">אחרונים</div><div class="fz-card">' + latest.map(i => { const paid = (i.status || 'pending') === 'paid';
-      return '<button class="fz-row" onclick="incOpenEntry(\'' + i.id + '\')">' + fzIc('coin', paid ? 'mint' : 'sun')
-        + '<span class="fz-m"><b>' + _escape(i.clientName || i.client || i.description || 'הכנסה') + '</b><small>' + _escape(i.category || i.description || '') + ' · ' + (paid ? 'שולם' : 'ממתין') + '</small></span>'
+      return '<button class="fz-row" onclick="incOpenEntry(\'' + i.id + '\')">' + fzPayIc(i)
+        + '<span class="fz-m"><b>' + _escape(i.clientName || i.client || i.description || 'הכנסה') + '</b><small>' + _escape(i.category || i.description || '') + ' · ' + ({ wait: 'ממתין', ok: 'שולם', norc: 'שולם · בלי קבלה' })[fzPayState(i)] + '</small></span>'
         + '<span class="fz-v">' + fmtMoney(i.amount) + '</span></button>'; }).join('')
       + '<button class="fz-more" onclick="window._incAllOpen=!window._incAllOpen;renderIncome()">' + (allOpen ? 'פחות' : 'הכל ›') + '</button></div>';
   } else h += '<div class="fz-empty">עוד אין הכנסות ב' + MONTHS_HE[curMonth] + '</div>';
@@ -19959,6 +19959,21 @@ const FZ = {
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 };
 const FZ_TINT = { violet: ['#e1e5f4', '#161c45'], peach: ['#ffe9e1', '#e0703f'], mint: ['#e0f4ec', '#2f9e6f'], sun: ['#fff3df', '#b8770a'], rose: ['#ffe9e4', '#d2553a'] };
+// v555: production mark — a small navy tile with a live waveform (state tints the tile)
+const fzProdIc = (st) => '<span class="fz-ri fz-pd ' + st + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10.5v3"/><path d="M8 7.5v9"/><path d="M12 4.5v15"/><path d="M16 8.5v7"/><path d="M20 10.5v3"/></svg></span>';
+// v555: payment-state mark — coin + badge: clock (waiting), check (paid), and a receipt-minus badge when paid without a receipt
+const FZ_COIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.3 16V8.2h3.3a2.4 2.4 0 0 1 2.4 2.4v2.6"/><path d="M15.7 8v7.8h-3.3a2.4 2.4 0 0 1-2.4-2.4v-2.6"/></svg>';
+const FZ_BADGE = {
+  wait: '<i class="fz-bd wait"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg></i>',
+  ok: '<i class="fz-bd ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.5l4 4L18.5 8"/></svg></i>',
+  norc: '<i class="fz-bd norc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12v17l-3-2-3 2-3-2-3 2z"/><path d="M9 11h6"/></svg></i>'
+};
+window.fzPayState = function(i) {
+  if ((i.status || 'pending') !== 'paid') return 'wait';
+  let mc = false; try { mc = !!(window.morningConnected && window.morningConnected()); } catch (_) {}
+  return mc && !i.morningDocId ? 'norc' : 'ok';
+};
+const fzPayIc = (i) => { const k = fzPayState(i); return '<span class="fz-ri fz-pay ' + k + '">' + FZ_COIN + (k === 'wait' ? FZ_BADGE.wait : FZ_BADGE.ok) + (k === 'norc' ? FZ_BADGE.norc : '') + '</span>'; };
 const fzIc = (k, t) => '<span class="fz-ri" style="background:' + FZ_TINT[t][0] + ';color:' + FZ_TINT[t][1] + '">' + FZ[k] + '</span>';
 const fzMonthName = (y, m) => new Date(y, m, 1).toLocaleDateString('he-IL', { month: 'long' });
 // ── Payment reminder → straight into the client's WhatsApp chat (10.10).
@@ -23380,7 +23395,7 @@ function renderProductionsSpent() {
     const vcls = st !== 'active' ? 'm' : du !== null && du < 0 ? 'r' : du !== null && du <= 3 ? 'o' : '';
     const pill = st === 'ready' ? ['מוכן', ''] : st === 'paused' ? ['מושהה', 'mute'] : du === null ? ['', ''] : du < 0 ? ['באיחור', 'late'] : du === 0 ? ['היום', 'late'] : du <= 3 ? [du === 1 ? 'מחר' : 'עוד ' + du + ' ימים', 'soon'] : ['עוד ' + du + ' ימים', ''];
     const tint = pill[1] === 'late' ? 'peach' : pill[1] === 'soon' ? 'sun' : st === 'ready' ? 'mint' : 'violet';
-    return '<div class="fz-row fz-drag" data-id="' + _escape(p.id) + '" onclick="if(!window._prodDragJust)spFlowProductionEdit(\'' + _escape(p.id) + '\')">' + fzIc('note', tint)
+    return '<div class="fz-row fz-drag" data-id="' + _escape(p.id) + '" onclick="if(!window._prodDragJust)spFlowProductionEdit(\'' + _escape(p.id) + '\')">' + fzProdIc(st === 'ready' ? 'ready' : st === 'paused' ? 'paused' : pill[1] === 'late' ? 'late' : 'on')
       + '<span class="fz-m"><b>' + _escape(p.title) + '</b><small>' + _escape(p.artist || 'בלי אמן') + '</small></span>'
       + (pill[0] ? '<span class="fz-pill ' + pill[1] + '">' + pill[0] + '</span>' : '')
       + '</div>';
@@ -32942,6 +32957,18 @@ html[data-skin="spent"] #face-id-lock .face-id-retry-btn { margin-top: auto !imp
 html[data-skin="spent"] #face-id-lock .face-id-retry-btn svg { opacity: .85; }
 html[data-skin="spent"] .fl-note { display: block; margin-top: 12px; font-size: 13px; color: #9aa0bd; animation: flUp .7s .4s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes flUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+/* v555 — production + payment-state marks */
+.fz-ri.fz-pd { border-radius: 15px; color: #fff; background: linear-gradient(155deg, #2b357c 0%, #161c45 100%); box-shadow: 0 6px 14px rgba(22,28,69,.22), inset 0 1px 0 rgba(255,255,255,.14); }
+.fz-ri.fz-pd.late { background: linear-gradient(155deg, #ff8a5c 0%, #e2512d 100%); box-shadow: 0 6px 14px rgba(226,81,45,.25), inset 0 1px 0 rgba(255,255,255,.2); }
+.fz-ri.fz-pd.ready { background: linear-gradient(155deg, #3cbf8a 0%, #1f8a5f 100%); box-shadow: 0 6px 14px rgba(31,138,95,.22), inset 0 1px 0 rgba(255,255,255,.2); }
+.fz-ri.fz-pd.paused { background: linear-gradient(155deg, #c3c7d8 0%, #9aa0bd 100%); box-shadow: none; }
+.fz-ri.fz-pd svg { width: 22px; height: 22px; }
+.fz-ri.fz-pay { position: relative; background: #e8ebf6; color: #161c45; }
+.fz-ri.fz-pay svg { width: 23px; height: 23px; }
+.fz-bd { position: absolute; width: 20px; height: 20px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 0 0 2.5px #fff; bottom: -3px; left: -3px; }
+.fz-bd svg { width: 12px !important; height: 12px !important; }
+.fz-bd.wait { background: #f0a024; } .fz-bd.ok { background: #22a06b; }
+.fz-bd.norc { background: #e4532f; bottom: auto; top: -3px; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
