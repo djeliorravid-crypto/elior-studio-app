@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v584</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v585</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11299,7 +11299,7 @@ function renderIncomeSpent(o) {
   if (latest.length) {
     h += '<div class="fz-lbl">אחרונים</div><div class="fz-card">' + latest.map(i => { const paid = (i.status || 'pending') === 'paid';
       return '<button class="fz-row" onclick="incOpenEntry(\'' + i.id + '\')">' + fzPayIc(i)
-        + '<span class="fz-m"><b>' + _escape(i.clientName || i.client || i.description || 'הכנסה') + '</b><small>' + _escape(i.category || i.description || '') + ' · ' + ({ wait: 'ממתין', ok: 'שולם', norc: 'שולם · בלי קבלה' })[fzPayState(i)] + '</small></span>'
+        + '<span class="fz-m"><b>' + _escape(i.clientName || i.client || i.description || 'הכנסה') + '</b><small>' + (i.date ? (+String(i.date).slice(8, 10)) + '.' + (+String(i.date).slice(5, 7)) + ' · ' : '') + _escape(i.category || i.description || '') + ' · ' + ({ wait: 'ממתין', ok: 'שולם', norc: 'שולם · בלי קבלה' })[fzPayState(i)] + '</small></span>'
         + '<span class="fz-v">' + fmtMoney(i.amount) + '</span></button>'; }).join('')
       + '<button class="fz-more" onclick="window._incAllOpen=!window._incAllOpen;renderIncome()">' + (allOpen ? 'פחות' : 'הכל ›') + '</button></div>';
   } else h += '<div class="fz-empty">עוד אין הכנסות ב' + MONTHS_HE[curMonth] + '</div>';
@@ -16344,8 +16344,13 @@ function renderExpensesSpent() {
   const total = monthExp.reduce((t, e) => t + (Number(e.amount) || 0), 0);
   const unpaid = monthExp.filter(e => !e.paid).length;
   // v584: where the money went — by category; anything unknown counts as food
-  const _ecat = e => { const c = String(e.category || '').trim(); return !c || c === 'אחר' || c === 'כללי' || c === 'לא מסווג' ? 'מזון' : c; };
-  const byCat = {}; monthExp.forEach(e => { const c = _ecat(e); byCat[c] = byCat[c] || { n: 0, sum: 0, guess: 0 }; byCat[c].n++; byCat[c].sum += Number(e.amount) || 0; if (c === 'מזון' && _ecat(e) !== String(e.category || '').trim()) byCat[c].guess++; });
+  // unknown → guess from the name first (a few obvious ones), otherwise food
+  const _eguess = d => { d = String(d || ''); return /תספור|מספר|ספר |קוסמטי|ציפורנ/.test(d) ? 'טיפוח' : /דלק|פז|סונול|דור אלון|ten|yellow|חניה|חניון|פנגו|סלופארק|רכבת|רב.?קו|מונית|gett|אוטובוס/i.test(d) ? 'תחבורה'
+    : /סופר|שופרסל|רמי לוי|יוחננוף|ויקטורי|אושר עד|מחסני|וולט|wolt|תן ביס|קפה|מאפ|פיצ|בורגר|מסעד|שווארמ|פלאפל/i.test(d) ? 'מזון' : /סופר.?פארם|בית מרקחת|מרקחת|רופא|מכבי|כללית/.test(d) ? 'בריאות' : null; };
+  const _ecat = e => { const c = String(e.category || '').trim(); return !c || c === 'אחר' || c === 'כללי' || c === 'לא מסווג' ? (_eguess(e.description) || 'מזון') : c; };
+  const _edate = ds => { if (!ds) return ''; const d = new Date(String(ds).slice(0, 10) + 'T12:00:00'); if (isNaN(d)) return ''; const t = new Date(); t.setHours(12, 0, 0, 0);
+    const n = Math.round((t - d) / 864e5); return n === 0 ? 'היום' : n === 1 ? 'אתמול' : 'יום ' + 'אבגדהוש'[d.getDay()] + '׳ ' + d.getDate() + '.' + (d.getMonth() + 1); };
+  const byCat = {}; monthExp.forEach(e => { const c = _ecat(e); byCat[c] = byCat[c] || { n: 0, sum: 0, guess: 0 }; byCat[c].n++; byCat[c].sum += Number(e.amount) || 0; if (c !== String(e.category || '').trim()) byCat[c].guess++; });
   const cats = Object.keys(byCat).map(k => ({ k, ...byCat[k] })).sort((a, b) => b.sum - a.sum);
   const fcat = window._expCat && byCat[window._expCat] ? window._expCat : null;
   const latest = monthExp.filter(e => !fcat || _ecat(e) === fcat).sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)));
@@ -16359,7 +16364,7 @@ function renderExpensesSpent() {
     const top = cats[0].sum || 1, catOpen = !!window._expCatsOpen;
     h += '<div class="fz-lbl">על מה זה יצא</div><div class="fz-card ex-cats">' + (catOpen ? cats : cats.slice(0, 5)).map(c =>
         '<button class="ex-cat' + (fcat === c.k ? ' on' : '') + '" onclick="window._expCat=window._expCat===\'' + _escape(c.k) + '\'?null:\'' + _escape(c.k) + '\';window._expListOpen=!!window._expCat;renderExpensesSpent()">'
-        + '<span class="ex-cat-t"><b>' + _escape(c.k) + '</b><small>' + (c.n === 1 ? 'הוצאה אחת' : c.n + ' הוצאות') + (c.guess ? ' · כולל ' + c.guess + ' לא מזוהות' : '') + '</small></span>'
+        + '<span class="ex-cat-t"><b>' + _escape(c.k) + '</b><small>' + (c.n === 1 ? 'הוצאה אחת' : c.n + ' הוצאות') + (c.guess ? ' · ' + c.guess + ' לפי ניחוש' : '') + '</small></span>'
         + '<span class="ex-cat-v">' + fmtMoney(c.sum) + '<small>' + Math.round(c.sum / (total || 1) * 100) + '%</small></span>'
         + '<span class="ex-cat-bar"><i style="width:' + Math.max(3, Math.round(c.sum / top * 100)) + '%"></i></span></button>').join('')
       + (cats.length > 5 ? '<button class="fz-more" onclick="window._expCatsOpen=!window._expCatsOpen;renderExpensesSpent()">' + (catOpen ? 'פחות' : 'עוד ' + (cats.length - 5) + ' ›') + '</button>' : '') + '</div>';
@@ -16367,7 +16372,7 @@ function renderExpensesSpent() {
   if (latest.length) {
     h += '<div class="fz-lbl">' + (fcat ? _escape(fcat) + ' · <button class="ex-clear" onclick="window._expCat=null;renderExpensesSpent()">כל ההוצאות</button>' : 'אחרונות') + '</div><div class="fz-card">' + (allOpen ? latest : latest.slice(0, 3)).map(e =>
         '<button class="fz-row" onclick="expRowTap(\'' + e.id + '\')">' + fzIc('coin', e.paid ? 'violet' : 'sun')
-        + '<span class="fz-m"><b>' + _escape(e.description || 'הוצאה') + '</b><small>' + _escape(_ecat(e)) + (e.paid ? '' : ' · לא שולם') + '</small></span>'
+        + '<span class="fz-m"><b>' + _escape(e.description || 'הוצאה') + '</b><small>' + _edate(e.date) + ' · ' + _escape(_ecat(e)) + (e.paid ? '' : ' · לא שולם') + '</small></span>'
         + '<span class="fz-v">' + fmtMoney(e.amount) + '</span></button>').join('')
       + (latest.length > 3 ? '<button class="fz-more" onclick="window._expListOpen=!window._expListOpen;renderExpensesSpent()">' + (allOpen ? 'פחות' : 'הכל · ' + latest.length + ' ›') + '</button>' : '') + '</div>';
   } else h += '<div class="fz-empty">אין הוצאות ב' + MONTHS_HE[curMonth] + '</div>';
