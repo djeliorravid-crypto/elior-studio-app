@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v575</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v576</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -20176,17 +20176,24 @@ function _freeSlots(o) {
 function _freeMsg(o, slots) {
   const when = { this: 'השבוע', next: 'בשבוע הבא', two: 'בשבועיים הקרובים' }[o.range];
   if (!slots.length) return 'היי, ' + when + ' אני די מלא. אפשר לבדוק זמן אחר?';
-  return slots.map(x => x.txt).join('\n') + '\n\nמה מתאים לך?';
+  return slots.map(x => x.txt).join('\n') + (slots.length === 1 ? '\n\nמתאים לך?' : '\n\nמה מתאים לך?');
 }
+window._freePick = function(id) { const S = window._freeSel || [], o = window._freeOpt, i = S.indexOf(id);
+  if (i >= 0) S.splice(i, 1); else { S.push(id); while (S.length > (o.count || 3)) S.shift(); }
+  window._freeSel = S; freeTimesOpen(); };
 window._freeDay = function(k) { const o = window._freeOpt; o.days = o.days || []; const i = o.days.indexOf(k); if (i >= 0) o.days.splice(i, 1); else o.days.push(k); freeTimesOpen(); };
 window.freeTimesOpen = function() {
   try { gcalRefreshEventKit(); } catch (_) {}
   let ov = document.getElementById('fz-free'); if (!ov) { ov = document.createElement('div'); ov.id = 'fz-free'; ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); }; document.body.appendChild(ov); }
   const o = window._freeOpt, slots = _freeSlots(o); window._freeOff = window._freeOff || {};
   o.count = o.count || 3; o.days = [];
-  // show slots until 'count' of them are ticked (a ticked-off one makes room for the next)
-  const shown = []; let nOn = 0; for (const x of slots) { if (nOn >= o.count) break; shown.push(x); if (!window._freeOff[x.id]) nOn++; }
-  const chosen = shown.filter(x => !window._freeOff[x.id]);
+  // all slots stay visible; the first 'count' are ticked. Ticking another
+  // swaps out the one picked earliest, so the count stays what you chose.
+  const sig = [o.from, o.min, o.range, o.count].join('|');
+  if (window._freeSig !== sig || !Array.isArray(window._freeSel)) { window._freeSig = sig; window._freeSel = slots.slice(0, o.count).map(x => x.id); }
+  window._freeSel = window._freeSel.filter(id => slots.some(x => x.id === id));
+  const shown = slots;
+  const chosen = slots.filter(x => window._freeSel.indexOf(x.id) >= 0);
   // day chips for the chosen range (no Shabbat); none picked = every day
   const dl = []; { const t = new Date(); t.setHours(12, 0, 0, 0); const su = new Date(t); su.setDate(t.getDate() - t.getDay());
     const f = o.range === 'next' ? new Date(su.getTime() + 7 * 864e5) : new Date(t), e = new Date(su); e.setDate(su.getDate() + (o.range === 'this' ? 6 : 13));
@@ -20202,7 +20209,7 @@ window.freeTimesOpen = function() {
     + seg('min', [[3, '3 שעות'], [4, '4 שעות']])
     + seg('range', [['this', 'השבוע'], ['next', 'שבוע הבא'], ['two', 'שבועיים']])
     + '<div class="ff-cnt"><span class="k">כמה אופציות</span><div class="ff-seg">' + [1, 2, 3, 4].map(n => '<button class="' + (o.count === n ? 'on' : '') + '" onclick="window._freeOpt.count=' + n + ';freeTimesOpen()">' + n + '</button>').join('') + '</div></div>'
-    + '<div class="ff-list">' + (shown.length ? shown.map(x => x.none ? '<div class="ff-row none"><span class="ff-ck"></span><span class="ff-tx"><b>' + x.txt + '</b><small>' + x.sub + '</small></span></div>' : '<button class="ff-row' + (window._freeOff[x.id] ? ' off' : '') + '" onclick="window._freeOff[\'' + x.id + '\']=!window._freeOff[\'' + x.id + '\'];freeTimesOpen()"><span class="ff-ck">' + FZ.check + '</span><span class="ff-tx"><b>' + x.txt + '</b><small>' + _escape(x.sub) + '</small></span></button>').join('') : '<div class="ff-empty">אין זמן פנוי כזה — נסה שעה אחרת</div>') + '</div>'
+    + '<div class="ff-list">' + (shown.length ? shown.map(x => x.none ? '<div class="ff-row none"><span class="ff-ck"></span><span class="ff-tx"><b>' + x.txt + '</b><small>' + x.sub + '</small></span></div>' : '<button class="ff-row' + (window._freeSel.indexOf(x.id) >= 0 ? '' : ' off') + '" onclick="window._freePick(\'' + x.id + '\')"><span class="ff-ck">' + FZ.check + '</span><span class="ff-tx"><b>' + x.txt + '</b><small>' + _escape(x.sub) + '</small></span></button>').join('') : '<div class="ff-empty">אין זמן פנוי כזה — נסה שעה אחרת</div>') + '</div>'
     + '<button class="ff-go">שליחה בוואטסאפ</button><button class="ff-copy">העתקת ההודעה</button></div>';
   const msg = _freeMsg(o, chosen);
   ov.querySelector('.ff-go').onclick = () => { ov.classList.remove('open'); setTimeout(() => contactPick('', ph => window.open('https://wa.me/' + _waPhone(ph) + '?text=' + encodeURIComponent(msg), '_blank')), 220); };
@@ -33239,6 +33246,9 @@ button.ff-row.off .ff-tx b { color: #a3a8c3; text-decoration: line-through; text
 .ff-cnt .ff-seg { flex: 0 0 auto; margin: 0; width: 200px; }
 .ff-cnt .ff-seg button { font-size: 16px; font-weight: 700; padding: 8px 0; }
 .ff-days { display: none !important; }
+/* v576 — unticked suggestions stay readable (not struck through) */
+button.ff-row.off .ff-tx b { color: #6b7299 !important; text-decoration: none !important; }
+button.ff-row.off .ff-tx small { color: #a3a8c3; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
