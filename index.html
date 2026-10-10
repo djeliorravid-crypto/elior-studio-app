@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v561</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v562</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -30589,10 +30589,17 @@ function _schedSpent(items, listEl) {
   if (!wk) { wk = document.createElement('div'); wk.id = 'fz-week'; listEl.parentNode.insertBefore(wk, listEl); }
   const cur = new Date(_scheduleDate + 'T00:00:00'), start = new Date(cur); start.setDate(cur.getDate() - cur.getDay());
   const todayK = dailyDateStr(), manual = load('schedule') || [];
+  // v562: one long strip of days you scroll left/right (no arrows)
+  const has = new Set(manual.filter(x => x && x.date).map(x => x.date));
+  try { (window._eventKitCache || []).forEach(ev => ev && ev.date && has.add(ev.date)); (window._icsEventsCache || []).forEach(ev => ev && ev.date && has.add(ev.date));
+    (typeof _gcalEventsCache !== 'undefined' && _gcalEventsCache || []).forEach(e => { const st = e && e.status !== 'cancelled' && e.start && (e.start.dateTime || e.start.date); if (st) has.add(String(st).slice(0, 10)); }); } catch (_) {}
+  const t0 = new Date(todayK + 'T12:00:00');
+  const s0 = new Date(Math.min(t0.getTime() - 120 * 864e5, cur.getTime() - 30 * 864e5)), s1 = new Date(Math.max(t0.getTime() + 240 * 864e5, cur.getTime() + 30 * 864e5));
+  s0.setHours(12, 0, 0, 0);
   const days = [];
-  for (let k = 0; k < 7; k++) { const d = new Date(start); d.setDate(start.getDate() + k); const key = dailyDateStr(d);
-    let has = manual.some(x => x && x.date === key); try { if (!has) has = gcalEventsForDate(key).length > 0; } catch (_) {}
-    days.push('<button class="' + (key === _scheduleDate ? 'on' : '') + (key === todayK ? ' today' : '') + '" onclick="_scheduleDate=\'' + key + '\';renderSchedule();gcalRefreshEventKit()">' + 'אבגדהוש'[k] + '<b>' + d.getDate() + '</b>' + (has ? '<i></i>' : '<i class="no"></i>') + '</button>'); }
+  for (const d = new Date(s0); d <= s1; d.setDate(d.getDate() + 1)) { const key = dailyDateStr(d);
+    if (d.getDate() === 1) days.push('<span class="fz-msep">' + MONTHS_HE[d.getMonth()] + '</span>');
+    days.push('<button data-k="' + key + '" class="' + (key === _scheduleDate ? 'on' : '') + (key === todayK ? ' today' : '') + '" onclick="window._fzKeep=1;_scheduleDate=\'' + key + '\';renderSchedule();gcalRefreshEventKit()">' + 'אבגדהוש'[d.getDay()] + '<b>' + d.getDate() + '</b>' + (has.has(key) ? '<i></i>' : '<i class="no"></i>') + '</button>'); }
   const label = _scheduleDate === todayK ? 'היום' : cur.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
   const mDiff = (cur.getFullYear() * 12 + cur.getMonth()) - (new Date().getFullYear() * 12 + new Date().getMonth());
   const rel = mDiff === 0 ? 'החודש' : mDiff === 1 ? 'חודש הבא' : mDiff === 2 ? 'עוד חודשיים' : mDiff === -1 ? 'לפני חודש' : mDiff === -2 ? 'לפני חודשיים' : mDiff > 0 ? 'עוד ' + mDiff + ' חודשים' : 'לפני ' + (-mDiff) + ' חודשים';
@@ -30601,12 +30608,16 @@ function _schedSpent(items, listEl) {
   const arw = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="' + (d > 0 ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7') + '"/></svg>';
   const wEnd = new Date(start); wEnd.setDate(start.getDate() + 6);
   const range = start.getMonth() === wEnd.getMonth() ? start.getDate() + '–' + wEnd.getDate() + ' ב' + MONTHS_HE[wEnd.getMonth()] : start.getDate() + ' ב' + MONTHS_HE[start.getMonth()] + ' – ' + wEnd.getDate() + ' ב' + MONTHS_HE[wEnd.getMonth()];
-  wk.innerHTML = '<div class="fz-mo fz-mo-top"><button class="fz-mv" aria-label="שבוע קודם" onclick="schedShiftWeek(-1)">' + arw(-1) + '</button>'
+  const keepX = window._fzKeep ? (wk.querySelector('.fz-days') || {}).scrollLeft : null; window._fzKeep = 0;
+  wk.innerHTML = '<div class="fz-mo fz-mo-top">'
     + '<span class="fz-mid"><span class="fz-dd">' + dRel + '</span><span class="fz-rel' + (mDiff ? ' away' : '') + '"><b>' + rel + '</b><span>' + MONTHS_HE[cur.getMonth()] + (cur.getFullYear() !== new Date().getFullYear() ? ' ' + cur.getFullYear() : '') + '</span></span></span>'
-    + '<button class="fz-mv" aria-label="שבוע הבא" onclick="schedShiftWeek(1)">' + arw(1) + '</button></div>'
+    + '</div>'
     + '<div class="fz-ttl fz-ttl-wk">יומן שבועי<small>' + range + '</small></div>'
-    + '<div class="fz-days">' + days.join('') + '</div>'
+    + '<div class="fz-days fz-scroll">' + days.join('') + '</div>'
     + '<div class="fz-lbl">' + label + (_scheduleDate !== todayK ? ' · <button class="fz-today" onclick="goScheduleToday()">חזרה להיום</button>' : '') + '</div>';
+  { const sc = wk.querySelector('.fz-days');
+    if (sc) { if (keepX !== null && keepX !== undefined) sc.scrollLeft = keepX;
+      else { const on = sc.querySelector('button.on'); if (on) { const r = on.offsetLeft - (sc.clientWidth - on.offsetWidth) / 2; sc.scrollLeft = r; } } } }
   const tints = ['violet', 'mint', 'peach', 'sun'];
   listEl.innerHTML = items.length ? items.map((it, n) => {
     const t = FZ_TINT[tints[n % tints.length]];
@@ -33037,6 +33048,13 @@ html[data-skin="spent"] #fz-week .fz-ttl-wk { margin-top: 0; display: flex; alig
 .fz-ttl-wk small { font-size: 15px; font-weight: 500; color: #8a8fae; letter-spacing: 0; }
 .fz-mid { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .fz-dd { font-family: 'Rubik', 'Heebo', sans-serif; font-size: 15px; font-weight: 600; color: #4a5078; line-height: 1; }
+/* v562 — scrollable day strip */
+html[data-skin="spent"] #fz-week .fz-mo-top { justify-content: center; }
+.fz-days.fz-scroll { justify-content: flex-start; gap: 6px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: 0 -16px 8px; padding: 4px 16px 6px; overscroll-behavior-x: contain; }
+.fz-days.fz-scroll::-webkit-scrollbar { display: none; }
+.fz-days.fz-scroll button { flex: 0 0 46px; scroll-snap-align: center; }
+.fz-msep { flex: 0 0 auto; align-self: stretch; display: flex; align-items: center; padding: 0 4px; font-family: 'Rubik', 'Heebo', sans-serif; font-size: 13px; font-weight: 700; color: #8a8fae; writing-mode: vertical-rl; transform: rotate(180deg); border-inline-start: 1.5px solid #d6dbee; margin: 8px 2px; }
+.fz-days button.on i.no { background: transparent !important; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
