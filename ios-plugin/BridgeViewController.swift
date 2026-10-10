@@ -26,7 +26,7 @@ class BridgeViewController: CAPBridgeViewController {
         // 9.10: iOS 26 draws a whitish "scroll edge" fade behind the status
         // bar, which showed as a white strip over the app's lavender top.
         // Turn it off and give the web view the same base colour.
-        let lavender = UIColor(red: 243/255, green: 239/255, blue: 231/255, alpha: 1)
+        let lavender = UIColor(red: 230/255, green: 233/255, blue: 246/255, alpha: 1)
         webView?.isOpaque = false
         webView?.backgroundColor = lavender
         webView?.scrollView.backgroundColor = lavender

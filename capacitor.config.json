@@ -11,12 +11,12 @@
   "ios": {
     "contentInset": "never",
     "scheme": "Ravid Studio",
-    "backgroundColor": "#f3efe7"
+    "backgroundColor": "#e6e9f6"
   },
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 1200,
-      "backgroundColor": "#f3efe7",
+      "backgroundColor": "#e6e9f6",
       "androidScaleType": "CENTER_CROP",
       "showSpinner": false
     },
