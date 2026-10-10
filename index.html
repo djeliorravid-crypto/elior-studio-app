@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v585</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v586</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -18844,7 +18844,13 @@ function fcRenderSpent() {
   if (!host) { host = document.createElement('div'); host.id = 'fc-spent'; pg.insertBefore(host, pg.firstChild); }
   const now = new Date(); now.setHours(0, 0, 0, 0);
   const mk = _fcMonthKey(now), list = fcList();
-  const due = list.filter(x => _fcDueIn(x, now)), off = list.filter(x => !_fcDueIn(x, now));
+  // v586: categories (the groups) — monthly sum, share, bar; tap = show only that group
+  const GN = { living: 'מגורים ושכירויות', studio: 'אולפן ותוכנות', service: 'שירותים ומנויים' };
+  const gsum = {}; list.forEach(x => { const g = GN[x.group] ? x.group : 'service'; gsum[g] = gsum[g] || { n: 0, sum: 0 }; gsum[g].n++; gsum[g].sum += _fcMonthly(x); });
+  const gl = Object.keys(gsum).map(k => ({ k, ...gsum[k] })).sort((p, q) => q.sum - p.sum);
+  const fg = window._fcGroup && gsum[window._fcGroup] ? window._fcGroup : null;
+  const inG = x => !fg || (GN[x.group] ? x.group : 'service') === fg;
+  const due = list.filter(x => _fcDueIn(x, now) && inG(x)), off = list.filter(x => !_fcDueIn(x, now) && inG(x));
   const total = fcTotal(), left = due.filter(x => !_fcPaidFor(x, now)).reduce((t, x) => t + _fcAmtIn(x, now), 0);
   const paidN = due.filter(x => _fcPaidFor(x, now)).length;
   const dOf = x => Number(x.day) >= 1 ? _fcThisMonthDate(x, now) : null;
@@ -18875,6 +18881,11 @@ function fcRenderSpent() {
     + '<div class="fz-big"><div class="k">בחודש</div><div class="n">' + fmtMoney(total) + '</div></div>'
     + '<div class="fz-say">' + say + '</div>'
     + '<div class="fcs-meta">' + (due.length ? 'ירדו ' + paidN + ' מתוך ' + due.length + ' · ' : '') + fmtMoney(total * 12) + ' בשנה</div>'
+    + (gl.length > 1 ? '<div class="fz-lbl">לפי קטגוריה</div><div class="fz-card ex-cats">' + gl.map(g => '<button class="ex-cat' + (fg === g.k ? ' on' : '') + '" onclick="window._fcGroup=window._fcGroup===\'' + g.k + '\'?null:\'' + g.k + '\';fcRenderSpent()">'
+        + '<span class="ex-cat-t"><b>' + GN[g.k] + '</b><small>' + (g.n === 1 ? 'הוצאה אחת' : g.n + ' הוצאות') + '</small></span>'
+        + '<span class="ex-cat-v">' + fmtMoney(Math.round(g.sum)) + '<small>' + Math.round(g.sum / (total || 1) * 100) + '%</small></span>'
+        + '<span class="ex-cat-bar"><i style="width:' + Math.max(3, Math.round(g.sum / (gl[0].sum || 1) * 100)) + '%"></i></span></button>').join('') + '</div>'
+        + (fg ? '<div class="fz-lbl">' + GN[fg] + ' · <button class="ex-clear" onclick="window._fcGroup=null;fcRenderSpent()">הכל</button></div>' : '') : '')
     + (dueOpen.length ? '<div class="fz-lbl">עוד ירד החודש</div><div class="fz-card">' + dueOpen.map(x => row(x, false)).join('') + '</div>' : (due.length ? '<div class="fz-lbl">החודש</div>' : ''))
     + (duePaid.length ? '<div class="fz-lbl">כבר ירד · ' + duePaid.length + '</div><div class="fz-card fcs-done">' + duePaid.map(x => row(x, false)).join('') + '</div>' : '')
     + (off.length ? '<div class="fz-lbl">לא יורד החודש</div><div class="fz-card">' + off.map(x => row(x, true)).join('') + '</div>' : '')
