@@ -42,6 +42,16 @@ public class IosCalendarBridgePlugin: CAPPlugin, CAPBridgedPlugin {
 
     private let store = EKEventStore()
 
+    // v560: tell JS the moment the calendar database changes (Google
+    // sync landed, an event was edited in the Calendar app, …) so the
+    // schedule re-reads at once instead of on the next timer tick.
+    override public func load() {
+        NotificationCenter.default.addObserver(self, selector: #selector(storeChanged), name: .EKEventStoreChanged, object: store)
+    }
+    @objc private func storeChanged(_ note: Notification) {
+        DispatchQueue.main.async { self.notifyListeners("changed", data: [:]) }
+    }
+
     @objc func requestAccess(_ call: CAPPluginCall) {
         let cb: (Bool, Error?) -> Void = { granted, _ in
             DispatchQueue.main.async { call.resolve(["granted": granted]) }
@@ -109,6 +119,9 @@ public class IosCalendarBridgePlugin: CAPPlugin, CAPBridgedPlugin {
         // Default: read only from Google-sourced calendars (Gmail
         // accounts the user synced via iOS Settings). Callers can
         // pass `googleOnly: false` to fall back to every calendar.
+        // Nudge iOS to pull fresh data from Google/iCloud now; when it
+        // lands, EKEventStoreChanged fires and JS reads again.
+        store.refreshSourcesIfNecessary()
         let googleOnly = call.getBool("googleOnly") ?? true
         let all = store.calendars(for: .event)
         let cals: [EKCalendar] = googleOnly

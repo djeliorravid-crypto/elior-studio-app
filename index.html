@@ -6981,7 +6981,6 @@
      comes back from background. -->
 <div id="face-id-lock">
   <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB2bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB2hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB2bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB2hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
-  <div class="face-id-mark">בס״ד</div>
   <div class="face-id-logo">אליאור רביד</div>
   <div class="sp-word" dir="ltr">Maes<span>tro</span></div>
   <div class="face-id-sub">נעול — נדרש Face ID</div>
@@ -7540,7 +7539,6 @@
 </style>
 <!-- ===== MODE SELECTOR ===== -->
 <div id="mode-screen" class="hidden">
-  <div class="bsd-mark">בס״ד</div>
   <button id="lobby-settings-btn" type="button" aria-label="הגדרות התראות" onclick="openNotifSettings()" title="הגדרות התראות">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="3"/>
@@ -7552,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v559</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v560</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -29618,42 +29616,78 @@ function gcalEventsForDate(dateStr) {
 // in window._eventKitCache; renderSchedule re-runs after the fetch
 // to pick the new data up — AND the widget gets re-pushed so events
 // from Google Calendar show on the home/lock screen too.
+// v560: one wide read instead of "today + the viewed day". EventKit is
+// a local database, so reading ~6 months is a few milliseconds — every
+// day in the week strip is then already known the moment it's tapped
+// (before, a tapped day stayed empty until the next 60s refresh). The
+// cache is kept on the device too, so a cold open shows the calendar
+// instantly and the fresh read replaces it a moment later.
+window._ekLoadedFrom = null; window._ekLoadedTo = null;
+try {
+  const c = JSON.parse(localStorage.getItem('ek_cache_v1') || 'null');
+  if (c && Array.isArray(c.events)) window._eventKitCache = c.events;
+} catch (_) {}
+let _ekBusy = false, _ekAgain = false;
 async function gcalRefreshEventKit() {
   const Cal = _iosCalPlugin();
   if (!Cal || !_iosCalGranted() || !Cal.listEvents) return;
+  if (_ekBusy) { _ekAgain = true; return; }
+  _ekBusy = true;
   try {
-    // Always refresh TODAY for the widget feed, even if the user is
-    // viewing a different day in the schedule. The schedule list
-    // gets its own day if it's mounted.
+    const key = d => _mpbDayKey(d);
     const today = (typeof dailyDateStr === 'function') ? dailyDateStr() : new Date().toISOString().slice(0,10);
-    const day   = (typeof _scheduleDate === 'string') ? _scheduleDate : today;
-    // today..+2 covers the three pre-scheduled morning briefings, so
-    // "3 אירועים היום" counts calendar events for tomorrow too.
-    const plus2 = _mpbDayKey(new Date(new Date(today + 'T12:00:00').getTime() + 2 * 86400000));
-    const targets = (day >= today && day <= plus2) ? [[today, plus2]] : [[today, plus2], [day, day]];
+    const base = new Date(today + 'T12:00:00');
+    const from = new Date(base); from.setDate(from.getDate() - 62);
+    const to = new Date(base); to.setDate(to.getDate() + 186);
+    const day = (typeof _scheduleDate === 'string') ? _scheduleDate : today;
+    // the viewed week, when it's outside the wide window
+    const vd = new Date(day + 'T12:00:00'), ws = new Date(vd); ws.setDate(vd.getDate() - vd.getDay());
+    const we = new Date(ws); we.setDate(ws.getDate() + 6);
+    const ranges = [[key(from), key(to)]];
+    if (key(ws) < key(from) || key(we) > key(to)) ranges.push([key(ws), key(we)]);
     const all = [];
-    for (const t of targets) {
-      try {
-        // googleOnly:false — WhatsApp's "הוספה ללוח השנה" (and Siri,
-        // and anything else) writes to the iOS DEFAULT calendar,
-        // which is usually iCloud. Reading only Google calendars
-        // made those events invisible in the schedule.
-        const res = await Cal.listEvents({ startDate: t[0], endDate: t[1], googleOnly: false });
-        if (res && res.events) all.push.apply(all, res.events);
-      } catch (e) {}
+    for (const r of ranges) {
+      // googleOnly:false — WhatsApp's "הוספה ללוח השנה" (and Siri,
+      // and anything else) writes to the iOS DEFAULT calendar,
+      // which is usually iCloud. Reading only Google calendars
+      // made those events invisible in the schedule.
+      const res = await Cal.listEvents({ startDate: r[0], endDate: r[1], googleOnly: false });
+      if (res && res.events) all.push.apply(all, res.events);
     }
     // Strip holiday / birthday calendars — even though Google
     // delivers them under the user's gmail "source", they're
     // distinct calendar titles we don't want polluting the schedule.
     const skip = /holiday|holidays|חג|חגים|מועד|מועדים|birthday|birthdays|ימי הולדת|jewish/i;
-    window._eventKitCache = all.filter(ev => !skip.test(String(ev.calendar || '')));
-    if (document.getElementById('schedule-list')) renderSchedule();
+    const seen = new Set();
+    const fresh = all.filter(ev => !skip.test(String(ev.calendar || ''))).filter(ev => {
+      const k = (ev.id || '') + '|' + ev.date + '|' + ev.time; if (seen.has(k)) return false; seen.add(k); return true; });
+    const changed = JSON.stringify(fresh) !== JSON.stringify(window._eventKitCache || []);
+    window._eventKitCache = fresh;
+    window._ekLoadedFrom = ranges[0][0]; window._ekLoadedTo = ranges[0][1];
+    if (changed) {
+      try { localStorage.setItem('ek_cache_v1', JSON.stringify({ at: Date.now(), events: fresh })); } catch (_) {}
+      if (document.getElementById('schedule-list')) renderSchedule();
+    }
     // Push the merged manual + EventKit list to the widget bridge so
     // home / lock screen reflect new events within seconds.
     if (typeof window.syncTasksToWidget === 'function') window.syncTasksToWidget();
-  } catch (e) {}
+  } catch (e) {
+  } finally {
+    _ekBusy = false;
+    if (_ekAgain) { _ekAgain = false; setTimeout(gcalRefreshEventKit, 0); }
+  }
 }
 
+// v560: native "calendar changed" signal → re-read right away (debounced)
+(function ekLiveChanges() {
+  let t = 0, tries = 0;
+  const hook = () => {
+    const Cal = (typeof _iosCalPlugin === 'function') ? _iosCalPlugin() : null;
+    if (!Cal || !Cal.addListener) { if (++tries < 10) setTimeout(hook, 1000); return; }
+    try { Cal.addListener('changed', () => { clearTimeout(t); t = setTimeout(() => { try { gcalRefreshEventKit(); } catch (_) {} }, 400); }); } catch (_) {}
+  };
+  setTimeout(hook, 800);
+})();
 // Keep the widget fresh — refresh on app boot, and again every
 // time the app returns from background. iOS's EventKit changes
 // propagate from Google Calendar within ~30s; this listener
@@ -30549,7 +30583,7 @@ window.morningCancelPaymentRequest = async function(incomeId) {
 };
 
 // v542: calendar = the week in one row + today as a timeline
-window.schedShiftWeek = function(n) { const d = new Date(_scheduleDate + 'T00:00:00'); d.setDate(d.getDate() + 7 * n); _scheduleDate = dailyDateStr(d); renderSchedule(); };
+window.schedShiftWeek = function(n) { const d = new Date(_scheduleDate + 'T00:00:00'); d.setDate(d.getDate() + 7 * n); _scheduleDate = dailyDateStr(d); renderSchedule(); try { gcalRefreshEventKit(); } catch (_) {} };
 function _schedSpent(items, listEl) {
   let wk = document.getElementById('fz-week');
   if (!wk) { wk = document.createElement('div'); wk.id = 'fz-week'; listEl.parentNode.insertBefore(wk, listEl); }
@@ -30558,7 +30592,7 @@ function _schedSpent(items, listEl) {
   const days = [];
   for (let k = 0; k < 7; k++) { const d = new Date(start); d.setDate(start.getDate() + k); const key = dailyDateStr(d);
     let has = manual.some(x => x && x.date === key); try { if (!has) has = gcalEventsForDate(key).length > 0; } catch (_) {}
-    days.push('<button class="' + (key === _scheduleDate ? 'on' : '') + (key === todayK ? ' today' : '') + '" onclick="_scheduleDate=\'' + key + '\';renderSchedule()">' + 'אבגדהוש'[k] + '<b>' + d.getDate() + '</b>' + (has ? '<i></i>' : '<i class="no"></i>') + '</button>'); }
+    days.push('<button class="' + (key === _scheduleDate ? 'on' : '') + (key === todayK ? ' today' : '') + '" onclick="_scheduleDate=\'' + key + '\';renderSchedule();gcalRefreshEventKit()">' + 'אבגדהוש'[k] + '<b>' + d.getDate() + '</b>' + (has ? '<i></i>' : '<i class="no"></i>') + '</button>'); }
   const label = _scheduleDate === todayK ? 'היום' : cur.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' });
   const mDiff = (cur.getFullYear() * 12 + cur.getMonth()) - (new Date().getFullYear() * 12 + new Date().getMonth());
   const rel = mDiff === 0 ? 'החודש' : mDiff === 1 ? 'חודש הבא' : mDiff === 2 ? 'עוד חודשיים' : mDiff === -1 ? 'לפני חודש' : mDiff === -2 ? 'לפני חודשיים' : mDiff > 0 ? 'עוד ' + mDiff + ' חודשים' : 'לפני ' + (-mDiff) + ' חודשים';
