@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v590</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v591</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16370,11 +16370,18 @@ function renderExpensesSpent() {
       + (cats.length > 5 ? '<button class="fz-more" onclick="window._expCatsOpen=!window._expCatsOpen;renderExpensesSpent()">' + (catOpen ? 'פחות' : 'עוד ' + (cats.length - 5) + ' ›') + '</button>' : '') + '</div>';
   }
   if (latest.length) {
-    h += '<div class="fz-lbl">' + (fcat ? _escape(fcat) + ' · <button class="ex-clear" onclick="window._expCat=null;renderExpensesSpent()">כל ההוצאות</button>' : 'אחרונות') + '</div><div class="fz-card">' + (allOpen ? latest : latest.slice(0, 3)).map(e =>
+    // v591: the latest charges stay folded until opened (opens by itself when a category is picked)
+    const lOpen = !!window._expLatestOpen || !!fcat;
+    const lsum = latest.reduce((t, e) => t + (Number(e.amount) || 0), 0);
+    h += '<div class="fz-card ex-latest' + (lOpen ? ' open' : '') + '"><button class="ex-lhead" onclick="window._expLatestOpen=!' + (lOpen ? 'true' : 'false') + ';if(!window._expLatestOpen)window._expCat=null;renderExpensesSpent()">'
+      + '<span class="ex-cat-t"><b>' + (fcat ? _escape(fcat) : 'הורדות אחרונות') + '</b><small>' + (latest.length === 1 ? 'הוצאה אחת' : latest.length + ' הוצאות') + ' · ' + fmtMoney(lsum) + '</small></span>'
+      + '<span class="ex-chev">' + (lOpen ? '⌃' : '⌄') + '</span></button>'
+      + (lOpen ? '<div class="ex-lbody">' + latest.map(e =>
         '<button class="fz-row" onclick="expRowTap(\'' + e.id + '\')">' + fzIc('coin', e.paid ? 'violet' : 'sun')
         + '<span class="fz-m"><b>' + _escape(e.description || 'הוצאה') + '</b><small>' + _edate(e.date) + ' · ' + _escape(_ecat(e)) + (e.paid ? '' : ' · לא שולם') + '</small></span>'
         + '<span class="fz-v">' + fmtMoney(e.amount) + '</span></button>').join('')
-      + (latest.length > 3 ? '<button class="fz-more" onclick="window._expListOpen=!window._expListOpen;renderExpensesSpent()">' + (allOpen ? 'פחות' : 'הכל · ' + latest.length + ' ›') + '</button>' : '') + '</div>';
+        + (fcat ? '<button class="fz-more" onclick="window._expCat=null;renderExpensesSpent()">כל ההוצאות</button>' : '') + '</div>' : '')
+      + '</div>';
   } else h += '<div class="fz-empty">אין הוצאות ב' + MONTHS_HE[curMonth] + '</div>';
   h += '<div class="fz-foot"><button onclick="bankPasteOpen()">ייבוא מהבנק</button></div>';
   host.innerHTML = h;
@@ -33586,6 +33593,12 @@ html[data-skin="spent"] .page-header h2 svg.icon-lg { display: none !important; 
 .fcs-ok, .fcs-items .fcs-row.paid small { color: #24493b !important; }
 .fz-ri.fz-g .fz-bd.ok, .fz-bd.ok { background: linear-gradient(180deg, #2c5545, #18342a) !important; }
 .fcs-ren { display: block; width: 100%; border: none; border-top: 1px solid #e9ebf3; background: none; padding: 12px 0 10px; font-family: inherit; font-size: 14px; font-weight: 500; color: #6b7299; cursor: pointer; }
+/* v591 — latest charges folded */
+.ex-latest { padding: 0 14px !important; margin-top: 14px; }
+.ex-lhead { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: none; background: none; padding: 16px 2px; font-family: inherit; text-align: right; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ex-chev { font-size: 18px; color: #8a8fae; }
+.ex-latest.open .ex-lhead { border-bottom: 1px solid #eef0f6; }
+.ex-lbody { animation: fcsIn .22s ease-out; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
