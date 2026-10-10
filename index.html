@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v571</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v572</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -20193,7 +20193,7 @@ window.freeTimesOpen = function() {
     + '<div class="ff-list">' + (slots.length ? slots.map(x => '<button class="ff-row' + (window._freeOff[x.id] ? ' off' : '') + '" onclick="window._freeOff[\'' + x.id + '\']=!window._freeOff[\'' + x.id + '\'];freeTimesOpen()"><span class="ff-ck">' + FZ.check + '</span><span class="ff-tx"><b>' + x.txt + '</b><small>' + _escape(x.sub) + '</small></span></button>').join('') : '<div class="ff-empty">אין זמן פנוי כזה — נסה שעה אחרת</div>') + '</div>'
     + '<button class="ff-go">שליחה בוואטסאפ</button><button class="ff-copy">העתקת ההודעה</button></div>';
   const msg = _freeMsg(o, chosen);
-  ov.querySelector('.ff-go').onclick = () => contactPick('', ph => { ov.classList.remove('open'); window.open('https://wa.me/' + _waPhone(ph) + '?text=' + encodeURIComponent(msg), '_blank'); });
+  ov.querySelector('.ff-go').onclick = () => { ov.classList.remove('open'); setTimeout(() => contactPick('', ph => window.open('https://wa.me/' + _waPhone(ph) + '?text=' + encodeURIComponent(msg), '_blank')), 220); };
   ov.querySelector('.ff-copy').onclick = async () => { try { await navigator.clipboard.writeText(msg); toast('ההודעה הועתקה — אפשר להדביק בצ׳אט'); } catch (_) { toast('לא הצלחתי להעתיק'); } };
   requestAnimationFrame(() => ov.classList.add('open'));
 };
@@ -33210,6 +33210,7 @@ button.ff-row.off .ff-tx b { color: #a3a8c3; text-decoration: line-through; text
 .ff-from b { font-size: 26px; font-weight: 700; color: #161c45; min-width: 84px; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
 .ff-from .st { width: 42px; height: 42px; border-radius: 21px; border: none; background: #eef0f8; color: #161c45; font-size: 24px; font-weight: 500; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .ff-from .st:active { transform: scale(.92); background: #e1e5f4; }
+#fz-phone, #fz-contacts { z-index: 100100 !important; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
