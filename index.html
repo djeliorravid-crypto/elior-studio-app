@@ -7550,7 +7550,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v580</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v581</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -11932,6 +11932,10 @@ window.incRowTap = function(ev, row) {
   if (ev && ev.target && ev.target.closest && ev.target.closest('button, a, .status-pill')) return;
   const btns = [...row.querySelectorAll('.exp-cat-row-actions button, .exp-cat-row-actions .status-pill, .exp-cat-row-morning button, .exp-cat-row-morning a')];
   if (!btns.length) return;
+  // v581: a paid income with Morning not connected — say so and offer to connect,
+  // instead of silently hiding the receipt option
+  const _paidRow = !!row.querySelector('.status-pill.paid');
+  let _mc = false; try { _mc = !!(window.morningConnected && window.morningConnected()); } catch (_) {}
   const title = (row.querySelector('.exp-cat-row-desc') || {}).textContent || '';
   const meta = (row.querySelector('.exp-cat-row-meta') || {}).textContent || '';
   const amt = (row.querySelector('.exp-cat-row-amt') || {}).textContent || '';
@@ -11948,7 +11952,8 @@ window.incRowTap = function(ev, row) {
     const danger = /מחק|ביטול|בטל/.test(label) || /delete/i.test(b.getAttribute('onclick') || '');
     const pri = /סמן כשולם/.test(label) || b.classList.contains('wa');
     return { label, danger, pri, wa: b.classList.contains('wa'), run: () => b.click() };
-  }).sort((a, b) => ((a.wa ? 0 : a.danger ? 2 : 1) - (b.wa ? 0 : b.danger ? 2 : 1))));
+  }).sort((a, b) => ((a.wa ? 0 : a.danger ? 2 : 1) - (b.wa ? 0 : b.danger ? 2 : 1)))
+    .concat(_paidRow && !_mc ? [{ label: 'קבלה: Morning לא מחובר — לחבר עכשיו', pri: true, run: () => { try { openNotifSettings(); setTimeout(() => { const m = document.getElementById('morning-id'); if (m) m.scrollIntoView({ block: 'center' }); }, 350); } catch (_) {} } }] : []));
 };
 window.spentSheet = function(title, sub, actions) {
   let ov = document.getElementById('spent-sheet');
@@ -22628,7 +22633,12 @@ async function vaultSync() {
         if (r && r.value) { try { localStorage.setItem(k, r.value); restored++; _vaultSeen[k] = r.value; } catch (_) {} }
       }
     }
-    if (restored) console.log('vault: restored', restored, 'device codes');
+    if (restored) {
+      console.log('vault: restored', restored, 'device codes');
+      // v581: codes came back (e.g. Morning) — redraw so receipt buttons reappear now
+      try { if (typeof renderIncome === 'function') renderIncome(); } catch (_) {}
+      try { if (typeof spLobbyRender === 'function') spLobbyRender(); } catch (_) {}
+    }
   } catch (e) { console.warn('vaultSync', e); }
 }
 document.addEventListener('DOMContentLoaded', () => setTimeout(vaultSync, 300));
