@@ -150,6 +150,8 @@ public class IosCalendarBridgePlugin: CAPPlugin, CAPBridgedPlugin {
                 "title":      ev.title ?? "",
                 "date":       outFmt.string(from: ev.startDate),
                 "time":       timeFmt.string(from: ev.startDate),
+                "endDate":    outFmt.string(from: ev.endDate),
+                "endTime":    timeFmt.string(from: ev.endDate),
                 "allDay":     ev.isAllDay,
                 "source":     ev.calendar?.source.title ?? "",
                 "calendar":   ev.calendar?.title ?? "",
