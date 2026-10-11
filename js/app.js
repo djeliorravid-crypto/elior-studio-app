@@ -14110,7 +14110,7 @@ function renderProductionsSpent() {
       + (pill[0] ? '<span class="fz-pill ' + pill[1] + '">' + pill[0] + '</span>' : '')
       + '</div>';
   };
-  wrap.innerHTML = '<div class="fz-ttl">הפקות</div><div class="fz-seg">' + tabs.map(([k, t]) => '<button type="button" class="' + (_prodTab === k ? 'on' : '') + '" onclick="prodSetTab(\'' + k + '\')">' + t + (by[k].length ? ' · ' + by[k].length : '') + '</button>').join('') + '</div>'
+  wrap.innerHTML = '<div class="fz-ttl fcs-ttl"><span>הפקות</span><button class="fz-free" onclick="prodOpenAddModal()">+ הפקה חדשה</button></div><div class="fz-seg">' + tabs.map(([k, t]) => '<button type="button" class="' + (_prodTab === k ? 'on' : '') + '" onclick="prodSetTab(\'' + k + '\')">' + t + (by[k].length ? ' · ' + by[k].length : '') + '</button>').join('') + '</div>'
     + (_prodTab === 'active' ? (() => {
         const L = _prodLanes(list);
         const lane = (k, t, sub) => '<div class="fz-lh"><b>' + t + '</b><small>' + sub + '</small></div><div class="fz-card fz-dz" data-lane="' + k + '">'
@@ -18628,6 +18628,16 @@ function renderHome() {
 
 // ===== FAB =====
 function toggleFab() {
+  // v598: in the new design the + adds what fits the page you're on
+  if (document.documentElement.getAttribute('data-skin') === 'spent') {
+    const pg = (document.querySelector('.page.active') || {}).id || '';
+    if (pg === 'page-productions') { try { prodOpenAddModal(); } catch (_) {} return; }
+    if (pg === 'page-schedule') { try { spFlowScheduleAdd(_scheduleDate); } catch (_) { quickAction('schedule'); } return; }
+    if (pg === 'page-fixed') { try { fcAdd(); } catch (_) {} return; }
+    if (pg === 'page-income') { quickAction('income'); return; }
+    if (pg === 'page-expenses') { quickAction('expense'); return; }
+    try { spLobbyAdd(); return; } catch (_) {}
+  }
   document.getElementById('fab-main')?.classList.toggle('open');
   document.getElementById('fab-menu')?.classList.toggle('open');
 }
