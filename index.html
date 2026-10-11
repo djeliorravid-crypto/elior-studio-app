@@ -6897,6 +6897,8 @@
     <h3><svg class="icon-lg"><use href="#ic-settings"/></svg>הגדרות</h3>
     <div class="notif-sub">התראות, אבטחה, ועוד</div>
 
+    <button type="button" class="bk-entry" onclick="backupOpen()"><span class="bk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 7.97"/><path d="M12 12v8M9 17l3 3 3-3"/></svg></span><span class="bk-t"><b>גיבוי יומי</b><small id="bk-last">…</small></span><span class="bk-ar">‹</span></button>
+
     <div class="notif-section-title">עיצוב</div>
     <div class="notif-when" id="skin-switch">
       <button type="button" class="notif-when-chip skin-opt" data-skin="spent" onclick="setSkin('spent')">✨ חדש (לבן)</button>
@@ -7550,7 +7552,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v592</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v593</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -10234,6 +10236,92 @@ const load = key => {
   catch(e) { console.warn('Corrupted localStorage for', key, '— resetting'); return []; }
 };
 
+// ── v593 daily full backup ─────────────────────────────────────────────
+// Once a day (and on demand) a full copy of every data list goes to the
+// cloud under studio_backups/<day>; the last 30 days are kept. Restoring
+// merges the backup back in (backup wins per item, nothing newer is deleted)
+// and always takes a safety copy of the current state first.
+const _BK_REST = 'https://elior-studio-default-rtdb.firebaseio.com/studio_backups';
+function _bkCollect() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i); if (!k || k.indexOf('s_') !== 0 || /_(ts|base)$/.test(k)) continue;
+    try { data[k.slice(2)] = JSON.parse(localStorage.getItem(k)); } catch (_) {}
+  }
+  return data;
+}
+function _bkDay(d) { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+async function backupNow(tag) {
+  const data = _bkCollect(); if (!Object.keys(data).length) return false;
+  const id = tag || _bkDay();
+  const body = { at: Date.now(), v: (document.querySelector('.ver-badge, #ver-badge') || {}).textContent || '', data };
+  try {
+    const r = await fetch(_BK_REST + '/' + encodeURIComponent(id) + '.json', { method: 'PUT', body: JSON.stringify(body) });
+    if (!r.ok) return false;
+    if (!tag) { try { localStorage.setItem('bk_last', String(body.at)); } catch (_) {} }
+    return true;
+  } catch (_) { return false; }
+}
+async function _bkPrune() {
+  try {
+    const keys = Object.keys(await fetch(_BK_REST + '.json?shallow=true', { cache: 'no-store' }).then(r => r.json()) || {}).sort();
+    const days = keys.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)), safety = keys.filter(k => /^before-restore-/.test(k));
+    const drop = days.slice(0, Math.max(0, days.length - 30)).concat(safety.slice(0, Math.max(0, safety.length - 5)));
+    for (const k of drop) await fetch(_BK_REST + '/' + encodeURIComponent(k) + '.json', { method: 'DELETE' }).catch(() => {});
+  } catch (_) {}
+}
+async function backupDaily() {
+  try {
+    const last = Number(localStorage.getItem('bk_last') || 0);
+    if (last && _bkDay(new Date(last)) === _bkDay()) return;
+    if (!_bkCollect().income && !_bkCollect().expenses) return;      // nothing loaded yet
+    if (await backupNow()) _bkPrune();
+  } catch (_) {}
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(backupDaily, 20000));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') backupDaily(); });
+setInterval(backupDaily, 60 * 60 * 1000);
+const _BK_NAMES = { income: 'הכנסות', expenses: 'הוצאות', fixed_costs: 'הוצאות קבועות', clients: 'לקוחות', productions: 'הפקות', schedule: 'לו״ז', plans: 'תשלומים', sessions: 'סשנים', contracts: 'סיכומי הפקה', proposals: 'הצעות מחיר', students: 'תלמידים' };
+function _bkCount(v) { return Array.isArray(v) ? v.filter(x => !(x && x.deleted)).length : v && typeof v === 'object' ? Object.keys(v).length : 0; }
+window.backupOpen = async function() {
+  try { document.getElementById('notif-settings-overlay').classList.remove('open'); } catch (_) {}
+  toast('טוען גיבויים…');
+  let keys = [];
+  try { keys = Object.keys(await fetch(_BK_REST + '.json?shallow=true', { cache: 'no-store' }).then(r => r.json()) || {}).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().reverse(); } catch (_) {}
+  const last = Number(localStorage.getItem('bk_last') || 0);
+  const acts = [{ label: 'לגבות עכשיו', pri: true, run: async () => { toast('מגבה…'); toast((await backupNow()) ? '✓ גובה עכשיו' : 'הגיבוי לא הצליח — נסה כשיש אינטרנט'); } }]
+    .concat(keys.slice(0, 14).map(k => ({ label: 'לשחזר מ־' + (+k.slice(8)) + '.' + (+k.slice(5, 7)) + '.' + k.slice(0, 4), run: () => backupPreview(k) })));
+  spentSheet('גיבוי יומי', (last ? 'גיבוי אחרון: ' + new Date(last).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'עוד לא היה גיבוי') + ' · נשמרים 30 ימים', acts);
+};
+window.backupPreview = async function(id) {
+  toast('בודק את הגיבוי…');
+  let b = null; try { b = await fetch(_BK_REST + '/' + encodeURIComponent(id) + '.json', { cache: 'no-store' }).then(r => r.json()); } catch (_) {}
+  if (!b || !b.data) { toast('לא הצלחתי לקרוא את הגיבוי'); return; }
+  const cur = _bkCollect();
+  const lines = Object.keys(_BK_NAMES).filter(k => b.data[k] != null).map(k => _BK_NAMES[k] + ': ' + _bkCount(b.data[k]) + ' (עכשיו ' + _bkCount(cur[k]) + ')');
+  spentSheet('גיבוי מ־' + (+id.slice(8)) + '.' + (+id.slice(5, 7)), lines.join(' · '), [
+    { label: 'לשחזר — להחזיר מה שחסר', pri: true, run: () => backupRestore(id, b) },
+    { label: 'ביטול', run: () => {} }]);
+};
+window.backupRestore = async function(id, b) {
+  if (!confirm('לשחזר מהגיבוי? מה שנמחק יחזור, ושום דבר חדש לא יימחק. לפני כן נשמר גיבוי של המצב הנוכחי.')) return;
+  toast('שומר גיבוי ביטחון…');
+  if (!(await backupNow('before-restore-' + Date.now()))) { if (!confirm('לא הצלחתי לשמור גיבוי ביטחון (אין אינטרנט?). להמשיך בכל זאת?')) return; }
+  const now = Date.now(); let n = 0;
+  Object.keys(b.data).forEach(k => {
+    const bv = b.data[k]; if (bv == null) return;
+    let cv = null; try { cv = JSON.parse(localStorage.getItem('s_' + k)); } catch (_) {}
+    let out = bv;
+    if (_isIdList(bv)) {
+      const m = new Map(); (Array.isArray(cv) ? cv : []).forEach(x => x && x.id != null && m.set(String(x.id), x));
+      bv.forEach(x => { if (!x || x.id == null || x.deleted) return; const c = Object.assign({}, x); if ('updatedAt' in c || k === 'fixed_costs') c.updatedAt = now; c._u = now; m.set(String(x.id), c); });
+      out = [...m.values()];
+    } else if (cv != null) return;              // non-list settings: keep what's there now
+    try { save(k, out); n++; } catch (_) {}
+  });
+  try { refreshAll(); } catch (_) {}
+  spDone('שוחזר מהגיבוי', '', n + ' רשימות הוחזרו');
+};
 function save(key, val) {
   const ts = Date.now();
   if (key === 'fixed_costs') { try { _fcStamp(val); } catch (e) { console.warn('_fcStamp', e); } try { setTimeout(() => { try { fcSnapshot(); } catch (_) {} }, 0); } catch (_) {} }
@@ -20618,6 +20706,7 @@ window.setNotifPrefs = function(prefs) {
 };
 
 window.openNotifSettings = function() {
+  try { const el = document.getElementById('bk-last'), t = Number(localStorage.getItem('bk_last') || 0); if (el) el.textContent = t ? 'אחרון: ' + new Date(t).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' · נשמרים 30 ימים' : 'עוד לא היה גיבוי · לחיצה לגבות עכשיו'; } catch (_) {}
   try { const sk = document.documentElement.getAttribute('data-skin') || 'spent'; document.querySelectorAll('.skin-opt').forEach(b => b.classList.toggle('on', b.dataset.skin === sk)); } catch (_) {}
   const overlay = document.getElementById('notif-settings-overlay');
   if (!overlay) return;
@@ -33652,6 +33741,14 @@ html[data-skin="spent"] .page-header h2 svg.icon-lg { display: none !important; 
 .ex-chev { font-size: 18px; color: #8a8fae; }
 .ex-latest.open .ex-lhead { border-bottom: 1px solid #eef0f6; }
 .ex-lbody { animation: fcsIn .22s ease-out; }
+/* v593 — backup entry in settings */
+.bk-entry { width: 100%; display: flex; align-items: center; gap: 12px; border: none; background: #f4f5fb; border-radius: 18px; padding: 12px 14px; margin: 6px 0 14px; font-family: inherit; text-align: right; cursor: pointer; }
+.bk-ic { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center; color: #fff;
+  background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); }
+.bk-ic svg { width: 21px; height: 21px; }
+.bk-t { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.bk-t b { font-size: 15.5px; color: #161c45; } .bk-t small { font-size: 12.5px; color: #8a8fae; }
+.bk-ar { color: #8a8fae; font-size: 18px; }
 </style>
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
