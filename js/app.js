@@ -10965,7 +10965,9 @@ window.openNotifSettings = function() {
   const mdot = document.getElementById('morning-conn-dot');
   if (mid)  mid.value = localStorage.getItem('morning_api_id')     || '';
   if (mse)  mse.value = localStorage.getItem('morning_api_secret') || '';
+  try { const mb = document.getElementById('morning-box'); if (mb) mb.open = !(window.morningConnected && window.morningConnected()); } catch (_) {}
   if (mdot) {
+    mdot.classList.toggle('on', !!(window.morningConnected && window.morningConnected()));
     if (window.morningConnected && window.morningConnected()) {
       mdot.style.background = 'rgba(45,140,75,0.22)';
       mdot.style.color      = '#9adf9c';
@@ -20523,7 +20525,7 @@ window.testMorningConnection = async function() {
     toast('✓ Morning מחובר');
     if (window.haptic) window.haptic.success();
     const dot = document.getElementById('morning-conn-dot');
-    if (dot) { dot.style.background = 'var(--green)'; dot.textContent = '✓ מחובר'; }
+    if (dot) { dot.classList.add('on'); dot.style.background = ''; dot.style.color = ''; dot.textContent = '✓ מחובר'; }
   } else {
     toast('❌ Morning דחה את המפתחות — בדוק שהעתקת נכון');
     if (window.haptic) window.haptic.error();
@@ -20724,7 +20726,7 @@ window.morningDisconnect = function() {
   if (mid) mid.value = '';
   if (mse) mse.value = '';
   const dot = document.getElementById('morning-conn-dot');
-  if (dot) { dot.style.background = 'rgba(220,60,60,0.18)'; dot.style.color = '#ff8b6b'; dot.textContent = 'לא מחובר'; }
+  if (dot) { dot.classList.remove('on'); dot.style.background = ''; dot.style.color = ''; dot.textContent = 'לא מחובר'; }
   toast('✓ נותקת מ-Morning');
   if (window.haptic) window.haptic.tap();
   if (typeof renderIncome === 'function') renderIncome();

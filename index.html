@@ -722,84 +722,84 @@
 <!-- ===== NOTIFICATION SETTINGS MODAL ===== -->
 <div id="notif-settings-overlay">
   <div id="notif-settings-card">
-    <h3><svg class="icon-lg"><use href="#ic-settings"/></svg>הגדרות</h3>
+    <h3>הגדרות</h3>
     <div class="notif-sub">התראות, אבטחה, ועוד</div>
 
-    <button type="button" class="bk-entry" onclick="backupOpen()"><span class="bk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 7.97"/><path d="M12 12v8M9 17l3 3 3-3"/></svg></span><span class="bk-t"><b>גיבוי יומי</b><small id="bk-last">…</small></span><span class="bk-ar">‹</span></button>
-
-    <div class="notif-section-title">עיצוב</div>
-    <div class="notif-when" id="skin-switch">
-      <button type="button" class="notif-when-chip skin-opt" data-skin="spent" onclick="setSkin('spent')">✨ חדש (לבן)</button>
-      <button type="button" class="notif-when-chip skin-opt" data-skin="classic" onclick="setSkin('classic')">🤎 קלאסי (חום)</button>
+    <div class="st-lbl">אבטחה וגיבוי</div>
+    <div class="st-card">
+      <div class="notif-row" id="face-id-row" style="display:none">
+        <div><label>Face ID</label><div class="notif-sub-label">אימות בכל פתיחה של האפליקציה</div></div>
+        <div class="notif-toggle" id="face-id-toggle" onclick="handleFaceIdToggle(this)"></div>
+      </div>
+      <button type="button" class="bk-entry" onclick="backupOpen()"><span class="bk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 7.97"/><path d="M12 12v8M9 17l3 3 3-3"/></svg></span><span class="bk-t"><b>גיבוי יומי</b><small id="bk-last">…</small></span><span class="bk-ar">‹</span></button>
     </div>
 
-    <div class="notif-section-title">אבטחה</div>
-    <div class="notif-row" id="face-id-row" style="display:none">
-      <div><label>Face ID לפתיחת האפליקציה</label><div class="notif-sub-label">נדרש אימות בכל פתיחה</div></div>
-      <div class="notif-toggle" id="face-id-toggle" onclick="handleFaceIdToggle(this)"></div>
+    <div class="st-lbl">קבלות · Morning</div>
+    <div class="st-card">
+      <details id="morning-box" class="st-det">
+        <summary><span class="st-sum-t"><b>חיבור ל-Morning</b><small>הקבלות נוצרות רק כשאתה לוחץ "צור קבלה"</small></span><span id="morning-conn-dot"></span></summary>
+        <div class="st-body">
+          <input id="morning-id" type="text" placeholder="API ID" autocomplete="off" autocapitalize="off" spellcheck="false" class="st-in" dir="ltr"/>
+          <input id="morning-secret" type="text" placeholder="API Secret" autocomplete="off" autocapitalize="off" spellcheck="false" class="st-in" dir="ltr"/>
+          <button type="button" class="st-pri" onclick="testMorningConnection()">בדוק וחבר</button>
+          <div class="st-help">איפה משיגים: app.greeninvoice.co.il ← הגדרות ← כלים למפתחים ← מפתח API חדש. צריך הרשאת "מסמכים — כתיבה".</div>
+          <div class="st-sublbl">סליקה (לדרישות תשלום)</div>
+          <input id="morning-plugin" type="text" placeholder="Plugin ID לסליקה" autocomplete="off" autocapitalize="off" spellcheck="false" oninput="localStorage.setItem('morning_plugin_id', this.value.trim())" class="st-in" dir="ltr"/>
+          <button type="button" class="st-sec" onclick="morningFindPlugin()">למצוא אוטומטית</button>
+          <div class="st-row2">
+            <button type="button" class="st-sec" onclick="morningDeepDiagnose()">בדיקה מפורטת</button>
+            <button type="button" class="st-sec st-danger" onclick="morningDisconnect()">התנתקות</button>
+          </div>
+        </div>
+      </details>
     </div>
 
-    <div class="notif-section-title">סוגי התראות</div>
-    <div class="notif-row">
-      <div><label>הוצאות לפני תשלום</label><div class="notif-sub-label">חשבונות, מנויים, ספקים</div></div>
-      <div class="notif-toggle" data-toggle="expenses" onclick="handleNotifToggle(this)"></div>
-    </div>
-    <div class="notif-row">
-      <div><label>הכנסות צפויות</label><div class="notif-sub-label">תשלומים מלקוחות</div></div>
-      <div class="notif-toggle" data-toggle="income" onclick="handleNotifToggle(this)"></div>
-    </div>
-    <div class="notif-row">
-      <div><label>סדנאות</label><div class="notif-sub-label">מפגשים בקרוב</div></div>
-      <div class="notif-toggle" data-toggle="workshops" onclick="handleNotifToggle(this)"></div>
-    </div>
-    <div class="notif-row">
-      <div><label>תכנונים</label><div class="notif-sub-label">תזכורות מיומן התכנון</div></div>
-      <div class="notif-toggle" data-toggle="plans" onclick="handleNotifToggle(this)"></div>
-    </div>
-
-    <div class="notif-section-title">מתי לקבל</div>
-    <div class="notif-when">
-      <button type="button" class="notif-when-chip" data-lead="0"    onclick="handleNotifLead(this)">בזמן עצמו</button>
-      <button type="button" class="notif-when-chip" data-lead="60"   onclick="handleNotifLead(this)">שעה לפני</button>
-      <button type="button" class="notif-when-chip" data-lead="180"  onclick="handleNotifLead(this)">3 שעות לפני</button>
-      <button type="button" class="notif-when-chip" data-lead="1440" onclick="handleNotifLead(this)">יום לפני</button>
-      <button type="button" class="notif-when-chip" data-lead="2880" onclick="handleNotifLead(this)">יומיים לפני</button>
-    </div>
-
-    <div class="notif-section-title">פרטי תשלום ללינקים</div>
-    <div style="font-size:11px;color:rgba(244,237,224,0.5);margin-bottom:10px;line-height:1.5">
-      את הלינק אתה יוצר באפליקציית Grow ומדביק אצלנו — האפליקציה קוראת לבד את הסכום ושולחת בוואטסאפ. כאן רק הטלפון שלך לשאלות.
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-      <input id="set-owner" type="tel" placeholder="הטלפון שלי לשאלות (מופיע בתחתית העמוד)" autocomplete="off" oninput="glOwnerSave && glOwnerSave(this.value)"
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;direction:ltr"/>
-    </div>
-
-    <div class="notif-section-title">קבלות אוטומטיות (Morning)</div>
-    <div style="font-size:11px;color:rgba(244,237,224,0.5);margin-bottom:10px;line-height:1.5">
-      אחרי חיבור Morning — בכל הכנסה ששולמה יופיע כפתור <strong>"צור קבלה"</strong>. הקבלה נוצרת רק כשאתה לוחץ עליו (לא אוטומטית). <span id="morning-conn-dot" style="display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(220,60,60,0.18);color:#ff8b6b;font-weight:700;font-size:10.5px;margin-right:6px">לא מחובר</span>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-      <input id="morning-id" type="text" placeholder="Morning API ID" autocomplete="off" autocapitalize="off" spellcheck="false"
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;outline:none"/>
-      <input id="morning-plugin" type="text" placeholder="Morning Plugin ID לסליקה (הגדרות → סליקה → מזהה תוסף)" autocomplete="off" autocapitalize="off" spellcheck="false" oninput="localStorage.setItem('morning_plugin_id', this.value.trim())"
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;direction:ltr"/>
-      <button type="button" onclick="morningFindPlugin()" style="background:transparent;color:#d4a574;border:1px solid rgba(212,165,116,0.5);border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif;align-self:flex-start">🔎 מצא את מזהה הסליקה אוטומטית</button>
-      <input id="morning-secret" type="text" placeholder="Morning API Secret" autocomplete="off" autocapitalize="off" spellcheck="false"
-        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px 12px;color:#f4ede0;font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;outline:none"/>
-      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-        <button type="button" onclick="morningDisconnect()" style="background:transparent;color:#ff8b6b;border:1px solid rgba(220,60,60,0.4);border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">התנתק</button>
-        <button type="button" onclick="morningDeepDiagnose()" style="background:transparent;color:#d4a574;border:1px solid rgba(212,165,116,0.5);border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">בדיקה מפורטת</button>
-        <button type="button" onclick="testMorningConnection()" style="background:#4285f4;color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:'Heebo',sans-serif">בדוק וחבר</button>
+    <div class="st-lbl">לינקים לתשלום · Grow</div>
+    <div class="st-card">
+      <div class="st-body st-flat">
+        <input id="set-owner" type="tel" placeholder="הטלפון שלך לשאלות" autocomplete="off" oninput="glOwnerSave && glOwnerSave(this.value)" class="st-in" dir="ltr"/>
+        <div class="st-help">מופיע בתחתית דף התשלום שהלקוח מקבל.</div>
       </div>
     </div>
-    <div style="font-size:10.5px;color:rgba(244,237,224,0.4);line-height:1.5;margin-bottom:10px">
-      איפה משיגים: app.greeninvoice.co.il → Account (פרופיל) → API → Generate Key. תקבל ID + Secret, תדביק כאן שניהם.<br>
-      <strong style="color:rgba(255,200,150,0.8)">חשוב:</strong> ודא שהמפתח כולל הרשאת <strong>"מסמכים — כתיבה / ניהול מסמכים"</strong>. בלי זה הקבלות יידחו עם "גישה נדחתה".
+
+    <div class="st-lbl">התראות</div>
+    <div class="st-card">
+      <div class="notif-row">
+        <div><label>הוצאות לפני חיוב</label><div class="notif-sub-label">חשבונות, מנויים, הוצאות קבועות</div></div>
+        <div class="notif-toggle" data-toggle="expenses" onclick="handleNotifToggle(this)"></div>
+      </div>
+      <div class="notif-row">
+        <div><label>כסף מלקוחות</label><div class="notif-sub-label">תשלומים שמחכים</div></div>
+        <div class="notif-toggle" data-toggle="income" onclick="handleNotifToggle(this)"></div>
+      </div>
+      <div class="notif-row">
+        <div><label>סדנאות</label><div class="notif-sub-label">מפגשים בקרוב</div></div>
+        <div class="notif-toggle" data-toggle="workshops" onclick="handleNotifToggle(this)"></div>
+      </div>
+      <div class="notif-row">
+        <div><label>תכנונים</label><div class="notif-sub-label">תזכורות מיומן התכנון</div></div>
+        <div class="notif-toggle" data-toggle="plans" onclick="handleNotifToggle(this)"></div>
+      </div>
+      <div class="st-sublbl">כמה זמן לפני</div>
+      <div class="notif-when">
+        <button type="button" class="notif-when-chip" data-lead="0"    onclick="handleNotifLead(this)">בזמן</button>
+        <button type="button" class="notif-when-chip" data-lead="60"   onclick="handleNotifLead(this)">שעה</button>
+        <button type="button" class="notif-when-chip" data-lead="180"  onclick="handleNotifLead(this)">3 שעות</button>
+        <button type="button" class="notif-when-chip" data-lead="1440" onclick="handleNotifLead(this)">יום</button>
+        <button type="button" class="notif-when-chip" data-lead="2880" onclick="handleNotifLead(this)">יומיים</button>
+      </div>
+      <button type="button" class="notif-test st-link" onclick="testNotification()">לשלוח התראת בדיקה</button>
+    </div>
+
+    <div class="st-lbl">תצוגה</div>
+    <div class="st-card">
+      <div class="notif-when" id="skin-switch">
+        <button type="button" class="notif-when-chip skin-opt" data-skin="spent" onclick="setSkin('spent')">חדש</button>
+        <button type="button" class="notif-when-chip skin-opt" data-skin="classic" onclick="setSkin('classic')">קלאסי</button>
+      </div>
     </div>
 
     <div class="notif-actions">
-      <button type="button" class="notif-test" onclick="testNotification()">בדוק התראה</button>
       <button type="button" class="notif-close" onclick="closeNotifSettings()">סיום</button>
     </div>
   </div>
@@ -1380,7 +1380,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v598</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v599</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -3634,9 +3634,9 @@
 </div>
 
 
-<script src="js/app.js?h=c2c10c277d"></script>
+<script src="js/app.js?h=6b46d07528"></script>
 <!--SPENT-START-->
-<link rel="stylesheet" id="spent-skin" href="css/spent.css?h=65e2ed8fd2">
+<link rel="stylesheet" id="spent-skin" href="css/spent.css?h=507d14d6c5">
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
 </body>
