@@ -8866,11 +8866,11 @@ function fcScheduleReminders() {
         for (let k = 0; k < 2; k++) {               // this occurrence + the next one
           if (!_fcPaidFor(x, d)) {
             const eve = new Date(d); eve.setDate(eve.getDate() - 1); eve.setHours(19, 0, 0, 0);
-            if (eve > now) out.push({ id: hid('fc-e-' + x.id + _fcMonthKey(d)), title: (x.manual ? '🔔 מחר להעביר ' : '💸 מחר יורדים ') + fmtMoney(_fcAmtIn(x, d)),
+            if (eve > now) out.push({ id: hid('fc-e-' + x.id + _fcMonthKey(d)), title: (x.manual ? 'מחר להעביר ' : 'מחר יורדים ') + fmtMoney(_fcAmtIn(x, d)),
               body: x.name + (x.manual ? ' · ב-' + d.getDate() + ' לחודש' : ' · תוודא שיש כיסוי בחשבון'), schedule: { at: eve, allowWhileIdle: true }, sound: 'default' });
             if (x.manual) {
               const morn = new Date(d); morn.setHours(9, 0, 0, 0);
-              if (morn > now) out.push({ id: hid('fc-m-' + x.id + _fcMonthKey(d)), title: '🔔 היום להעביר ' + fmtMoney(_fcAmtIn(x, d)),
+              if (morn > now) out.push({ id: hid('fc-m-' + x.id + _fcMonthKey(d)), title: 'היום להעביר ' + fmtMoney(_fcAmtIn(x, d)),
                 body: x.name + ' · אחרי ההעברה סמן ✓ באפליקציה', schedule: { at: morn, allowWhileIdle: true }, sound: 'default' });
             }
           }
@@ -11008,7 +11008,7 @@ window.handleNotifLead = function(btn) {
 window.testNotification = function() {
   const at = new Date(Date.now() + 5000); // 5 seconds from now
   if (typeof window.scheduleReminder === 'function') {
-    const p = window.scheduleReminder('בדיקה — Ravid Studio', 'ההתראות עובדות 👍', at, 'test-' + Date.now());
+    const p = window.scheduleReminder('Maestro · בדיקה', 'ההתראות עובדות', at, 'test-' + Date.now());
     if (p && p.then) p.then(id => {
       if (typeof toast === 'function') toast('התראה תופיע בעוד 5 שניות'); else alert('התראה תופיע בעוד 5 שניות');
     });
@@ -11115,7 +11115,7 @@ async function _moneyNotifRefresh() {
       at.setDate(at.getDate() + baseDay + k * 3);
       at.setHours(10, 0, 0, 0);
       notifs.push({
-        id: _MONEY_NOTIF_IDS[k], title: '💰 כסף פתוח בחוץ', body,
+        id: _MONEY_NOTIF_IDS[k], title: 'כסף פתוח בחוץ', body,
         schedule: { at, allowWhileIdle: true }, sound: 'default',
         threadIdentifier: 'money-notifs', extra: { moneyNotif: 'dunning' }
       });
@@ -11131,7 +11131,7 @@ async function _moneyNotifRefresh() {
   const sun = new Date(now); sun.setHours(9, 0, 0, 0);
   while (sun.getDay() !== 0 || sun <= now) { sun.setDate(sun.getDate() + 1); sun.setHours(9, 0, 0, 0); }
   notifs.push({
-    id: _MONEY_NOTIF_IDS[3], title: '📊 בוקר טוב — מצב העסק',
+    id: _MONEY_NOTIF_IDS[3], title: 'בוקר טוב — מצב העסק',
     body: 'נכנסו החודש ' + _ilsFmt(paidMonth) + (openAll ? ' · פתוחים בחוץ ' + _ilsFmt(openAll) : ' · אין כסף פתוח 🎉'),
     schedule: { at: sun, allowWhileIdle: true }, sound: 'default',
     threadIdentifier: 'money-notifs', extra: { moneyNotif: 'weekly' }
@@ -11145,7 +11145,7 @@ async function _moneyNotifRefresh() {
   const fixedTotal = rec.reduce((s, r) => s + (typeof _recAmt === 'function' ? _recAmt(r, fKey) : (Number(r.amount) || 0)), 0);
   if (fixedTotal > 0) {
     notifs.push({
-      id: _MONEY_NOTIF_IDS[4], title: '📅 הוצאות קבועות החודש',
+      id: _MONEY_NOTIF_IDS[4], title: 'הוצאות קבועות החודש',
       body: rec.length + ' חיובים קבועים · ' + _ilsFmt(fixedTotal),
       schedule: { at: first, allowWhileIdle: true }, sound: 'default',
       threadIdentifier: 'money-notifs', extra: { moneyNotif: 'weekly' }
@@ -11211,11 +11211,11 @@ function _briefCompose(targetKey) {
       if (s && s.n) waLine = '💬 ' + (s.n === 1 ? 'לקוח אחד מחכה' : s.n + ' לקוחות מחכים') + ' לתשובה בוואטסאפ';
     } catch (_) {}
     return {
-      title: '☀️ הבוקר שלך' + (dayLine ? ' · ' + dayLine : ''),
+      title: 'הבוקר שלך' + (dayLine ? ' · ' + dayLine : ''),
       body: [schedLine, moneyLine, waLine, stepLine].filter(Boolean).join('\n')
     };
   } catch (_) {
-    return { title: '☀️ בוקר טוב', body: 'פתח את האפליקציה למצב העסק והבריאות של היום.' };
+    return { title: 'בוקר טוב', body: 'פתח את האפליקציה למצב העסק והבריאות של היום.' };
   }
 }
 async function _briefRefresh() {
@@ -11534,7 +11534,7 @@ async function _waNotifSchedule(count) {
     const h = at.getHours();
     if (h < 8 || h >= 22) continue;
     notifs.push({
-      id: 710100 + slot, title: '💬 מחכים לתשובה שלך', body,
+      id: 710100 + slot, title: 'מחכים לתשובה שלך', body,
       schedule: { at, allowWhileIdle: true }, sound: 'default',
       threadIdentifier: 'wa-waiting', extra: { moneyNotif: 'wa' }
     });
@@ -12623,7 +12623,7 @@ window.waSnoozeSet = async function(kind) {
         const id = _waSnoozeNotifId(phone);
         try { await LN.cancel({ notifications: [{ id }] }); } catch (_) {}
         await LN.schedule({ notifications: [{
-          id, title: '⏰ הבטחת לענות ל' + _waName({ phone }),
+          id, title: 'הבטחת לענות ל' + _waName({ phone }),
           body: 'השיחה חזרה לרשימת הממתינים.',
           schedule: { at: new Date(until), allowWhileIdle: true }, sound: 'default',
           threadIdentifier: 'wa-waiting', extra: { moneyNotif: 'wa' }
@@ -12914,7 +12914,7 @@ function _waBookPicked(key, b) {
     try {
       const LN = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
       if (LN) LN.schedule({ notifications: [{
-        id: 712000 + Math.floor(Math.random() * 400), title: '🎉 סשן נקבע!',
+        id: 712000 + Math.floor(Math.random() * 400), title: 'סשן נקבע!',
         body: nm + ' — ' + _waHumanDay(b.picked.date, true) + ' בשעה ' + b.picked.time,
         schedule: { at: new Date(Date.now() + 1500) }, sound: 'default'
       }] });
@@ -12946,7 +12946,7 @@ function _waCmdNotify(text) {
     if (!LN) return;
     LN.schedule({ notifications: [{
       id: 713000 + Math.floor(Math.random() * 900),
-      title: '🤖 בוצע', body: String(text || '').slice(0, 160),
+      title: 'בוצע', body: String(text || '').slice(0, 160),
       schedule: { at: new Date(Date.now() + 800) }, sound: 'default',
       threadIdentifier: 'wa-assistant'
     }] });
@@ -13734,8 +13734,8 @@ async function _notifStatusRender() {
       line = '<span style="color:var(--green)">✅ התראות מאושרות</span> · ' + pending + ' מתוזמנות'
         + ' <button class="btn btn-ghost btn-sm" onclick="notifTest()">התראת בדיקה</button>';
     } else {
-      line = '<span style="color:var(--red)">❌ ההתראות חסומות ל-Ravid Studio.</span><br>'
-        + 'פתח: הגדרות ← עדכונים (Notifications) ← Ravid Studio ← אפשר עדכונים.';
+      line = '<span style="color:var(--red)">❌ ההתראות חסומות ל-Maestro.</span><br>'
+        + 'פתח: הגדרות ← עדכונים (Notifications) ← Maestro ← אפשר עדכונים.';
     }
   } catch (_) { line = ''; }
   el.innerHTML = line ? '<div class="dun-notif-line">' + line + '</div>' : '';
@@ -13745,7 +13745,7 @@ window.notifTest = async function() {
   if (!LN) return;
   try {
     await LN.schedule({ notifications: [{
-      id: 710099, title: '🔔 בדיקה עברה!', body: 'ככה נראית התראה מהאפליקציה. גבייה, לוז וסיכומים יגיעו בדיוק ככה.',
+      id: 710099, title: 'בדיקה עברה!', body: 'ככה נראית התראה מהאפליקציה. גבייה, לוז וסיכומים יגיעו בדיוק ככה.',
       schedule: { at: new Date(Date.now() + 10000), allowWhileIdle: true }, sound: 'default'
     }] });
     toast('נשלחה — סגור את האפליקציה, ההתראה תגיע בעוד 10 שניות');
@@ -18909,7 +18909,7 @@ async function scheduleNativeTaskNotification(task) {
     await LocalNotifications.schedule({
       notifications: [{
         id: numId,
-        title: '⏰ ' + leadLabel + task.title,
+        title: '' + leadLabel + task.title,
         body: `יעד: ${due.toLocaleString('he-IL', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'})}${task.notes ? '\n' + task.notes : ''}`,
         schedule: { at: remind, allowWhileIdle: true },
         sound: 'default',
@@ -19049,7 +19049,7 @@ async function scheduleTaskNotification(task, verbose) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         topic,
-        title: '⏰ עוד שעה — ' + task.title,
+        title: 'עוד שעה — ' + task.title,
         message: `${task.title}\nיעד: ${dueLocal}${task.notes ? '\n\n' + task.notes : ''}`,
         priority: 5,
         tags: ['alarm_clock'],
@@ -21678,7 +21678,7 @@ async function _scheduleDailyTaskNotif(task) {
       notifications: [{
         id: numId,
         title: task.text,
-        subtitle: 'Ravid Studio',
+        subtitle: 'Maestro',
         body: bodyText,
         schedule: { at: at, allowWhileIdle: true },
         sound: 'default',
