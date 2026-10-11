@@ -7552,7 +7552,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v593</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v594</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -16103,6 +16103,24 @@ window.txCopyShortcutURL = async function() {
     try {
       const u = new URL(url);
       const host = (u.host || u.hostname || '').toLowerCase();
+      // v594 Siri / Shortcuts: ravidstudio://free · ://today · ://add-event
+      if (host === 'free' || host === 'today' || host === 'add-event' || host === 'event') {
+        const q = k => u.searchParams.get(k) || '';
+        appWhenReady(() => {
+          chooseMode('business');
+          if (host === 'today') { showPage('schedule'); try { goScheduleToday(); } catch (_) {} return; }
+          if (host === 'free') {
+            const o = window._freeOpt = window._freeOpt || { from: 600, range: 'next', min: 3, count: 3 };
+            const f = /^(\d{1,2}):?(\d{2})?$/.exec(q('from')); if (f) o.from = (+f[1]) * 60 + (+(f[2] || 0));
+            if (q('hours')) o.min = Math.max(1, Math.min(8, +q('hours') || 3));
+            if (/^\d{4}-\d{2}-\d{2}$/.test(q('date'))) { o.range = 'date'; o.date = q('date'); } else if (['this', 'next', 'month'].indexOf(q('range')) >= 0) o.range = q('range');
+            if (q('count')) o.count = Math.max(1, Math.min(4, +q('count') || 3));
+            showPage('schedule'); setTimeout(freeTimesOpen, 250); return;
+          }
+          showPage('schedule'); setTimeout(() => spFlowScheduleAdd(/^\d{4}-\d{2}-\d{2}$/.test(q('date')) ? q('date') : undefined), 250);
+        });
+        return;
+      }
       if (host === 'offer' || host === 'slot') {
         const t = u.searchParams.get('text') || u.searchParams.get('body') || '';
         try { localStorage.setItem('offer_diag', JSON.stringify({ at: Date.now(), len: t.length, head: t.slice(0, 160) })); } catch (_) {}
@@ -20542,6 +20560,15 @@ window.offerImport = function(text) {
 };
 // v580: a shared offer arrives while the welcome/Face ID screen (or the
 // password screen) is still up — wait until he's in, then ask.
+// run something once the welcome/Face ID and password screens are out of the way
+window.appWhenReady = function(fn) {
+  const t0 = Date.now();
+  const ready = () => { if (document.documentElement.classList.contains('face-id-locked')) return false;
+    const ls = document.getElementById('login-screen');
+    return !(ls && ls.offsetParent !== null && !ls.classList.contains('hidden') && getComputedStyle(ls).display !== 'none'); };
+  const tick = () => { if (ready()) { setTimeout(() => { try { fn(); } catch (e) { console.warn(e); } }, 350); return; } if (Date.now() - t0 < 5 * 60 * 1000) setTimeout(tick, 400); };
+  setTimeout(tick, 500);
+};
 window.offerWhenReady = function(text) {
   const t0 = Date.now();
   const ready = () => {
