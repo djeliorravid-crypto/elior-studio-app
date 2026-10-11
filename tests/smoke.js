@@ -8,6 +8,11 @@ const TYPES = { '.html': 'text/html', '.js': 'application/javascript', '.css': '
 const srv = http.createServer((q, r) => { let f = path.join(ROOT, decodeURIComponent(q.url.split('?')[0])); if (f.endsWith('/')) f += 'index.html';
   fs.readFile(f, (e, b) => { if (e) { r.writeHead(404); r.end(); return; } r.writeHead(200, { 'content-type': TYPES[path.extname(f)] || 'application/octet-stream' }); r.end(b); }); });
 const results = []; const ok = (name, cond, extra) => { results.push([cond ? 'PASS' : 'FAIL', name, extra || '']); };
+// split files: every ?h= in index.html must match the file (else phones get a stale mix)
+{ const crypto = require('crypto'); const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  for (const f of ['js/app.js', 'css/base.css', 'css/spent.css']) { const m = html.match(new RegExp(f.replace('.', '\\.') + '\\?h=([0-9a-f]+)'));
+    const h = crypto.createHash('sha1').update(fs.readFileSync(path.join(ROOT, f))).digest('hex').slice(0, 10);
+    ok('asset ' + f + ' hash is current', m && m[1] === h, m ? m[1] + ' vs ' + h : 'not linked'); } }
 (async () => {
   await new Promise(r => srv.listen(0, r)); const port = srv.address().port;
   const b = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });

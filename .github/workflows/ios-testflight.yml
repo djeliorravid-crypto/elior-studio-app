@@ -78,6 +78,8 @@ jobs:
             [ -e "$f" ] && cp "$f" "www/$f"
           done
           [ -d ios-icons ] && cp -R ios-icons www/ios-icons || true
+          [ -d js ] && cp -R js www/js || true
+          [ -d css ] && cp -R css www/css || true
 
       - name: Add Capacitor iOS platform
         run: |
