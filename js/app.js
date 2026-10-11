@@ -10548,21 +10548,37 @@ window.srReceiptsOpen = function() {
   spentSheet('תשלומים בלי קבלה', 'בחר תשלום כדי להוציא לו קבלה', nr.slice(0, 8).map(i => ({ label: (i.clientName || i.client || 'הכנסה') + ' · ' + fmtMoney(i.amount) + ' · ' + (+String(i.date).slice(8, 10)) + '.' + (+String(i.date).slice(5, 7)), run: () => go(i.id) })));
 };
 let _srTimer = 0;
+// v596: the smart reminders go to the PHONE (local notifications), not the home screen.
+// Rebuilt every time the app opens / goes to the background, from the data:
+//  · paid without a receipt → 2 days after the payment, at 10:00 (then once more 3 days later)
+//  (owed money is covered by the existing '💰 כסף פתוח בחוץ' notification)
 function srScheduleNotif() {
   clearTimeout(_srTimer);
   _srTimer = setTimeout(async () => {
     try {
       if (!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform())) return;
       const LN = Capacitor.Plugins && Capacitor.Plugins.LocalNotifications; if (!LN) return;
-      const ID = 690000101; await LN.cancel({ notifications: [{ id: ID }] }).catch(() => {});
+      let old = []; try { old = JSON.parse(localStorage.getItem('sr_notif_ids') || '[]'); } catch (_) {}
+      old.push(690000101);
+      await LN.cancel({ notifications: old.map(id => ({ id })) }).catch(() => {});
+      localStorage.setItem('sr_notif_ids', '[]');
       const prefs = (typeof getNotifPrefs === 'function') ? getNotifPrefs() : {};
       if (prefs.enabled === false) return;
-      const nr = srNoReceipt(), late = srOwedLate(), parts = [];
-      if (nr.length) parts.push(nr.length === 1 ? 'תשלום אחד בלי קבלה' : nr.length + ' תשלומים בלי קבלה');
-      if (late) parts.push(late.name + ' חייב ' + fmtMoney(late.sum) + ' כבר ' + late.age);
-      if (!parts.length) return;
-      const at = new Date(); at.setHours(10, 0, 0, 0); if (at <= new Date()) at.setDate(at.getDate() + 1);
-      await LN.schedule({ notifications: [{ id: ID, title: 'Maestro · כדאי לסגור', body: parts.join(' · '), schedule: { at, allowWhileIdle: true }, sound: 'default' }] }).catch(() => {});
+      const now = new Date(), out = [];
+      const at10 = (d, plus) => { const x = new Date(d); x.setDate(x.getDate() + (plus || 0)); x.setHours(10, 0, 0, 0); return x; };
+      const next10 = d => { let x = at10(d); if (x <= now) x = at10(now); if (x <= now) x = at10(now, 1); return x; };
+      const hid = s => 690100000 + Math.abs(String(s).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)) % 899999;
+      // paid, no receipt (Morning connected) — every such payment from the last 60 days
+      let mc = false; try { mc = !!(window.morningConnected && window.morningConnected()); } catch (_) {}
+      if (mc) (load('income') || []).filter(i => i && (i.status || 'pending') === 'paid' && !i.morningDocId && i.date && _srDays(i.date) <= 60 && !i.noReceipt).slice(0, 6).forEach(i => {
+        const who = (i.clientName || i.client || 'תשלום').trim();
+        const first = next10(at10(new Date(String(i.date).slice(0, 10) + 'T12:00:00'), 2));
+        [first, at10(first, 3)].forEach((t, k) => out.push({ id: hid('rc' + i.id + k), title: 'אין עדיין קבלה', body: who + ' שילם ' + fmtMoney(i.amount) + ' · לחיצה ← להוציא קבלה', schedule: { at: t, allowWhileIdle: true }, sound: 'default' }));
+      });
+      // clients owing money already get the built-in '💰 כסף פתוח בחוץ' notification — not duplicated here
+      const list = out.filter(n => n.schedule.at > now).slice(0, 20);
+      if (list.length) await LN.schedule({ notifications: list }).catch(() => {});
+      localStorage.setItem('sr_notif_ids', JSON.stringify(list.map(n => n.id)));
     } catch (_) {}
   }, 1500);
 }
@@ -10599,16 +10615,8 @@ function spLobbyRender() {
   // money waiting — by name, no amount
   try {
     const names = []; load('income').forEach(i => { if ((i.status || 'pending') !== 'paid' && i.date && new Date(i.date) <= now) { const n = (i.clientName || i.client || '').trim(); if (n && names.indexOf(n) < 0) names.push(n); } });
-    // v592 smart: who's been waiting longest, and how long
-    const late = srOwedLate();
-    if (names.length) items.push({ id: 'pay', k: 'coin', tint: 'violet',
-      t: late ? late.name + ' חייב ' + fmtMoney(late.sum) + ' כבר ' + late.age : (names.length === 1 ? 'תזכורת תשלום ל' + names[0] : 'תזכורת תשלום ל-' + names.length + ' לקוחות'),
-      s: 'לחיצה פותחת את הצ׳אט בוואטסאפ', go: late && names.length > 1 ? 'chatClient(\'' + late.name.replace(/'/g, "\\'") + '\')' : 'payRemindOpen()', cta: 'לפתוח צ׳אט' });
+    if (names.length) items.push({ id: 'pay', k: 'coin', tint: 'violet', t: names.length === 1 ? 'תזכורת תשלום ל' + names[0] : 'תזכורת תשלום ל-' + names.length + ' לקוחות', s: 'לחיצה פותחת את הצ׳אט בוואטסאפ', go: 'payRemindOpen()', cta: 'לפתוח צ׳אט' });
   } catch (_) {}
-  // v592 smart: paid but no receipt yet (2+ days)
-  try { const nr = srNoReceipt(); if (nr.length) items.push({ id: 'rc_' + nr.map(x => x.id).join('_').slice(0, 40), k: 'coin', tint: 'violet',
-      t: nr.length === 1 ? 'אין קבלה · ' + (nr[0].clientName || nr[0].client || '') : nr.length + ' תשלומים בלי קבלה',
-      s: nr.length === 1 ? fmtMoney(nr[0].amount) + ' · לחיצה ← הוצאת קבלה' : 'לחיצה ← לבחור ולהוציא', go: 'srReceiptsOpen()', cta: 'להוציא קבלה' }); } catch (_) {}
   try { fcDueToAsk().slice(0, 2).forEach(o => items.push({ id: 'f_' + o.x.id, k: 'repeat', tint: 'sun', t: o.x.name + ' ירד?', s: 'רק לאשר', fc: o.x.id })); } catch (_) {}
   let wa = 0; try { wa = _waWaitingCount(); } catch (_) {}
   if (wa) items.push({ id: 'wa', k: 'chat', tint: 'mint', t: wa === 1 ? 'מישהו כתב לך' : wa + ' אנשים כתבו לך', s: 'וואטסאפ', go: 'waGoInbox()', cta: 'לקרוא' });
