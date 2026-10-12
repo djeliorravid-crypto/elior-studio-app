@@ -7288,6 +7288,59 @@ function markPaymentPaid(planId, paymentId) {
 }
 
 
+// v600: installments — each payment: mark paid, or a friendly WhatsApp nudge
+window.planRemindText = function(plan, p) {
+  const first = String(plan.clientName || '').split(' ')[0];
+  const d = new Date(p.dueDate + 'T12:00:00'), t = new Date(); t.setHours(12, 0, 0, 0);
+  const n = Math.round((d - t) / 864e5);
+  const when = n === 0 ? 'היום' : n === 1 ? 'מחר' : n > 1 ? 'ב-' + d.getDate() + '.' + (d.getMonth() + 1) : 'מ-' + d.getDate() + '.' + (d.getMonth() + 1);
+  return 'היי' + (first ? ' ' + first : '') + ', תזכורת קטנה — תשלום ' + p.index + ' מתוך ' + plan.count + ' על ' + plan.project + ' (' + fmtMoney(p.amount) + ') ' + (n < 0 ? 'שהיה ' + when : when) + '. תודה!';
+};
+window.planStepTap = function(planId, paymentId) {
+  const plan = (load('plans') || []).find(x => x.id === planId); if (!plan) return;
+  const p = plan.payments.find(x => x.id === paymentId); if (!p) return;
+  const d = new Date(p.dueDate + 'T12:00:00');
+  const sub = fmtMoney(p.amount) + ' · ' + d.getDate() + '.' + (d.getMonth() + 1) + ' · ' + (p.paid ? 'שולם' : 'עוד לא שולם');
+  const acts = p.paid ? [{ label: 'בעצם עוד לא שולם', run: () => markPaymentUnpaid(planId, paymentId) }]
+    : [{ label: 'שולם', pri: true, run: () => markPaymentPaid(planId, paymentId) },
+       { label: 'תזכורת בוואטסאפ', run: () => {
+          const c = (load('clients') || []).find(x => x.id === plan.clientId) || _clientByName(plan.clientName);
+          const ph = c && c.phone ? _waPhone(c.phone) : '';
+          const txt = encodeURIComponent(planRemindText(plan, p));
+          if (ph) window.open('https://wa.me/' + ph + '?text=' + txt, '_blank');
+          else askClientPhone(plan.clientName || 'הלקוח', () => { const c2 = _clientByName(plan.clientName); if (c2 && c2.phone) window.open('https://wa.me/' + _waPhone(c2.phone) + '?text=' + txt, '_blank'); });
+        } }];
+  spentSheet(plan.project + ' · תשלום ' + p.index + ' מתוך ' + plan.count, sub, acts);
+};
+// a phone notification on each installment's day (10:00): "רן · תשלום 2 מתוך 4 · היום"
+let _plTimer = 0;
+function planScheduleNotif() {
+  clearTimeout(_plTimer);
+  _plTimer = setTimeout(async () => {
+    try {
+      if (!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform())) return;
+      const LN = Capacitor.Plugins && Capacitor.Plugins.LocalNotifications; if (!LN) return;
+      let old = []; try { old = JSON.parse(localStorage.getItem('pl_notif_ids') || '[]'); } catch (_) {}
+      if (old.length) await LN.cancel({ notifications: old.map(id => ({ id })) }).catch(() => {});
+      localStorage.setItem('pl_notif_ids', '[]');
+      const prefs = (typeof getNotifPrefs === 'function') ? getNotifPrefs() : {};
+      if (prefs.enabled === false || prefs.income === false) return;
+      const now = new Date(), out = [];
+      const hid = s => 691000000 + Math.abs(String(s).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)) % 899999;
+      (load('plans') || []).forEach(plan => (plan.payments || []).forEach(p => {
+        if (p.paid || !p.dueDate) return;
+        const at = new Date(p.dueDate + 'T10:00:00'); if (at <= now) return;
+        out.push({ id: hid(plan.id + p.id), title: (plan.clientName || plan.project) + ' · תשלום ' + p.index + ' מתוך ' + plan.count, body: fmtMoney(p.amount) + ' היום · ' + plan.project, schedule: { at, allowWhileIdle: true }, sound: 'default' });
+      }));
+      const list = out.sort((a, b) => a.schedule.at - b.schedule.at).slice(0, 24);
+      if (list.length) await LN.schedule({ notifications: list }).catch(() => {});
+      localStorage.setItem('pl_notif_ids', JSON.stringify(list.map(n => n.id)));
+    } catch (_) {}
+  }, 1800);
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(planScheduleNotif, 5000));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') planScheduleNotif(); });
+
 function markPaymentUnpaid(planId, paymentId) {
   const plans = load('plans');
   const plan = plans.find(p => p.id === planId);
@@ -7391,7 +7444,7 @@ function renderInstallments() {
         ? `markPaymentUnpaid('${plan.id}','${p.id}')`
         : `markPaymentPaid('${plan.id}','${p.id}')`;
       return `
-        <div class="payment-step ${status}" onclick="${clickFn}" title="${p.paid ? 'לחץ לביטול' : 'לחץ לסימון כשולם'}">
+        <div class="payment-step ${status}" onclick="if(document.documentElement.getAttribute('data-skin')==='spent'){planStepTap('${plan.id}','${p.id}')}else{${clickFn}}" title="${p.paid ? 'לחץ לביטול' : 'לחץ לסימון כשולם'}">
           <div class="ps-icon">${icons[status]}</div>
           <div class="ps-num">תשלום ${p.index}</div>
           <div class="ps-date">${dateStr}</div>
@@ -7405,7 +7458,7 @@ function renderInstallments() {
       <div class="plan-card">
         <div class="plan-card-top">
           <div>
-            <div class="plan-title">${plan.project} ${allDone ? '🎉' : ''}</div>
+            <div class="plan-title">${plan.project}${allDone ? ' · הושלם' : ''}</div>
             <div class="plan-client">${plan.clientName || 'ללא לקוח'}</div>
           </div>
           <button class="btn btn-danger btn-sm" onclick="deletePlan('${plan.id}')"><svg class="icon"><use href="#ic-trash"/></svg></button>
@@ -10584,6 +10637,46 @@ function srScheduleNotif() {
 }
 document.addEventListener('DOMContentLoaded', () => setTimeout(srScheduleNotif, 4000));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') srScheduleNotif(); });
+// ── v600 monthly goal: a quiet ring, percent only on home (amounts in the sheet) ──
+function _goalGet() { try { return JSON.parse(localStorage.getItem('sp_goal') || 'null'); } catch (_) { return null; } }
+function _goalIncome(d) { d = d || new Date(); const y = d.getFullYear(), m = d.getMonth();
+  return (load('income') || []).filter(i => i && (i.status || 'pending') === 'paid' && i.date && +String(i.date).slice(0, 4) === y && +String(i.date).slice(5, 7) - 1 === m).reduce((t, i) => t + (Number(i.amount) || 0), 0); }
+window.spGoalHtml = function() {
+  const g = _goalGet(); if (!g || !(g.amount > 0)) return '';
+  const now = new Date(), got = _goalIncome(now), pct = Math.min(100, Math.round(got / g.amount * 100));
+  const left = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+  const R = 21, C = 2 * Math.PI * R, off = C * (1 - pct / 100);
+  const say = pct >= 100 ? 'הגעת למטרה של ' + MONTHS_HE[now.getMonth()] : pct + '% מהמטרה של ' + MONTHS_HE[now.getMonth()];
+  return '<button class="fz-goalc' + (pct >= 100 ? ' done' : '') + '" onclick="spGoalOpen()">'
+    + '<svg class="gr" viewBox="0 0 52 52"><defs><linearGradient id="grg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a4690"/><stop offset="1" stop-color="#141a3c"/></linearGradient></defs>'
+    + '<circle cx="26" cy="26" r="' + R + '" fill="none" stroke="#e6e9f5" stroke-width="3.5"/>'
+    + '<circle class="gr-arc" cx="26" cy="26" r="' + R + '" fill="none" stroke="' + (pct >= 100 ? '#24493b' : 'url(#grg)') + '" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" style="--c:' + C.toFixed(1) + '" transform="rotate(-90 26 26)"/></svg>'
+    + '<span class="gt"><b>' + say + '</b><small>' + (pct >= 100 ? 'חודש מעולה' : left === 0 ? 'היום האחרון בחודש' : 'עוד ' + left + ' ימים בחודש') + '</small></span></button>';
+};
+window.spGoalOpen = function() {
+  const g = _goalGet(), now = new Date(), got = _goalIncome(now);
+  const set = () => spFlowOpen({ title: 'מטרה לחודש', vals: { a: g && g.amount ? String(g.amount) : '' },
+    steps: [{ k: 'a', type: 'money', q: 'כמה תרצה שייכנס ב' + MONTHS_HE[now.getMonth()] + '?' }],
+    onSave: v => { const a = Math.round(Number(v.a) || 0); try { localStorage.setItem('sp_goal', JSON.stringify(a > 0 ? { amount: a, at: Date.now() } : null)); } catch (_) {} spLobbyRender(); if (a > 0) spDone('המטרה נקבעה', fmtMoney(a), MONTHS_HE[now.getMonth()]); } });
+  if (!g || !(g.amount > 0)) { set(); return; }
+  spentSheet('המטרה של ' + MONTHS_HE[now.getMonth()], 'נכנסו ' + fmtMoney(got) + ' מתוך ' + fmtMoney(g.amount) + (got < g.amount ? ' · חסרים ' + fmtMoney(g.amount - got) : ''), [
+    { label: 'לשנות את המטרה', pri: true, run: set },
+    { label: 'להסיר את המטרה', danger: true, run: () => { try { localStorage.removeItem('sp_goal'); } catch (_) {} spLobbyRender(); } }]);
+};
+// ── v600 end of day: after 19:00, one warm line about today (names, not sums) ──
+window.spEveningHtml = function(items, isDone) {
+  const now = new Date(); if (now.getHours() < 19) return '';
+  const tk = dailyDateStr(now);
+  const done = (items || []).filter(x => isDone && isDone(x.id)).length;
+  const paid = [...new Set((load('income') || []).filter(i => i && (i.status || 'pending') === 'paid' && String(i.date).slice(0, 10) === tk).map(i => String(i.clientName || i.client || '').split(' ')[0]).filter(Boolean))];
+  let ses = 0; try { ses = (load('schedule') || []).filter(x => x && x.date === tk).length + (window._eventKitCache || []).filter(x => x && x.date === tk).length; } catch (_) {}
+  const parts = [];
+  if (done) parts.push(done === 1 ? 'סגרת דבר אחד' : 'סגרת ' + done + ' דברים');
+  if (ses) parts.push(ses === 1 ? 'היה לך מפגש אחד' : 'היו לך ' + ses + ' מפגשים');
+  if (paid.length) parts.push('נכנס כסף מ' + (paid.length <= 2 ? paid.join(' ומ') : paid.length + ' לקוחות'));
+  const line = parts.length ? parts.join(', ') + '.' : 'יום שקט. גם זה חשוב.';
+  return '<div class="fz-eve"><div class="k">סיכום היום</div><div class="t">' + _escape(line) + '</div><div class="s">' + (now.getHours() >= 22 ? 'לילה טוב. מחר ממשיכים.' : 'ערב טוב. מגיע לך לנוח.') + '</div></div>';
+};
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
@@ -10638,6 +10731,7 @@ function spLobbyRender() {
   + (next ? '<div class="fz-focus" onclick="' + (next.go || '') + '"><div class="k">הדבר הבא</div><div class="t">' + _escape(next.t) + '</div><div class="s">' + _escape(next.s) + '</div>'
       + (next.fc ? '<span class="fz-go" onclick="event.stopPropagation();spTick(\'' + next.id + '\');fcAskYes(\'' + next.fc + '\')">כן, ירד</span>' : '<span class="fz-go">' + (next.cta || 'פתח') + '</span><span class="fz-skip" onclick="event.stopPropagation();spTick(\'' + next.id + '\')">סיימתי</span>') + '</div>' : '')
   + (later.length ? '<div class="fz-lbl">' + (next ? 'אחר כך' : 'היום') + '</div><div class="fz-card">' + later.map(row).join('') + '</div>' : '')
+  + spGoalHtml() + spEveningHtml(items, isDone)
   + '<button class="fz-goal" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה ›</button>'
   + '<button class="fz-fab" onclick="spLobbyAdd()" aria-label="הוספה">' + FZ.plus + '</button>'
   + '<div class="oz-nav">'
@@ -10835,6 +10929,7 @@ window.spLobbyAdd = function() {
     { label: 'פגישה בלו״ז', run: () => quickAction('schedule') },
     { label: 'לשלוח מתי אני פנוי', run: () => freeTimesOpen() },
     { label: 'לקבוע מהודעה שהעתקתי', run: () => offerPaste() },
+    { label: 'מטרה לחודש', run: () => spGoalOpen() },
     { label: 'הפקה חדשה', run: () => { chooseMode('business'); showPage('productions'); setTimeout(() => prodOpenAddModal(), 120); } },
     { label: 'משימה', run: () => quickAction('task') }
   ]);
@@ -21998,8 +22093,37 @@ window.haptic = (function() {
     success: function() { const H = getPlugin(); if (H && H.notification)   H.notification({ type: 'SUCCESS' }).catch(function(){}); },
     warn:    function() { const H = getPlugin(); if (H && H.notification)   H.notification({ type: 'WARNING' }).catch(function(){}); },
     error:   function() { const H = getPlugin(); if (H && H.notification)   H.notification({ type: 'ERROR'   }).catch(function(){}); },
-    select:  function() { const H = getPlugin(); if (H && H.selectionStart) H.selectionStart().catch(function(){}); }
+    select:  function() { const H = getPlugin(); if (H && H.selectionStart) H.selectionStart().catch(function(){}); },
+    light:   function() { const H = getPlugin(); if (H && H.impact)         H.impact({ style: 'LIGHT'  }).catch(function(){}); }
   };
+})();
+// v600: a soft tap under the finger on every press in the new design (throttled)
+(function () {
+  let last = 0;
+  document.addEventListener('click', e => {
+    if (document.documentElement.getAttribute('data-skin') !== 'spent') return;
+    const t = e.target && e.target.closest && e.target.closest('button, .fz-row, .ex-cat, .notif-toggle, .fcs-tick, .fz-focus, .payment-step, .oz-nav button, a');
+    if (!t) return; const n = Date.now(); if (n - last < 70) return; last = n;
+    try { window.haptic.tap(); } catch (_) {}
+  }, true);
+})();
+
+// v600: big numbers count up to their value (only when the value changes; respects reduced motion)
+(function () {
+  const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) { return false; } };
+  const last = new Map();
+  const run = el => {
+    if (el._cnt) return; const txt = el.textContent; const m = /^([^\d-]*)(-?[\d,]+)(.*)$/.exec(txt); if (!m) return;
+    const to = Number(m[2].replace(/,/g, '')); if (!isFinite(to)) return;
+    const key = (el.closest('[id]') || {}).id + '|' + (el.className || '');
+    const from = last.has(key) ? last.get(key) : 0; last.set(key, to);
+    if (from === to || reduce() || Math.abs(to) < 10) return;
+    el._cnt = 1; const t0 = performance.now(), D = 650, fmt = n => m[1] + Math.round(n).toLocaleString('en-US') + m[3];
+    const step = t => { const k = Math.min(1, (t - t0) / D), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); else { el.textContent = txt; el._cnt = 0; } };
+    requestAnimationFrame(step);
+  };
+  const scan = root => { if (document.documentElement.getAttribute('data-skin') !== 'spent') return; (root.querySelectorAll ? root : document).querySelectorAll('.fz-big .n').forEach(run); };
+  new MutationObserver(ms => ms.forEach(mu => mu.addedNodes.forEach(n => { if (n.nodeType === 1) { if (n.matches && n.matches('.fz-big .n')) run(n); else if (n.querySelector) scan(n); } }))).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 // ===== App-icon badge =====
