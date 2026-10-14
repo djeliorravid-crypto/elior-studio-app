@@ -20918,7 +20918,7 @@ async function morningCreateReceiptFor(income) {
       // (paidAt) so a receipt issued days after the click still
       // carries the real payment date. Falls back to income.date
       // for older rows that pre-date this stamp.
-      date:     ((income.paidAt && income.paidAt.slice(0, 10)) || income.date || new Date().toISOString().slice(0, 10)),
+      date:     (income.receiptDate || (income.paidAt && income.paidAt.slice(0, 10)) || income.date || new Date().toISOString().slice(0, 10)),
       // Default to bank transfer; could be configurable per income later.
       type:     4,  // 4 = bank transfer (העברה בנקאית)
       price:    parseFloat(income.amount) || 0,
@@ -21022,6 +21022,7 @@ window.morningRetryReceipt = function(incomeId) {
   const clntInp = document.getElementById('mr-client');
   if (descInp) descInp.value = it.description || '';
   if (clntInp) clntInp.value = it.clientName  || '';
+  try { const di = document.getElementById('mr-date'); if (di) { di.value = String(it.receiptDate || (it.paidAt && it.paidAt.slice(0, 10)) || it.date || new Date().toISOString()).slice(0, 10); di.max = new Date().toISOString().slice(0, 10); } } catch (_) {}
   // Pre-fill the optional business fields from whatever was saved
   // last time for this income, so re-issuing a receipt doesn't lose
   // the company details the user already typed.
@@ -21053,6 +21054,7 @@ window._confirmMorningReceiptModal = async function() {
   const tax  = (document.getElementById('mr-taxid').value   || '').trim();
   const adr  = (document.getElementById('mr-address').value || '').trim();
   const city = (document.getElementById('mr-city').value    || '').trim();
+  const rdate = ((document.getElementById('mr-date') || {}).value || '').trim();
   window._closeMorningReceiptModal();
   // Save the optional business fields back onto the income row so
   // future receipts / payment requests for the same client carry
@@ -21065,10 +21067,12 @@ window._confirmMorningReceiptModal = async function() {
   if (tax  !== (it.clientTaxId   || ''))   { it.clientTaxId   = tax;  dirty = true; }
   if (adr  !== (it.clientAddress || ''))   { it.clientAddress = adr;  dirty = true; }
   if (city !== (it.clientCity    || ''))   { it.clientCity    = city; dirty = true; }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(rdate) && rdate !== (it.receiptDate || '')) { it.receiptDate = rdate; dirty = true; }
   if (dirty) save('income', all);
   const incomeForReceipt = Object.assign({}, it, {
     description: desc || it.description,
-    clientName:  clnt || it.clientName
+    clientName:  clnt || it.clientName,
+    receiptDate: /^\d{4}-\d{2}-\d{2}$/.test(rdate) ? rdate : it.receiptDate
   });
   if (it.morningDocId) { // already issued — say so instead of doing nothing
     toast('כבר יש קבלה לתשלום הזה' + (it.morningDocNumber ? ' · #' + it.morningDocNumber : '') + (it.morningDocUrl ? ' — פותח אותה' : ''));
