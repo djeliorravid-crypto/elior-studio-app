@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - 'ios-icons/**'
+      - 'ios-sounds/**'
       - 'splash/**'
       - 'ios-plugin/**'
       - 'ios-widget/**'
@@ -226,6 +227,11 @@ jobs:
             ios/App/App.xcodeproj \
             ios-widget/TaskWidget \
             ios-plugin/TaskWidgetBridge
+
+      - name: Add notification sounds to the app bundle
+        run: |
+          gem list -i xcodeproj || gem install xcodeproj --no-document
+          ruby ios-sounds/add-sounds.rb ios/App/App.xcodeproj ios-sounds
 
       - name: Initialize keychain
         run: |

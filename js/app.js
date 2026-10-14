@@ -7330,7 +7330,7 @@ function planScheduleNotif() {
       (load('plans') || []).forEach(plan => (plan.payments || []).forEach(p => {
         if (p.paid || !p.dueDate) return;
         const at = new Date(p.dueDate + 'T10:00:00'); if (at <= now) return;
-        out.push({ id: hid(plan.id + p.id), title: (plan.clientName || plan.project) + ' · תשלום ' + p.index + ' מתוך ' + plan.count, body: fmtMoney(p.amount) + ' היום · ' + plan.project, schedule: { at, allowWhileIdle: true }, sound: 'default' });
+        out.push({ id: hid(plan.id + p.id), title: (plan.clientName || plan.project) + ' · תשלום ' + p.index + ' מתוך ' + plan.count, body: fmtMoney(p.amount) + ' היום · ' + plan.project, schedule: { at, allowWhileIdle: true }, sound: _notifSound() });
       }));
       const list = out.sort((a, b) => a.schedule.at - b.schedule.at).slice(0, 24);
       if (list.length) await LN.schedule({ notifications: list }).catch(() => {});
@@ -8920,11 +8920,11 @@ function fcScheduleReminders() {
           if (!_fcPaidFor(x, d)) {
             const eve = new Date(d); eve.setDate(eve.getDate() - 1); eve.setHours(19, 0, 0, 0);
             if (eve > now) out.push({ id: hid('fc-e-' + x.id + _fcMonthKey(d)), title: (x.manual ? 'מחר להעביר ' : 'מחר יורדים ') + fmtMoney(_fcAmtIn(x, d)),
-              body: x.name + (x.manual ? ' · ב-' + d.getDate() + ' לחודש' : ' · תוודא שיש כיסוי בחשבון'), schedule: { at: eve, allowWhileIdle: true }, sound: 'default' });
+              body: x.name + (x.manual ? ' · ב-' + d.getDate() + ' לחודש' : ' · תוודא שיש כיסוי בחשבון'), schedule: { at: eve, allowWhileIdle: true }, sound: _notifSound() });
             if (x.manual) {
               const morn = new Date(d); morn.setHours(9, 0, 0, 0);
               if (morn > now) out.push({ id: hid('fc-m-' + x.id + _fcMonthKey(d)), title: 'היום להעביר ' + fmtMoney(_fcAmtIn(x, d)),
-                body: x.name + ' · אחרי ההעברה סמן ✓ באפליקציה', schedule: { at: morn, allowWhileIdle: true }, sound: 'default' });
+                body: x.name + ' · אחרי ההעברה סמן ✓ באפליקציה', schedule: { at: morn, allowWhileIdle: true }, sound: _notifSound() });
             }
           }
           d = _fcNextDue(x, new Date(d.getFullYear(), d.getMonth() + 1, 1));
@@ -10626,7 +10626,7 @@ function srScheduleNotif() {
       if (mc) (load('income') || []).filter(i => i && (i.status || 'pending') === 'paid' && !i.morningDocId && i.date && _srDays(i.date) <= 60 && !i.noReceipt).slice(0, 6).forEach(i => {
         const who = (i.clientName || i.client || 'תשלום').trim();
         const first = next10(at10(new Date(String(i.date).slice(0, 10) + 'T12:00:00'), 2));
-        [first, at10(first, 3)].forEach((t, k) => out.push({ id: hid('rc' + i.id + k), title: 'אין עדיין קבלה', body: who + ' שילם ' + fmtMoney(i.amount) + ' · לחיצה ← להוציא קבלה', schedule: { at: t, allowWhileIdle: true }, sound: 'default' }));
+        [first, at10(first, 3)].forEach((t, k) => out.push({ id: hid('rc' + i.id + k), title: 'אין עדיין קבלה', body: who + ' שילם ' + fmtMoney(i.amount) + ' · לחיצה ← להוציא קבלה', schedule: { at: t, allowWhileIdle: true }, sound: _notifSound() }));
       });
       // clients owing money already get the built-in '💰 כסף פתוח בחוץ' notification — not duplicated here
       const list = out.filter(n => n.schedule.at > now).slice(0, 20);
@@ -10637,6 +10637,90 @@ function srScheduleNotif() {
 }
 document.addEventListener('DOMContentLoaded', () => setTimeout(srScheduleNotif, 4000));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') srScheduleNotif(); });
+// ── v605 "לזכור" — say it the way you'd say it, Maestro puts it on the right day ──
+// "מחר להתקשר לרן" · "ביום שלישי לשלוח מיקס ב-17:00" · "בעוד שבוע לחדש ביטוח" · "בערב לגבות מאבי"
+// Stored as daily_tasks (so the tasks page shows them too); a phone notification at the time
+// given, or 09:00 on the day; today's open ones live on the home screen until ticked.
+const _RM_DAYS = { 'ראשון': 0, 'שני': 1, 'שלישי': 2, 'רביעי': 3, 'חמישי': 4, 'שישי': 5, 'שבת': 6, "א'": 0, "ב'": 1, "ג'": 2, "ד'": 3, "ה'": 4, "ו'": 5, 'א׳': 0, 'ב׳': 1, 'ג׳': 2, 'ד׳': 3, 'ה׳': 4, 'ו׳': 5 };
+window.rmParse = function(raw) {
+  let t = ' ' + String(raw || '').trim() + ' ', day = null, time = null;
+  const now = new Date(), base = new Date(now); base.setHours(12, 0, 0, 0);
+  const cut = re => { const m = t.match(re); if (m) t = t.replace(m[0], ' '); return m; };
+  let m;
+  if ((m = cut(/\s(?:ב|ל)?מחרתיים\s/))) day = 2;
+  else if ((m = cut(/\s(?:ב|ל)?מחר\s/))) day = 1;
+  else if ((m = cut(/\s(?:ב|ל)?היום\s/))) day = 0;
+  else if ((m = cut(/\sבעוד\s+(שבוע|שבועיים|חודש|יומיים|(\d+)\s*ימים?)\s/))) day = m[1] === 'שבוע' ? 7 : m[1] === 'שבועיים' ? 14 : m[1] === 'חודש' ? 30 : m[1] === 'יומיים' ? 2 : +m[2];
+  else if ((m = cut(/\s(?:ב|ל)?יום\s+(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת|[אבגדהו][׳'])\s/))) { const w = _RM_DAYS[m[1]]; day = ((w - now.getDay()) + 7) % 7 || 7; }
+  else if ((m = cut(/\s(?:ב|ל)?(ראשון|שני|שלישי|רביעי|חמישי|שישי|שבת)\s/))) { const w = _RM_DAYS[m[1]]; day = ((w - now.getDay()) + 7) % 7 || 7; }
+  if ((m = cut(/\s(?:ב-?|בשעה\s*|ב\s)?(\d{1,2})[:.](\d{2})\s/))) time = [+m[1], +m[2]];
+  else if ((m = cut(/\sבשעה\s*(\d{1,2})\s/)) || (m = cut(/\sב-?(\d{1,2})\s/))) { let h = +m[1]; if (h >= 1 && h <= 7) h += 12; time = [h, 0]; }
+  else if (cut(/\sבבוקר\s/)) time = [9, 0];
+  else if (cut(/\sבצהריים\s/)) time = [13, 0];
+  else if (cut(/\sאחה"צ\s|\sאחר הצהריים\s/)) time = [16, 0];
+  else if (cut(/\sבערב\s/)) time = [19, 0];
+  else if (cut(/\sבלילה\s/)) time = [21, 0];
+  if (day === null) day = (time && (time[0] * 60 + time[1]) > now.getHours() * 60 + now.getMinutes()) ? 0 : (now.getHours() >= 17 ? 1 : 0);
+  const d = new Date(base); d.setDate(d.getDate() + day);
+  let at = null;
+  if (time) { at = new Date(d); at.setHours(time[0], time[1], 0, 0); }
+  else if (day > 0) { at = new Date(d); at.setHours(9, 0, 0, 0); }
+  const text = t.replace(/\s+/g, ' ').replace(/^\s*(צריך|לזכור|תזכיר לי|להזכיר לי)\s+/, '').trim();
+  return { text, date: dailyDateStr(d), at, day };
+};
+function _rmWhen(p) {
+  const dd = p.day === 0 ? 'היום' : p.day === 1 ? 'מחר' : p.day === 2 ? 'מחרתיים' : 'יום ' + ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][new Date(p.date + 'T12:00:00').getDay()] + ' ' + (+p.date.slice(8)) + '.' + (+p.date.slice(5, 7));
+  return dd + (p.at ? ' · ' + String(p.at.getHours()).padStart(2, '0') + ':' + String(p.at.getMinutes()).padStart(2, '0') : '');
+}
+window.rmOpen = function(prefill) {
+  let ov = document.getElementById('fz-rem'); if (!ov) { ov = document.createElement('div'); ov.id = 'fz-rem'; ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); }; document.body.appendChild(ov); }
+  ov.innerHTML = '<div class="rm-box"><div class="sm-grab"></div><div class="rm-t">מה לזכור?</div>'
+    + '<textarea id="rm-in" rows="2" placeholder="למשל: מחר להתקשר לרן ב-11"></textarea>'
+    + '<div class="rm-when" id="rm-when"></div>'
+    + '<div class="rm-chips"><button data-w="מחר">מחר</button><button data-w="מחר בבוקר">מחר בבוקר</button><button data-w="בערב">בערב</button><button data-w="בעוד שבוע">בעוד שבוע</button></div>'
+    + '<button class="rm-save">לזכור</button></div>';
+  const inp = ov.querySelector('#rm-in'), when = ov.querySelector('#rm-when');
+  const upd = () => { const p = rmParse(inp.value); when.innerHTML = p.text ? '<span>' + (p.at ? 'אזכיר לך' : 'יופיע במסך הבית') + '</span><b>' + _rmWhen(p) + '</b>' : ''; };
+  inp.value = prefill || ''; inp.oninput = upd; upd();
+  ov.querySelectorAll('.rm-chips button').forEach(b => b.onclick = () => { inp.value = (inp.value.replace(/\s*(מחר בבוקר|מחר|בערב|בעוד שבוע)\s*$/, '') + ' ' + b.dataset.w).trim() + ' '; upd(); inp.focus(); });
+  ov.querySelector('.rm-save').onclick = () => {
+    const p = rmParse(inp.value); if (!p.text) { inp.focus(); return; }
+    const task = { id: genId(), date: p.date, text: p.text, done: false, createdAt: new Date().toISOString(), src: 'rem' };
+    if (p.at && p.at > new Date()) task.remindAt = p.at.toISOString();
+    const all = load('daily_tasks'); all.push(task); save('daily_tasks', all);
+    try { if (task.remindAt) _scheduleDailyTaskNotif(task); } catch (_) {}
+    ov.classList.remove('open'); try { spLobbyRender(); } catch (_) {}
+    spDone('אזכיר לך', _rmWhen(p), p.text);
+  };
+  requestAnimationFrame(() => { ov.classList.add('open'); setTimeout(() => inp.focus(), 250); });
+};
+window.rmTick = function(id) {
+  const all = load('daily_tasks'), t = all.find(x => x.id === id); if (!t) return;
+  t.done = !t.done; if (t.done) t.doneAt = new Date().toISOString(); save('daily_tasks', all);
+  try { window.haptic.success(); } catch (_) {} spLobbyRender();
+};
+window.rmLater = function(id) {
+  const all = load('daily_tasks'), t = all.find(x => x.id === id); if (!t) return;
+  const d = new Date(); d.setDate(d.getDate() + 1); t.date = dailyDateStr(d); const at = new Date(d); at.setHours(9, 0, 0, 0); t.remindAt = at.toISOString();
+  save('daily_tasks', all); try { _scheduleDailyTaskNotif(t); } catch (_) {} toast('עבר למחר · אזכיר ב-09:00'); spLobbyRender();
+};
+window.spRememberHtml = function() {
+  const today = dailyDateStr(), tm = new Date(); tm.setDate(tm.getDate() + 1); const tmr = dailyDateStr(tm);
+  const all = (load('daily_tasks') || []).filter(t => t && !t.deleted);
+  const open = all.filter(t => !t.done && t.date <= today).sort((a, b) => String(a.remindAt || a.date).localeCompare(String(b.remindAt || b.date)));
+  const doneToday = all.filter(t => t.done && t.date === today);
+  const tomorrow = all.filter(t => !t.done && t.date === tmr);
+  const row = t => { const late = t.date < today, at = t.remindAt ? new Date(t.remindAt) : null;
+    const sub = late ? 'מ' + (Math.round((new Date(today) - new Date(t.date)) / 864e5) === 1 ? 'אתמול' : (+t.date.slice(8)) + '.' + (+t.date.slice(5, 7))) : at ? 'היום · ' + String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : 'היום';
+    return '<div class="rm-row' + (t.done ? ' done' : '') + (late ? ' late' : '') + '"><button class="rm-tk' + (t.done ? ' on' : '') + '" onclick="rmTick(\'' + t.id + '\')" aria-label="בוצע">' + FZ.check + '</button>'
+      + '<span class="rm-m"><b>' + _escape(t.text) + '</b><small>' + sub + '</small></span>'
+      + (t.done ? '' : '<button class="rm-later" onclick="rmLater(\'' + t.id + '\')">למחר</button>') + '</div>'; };
+  const list = open.concat(doneToday.slice(-2));
+  return '<div class="fz-lbl rm-lbl"><span>לזכור</span><button class="ex-clear" onclick="rmOpen(new Date().getHours() >= 17 ? \'מחר \' : \'\')">+ להוסיף</button></div>'
+    + '<div class="fz-card rm-card">' + (list.length ? list.map(row).join('') : '<button class="rm-empty" onclick="rmOpen(new Date().getHours() >= 17 ? \'מחר \' : \'\')"><span>' + FZ.plus + '</span>מה צריך לזכור? כתוב כמו שאתה אומר — "מחר להתקשר לרן ב-11"</button>')
+    + (tomorrow.length ? '<div class="rm-tmr">מחר: ' + tomorrow.slice(0, 3).map(t => _escape(t.text)).join(' · ') + (tomorrow.length > 3 ? ' ועוד ' + (tomorrow.length - 3) : '') + '</div>' : '')
+    + '</div>';
+};
 // ── v600 monthly goal: a quiet ring, percent only on home (amounts in the sheet) ──
 function _goalGet() { try { return JSON.parse(localStorage.getItem('sp_goal') || 'null'); } catch (_) { return null; } }
 function _goalIncome(d) { d = d || new Date(); const y = d.getFullYear(), m = d.getMonth();
@@ -10675,7 +10759,8 @@ window.spEveningHtml = function(items, isDone) {
   if (ses) parts.push(ses === 1 ? 'היה לך מפגש אחד' : 'היו לך ' + ses + ' מפגשים');
   if (paid.length) parts.push('נכנס כסף מ' + (paid.length <= 2 ? paid.join(' ומ') : paid.length + ' לקוחות'));
   const line = parts.length ? parts.join(', ') + '.' : 'יום שקט. גם זה חשוב.';
-  return '<div class="fz-eve"><div class="k">סיכום היום</div><div class="t">' + _escape(line) + '</div><div class="s">' + (now.getHours() >= 22 ? 'לילה טוב. מחר ממשיכים.' : 'ערב טוב. מגיע לך לנוח.') + '</div></div>';
+  return '<div class="fz-eve"><div class="k">סיכום היום</div><div class="t">' + _escape(line) + '</div><div class="s">' + (now.getHours() >= 22 ? 'לילה טוב. מחר ממשיכים.' : 'ערב טוב. מגיע לך לנוח.') + '</div>'
+    + '<button class="eve-rm" onclick="rmOpen(\'מחר \')">משהו לזכור למחר?</button></div>';
 };
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
@@ -10714,7 +10799,9 @@ function spLobbyRender() {
   let wa = 0; try { wa = _waWaitingCount(); } catch (_) {}
   if (wa) items.push({ id: 'wa', k: 'chat', tint: 'mint', t: wa === 1 ? 'מישהו כתב לך' : wa + ' אנשים כתבו לך', s: 'וואטסאפ', go: 'waGoInbox()', cta: 'לקרוא' });
   const open = items.filter(x => !isDone(x.id)), total = items.length;
-  const bubble = !total ? 'יום פנוי היום. זמן טוב ליצור משהו חדש.'
+  let rmN = 0; try { const td = dailyDateStr(); rmN = (load('daily_tasks') || []).filter(t => t && !t.done && !t.deleted && t.date <= td).length; } catch (_) {}
+  const bubble = !total && rmN ? (rmN === 1 ? 'יש דבר אחד לזכור היום.' : 'יש ' + rmN + ' דברים לזכור היום.')
+    : !total ? 'יום פנוי היום. זמן טוב ליצור משהו חדש.'
     : !open.length ? 'סגרת הכל להיום. יום טוב באמת — אני שומר על הכל.'
     : (open.length === 1 ? 'נשאר לך דבר אחד היום.' : 'יש לך ' + open.length + ' דברים היום. נתחיל?');
   const next = open[0], later = items.filter(x => x !== next);
@@ -10731,7 +10818,7 @@ function spLobbyRender() {
   + (next ? '<div class="fz-focus" onclick="' + (next.go || '') + '"><div class="k">הדבר הבא</div><div class="t">' + _escape(next.t) + '</div><div class="s">' + _escape(next.s) + '</div>'
       + (next.fc ? '<span class="fz-go" onclick="event.stopPropagation();spTick(\'' + next.id + '\');fcAskYes(\'' + next.fc + '\')">כן, ירד</span>' : '<span class="fz-go">' + (next.cta || 'פתח') + '</span><span class="fz-skip" onclick="event.stopPropagation();spTick(\'' + next.id + '\')">סיימתי</span>') + '</div>' : '')
   + (later.length ? '<div class="fz-lbl">' + (next ? 'אחר כך' : 'היום') + '</div><div class="fz-card">' + later.map(row).join('') + '</div>' : '')
-  + spGoalHtml() + spEveningHtml(items, isDone)
+  + spRememberHtml() + spGoalHtml() + spEveningHtml(items, isDone)
   + '<button class="fz-goal" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה ›</button>'
   + '<button class="fz-fab" onclick="spLobbyAdd()" aria-label="הוספה">' + FZ.plus + '</button>'
   + '<div class="oz-nav">'
@@ -10929,6 +11016,7 @@ window.spLobbyAdd = function() {
     { label: 'פגישה בלו״ז', run: () => quickAction('schedule') },
     { label: 'לשלוח מתי אני פנוי', run: () => freeTimesOpen() },
     { label: 'לקבוע מהודעה שהעתקתי', run: () => offerPaste() },
+    { label: 'לזכור משהו', pri: true, run: () => rmOpen(new Date().getHours() >= 17 ? 'מחר ' : '') },
     { label: 'מטרה לחודש', run: () => spGoalOpen() },
     { label: 'הפקה חדשה', run: () => { chooseMode('business'); showPage('productions'); setTimeout(() => prodOpenAddModal(), 120); } },
     { label: 'משימה', run: () => quickAction('task') }
@@ -11027,6 +11115,7 @@ window.setNotifPrefs = function(prefs) {
 };
 
 window.openNotifSettings = function() {
+  try { const el = document.getElementById('notif-sound-name'); if (el) el.textContent = _notifSoundName(); } catch (_) {}
   try { const el = document.getElementById('bk-last'), t = Number(localStorage.getItem('bk_last') || 0); if (el) el.textContent = t ? 'אחרון: ' + new Date(t).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' · נשמרים 30 ימים' : 'עוד לא היה גיבוי · לחיצה לגבות עכשיו'; } catch (_) {}
   try { const sk = document.documentElement.getAttribute('data-skin') || 'spent'; document.querySelectorAll('.skin-opt').forEach(b => b.classList.toggle('on', b.dataset.skin === sk)); } catch (_) {}
   const overlay = document.getElementById('notif-settings-overlay');
@@ -11213,7 +11302,7 @@ async function _moneyNotifRefresh() {
       at.setHours(10, 0, 0, 0);
       notifs.push({
         id: _MONEY_NOTIF_IDS[k], title: 'כסף פתוח בחוץ', body,
-        schedule: { at, allowWhileIdle: true }, sound: 'default',
+        schedule: { at, allowWhileIdle: true }, sound: _notifSound(),
         threadIdentifier: 'money-notifs', extra: { moneyNotif: 'dunning' }
       });
     }
@@ -11230,7 +11319,7 @@ async function _moneyNotifRefresh() {
   notifs.push({
     id: _MONEY_NOTIF_IDS[3], title: 'בוקר טוב — מצב העסק',
     body: 'נכנסו החודש ' + _ilsFmt(paidMonth) + (openAll ? ' · פתוחים בחוץ ' + _ilsFmt(openAll) : ' · אין כסף פתוח 🎉'),
-    schedule: { at: sun, allowWhileIdle: true }, sound: 'default',
+    schedule: { at: sun, allowWhileIdle: true }, sound: _notifSound(),
     threadIdentifier: 'money-notifs', extra: { moneyNotif: 'weekly' }
   });
 
@@ -11244,7 +11333,7 @@ async function _moneyNotifRefresh() {
     notifs.push({
       id: _MONEY_NOTIF_IDS[4], title: 'הוצאות קבועות החודש',
       body: rec.length + ' חיובים קבועים · ' + _ilsFmt(fixedTotal),
-      schedule: { at: first, allowWhileIdle: true }, sound: 'default',
+      schedule: { at: first, allowWhileIdle: true }, sound: _notifSound(),
       threadIdentifier: 'money-notifs', extra: { moneyNotif: 'weekly' }
     });
   }
@@ -11333,7 +11422,7 @@ async function _briefRefresh() {
     const c = _briefCompose(targetKey);
     notifs.push({
       id: ids[k], title: c.title, body: c.body,
-      schedule: { at, allowWhileIdle: true }, sound: 'default',
+      schedule: { at, allowWhileIdle: true }, sound: _notifSound(),
       threadIdentifier: 'morning-brief', extra: { brief: 1 }
     });
   }
@@ -11364,7 +11453,7 @@ setTimeout(() => { try { window._briefKick(); } catch (_) {} }, 12000);
         const c = _briefCompose(_mpbDayKey(new Date()));
         await LN.schedule({ notifications: [{
           id: 710033, title: c.title, body: c.body,
-          schedule: { at: new Date(Date.now() + 25000), allowWhileIdle: true }, sound: 'default',
+          schedule: { at: new Date(Date.now() + 25000), allowWhileIdle: true }, sound: _notifSound(),
           threadIdentifier: 'morning-brief', extra: { brief: 1 }
         }] });
         localStorage.setItem('brief_fix_407b', '1');
@@ -11632,7 +11721,7 @@ async function _waNotifSchedule(count) {
     if (h < 8 || h >= 22) continue;
     notifs.push({
       id: 710100 + slot, title: 'מחכים לתשובה שלך', body,
-      schedule: { at, allowWhileIdle: true }, sound: 'default',
+      schedule: { at, allowWhileIdle: true }, sound: _notifSound(),
       threadIdentifier: 'wa-waiting', extra: { moneyNotif: 'wa' }
     });
     slot++;
@@ -12722,7 +12811,7 @@ window.waSnoozeSet = async function(kind) {
         await LN.schedule({ notifications: [{
           id, title: 'הבטחת לענות ל' + _waName({ phone }),
           body: 'השיחה חזרה לרשימת הממתינים.',
-          schedule: { at: new Date(until), allowWhileIdle: true }, sound: 'default',
+          schedule: { at: new Date(until), allowWhileIdle: true }, sound: _notifSound(),
           threadIdentifier: 'wa-waiting', extra: { moneyNotif: 'wa' }
         }] });
       }
@@ -13013,7 +13102,7 @@ function _waBookPicked(key, b) {
       if (LN) LN.schedule({ notifications: [{
         id: 712000 + Math.floor(Math.random() * 400), title: 'סשן נקבע!',
         body: nm + ' — ' + _waHumanDay(b.picked.date, true) + ' בשעה ' + b.picked.time,
-        schedule: { at: new Date(Date.now() + 1500) }, sound: 'default'
+        schedule: { at: new Date(Date.now() + 1500) }, sound: _notifSound()
       }] });
     } catch (_) {}
   } catch (_) {}
@@ -13044,7 +13133,7 @@ function _waCmdNotify(text) {
     LN.schedule({ notifications: [{
       id: 713000 + Math.floor(Math.random() * 900),
       title: 'בוצע', body: String(text || '').slice(0, 160),
-      schedule: { at: new Date(Date.now() + 800) }, sound: 'default',
+      schedule: { at: new Date(Date.now() + 800) }, sound: _notifSound(),
       threadIdentifier: 'wa-assistant'
     }] });
   } catch (_) {}
@@ -13843,7 +13932,7 @@ window.notifTest = async function() {
   try {
     await LN.schedule({ notifications: [{
       id: 710099, title: 'בדיקה עברה!', body: 'ככה נראית התראה מהאפליקציה. גבייה, לוז וסיכומים יגיעו בדיוק ככה.',
-      schedule: { at: new Date(Date.now() + 10000), allowWhileIdle: true }, sound: 'default'
+      schedule: { at: new Date(Date.now() + 10000), allowWhileIdle: true }, sound: _notifSound()
     }] });
     toast('נשלחה — סגור את האפליקציה, ההתראה תגיע בעוד 10 שניות');
   } catch (e) { toast('שגיאה: ' + (e && e.message || '')); }
@@ -13884,7 +13973,7 @@ async function _schedNotifRefresh() {
       title: it.title || 'אירוע בלוז',
       body: 'בעוד 30 דקות · ' + it.time,
       schedule: { at: (remindAt > now ? remindAt : new Date(now.getTime() + 60000)), allowWhileIdle: true },
-      sound: 'default',
+      sound: _notifSound(),
       threadIdentifier: 'schedule-reminders',
       extra: { schedId: it.id }
     });
@@ -19019,7 +19108,7 @@ async function scheduleNativeTaskNotification(task) {
         title: '' + leadLabel + task.title,
         body: `יעד: ${due.toLocaleString('he-IL', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'})}${task.notes ? '\n' + task.notes : ''}`,
         schedule: { at: remind, allowWhileIdle: true },
-        sound: 'default',
+        sound: _notifSound(),
         extra: { taskId: task.id }
       }]
     });
@@ -21842,7 +21931,7 @@ async function _scheduleDailyTaskNotif(task) {
         subtitle: 'Maestro',
         body: bodyText,
         schedule: { at: at, allowWhileIdle: true },
-        sound: 'default',
+        sound: _notifSound(),
         actionTypeId: 'TASK_REMINDER',
         group: 'task-reminders',
         threadIdentifier: 'task-reminders',
@@ -22134,6 +22223,25 @@ window.syncTasksToWidget = function(_unused) {
 // Thin wrapper around @capacitor/haptics. All methods are no-ops on
 // the web build / when permission/plugin missing — so callers can
 // fire-and-forget without guards.
+// v605: Maestro's own notification sound (file is bundled in the iOS app)
+// every scheduled notification gets the chosen sound unless it set one
+(function () { let tries = 0; const wrap = () => { const LN = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.LocalNotifications;
+  if (!LN || !LN.schedule) { if (++tries < 20) setTimeout(wrap, 500); return; } if (LN._mzWrapped) return; const orig = LN.schedule.bind(LN);
+  LN.schedule = o => { try { (o && o.notifications || []).forEach(n => { if (!n.sound || n.sound === 'default') n.sound = _notifSound(); if (n.sound === 'default') delete n.sound; }); } catch (_) {} return orig(o); }; LN._mzWrapped = 1; };
+  setTimeout(wrap, 300); })();
+const _NOTIF_SOUNDS = [['maestro-signature.wav', 'חתימה'], ['maestro-marimba.wav', 'מאסטרו'], ['maestro-breath.wav', 'נשימה'], ['maestro-drop.wav', 'טיפה'], ['default', 'צליל רגיל של האייפון']];
+function _notifSound() { try { const v = localStorage.getItem('notif_sound'); if (v && _NOTIF_SOUNDS.some(x => x[0] === v)) return v; } catch (_) {} return 'maestro-signature.wav'; }
+function _notifSoundName() { const f = _notifSound(); return (_NOTIF_SOUNDS.find(x => x[0] === f) || [0, ''])[1]; }
+window.notifSoundPick = function() {
+  const cur = _notifSound();
+  spentSheet('צליל ההתראות', 'נשמע בכל התראה של Maestro', _NOTIF_SOUNDS.map(([f, n]) => ({ label: (f === cur ? '✓ ' : '') + n, pri: f === cur, run: () => {
+    try { localStorage.setItem('notif_sound', f); } catch (_) {}
+    const el = document.getElementById('notif-sound-name'); if (el) el.textContent = n;
+    toast('צליל: ' + n + ' · שולח התראת בדיקה'); try { testNotification(); } catch (_) {}
+    // reschedule everything already queued with the new sound
+    try { fcScheduleReminders(); } catch (_) {} try { srScheduleNotif(); } catch (_) {} try { planScheduleNotif(); } catch (_) {}
+  } })));
+};
 window.haptic = (function() {
   function getPlugin() {
     return window.Capacitor &&
