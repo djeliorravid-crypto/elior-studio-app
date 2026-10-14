@@ -21133,7 +21133,7 @@ window.morningShareWA = function(id, kind) {
   const first = (it.client || '').trim().split(/\s+/)[0];
   const msg = isPr
     ? 'שלום' + (first ? ' ' + first : '') + ',\nמצורפת דרישת תשלום' + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + (it.description ? ' עבור ' + it.description : '') + ':\n' + url + '\n\nתודה,\nאליאור רביד · Ravid Studio'
-    : 'שלום' + (first ? ' ' + first : '') + ',\nתודה על התשלום! מצורפת הקבלה' + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + url + '\n\nאליאור רביד · Ravid Studio';
+    : 'תודה על התשלום! מצורפת הקבלה' + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + url + '\n\nאליאור רביד · Ravid Studio';
   window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
 };
 
@@ -21141,8 +21141,7 @@ window.morningShareWA = function(id, kind) {
 // Sends straight from the business number (worker); if WhatsApp's 24h rule
 // blocks that, or there's no send code, the chat opens with the message ready.
 function _rcptMsg(it, who) {
-  const first = String(who || it.clientName || it.client || '').trim().split(/\s+/)[0];
-  return 'שלום' + (first ? ' ' + first : '') + ',\nתודה על התשלום! מצורפת הקבלה' + (it.morningDocNumber ? ' #' + it.morningDocNumber : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + (it.morningDocUrl || '');
+  return 'תודה על התשלום! מצורפת הקבלה' + (it.morningDocNumber ? ' #' + it.morningDocNumber : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + (it.morningDocUrl || '');
 }
 async function _rcptSendTo(id, phone, name, who) {
   const it = (load('income') || []).find(x => String(x.id) === String(id)); if (!it || !it.morningDocUrl) { toast('אין קישור לקבלה'); return; }
