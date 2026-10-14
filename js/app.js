@@ -20985,6 +20985,7 @@ function _morningErrorMessage(res) {
   }
   if (res.error === 'no_token')     return 'אין טוקן — נסה לחבר שוב';
   if (res.error === 'network')      return 'תקלת רשת';
+  if (res.error === 'timeout')      return 'Morning לא ענה אחרי 25 שניות — בדוק אינטרנט ונסה שוב';
   if (res.error === 'create_failed') return 'Morning דחה את הבקשה';
   return res.error || 'שגיאה לא ידועה';
 }
@@ -21046,7 +21047,7 @@ window._closeMorningReceiptModal = function() {
 };
 window._confirmMorningReceiptModal = async function() {
   const id = window._mrPendingId;
-  if (!id) return;
+  if (!id) { toast('לא נבחר תשלום — פתח שוב את התשלום ונסה'); return; }
   const desc = (document.getElementById('mr-desc').value    || '').trim();
   const clnt = (document.getElementById('mr-client').value  || '').trim();
   const tax  = (document.getElementById('mr-taxid').value   || '').trim();
@@ -21058,7 +21059,7 @@ window._confirmMorningReceiptModal = async function() {
   // them forward without re-typing.
   const all = load('income');
   const it  = all.find(x => x.id === id);
-  if (!it) return;
+  if (!it) { toast('לא מצאתי את התשלום הזה — אולי נמחק או סונכרן מחדש'); return; }
   let dirty = false;
   if (clnt && clnt !== it.clientName)      { it.clientName    = clnt; dirty = true; }
   if (tax  !== (it.clientTaxId   || ''))   { it.clientTaxId   = tax;  dirty = true; }
@@ -21069,8 +21070,18 @@ window._confirmMorningReceiptModal = async function() {
     description: desc || it.description,
     clientName:  clnt || it.clientName
   });
-  if (it.morningDocId) return; // already issued
-  const res = await morningCreateReceiptFor(incomeForReceipt);
+  if (it.morningDocId) { // already issued — say so instead of doing nothing
+    toast('כבר יש קבלה לתשלום הזה' + (it.morningDocNumber ? ' · #' + it.morningDocNumber : '') + (it.morningDocUrl ? ' — פותח אותה' : ''));
+    if (it.morningDocUrl) setTimeout(() => { try { morningOpenReceipt(it.morningDocUrl); } catch (_) {} }, 600);
+    return;
+  }
+  if (!(window.morningConnected && window.morningConnected())) { toast('Morning לא מחובר — הגדרות ← קבלות · Morning'); return; }
+  toast('יוצר קבלה ב-Morning…');
+  // never hang silently: give Morning 25 seconds, then explain
+  const res = await Promise.race([
+    morningCreateReceiptFor(incomeForReceipt),
+    new Promise(r => setTimeout(() => r({ error: 'timeout' }), 25000))
+  ]).catch(e => ({ error: 'network', detail: { message: (e && e.message) || String(e) } }));
   const fresh = load('income');
   const ff    = fresh.find(x => x.id === id);
   if (!ff) return;
