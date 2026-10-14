@@ -10564,7 +10564,7 @@ window.contactPick = async function(name, done) {
   const paint = () => { const t = q.value.trim(); const f = all.filter(x => !t || x.n.indexOf(t) >= 0 || x.ph.replace(/\D/g, '').indexOf(t.replace(/\D/g, '') || '§') >= 0).slice(0, 80);
     list.innerHTML = f.length ? f.map((x, i) => '<button data-i="' + all.indexOf(x) + '"><b>' + _escape(x.n) + '</b><small>' + _escape(x.ph) + '</small></button>').join('') : '<div class="fzc-empty">לא נמצא</div>'; };
   q.oninput = paint; paint();
-  list.onclick = e => { const b = e.target.closest('button[data-i]'); if (!b) return; const x = all[+b.dataset.i]; ov.classList.remove('open'); done(x.ph); };
+  list.onclick = e => { const b = e.target.closest('button[data-i]'); if (!b) return; const x = all[+b.dataset.i]; ov.classList.remove('open'); done(x.ph, x.n); };
   ov.querySelector('.x').onclick = () => ov.classList.remove('open');
 };
 // contacts button next to the phone field in the client forms
@@ -20954,6 +20954,7 @@ window.morningIssueReceiptForIncome = async function(incomeId) {
     save('income', fresh);
     toast('🧾 קבלה ' + (res.number || '') + ' נוצרה ב-Morning');
     if (typeof renderIncome === 'function') renderIncome();
+    try { receiptSendAsk(incomeId); } catch (_) {}
   } else {
     // Surface Morning's actual error so the user can fix it (wrong
     // document type, missing client field, exhausted credits, etc.)
@@ -21097,6 +21098,7 @@ window._confirmMorningReceiptModal = async function() {
     toast('🧾 קבלה ' + (res.number || '') + ' נוצרה ב-Morning');
     if (window.haptic) window.haptic.success();
     if (typeof renderIncome === 'function') renderIncome();
+    try { receiptSendAsk(id); } catch (_) {}
   } else {
     const msg = _morningErrorMessage(res);
     ff.morningError = (res && res.error) || 'fail';
@@ -21133,6 +21135,44 @@ window.morningShareWA = function(id, kind) {
     ? 'שלום' + (first ? ' ' + first : '') + ',\nמצורפת דרישת תשלום' + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + (it.description ? ' עבור ' + it.description : '') + ':\n' + url + '\n\nתודה,\nאליאור רביד · Ravid Studio'
     : 'שלום' + (first ? ' ' + first : '') + ',\nתודה על התשלום! מצורפת הקבלה' + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + url + '\n\nאליאור רביד · Ravid Studio';
   window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+};
+
+// v603: right after a receipt is created — "send it on WhatsApp?" → pick who → it goes.
+// Sends straight from the business number (worker); if WhatsApp's 24h rule
+// blocks that, or there's no send code, the chat opens with the message ready.
+function _rcptMsg(it, who) {
+  const first = String(who || it.clientName || it.client || '').trim().split(/\s+/)[0];
+  return 'שלום' + (first ? ' ' + first : '') + ',\nתודה על התשלום! מצורפת הקבלה' + (it.morningDocNumber ? ' #' + it.morningDocNumber : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + (it.morningDocUrl || '');
+}
+async function _rcptSendTo(id, phone, name, who) {
+  const it = (load('income') || []).find(x => String(x.id) === String(id)); if (!it || !it.morningDocUrl) { toast('אין קישור לקבלה'); return; }
+  const ph = _waPhone(phone), text = _rcptMsg(it, who);
+  if (!ph) { toast('מספר לא תקין'); return; }
+  let sec = ''; try { sec = localStorage.getItem('wa_send_secret') || ''; } catch (_) {}
+  if (sec) {
+    toast('שולח את הקבלה…');
+    try {
+      const r = await _mptHttp('POST', WA_WORKER + '/send', { secret: sec, to: ph, text });
+      if (r.ok && r.json && r.json.ok) {
+        const L = load('income'), f = L.find(x => String(x.id) === String(id)); if (f) { f.receiptSentAt = Date.now(); f.receiptSentTo = ph; save('income', L); }
+        spDone('הקבלה נשלחה', '', name || ''); return;
+      }
+      if (typeof _waIs24hBlock === 'function' && _waIs24hBlock(r)) { toast('וואטסאפ לא מאפשר לשלוח לבד ללקוח שלא כתב ב-24 השעות האחרונות — פותח את הצ׳אט עם ההודעה מוכנה'); }
+    } catch (_) {}
+  }
+  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(text), '_blank');
+}
+window.receiptSendAsk = function(id) {
+  const it = (load('income') || []).find(x => String(x.id) === String(id)); if (!it || !it.morningDocUrl) return;
+  const name = String(it.clientName || it.client || '').trim();
+  let c = null; try { c = _clientByName(name); } catch (_) {}
+  const known = c && c.phone ? c.phone : '';
+  const pick = () => contactPick(known ? '' : name, (ph, cn) => { try { if (name && !known) setClientPhone(name, ph); } catch (_) {} _rcptSendTo(id, ph, cn || name, known ? cn : ''); });
+  const acts = [];
+  if (known) acts.push({ label: 'כן — ל' + (name || 'הלקוח') + ' · ' + (typeof _waPhonePretty === 'function' ? _waPhonePretty(_waPhone(known)) : known), pri: true, run: () => _rcptSendTo(id, known, name) });
+  acts.push({ label: known ? 'למישהו אחר — מאנשי הקשר' : 'כן — לבחור מאנשי הקשר', pri: !known, run: pick });
+  acts.push({ label: 'לא עכשיו', run: () => {} });
+  setTimeout(() => spentSheet('לשלוח את הקבלה בוואטסאפ?', 'קבלה' + (it.morningDocNumber ? ' #' + it.morningDocNumber : '') + ' · ' + fmtMoney(it.amount) + (name ? ' · ' + name : ''), acts), 1300);
 };
 
 // === Cancel an existing receipt ===
