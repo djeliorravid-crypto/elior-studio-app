@@ -328,12 +328,17 @@ jobs:
 
       - name: Upload to TestFlight
         run: |
-          set -o pipefail
-          exec > >(tee -a /tmp/step.log) 2>&1
-          trap 'rc=$?; if [ $rc -ne 0 ]; then grep -v "^\s*$" /tmp/step.log | grep -iE "error|fail|invalid|missing|asset|reject|message|code|reason" | tail -n 40 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; fi' EXIT
           IPA=$(ls ios/App/build/ios/ipa/*.ipa | head -1)
           echo "Uploading $IPA"
-          app-store-connect publish --path "$IPA"
+          set +e
+          app-store-connect publish --path "$IPA" > /tmp/publish.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/publish.log
+          if [ $rc -ne 0 ]; then
+            grep -v '^\s*$' /tmp/publish.log | grep -vE '^\s*[{}\[\]],?\s*$' | tail -n 45 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done
+            exit $rc
+          fi
 
       - name: Keep the IPA + logs
         if: always()
