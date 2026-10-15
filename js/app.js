@@ -427,6 +427,105 @@ const load = key => {
   catch(e) { console.warn('Corrupted localStorage for', key, '— resetting'); return []; }
 };
 
+// ── v606 link a computer ────────────────────────────────────────────────
+// Moves this device's connection codes (Morning, WhatsApp send code, Google,
+// AI) to another device. Encrypted on the phone with a one-time 8-character
+// code (PBKDF2 → AES-GCM); only the encrypted blob passes through the cloud,
+// it expires after 10 minutes and is deleted the moment it's used.
+const _LINK_KEYS = ['wa_send_secret', 'morning_api_id', 'morning_api_secret', 'morning_plugin_id', 'ai_api_key', 'gemini_model',
+  'gcal_ics_url', 'gcal_client_id', 'gcal_w_client_id', 'gcal_w_client_secret', 'gcal_w_tokens', 'gcal_user_email', 'notif_sound'];
+const _LINK_REST = 'https://elior-studio-default-rtdb.firebaseio.com/studio_link';
+const _b64 = u => btoa(String.fromCharCode.apply(null, new Uint8Array(u)));
+const _ub64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function _linkKey(code, salt) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 250000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function _linkSlot(code) { const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('maestro-link:' + code)); return Array.from(new Uint8Array(h)).slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join(''); }
+const _normCode = c => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+window.linkSend = async function() {
+  try { document.getElementById('notif-settings-overlay').classList.remove('open'); } catch (_) {}
+  const data = {}; _LINK_KEYS.forEach(k => { try { const v = localStorage.getItem(k); if (v) data[k] = v; } catch (_) {} });
+  if (!Object.keys(data).length) { toast('אין במכשיר הזה חיבורים להעביר'); return; }
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', rnd = crypto.getRandomValues(new Uint8Array(8));
+  const code = Array.from(rnd, b => A[b % A.length]).join('');
+  try {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await _linkKey(code, salt), new TextEncoder().encode(JSON.stringify(data)));
+    const r = await fetch(_LINK_REST + '/' + (await _linkSlot(code)) + '.json', { method: 'PUT', body: JSON.stringify({ salt: _b64(salt), iv: _b64(iv), ct: _b64(ct), exp: Date.now() + 10 * 60 * 1000 }) });
+    if (!r.ok) throw new Error(r.status);
+  } catch (e) { toast('לא הצלחתי להכין את החיבור — בדוק אינטרנט ונסה שוב'); return; }
+  const pretty = code.slice(0, 4) + '-' + code.slice(4);
+  const names = [data.morning_api_id && 'Morning', data.wa_send_secret && 'וואטסאפ', (data.gcal_ics_url || data.gcal_w_tokens) && 'Google', data.ai_api_key && 'AI'].filter(Boolean).join(' · ');
+  spentSheet('הקוד למחשב: ' + pretty, 'במחשב: הגדרות ← חיבור מכשיר ← "יש לי קוד". תקף ל-10 דקות, פעם אחת. עובר: ' + names,
+    [{ label: 'העתקת הקוד', pri: true, run: async () => { try { await navigator.clipboard.writeText(pretty); toast('הקוד הועתק'); } catch (_) {} } }]);
+};
+window.linkReceive = async function() {
+  try { document.getElementById('notif-settings-overlay').classList.remove('open'); } catch (_) {}
+  const code = _normCode(prompt('הקוד מהטלפון (8 תווים):') || '');
+  if (code.length !== 8) { if (code) toast('הקוד צריך להיות 8 תווים'); return; }
+  toast('מתחבר…');
+  try {
+    const url = _LINK_REST + '/' + (await _linkSlot(code)) + '.json';
+    const b = await fetch(url, { cache: 'no-store' }).then(r => r.json());
+    if (!b || !b.ct) { toast('לא מצאתי את הקוד — אולי פג תוקף. צור קוד חדש בטלפון'); return; }
+    if (b.exp && b.exp < Date.now()) { fetch(url, { method: 'DELETE' }).catch(() => {}); toast('הקוד פג תוקף — צור קוד חדש בטלפון'); return; }
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: _ub64(b.iv) }, await _linkKey(code, _ub64(b.salt)), _ub64(b.ct));
+    const data = JSON.parse(new TextDecoder().decode(pt));
+    Object.keys(data).forEach(k => { if (_LINK_KEYS.indexOf(k) >= 0) { try { localStorage.setItem(k, data[k]); } catch (_) {} } });
+    fetch(url, { method: 'DELETE' }).catch(() => {});
+    try { localStorage.removeItem('morning_token'); localStorage.removeItem('morning_token_exp'); } catch (_) {}
+    try { refreshAll(); } catch (_) {}
+    spDone('המחשב מחובר', '', Object.keys(data).length + ' חיבורים הועברו');
+  } catch (e) { toast('הקוד לא נכון — בדוק ונסה שוב'); }
+};
+// connection status for the settings row
+window.linkStatus = function() {
+  const has = k => { try { return !!localStorage.getItem(k); } catch (_) { return false; } };
+  return [['Morning', has('morning_api_id') && has('morning_api_secret')], ['וואטסאפ', has('wa_send_secret')], ['Google', has('gcal_ics_url') || has('gcal_w_tokens')]]
+    .map(([n, ok]) => (ok ? '✓ ' : '· ') + n).join('   ');
+};
+
+// ── v606 the iPhone calendar on every device ────────────────────────────
+// The phone publishes the calendar it reads (iPhone/Google, via EventKit) to the
+// cloud; a computer shows it read-only. Events added on the computer are saved
+// with needsCal and the phone writes them into the real calendar when it opens.
+const _EK_SNAP = 'https://elior-studio-default-rtdb.firebaseio.com/studio_cal/snapshot.json';
+let _ekPubT = 0;
+function ekPublish() {
+  clearTimeout(_ekPubT);
+  _ekPubT = setTimeout(() => { try {
+    if (!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform())) return;
+    const ev = (window._eventKitCache || []).map(e => ({ id: e.id, date: e.date, time: e.time, endTime: e.endTime, endDate: e.endDate, title: e.title, allDay: !!e.allDay, calendar: e.calendar }));
+    fetch(_EK_SNAP, { method: 'PUT', body: JSON.stringify({ at: Date.now(), events: ev }) }).catch(() => {});
+  } catch (_) {} }, 2500);
+}
+async function ekPull() {
+  try {
+    if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) return;
+    const s = await fetch(_EK_SNAP, { cache: 'no-store' }).then(r => r.json());
+    if (!s || !Array.isArray(s.events)) return;
+    const changed = JSON.stringify(s.events) !== JSON.stringify(window._eventKitCache || []);
+    window._eventKitCache = s.events; window._ekSnapAt = s.at;
+    if (changed && document.getElementById('schedule-list')) { try { renderSchedule(); } catch (_) {} }
+  } catch (_) {}
+}
+document.addEventListener('DOMContentLoaded', () => { setTimeout(ekPull, 2500); setInterval(() => { if (document.visibilityState === 'visible') ekPull(); }, 60000); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') ekPull(); });
+// phone: write events that were added on a computer into the real calendar
+async function ekFlushDesk() {
+  try {
+    if (!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform())) return;
+    if (!(typeof gcalWriteConnected === 'function' && gcalWriteConnected())) return;
+    const all = load('schedule') || [], todo = all.filter(x => x && x.needsCal && !x.gcalEventId && !x.deleted);
+    if (!todo.length) return;
+    for (const it of todo) { const gid = await gcalWriteCreateEvent(it); const cur = load('schedule'), sv = cur.find(x => x.id === it.id); if (sv) { delete sv.needsCal; if (gid) sv.gcalEventId = gid; save('schedule', cur); } }
+    try { gcalRefreshEventKit(); } catch (_) {}
+  } catch (_) {}
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(ekFlushDesk, 6000));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(ekFlushDesk, 3000); });
+
 // ── v593 daily full backup ─────────────────────────────────────────────
 // Once a day (and on demand) a full copy of every data list goes to the
 // cloud under studio_backups/<day>; the last 30 days are kept. Restoring
@@ -10722,7 +10821,12 @@ window.spRememberHtml = function() {
     + '</div>';
 };
 // ── v600 monthly goal: a quiet ring, percent only on home (amounts in the sheet) ──
-function _goalGet() { try { return JSON.parse(localStorage.getItem('sp_goal') || 'null'); } catch (_) { return null; } }
+// the goal lives in the synced 'monthlyGoal' ({v}) so phone and Mac see the same one
+function _goalGet() {
+  let v = 0; try { v = Number((loadObj('monthlyGoal') || {}).v) || 0; } catch (_) {}
+  if (!v) { try { const old = JSON.parse(localStorage.getItem('sp_goal') || 'null'); if (old && old.amount > 0) { v = old.amount; save('monthlyGoal', { v }); localStorage.removeItem('sp_goal'); } } catch (_) {} }
+  return v > 0 ? { amount: v } : null;
+}
 function _goalIncome(d) { d = d || new Date(); const y = d.getFullYear(), m = d.getMonth();
   return (load('income') || []).filter(i => i && (i.status || 'pending') === 'paid' && i.date && +String(i.date).slice(0, 4) === y && +String(i.date).slice(5, 7) - 1 === m).reduce((t, i) => t + (Number(i.amount) || 0), 0); }
 window.spGoalHtml = function() {
@@ -10741,11 +10845,11 @@ window.spGoalOpen = function() {
   const g = _goalGet(), now = new Date(), got = _goalIncome(now);
   const set = () => spFlowOpen({ title: 'מטרה לחודש', vals: { a: g && g.amount ? String(g.amount) : '' },
     steps: [{ k: 'a', type: 'money', q: 'כמה תרצה שייכנס ב' + MONTHS_HE[now.getMonth()] + '?' }],
-    onSave: v => { const a = Math.round(Number(v.a) || 0); try { localStorage.setItem('sp_goal', JSON.stringify(a > 0 ? { amount: a, at: Date.now() } : null)); } catch (_) {} spLobbyRender(); if (a > 0) spDone('המטרה נקבעה', fmtMoney(a), MONTHS_HE[now.getMonth()]); } });
+    onSave: v => { const a = Math.round(Number(v.a) || 0); try { save('monthlyGoal', { v: a > 0 ? a : 0 }); } catch (_) {} spLobbyRender(); if (a > 0) spDone('המטרה נקבעה', fmtMoney(a), MONTHS_HE[now.getMonth()]); } });
   if (!g || !(g.amount > 0)) { set(); return; }
   spentSheet('המטרה של ' + MONTHS_HE[now.getMonth()], 'נכנסו ' + fmtMoney(got) + ' מתוך ' + fmtMoney(g.amount) + (got < g.amount ? ' · חסרים ' + fmtMoney(g.amount - got) : ''), [
     { label: 'לשנות את המטרה', pri: true, run: set },
-    { label: 'להסיר את המטרה', danger: true, run: () => { try { localStorage.removeItem('sp_goal'); } catch (_) {} spLobbyRender(); } }]);
+    { label: 'להסיר את המטרה', danger: true, run: () => { try { save('monthlyGoal', { v: 0 }); localStorage.removeItem('sp_goal'); } catch (_) {} spLobbyRender(); } }]);
 };
 // ── v600 end of day: after 19:00, one warm line about today (names, not sums) ──
 window.spEveningHtml = function(items, isDone) {
@@ -10930,6 +11034,7 @@ window.offerImport = function(text) {
     steps: [{ k: 'title', type: 'text', q: 'איך קוראים לאירוע?', ph: 'סשן עם…', req: 'כתוב שם לאירוע', recent: _spRecentDescs('schedule', 'title') }],
     onSave: async v => {
       const item = { id: genId(), date: o.key, time: o.a, endTime: o.e, durationMinutes: o.dur, title: v.title, notes: '', createdAt: new Date().toISOString() };
+      if (!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform())) item.needsCal = true;
       const all = load('schedule'); all.push(item); save('schedule', all);
       try { chooseMode('business'); showPage('schedule'); _scheduleDate = o.key; renderSchedule(); } catch (_) {}
       spDone('נקבע ביומן', '⁦' + o.a + '–' + o.e + '⁩', v.title);
@@ -11115,6 +11220,7 @@ window.setNotifPrefs = function(prefs) {
 };
 
 window.openNotifSettings = function() {
+  try { const el = document.getElementById('link-status'); if (el) el.textContent = 'במכשיר הזה: ' + linkStatus(); } catch (_) {}
   try { const el = document.getElementById('notif-sound-name'); if (el) el.textContent = _notifSoundName(); } catch (_) {}
   try { const el = document.getElementById('bk-last'), t = Number(localStorage.getItem('bk_last') || 0); if (el) el.textContent = t ? 'אחרון: ' + new Date(t).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' · נשמרים 30 ימים' : 'עוד לא היה גיבוי · לחיצה לגבות עכשיו'; } catch (_) {}
   try { const sk = document.documentElement.getAttribute('data-skin') || 'spent'; document.querySelectorAll('.skin-opt').forEach(b => b.classList.toggle('on', b.dataset.skin === sk)); } catch (_) {}
@@ -19658,6 +19764,7 @@ async function addScheduleItem() {
     notes: '',
     createdAt: new Date().toISOString()
   };
+  if (!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform())) item.needsCal = true;  // the phone adds it to the real calendar
   const all = load('schedule');
   all.push(item);
   save('schedule', all);
@@ -20572,6 +20679,7 @@ async function gcalRefreshEventKit() {
     const changed = JSON.stringify(fresh) !== JSON.stringify(window._eventKitCache || []);
     window._eventKitCache = fresh;
     window._ekLoadedFrom = ranges[0][0]; window._ekLoadedTo = ranges[0][1];
+    try { ekPublish(); } catch (_) {}
     if (changed) {
       try { localStorage.setItem('ek_cache_v1', JSON.stringify({ at: Date.now(), events: fresh })); } catch (_) {}
       if (document.getElementById('schedule-list')) renderSchedule();
