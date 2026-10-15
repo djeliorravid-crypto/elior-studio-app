@@ -330,7 +330,7 @@ jobs:
         run: |
           set -o pipefail
           exec > >(tee -a /tmp/step.log) 2>&1
-          trap 'rc=$?; if [ $rc -ne 0 ]; then tail -n 25 /tmp/step.log | grep -v "^\s*$" | tail -n 12 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; fi' EXIT
+          trap 'rc=$?; if [ $rc -ne 0 ]; then grep -v "^\s*$" /tmp/step.log | grep -iE "error|fail|invalid|missing|asset|reject|message|code|reason" | tail -n 40 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done; fi' EXIT
           IPA=$(ls ios/App/build/ios/ipa/*.ipa | head -1)
           echo "Uploading $IPA"
           app-store-connect publish --path "$IPA"
