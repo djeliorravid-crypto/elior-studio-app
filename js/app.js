@@ -555,6 +555,13 @@ async function backupNow(tag) {
     return true;
   } catch (_) { return false; }
 }
+// v610: read a backup path — plain HTTPS first, then the Firebase SDK (another channel)
+async function _bkGet(sub) {
+  let st = 0;
+  try { const r = await fetch(_BK_REST + (sub ? '/' + sub : '') + '.json', { cache: 'no-store' }); st = r.status; if (r.ok) { const j = await r.json(); if (j != null) return { v: j, st }; } } catch (e) { st = st || -1; }
+  try { if (typeof firebaseDB !== 'undefined' && firebaseDB) { const snap = await Promise.race([firebaseDB.ref('studio_backups' + (sub ? '/' + sub : '')).once('value'), new Promise((_, rej) => setTimeout(() => rej(new Error('t')), 8000))]); const v = snap.val(); if (v != null) return { v, st: 'sdk' }; } } catch (e) { window._bkLastErr = String(e && e.message || e); }
+  return { v: null, st };
+}
 async function _bkPrune() {
   try {
     const keys = Object.keys(await fetch(_BK_REST + '.json?shallow=true', { cache: 'no-store' }).then(r => r.json()) || {}).sort();
@@ -584,17 +591,32 @@ window.backupOpen = async function() {
   // v607: if the listing didn't come back, look for each of the last 30 days directly
   if (!keys.length) {
     const days = []; for (let k = 0; k < 30; k++) { const d = new Date(); d.setDate(d.getDate() - k); days.push(_bkDay(d)); }
-    const found = await Promise.all(days.map(d => fetch(_BK_REST + '/' + d + '/at.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(v => v ? d : null).catch(() => null)));
+    const found = await Promise.all(days.map(d => _bkGet(d + '/at').then(x => { window._bkProbe = window._bkProbe || x.st; return x.v ? d : null; })));
     keys = found.filter(Boolean);
   }
   const last = Number(localStorage.getItem('bk_last') || 0);
   const acts = [{ label: 'לגבות עכשיו', pri: true, run: async () => { toast('מגבה…'); toast((await backupNow()) ? '✓ גובה עכשיו' : 'הגיבוי לא הצליח — נסה כשיש אינטרנט'); } }]
     .concat(keys.slice(0, 20).map(k => ({ label: /^before-restore-/.test(k) ? 'לפני שחזור · ' + new Date(+k.slice(15)).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'לראות את הגיבוי מ־' + (+k.slice(8, 10)) + '.' + (+k.slice(5, 7)) + (k.length > 10 ? ' (נוסף)' : ''), run: () => backupPreview(k) })));
-  spentSheet('גיבוי יומי', (last ? 'גיבוי אחרון: ' + new Date(last).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'עוד לא היה גיבוי') + ' · נשמרים 30 ימים', acts);
+  // local copies the sync engine set aside (no cloud needed)
+  let conf = []; try { conf = JSON.parse(localStorage.getItem('_sync_conflicts') || '[]'); } catch (_) {}
+  conf.forEach((c, i) => { if (!c || !c.key || c.data == null) return;
+    acts.push({ label: 'עותק מהסנכרון · ' + (_BK_NAMES[c.key] || c.key) + ' · ' + _bkCount(c.data) + ' · ' + new Date(c.at || c.ts || 0).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }), run: () => backupPreview('__conf' + i) }); });
+  const nowInc = (() => { const n = new Date(); const L = (load('income') || []).filter(i => i && i.date && +String(i.date).slice(0, 4) === n.getFullYear() && +String(i.date).slice(5, 7) - 1 === n.getMonth()); return L.length; })();
+  const diag = keys.length ? '' : ' · לא נמצאו גיבויים קודמים' + (window._bkProbe ? ' (קוד ' + window._bkProbe + ')' : '');
+  spentSheet('גיבוי יומי', 'עכשיו במכשיר: ' + nowInc + ' הכנסות ב' + MONTHS_HE[new Date().getMonth()] + diag + ' · ' + (last ? 'גיבוי אחרון: ' + new Date(last).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'עוד לא היה גיבוי') + ' · נשמרים 30 ימים', acts);
 };
 window.backupPreview = async function(id) {
+  if (String(id).indexOf('__conf') === 0) {
+    let conf = []; try { conf = JSON.parse(localStorage.getItem('_sync_conflicts') || '[]'); } catch (_) {}
+    const c = conf[+String(id).slice(6)]; if (!c) return;
+    const b = { at: c.at, data: {} }; b.data[c.key] = c.data;
+    const cur = _bkCollect();
+    spentSheet('עותק מהסנכרון · ' + (_BK_NAMES[c.key] || c.key), 'בעותק: ' + _bkCount(c.data) + ' · עכשיו: ' + _bkCount(cur[c.key]), [
+      { label: 'להחזיר מה שחסר מהעותק הזה', pri: true, run: () => backupRestore('conf', b) }, { label: 'ביטול', run: () => {} }]);
+    return;
+  }
   toast('בודק את הגיבוי…');
-  let b = null; try { b = await fetch(_BK_REST + '/' + encodeURIComponent(id) + '.json', { cache: 'no-store' }).then(r => r.json()); } catch (_) {}
+  let b = null; try { b = (await _bkGet(encodeURIComponent(id))).v; } catch (_) {}
   if (!b || !b.data) { toast('לא הצלחתי לקרוא את הגיבוי'); return; }
   const cur = _bkCollect();
   const mon = (arr) => { const now = new Date(), y = now.getFullYear(), m = now.getMonth(); const L = (Array.isArray(arr) ? arr : []).filter(i => i && i.date && +String(i.date).slice(0, 4) === y && +String(i.date).slice(5, 7) - 1 === m);
