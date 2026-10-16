@@ -392,9 +392,39 @@ function _pushKey(key) {
       if (_pending[key] === snap0) { snap0._checked = true; _pushKeyNow(key); }
     });
 }
+// v612: a list push never deletes items this device didn't delete itself.
+// Before writing, read the cloud list; any item there that's missing here and
+// was NOT deleted on this device (deletion log) is kept. Protects against a
+// device with an old copy wiping newer data (what happened on 16.10).
+function _delLog(key) { try { return JSON.parse(localStorage.getItem('_dl_' + key) || '{}') || {}; } catch (_) { return {}; } }
+function _delLogAdd(key, ids) {
+  if (!ids.length) return; const L = _delLog(key), now = Date.now();
+  ids.forEach(id => { L[String(id)] = now; });
+  Object.keys(L).forEach(k => { if (now - L[k] > 120 * 864e5) delete L[k]; });
+  try { localStorage.setItem('_dl_' + key, JSON.stringify(L)); } catch (_) {}
+}
+const _guardedSnaps = new WeakSet();
 function _pushKeyNow(key) {
   if (!firebaseDB || !_pending[key]) return;
-  const snap = _pending[key];
+  const snap0 = _pending[key];
+  if (_isIdList(snap0.data) && !_guardedSnaps.has(snap0)) {
+    firebaseDB.ref('studio_data/' + key).once('value').then(cs => {
+      if (_pending[key] !== snap0) return;
+      const cv = cs.val(), cloud = Array.isArray(cv) ? cv : cv && typeof cv === 'object' ? Object.values(cv) : [];
+      const mine = new Set(snap0.data.map(x => String(x && x.id))), dl = _delLog(key);
+      const keep = cloud.filter(x => x && x.id != null && !mine.has(String(x.id)) && !dl[String(x.id)] && !x.deleted);
+      if (keep.length) {
+        _syncStashConflict(key, snap0.data, snap0.ts);
+        snap0.data = snap0.data.concat(keep);
+        try { localStorage.setItem('s_' + key, JSON.stringify(snap0.data)); } catch (_) {}
+        console.warn('sync guard: kept', keep.length, key, 'items this device never had');
+        try { refreshAll(); } catch (_) {}
+      }
+      _guardedSnaps.add(snap0); _pushKeyNow(key);
+    }).catch(() => { _guardedSnaps.add(snap0); _pushKeyNow(key); });
+    return;
+  }
+  const snap = snap0;
   const ts = snap.ts || Date.now();
   // Push data + timestamp atomically so other devices know how fresh this is
   const updates = {};
@@ -654,6 +684,7 @@ function save(key, val) {
   const ts = Date.now();
   if (key === 'fixed_costs') { try { _fcStamp(val); } catch (e) { console.warn('_fcStamp', e); } try { setTimeout(() => { try { fcSnapshot(); } catch (_) {} }, 0); } catch (_) {} }
   else { try { _stampList(key, val); } catch (_) {} }
+  try { if (_isIdList(val) || (Array.isArray(val) && !val.length)) { const prev = JSON.parse(localStorage.getItem('s_' + key) || '[]'); if (Array.isArray(prev)) { const nowIds = new Set(val.map(x => String(x && x.id))); _delLogAdd(key, prev.filter(x => x && x.id != null && !nowIds.has(String(x.id))).map(x => x.id)); } } } catch (_) {}
   try { if (localStorage.getItem('s_' + key + '_base') == null) localStorage.setItem('s_' + key + '_base', localStorage.getItem('s_' + key + '_ts') || '0'); } catch (_) {}
   // 1. כתוב מקומית מיד — שמור בתוך try כדי לתפוס QuotaExceededError
   try {
