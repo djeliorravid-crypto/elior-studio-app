@@ -187,8 +187,11 @@ function initFirebase() {
     firebaseDB = firebase.database();
     try { firebaseStorage = firebase.storage(); } catch(e) { console.warn('Storage init failed', e); }
 
-    return firebaseDB.ref().once('value').then(snapshot => {
-      const root = snapshot.val() || {};
+    // v611: load ONLY the live data + its timestamps — never the whole database
+    // (the root also holds every backup; downloading it on each open burns the
+    // free Firebase download allowance and can make the database stop answering)
+    return Promise.all([firebaseDB.ref('studio_data').once('value'), firebaseDB.ref('studio_meta').once('value')]).then(([sd, sm]) => {
+      const root = { studio_data: sd.val() || {}, studio_meta: sm.val() || {} };
       const cloudData = root.studio_data || {};
       const cloudMeta = root.studio_meta || {};
       ALL_KEYS.forEach(key => {
@@ -566,11 +569,12 @@ async function _bkPrune() {
   try {
     const keys = Object.keys(await fetch(_BK_REST + '.json?shallow=true', { cache: 'no-store' }).then(r => r.json()) || {}).sort();
     const days = keys.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)), safety = keys.filter(k => /^before-restore-/.test(k));
-    const drop = days.slice(0, Math.max(0, days.length - 30)).concat(safety.slice(0, Math.max(0, safety.length - 5)));
+    const drop = safety.slice(0, Math.max(0, safety.length - 5));   // v611: day backups are pruned by the original rule (keeps a monthly checkpoint)
     for (const k of drop) await fetch(_BK_REST + '/' + encodeURIComponent(k) + '.json', { method: 'DELETE' }).catch(() => {});
   } catch (_) {}
 }
 async function backupDaily() {
+  return; // v611: the original autoBackup already writes today's backup — no second copy
   try {
     const last = Number(localStorage.getItem('bk_last') || 0);
     if (last && _bkDay(new Date(last)) === _bkDay()) return;
@@ -749,7 +753,9 @@ function autoBackup() {
 
     // עותק לענן — מעדכן את גיבוי היום בכל טעינה כך שהוא תמיד עדכני
     if (firebaseDB) {
-      firebaseDB.ref('studio_backups/' + today).set({ ts: Date.now(), data })
+      const _inc = Array.isArray(data.income) ? data.income.length : 0;
+      firebaseDB.ref('studio_backups/' + today + '/data/income').once('value').then(ps => { const prev = ps.val(); const pn = Array.isArray(prev) ? prev.length : prev ? Object.keys(prev).length : 0;
+        return pn > 5 && _inc < pn * 0.8 ? firebaseDB.ref('studio_backups/' + today + '-b' + Date.now()).set({ ts: Date.now(), data }) : firebaseDB.ref('studio_backups/' + today).set({ ts: Date.now(), data }); })
         .then(() => { localStorage.setItem('_last_auto_backup', today); _pruneBackups(); })
         .catch(() => {});
     } else {
@@ -760,6 +766,8 @@ function autoBackup() {
 
 function _pruneBackups() {
   if (!firebaseDB) return;
+  // v611: pruning downloads every backup — once a week is plenty
+  try { const lp = Number(localStorage.getItem('_last_prune') || 0); if (Date.now() - lp < 7 * 864e5) return; localStorage.setItem('_last_prune', String(Date.now())); } catch (_) {}
   firebaseDB.ref('studio_backups').once('value').then(snap => {
     const all = snap.val() || {};
     const dates = Object.keys(all).sort(); // ישן→חדש, פורמט YYYY-MM-DD
