@@ -543,7 +543,10 @@ function _bkCollect() {
 function _bkDay(d) { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 async function backupNow(tag) {
   const data = _bkCollect(); if (!Object.keys(data).length) return false;
-  const id = tag || _bkDay();
+  let id = tag || _bkDay();
+  // v607: never replace a day's backup with a much smaller one — keep both
+  if (!tag) { try { const prev = await fetch(_BK_REST + '/' + id + '/data/income.json', { cache: 'no-store' }).then(r => r.json());
+    if (Array.isArray(prev) && prev.length > 5 && (Array.isArray(data.income) ? data.income.length : 0) < prev.length * 0.8) id = id + '-b' + Date.now(); } catch (_) {} }
   const body = { at: Date.now(), v: (document.querySelector('.ver-badge, #ver-badge') || {}).textContent || '', data };
   try {
     const r = await fetch(_BK_REST + '/' + encodeURIComponent(id) + '.json', { method: 'PUT', body: JSON.stringify(body) });
@@ -577,10 +580,16 @@ window.backupOpen = async function() {
   try { document.getElementById('notif-settings-overlay').classList.remove('open'); } catch (_) {}
   toast('טוען גיבויים…');
   let keys = [];
-  try { keys = Object.keys(await fetch(_BK_REST + '.json?shallow=true', { cache: 'no-store' }).then(r => r.json()) || {}).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().reverse(); } catch (_) {}
+  try { keys = Object.keys(await fetch(_BK_REST + '.json?shallow=true', { cache: 'no-store' }).then(r => r.json()) || {}).filter(k => /^\d{4}-\d{2}-\d{2}/.test(k) || /^before-restore-/.test(k)).sort().reverse(); } catch (_) {}
+  // v607: if the listing didn't come back, look for each of the last 30 days directly
+  if (!keys.length) {
+    const days = []; for (let k = 0; k < 30; k++) { const d = new Date(); d.setDate(d.getDate() - k); days.push(_bkDay(d)); }
+    const found = await Promise.all(days.map(d => fetch(_BK_REST + '/' + d + '/at.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(v => v ? d : null).catch(() => null)));
+    keys = found.filter(Boolean);
+  }
   const last = Number(localStorage.getItem('bk_last') || 0);
   const acts = [{ label: 'לגבות עכשיו', pri: true, run: async () => { toast('מגבה…'); toast((await backupNow()) ? '✓ גובה עכשיו' : 'הגיבוי לא הצליח — נסה כשיש אינטרנט'); } }]
-    .concat(keys.slice(0, 14).map(k => ({ label: 'לשחזר מ־' + (+k.slice(8)) + '.' + (+k.slice(5, 7)) + '.' + k.slice(0, 4), run: () => backupPreview(k) })));
+    .concat(keys.slice(0, 20).map(k => ({ label: /^before-restore-/.test(k) ? 'לפני שחזור · ' + new Date(+k.slice(15)).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'לראות את הגיבוי מ־' + (+k.slice(8, 10)) + '.' + (+k.slice(5, 7)) + (k.length > 10 ? ' (נוסף)' : ''), run: () => backupPreview(k) })));
   spentSheet('גיבוי יומי', (last ? 'גיבוי אחרון: ' + new Date(last).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'עוד לא היה גיבוי') + ' · נשמרים 30 ימים', acts);
 };
 window.backupPreview = async function(id) {
@@ -588,8 +597,11 @@ window.backupPreview = async function(id) {
   let b = null; try { b = await fetch(_BK_REST + '/' + encodeURIComponent(id) + '.json', { cache: 'no-store' }).then(r => r.json()); } catch (_) {}
   if (!b || !b.data) { toast('לא הצלחתי לקרוא את הגיבוי'); return; }
   const cur = _bkCollect();
-  const lines = Object.keys(_BK_NAMES).filter(k => b.data[k] != null).map(k => _BK_NAMES[k] + ': ' + _bkCount(b.data[k]) + ' (עכשיו ' + _bkCount(cur[k]) + ')');
-  spentSheet('גיבוי מ־' + (+id.slice(8)) + '.' + (+id.slice(5, 7)), lines.join(' · '), [
+  const mon = (arr) => { const now = new Date(), y = now.getFullYear(), m = now.getMonth(); const L = (Array.isArray(arr) ? arr : []).filter(i => i && i.date && +String(i.date).slice(0, 4) === y && +String(i.date).slice(5, 7) - 1 === m);
+    return L.length + ' · ' + fmtMoney(L.filter(i => (i.status || 'pending') === 'paid').reduce((t, i) => t + (Number(i.amount) || 0), 0)); };
+  const lines = ['הכנסות ' + MONTHS_HE[new Date().getMonth()] + ': ' + mon(b.data.income) + ' (עכשיו ' + mon(cur.income) + ')']
+    .concat(Object.keys(_BK_NAMES).filter(k => b.data[k] != null).map(k => _BK_NAMES[k] + ': ' + _bkCount(b.data[k]) + ' (עכשיו ' + _bkCount(cur[k]) + ')'));
+  spentSheet('גיבוי מ־' + (+id.slice(8, 10) || '') + '.' + (+id.slice(5, 7) || ''), lines.join(' · '), [
     { label: 'לשחזר — להחזיר מה שחסר', pri: true, run: () => backupRestore(id, b) },
     { label: 'ביטול', run: () => {} }]);
 };
