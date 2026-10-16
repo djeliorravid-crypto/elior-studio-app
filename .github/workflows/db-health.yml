@@ -80,6 +80,10 @@ jobs:
           note('LIVE oct statuses: ' + json.dumps({s: sum(1 for x in L if str(x.get('date','')).startswith(mon) and (x.get('status') or 'pending') == s) for s in ['paid','pending','overdue']}))
           note('LIVE income newest dates: ' + ' '.join(sorted({str(x.get('date',''))[:10] for x in L})[-12:]))
           s6, sm = get('/studio_meta/income.json'); note(f'meta income ts={sm} ' + (datetime.datetime.utcfromtimestamp(int(sm)/1000).strftime('%Y-%m-%d %H:%M') if isinstance(sm,(int,str)) and str(sm).isdigit() else ''))
+          s7, tr = get('/studio_diag/receipt.json')
+          if isinstance(tr, list):
+              for e in tr[-12:]:
+                  if isinstance(e, dict): note('RC ' + datetime.datetime.utcfromtimestamp((e.get('at') or 0)/1000).strftime('%m%d %H:%M:%S') + ' v' + str(e.get('v')) + ' ' + str(e.get('s')) + ' ' + str(e.get('x'))[:200])
           st, c = get('/studio_backups_fc.json?shallow=true'); note(f'fc backups status={st} n={len(c) if isinstance(c, dict) else c}')
           rk = os.environ.get('RESTORE','').strip()
           if rk:

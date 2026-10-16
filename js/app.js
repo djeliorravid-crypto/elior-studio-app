@@ -21306,6 +21306,15 @@ window._toggleMprBiz = function() {
   if (ar) ar.textContent = open ? '▾' : '▴';
 };
 
+// v613: quiet receipt trail — step names + error codes only (no names/amounts),
+// so a failure on the phone can be read from the server and fixed.
+window._rcTrail = function(step, extra) {
+  try {
+    const t = JSON.parse(localStorage.getItem('_rc_trail') || '[]'); t.push({ s: step, x: extra == null ? '' : String(extra).slice(0, 220), at: Date.now(), v: window.APP_BUILD || '' });
+    const tt = t.slice(-25); localStorage.setItem('_rc_trail', JSON.stringify(tt));
+    clearTimeout(window._rcT); window._rcT = setTimeout(() => { fetch('https://elior-studio-default-rtdb.firebaseio.com/studio_diag/receipt.json', { method: 'PUT', body: JSON.stringify(tt) }).catch(() => {}); }, 800);
+  } catch (_) {}
+};
 window.morningRetryReceipt = function(incomeId) {
   // Open the description modal so the user can refine WHAT the
   // receipt is for before we hit Morning. The actual create call
@@ -21313,7 +21322,8 @@ window.morningRetryReceipt = function(incomeId) {
   // "צור קבלה".
   const all = load('income');
   const it = all.find(x => x.id === incomeId);
-  if (!it) return;
+  _rcTrail('open', it ? (it.status || 'pending') + (it.morningDocId ? ' hasDoc' : '') : 'not-found');
+  if (!it) { spentSheet('לא מצאתי את התשלום', 'פתח את דף הכסף ונסה שוב מהתשלום עצמו', []); return; }
   if (it.morningError) { delete it.morningError; save('income', all); }
   window._mrPendingId  = incomeId;
   window._mrPendingAmt = it.amount;
@@ -21347,6 +21357,7 @@ window._closeMorningReceiptModal = function() {
 };
 window._confirmMorningReceiptModal = async function() {
   const id = window._mrPendingId;
+  _rcTrail('confirm', id ? 'id' : 'no-id');
   if (!id) { toast('לא נבחר תשלום — פתח שוב את התשלום ונסה'); return; }
   const desc = (document.getElementById('mr-desc').value    || '').trim();
   const clnt = (document.getElementById('mr-client').value  || '').trim();
@@ -21380,6 +21391,7 @@ window._confirmMorningReceiptModal = async function() {
   }
   if (!(window.morningConnected && window.morningConnected())) { spentSheet('Morning לא מחובר', 'צריך לחבר את Morning במכשיר הזה כדי ליצור קבלות', [{ label: 'לחבר עכשיו', pri: true, run: () => { try { openNotifSettings(); } catch (_) {} } }]); return; }
   toast('יוצר קבלה ב-Morning…');
+  _rcTrail('send', 'mc=' + !!(window.morningConnected && window.morningConnected()) + ' ws=' + !!localStorage.getItem('wa_send_secret'));
   // never hang silently: give Morning 25 seconds, then explain
   const res = await Promise.race([
     morningCreateReceiptFor(incomeForReceipt),
@@ -21388,6 +21400,7 @@ window._confirmMorningReceiptModal = async function() {
   const fresh = load('income');
   const ff    = fresh.find(x => x.id === id);
   if (!ff) return;
+  _rcTrail('result', res && res.id ? 'ok' : JSON.stringify({ e: res && res.error, s: res && res.status, d: res && res.detail }).slice(0, 200));
   if (res && res.id) {
     ff.morningDocId     = res.id;
     ff.morningDocNumber = res.number;
