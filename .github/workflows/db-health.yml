@@ -12,6 +12,37 @@ jobs:
   health:
     runs-on: ubuntu-latest
     steps:
+      - name: Morning check (booleans + Morning's own error text only)
+        env:
+          SEND_SECRET: ${{ secrets.SEND_SECRET }}
+          MORNING_API_ID: ${{ secrets.MORNING_API_ID }}
+          MORNING_API_SECRET: ${{ secrets.MORNING_API_SECRET }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+          W='https://ravid-whatsapp.djeliorravid.workers.dev'
+          def post(url, body, h=None):
+              req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=dict({'Content-Type':'application/json','User-Agent':'Mozilla/5.0'}, **(h or {})), method='POST')
+              try:
+                  with urllib.request.urlopen(req, timeout=40) as r: return r.status, json.loads(r.read() or b'null')
+              except urllib.error.HTTPError as e:
+                  t = e.read().decode('utf8','replace')
+                  try: return e.code, json.loads(t)
+                  except Exception: return e.code, t[:200]
+              except Exception as e: return -1, str(e)[:200]
+          n = lambda m: print('::notice::' + m)
+          sec = ''.join(os.environ.get('SEND_SECRET','').split())
+          st, j = post(W + '/morning/token', {'secret': sec})
+          tok = isinstance(j, dict) and j.get('token')
+          n(f'worker /morning/token: status={st} ok={bool(tok)} err={(j.get("error"), j.get("detail")) if isinstance(j, dict) and not tok else ""}')
+          st2, d = post('https://api.greeninvoice.co.il/api/v1/account/token', {'id': os.environ.get('MORNING_API_ID','').strip(), 'secret': os.environ.get('MORNING_API_SECRET','').strip()})
+          n(f'GitHub-secret keys direct: status={st2} token={bool(isinstance(d, dict) and d.get("token"))} err={(d.get("errorMessage") or d.get("errorCode")) if isinstance(d, dict) else str(d)[:120]}')
+          if tok:
+              st3, r = post(W + '/morning/api', {'secret': sec, 'method': 'POST', 'path': '/documents/search', 'body': {'page': 1, 'pageSize': 1, 'type': [400]}, 'token': tok})
+              jj = r.get('json') if isinstance(r, dict) else None
+              n(f'read receipts with worker token: status={r.get("status") if isinstance(r, dict) else st3} ok={r.get("ok") if isinstance(r, dict) else ""} total={jj.get("total") if isinstance(jj, dict) else ""} err={(jj.get("errorMessage") or jj.get("errorCode")) if isinstance(jj, dict) else ""}')
+          PY
+
       - name: Report
         env:
           RESTORE: ${{ github.event.inputs.restore_from }}
