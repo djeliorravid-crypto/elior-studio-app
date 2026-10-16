@@ -10086,6 +10086,33 @@ let _pendingAction = null;
     }).catch(() => {});
 })();
 
+// v609: the phone never stays on an old version. iOS keeps the app alive in the
+// background for days, so the load-time check above isn't enough: on every
+// return to the app (and every 10 min) compare the version this page was built
+// with against the server's, and reload quietly when nothing is open.
+window.APP_BUILD = (((document.getElementById('lobby-version') || {}).textContent || '').replace(/\D/g, '')) || '';
+(function () {
+  let busy = false;
+  const idle = () => !document.querySelector('.open#spent-sheet, #sp-flow.open, .modal-overlay.open, #fz-free.open, #fz-rem.open, #fz-contacts.open, #morning-receipt-overlay.open, #notif-settings-overlay.open')
+    && !(document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName));
+  async function check(why) {
+    if (busy || !APP_BUILD) return; busy = true;
+    try {
+      const v = (await fetch('/elior-studio-app/version.txt?t=' + Date.now(), { cache: 'no-store' }).then(r => r.text())).trim();
+      if (/^\d+$/.test(v) && +v > +APP_BUILD) {
+        const go = async () => {
+          try { if ('serviceWorker' in navigator) { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.update().catch(() => {}))); } } catch (_) {}
+          try { localStorage.setItem('app_version', v); } catch (_) {}
+          location.replace(location.pathname + '?_v=' + v);
+        };
+        if (idle()) go(); else { const t = setInterval(() => { if (idle()) { clearInterval(t); go(); } }, 4000); }
+      }
+    } catch (_) {} finally { busy = false; }
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check('resume'); });
+  setInterval(() => { if (document.visibilityState === 'visible') check('timer'); }, 10 * 60 * 1000);
+})();
+
 // קיצורי דרך ממסך הבית (לחיצה ארוכה על האייקון)
 function runShortcutAction(action) {
   if (!action) return;
@@ -11232,6 +11259,7 @@ window.setNotifPrefs = function(prefs) {
 };
 
 window.openNotifSettings = function() {
+  try { const sb = document.querySelector('#notif-settings-card > .notif-sub'); if (sb) sb.textContent = 'Maestro · גרסה ' + (window.APP_BUILD || '?'); } catch (_) {}
   try { const el = document.getElementById('link-status'); if (el) el.textContent = 'במכשיר הזה: ' + linkStatus(); } catch (_) {}
   try { const el = document.getElementById('notif-sound-name'); if (el) el.textContent = _notifSoundName(); } catch (_) {}
   try { const el = document.getElementById('bk-last'), t = Number(localStorage.getItem('bk_last') || 0); if (el) el.textContent = t ? 'אחרון: ' + new Date(t).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' · נשמרים 30 ימים' : 'עוד לא היה גיבוי · לחיצה לגבות עכשיו'; } catch (_) {}
