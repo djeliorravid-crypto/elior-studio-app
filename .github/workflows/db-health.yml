@@ -1,0 +1,66 @@
+# Firebase health + backup inventory. COUNTS ONLY in the log (public repo):
+# no names, amounts, phones or keys are printed.
+name: DB health
+on:
+  workflow_dispatch:
+    inputs:
+      restore_from:
+        description: "Merge missing income/expenses/etc. back from this backup key (e.g. 2026-10-14). Empty = report only."
+        required: false
+        default: ""
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report
+        env:
+          RESTORE: ${{ github.event.inputs.restore_from }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error, time, datetime
+          R='https://elior-studio-default-rtdb.firebaseio.com'
+          def get(p):
+              try:
+                  with urllib.request.urlopen(R+p, timeout=60) as r: return r.status, json.loads(r.read() or b'null')
+              except urllib.error.HTTPError as e: return e.code, (e.read()[:200].decode('utf8','replace'))
+              except Exception as e: return -1, str(e)[:200]
+          def note(m): print('::notice::'+m)
+          st, meta = get('/studio_meta.json')
+          note(f'studio_meta status={st}')
+          st, inc = get('/studio_data/income.json')
+          L = inc if isinstance(inc, list) else list(inc.values()) if isinstance(inc, dict) else []
+          L = [x for x in L if isinstance(x, dict)]
+          mon = datetime.date.today().strftime('%Y-%m')
+          def cnt(L, m): return sum(1 for x in L if str(x.get('date','')).startswith(m))
+          prev = (datetime.date.today().replace(day=1) - datetime.timedelta(days=1)).strftime('%Y-%m')
+          note(f'LIVE income status={st} total={len(L)} {mon}={cnt(L,mon)} {prev}={cnt(L,prev)}')
+          st, keys = get('/studio_backups.json?shallow=true')
+          note(f'backups list status={st} n={len(keys) if isinstance(keys, dict) else keys}')
+          ks = sorted(keys.keys()) if isinstance(keys, dict) else []
+          for k in ks[-40:]:
+              s2, b = get(f'/studio_backups/{k}/data/income.json')
+              BL = b if isinstance(b, list) else list(b.values()) if isinstance(b, dict) else []
+              BL = [x for x in BL if isinstance(x, dict)]
+              note(f'backup {k}: income total={len(BL)} {mon}={cnt(BL,mon)} {prev}={cnt(BL,prev)} (status {s2})')
+          st, c = get('/studio_backups_fc.json?shallow=true'); note(f'fc backups status={st} n={len(c) if isinstance(c, dict) else c}')
+          rk = os.environ.get('RESTORE','').strip()
+          if rk:
+              s2, bd = get(f'/studio_backups/{rk}/data.json')
+              if not isinstance(bd, dict): note(f'RESTORE: cannot read backup {rk} (status {s2})'); raise SystemExit(1)
+              now = int(time.time()*1000); changed = []
+              for key, bv in bd.items():
+                  if not isinstance(bv, list) or not bv or not all(isinstance(x, dict) and 'id' in x for x in bv if x is not None): continue
+                  s3, cv = get(f'/studio_data/{key}.json')
+                  if s3 != 200: continue
+                  CL = cv if isinstance(cv, list) else list(cv.values()) if isinstance(cv, dict) else []
+                  have = {str(x.get('id')) for x in CL if isinstance(x, dict)}
+                  add = [dict(x, _u=now) for x in bv if isinstance(x, dict) and str(x.get('id')) not in have and not x.get('deleted')]
+                  if not add: continue
+                  # safety copy of the live list first
+                  req = urllib.request.Request(R+f'/studio_backups/before-restore-{now}/data/{key}.json', data=json.dumps(CL).encode(), method='PUT'); urllib.request.urlopen(req, timeout=60)
+                  out = [x for x in CL if isinstance(x, dict)] + add
+                  req = urllib.request.Request(R+f'/studio_data/{key}.json', data=json.dumps(out).encode(), method='PUT'); urllib.request.urlopen(req, timeout=60)
+                  req = urllib.request.Request(R+f'/studio_meta/{key}.json', data=json.dumps(now).encode(), method='PUT'); urllib.request.urlopen(req, timeout=60)
+                  changed.append(f'{key}+{len(add)}')
+              note('RESTORE from '+rk+': '+(', '.join(changed) or 'nothing missing'))
+          PY
