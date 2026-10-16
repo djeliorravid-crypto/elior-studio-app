@@ -403,12 +403,25 @@ function _delLogAdd(key, ids) {
   Object.keys(L).forEach(k => { if (now - L[k] > 120 * 864e5) delete L[k]; });
   try { localStorage.setItem('_dl_' + key, JSON.stringify(L)); } catch (_) {}
 }
+function _devId() { try { let d = localStorage.getItem('_dev_id'); if (!d) { d = Math.random().toString(36).slice(2, 10); localStorage.setItem('_dev_id', d); } return d; } catch (_) { return 'x'; } }
+function _netDiag(what, info) {
+  try { const p = (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) ? 'ios' : 'web';
+    fetch('https://elior-studio-default-rtdb.firebaseio.com/studio_diag/net/' + _devId() + '.json', { method: 'PATCH', body: JSON.stringify({ p, v: window.APP_BUILD || '', at: Date.now(), [String(what).replace(/[.#$\[\]\/ ]/g, '_')]: String(info).slice(0, 200) }) }).catch(() => {}); } catch (_) {}
+}
+// v614: once per open — can this device READ the cloud? (written to studio_diag/net)
+document.addEventListener('DOMContentLoaded', () => setTimeout(async () => {
+  let rest = '', sdk = '';
+  try { const r = await fetch('https://elior-studio-default-rtdb.firebaseio.com/studio_meta/income.json', { cache: 'no-store' }); rest = r.status + ' ' + (await r.text()).slice(0, 20); } catch (e) { rest = 'ERR ' + (e && e.message || e); }
+  try { const v = await Promise.race([firebaseDB.ref('studio_meta/income').once('value'), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]); sdk = 'ok ' + v.val(); } catch (e) { sdk = 'ERR ' + (e && e.message || e); }
+  let li = 0; try { li = load('income').length; } catch (_) {}
+  _netDiag('probe', 'rest=' + rest + ' | sdk=' + sdk + ' | localIncome=' + li + ' | localTs=' + (localStorage.getItem('s_income_ts') || ''));
+}, 6000));
 const _guardedSnaps = new WeakSet();
 function _pushKeyNow(key) {
   if (!firebaseDB || !_pending[key]) return;
   const snap0 = _pending[key];
   if (_isIdList(snap0.data) && !_guardedSnaps.has(snap0)) {
-    firebaseDB.ref('studio_data/' + key).once('value').then(cs => {
+    Promise.race([firebaseDB.ref('studio_data/' + key).once('value'), new Promise((_, rej) => setTimeout(() => rej(new Error('read timeout')), 15000))]).then(cs => {
       if (_pending[key] !== snap0) return;
       const cv = cs.val(), cloud = Array.isArray(cv) ? cv : cv && typeof cv === 'object' ? Object.values(cv) : [];
       const mine = new Set(snap0.data.map(x => String(x && x.id))), dl = _delLog(key);
@@ -421,7 +434,10 @@ function _pushKeyNow(key) {
         try { refreshAll(); } catch (_) {}
       }
       _guardedSnaps.add(snap0); _pushKeyNow(key);
-    }).catch(() => { _guardedSnaps.add(snap0); _pushKeyNow(key); });
+    }).catch(e => { // v614: can't see the cloud → don't overwrite it; try again in a bit
+      try { _netDiag('guard-read-fail ' + key, String(e && e.message || e)); } catch (_) {}
+      setTimeout(() => { if (_pending[key] === snap0) _pushKeyNow(key); }, 30000);
+    });
     return;
   }
   const snap = snap0;
@@ -430,6 +446,7 @@ function _pushKeyNow(key) {
   const updates = {};
   updates['studio_data/' + key] = snap.data;
   updates['studio_meta/' + key] = ts;
+  try { updates['studio_diag/writer/' + key] = { d: _devId(), p: (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) ? 'ios' : (document.documentElement.classList.contains('desk') ? 'web-desk' : 'web'), v: window.APP_BUILD || '', at: ts, n: Array.isArray(snap.data) ? snap.data.length : -1 }; } catch (_) {}
   firebaseDB.ref().update(updates)
     .then(() => {
       try { if (_pending[key] === snap) localStorage.setItem('s_' + key + '_base', String(ts)); } catch (_) {}

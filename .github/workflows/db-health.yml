@@ -80,6 +80,14 @@ jobs:
           note('LIVE oct statuses: ' + json.dumps({s: sum(1 for x in L if str(x.get('date','')).startswith(mon) and (x.get('status') or 'pending') == s) for s in ['paid','pending','overdue']}))
           note('LIVE income newest dates: ' + ' '.join(sorted({str(x.get('date',''))[:10] for x in L})[-12:]))
           s6, sm = get('/studio_meta/income.json'); note(f'meta income ts={sm} ' + (datetime.datetime.utcfromtimestamp(int(sm)/1000).strftime('%Y-%m-%d %H:%M') if isinstance(sm,(int,str)) and str(sm).isdigit() else ''))
+          s8, wr = get('/studio_diag/writer.json')
+          if isinstance(wr, dict):
+              for k, w in wr.items():
+                  if isinstance(w, dict) and k in ('income','expenses','schedule','fixed_costs'): note(f'WRITER {k}: dev={w.get("d")} {w.get("p")} v{w.get("v")} n={w.get("n")} at=' + datetime.datetime.utcfromtimestamp((w.get('at') or 0)/1000).strftime('%m%d %H:%M'))
+          s9, nd = get('/studio_diag/net.json')
+          if isinstance(nd, dict):
+              for k, w in nd.items():
+                  if isinstance(w, dict): note(f'NET dev={k} {w.get("p")} v{w.get("v")} ' + datetime.datetime.utcfromtimestamp((w.get('at') or 0)/1000).strftime('%m%d %H:%M') + ' ' + ' | '.join(f'{a}={str(b)[:120]}' for a, b in w.items() if a not in ('p','v','at')))
           s7, tr = get('/studio_diag/receipt.json')
           if isinstance(tr, list):
               for e in tr[-12:]:
