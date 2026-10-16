@@ -37,11 +37,18 @@ jobs:
           st, keys = get('/studio_backups.json?shallow=true')
           note(f'backups list status={st} n={len(keys) if isinstance(keys, dict) else keys}')
           ks = sorted(keys.keys()) if isinstance(keys, dict) else []
+          rows = []
           for k in ks[-40:]:
               s2, b = get(f'/studio_backups/{k}/data/income.json')
               BL = b if isinstance(b, list) else list(b.values()) if isinstance(b, dict) else []
               BL = [x for x in BL if isinstance(x, dict)]
-              note(f'backup {k}: income total={len(BL)} {mon}={cnt(BL,mon)} {prev}={cnt(BL,prev)} (status {s2})')
+              s4, ts = get(f'/studio_backups/{k}/ts.json'); s5, at = get(f'/studio_backups/{k}/at.json')
+              rows.append(f'{k}:{len(BL)}/{cnt(BL,mon)}/{cnt(BL,prev)}' + (' t' + datetime.datetime.utcfromtimestamp((ts or at or 0)/1000).strftime('%m%d-%H%M') if (ts or at) else ''))
+          note('BACKUPS key:total/oct/sep  ' + '  '.join(rows))
+          # what kind of incomes exist this month in live (status counts only)
+          note('LIVE oct statuses: ' + json.dumps({s: sum(1 for x in L if str(x.get('date','')).startswith(mon) and (x.get('status') or 'pending') == s) for s in ['paid','pending','overdue']}))
+          note('LIVE income newest dates: ' + ' '.join(sorted({str(x.get('date',''))[:10] for x in L})[-12:]))
+          s6, sm = get('/studio_meta/income.json'); note(f'meta income ts={sm} ' + (datetime.datetime.utcfromtimestamp(int(sm)/1000).strftime('%Y-%m-%d %H:%M') if isinstance(sm,(int,str)) and str(sm).isdigit() else ''))
           st, c = get('/studio_backups_fc.json?shallow=true'); note(f'fc backups status={st} n={len(c) if isinstance(c, dict) else c}')
           rk = os.environ.get('RESTORE','').strip()
           if rk:
