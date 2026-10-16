@@ -21271,7 +21271,7 @@ window._confirmMorningReceiptModal = async function() {
   // them forward without re-typing.
   const all = load('income');
   const it  = all.find(x => x.id === id);
-  if (!it) { toast('לא מצאתי את התשלום הזה — אולי נמחק או סונכרן מחדש'); return; }
+  if (!it) { spentSheet('לא מצאתי את התשלום', 'ייתכן שהוא נמחק או השתנה בסנכרון. פתח את דף הכסף ונסה שוב מהתשלום עצמו', []); return; }
   let dirty = false;
   if (clnt && clnt !== it.clientName)      { it.clientName    = clnt; dirty = true; }
   if (tax  !== (it.clientTaxId   || ''))   { it.clientTaxId   = tax;  dirty = true; }
@@ -21289,7 +21289,7 @@ window._confirmMorningReceiptModal = async function() {
     if (it.morningDocUrl) setTimeout(() => { try { morningOpenReceipt(it.morningDocUrl); } catch (_) {} }, 600);
     return;
   }
-  if (!(window.morningConnected && window.morningConnected())) { toast('Morning לא מחובר — הגדרות ← קבלות · Morning'); return; }
+  if (!(window.morningConnected && window.morningConnected())) { spentSheet('Morning לא מחובר', 'צריך לחבר את Morning במכשיר הזה כדי ליצור קבלות', [{ label: 'לחבר עכשיו', pri: true, run: () => { try { openNotifSettings(); } catch (_) {} } }]); return; }
   toast('יוצר קבלה ב-Morning…');
   // never hang silently: give Morning 25 seconds, then explain
   const res = await Promise.race([
@@ -21312,7 +21312,11 @@ window._confirmMorningReceiptModal = async function() {
     const msg = _morningErrorMessage(res);
     ff.morningError = (res && res.error) || 'fail';
     save('income', fresh);
-    toast('⚠️ Morning: ' + msg);
+    // v608: a sheet that stays, with the exact reason and the raw details to copy
+    const raw = (() => { try { return JSON.stringify({ e: res && res.error, s: res && res.status, d: res && res.detail }).slice(0, 600); } catch (_) { return String(res); } })();
+    spentSheet('הקבלה לא נוצרה', 'Morning: ' + msg, [
+      { label: 'לנסות שוב', pri: true, run: () => morningRetryReceipt(id) },
+      { label: 'העתקת הפרטים לשליחה', run: async () => { try { await navigator.clipboard.writeText('Morning receipt error · v' + ((document.querySelector('.ver-badge') || {}).textContent || '') + '\n' + msg + '\n' + raw); toast('הועתק — שלח לי את זה'); } catch (_) {} } }]);
     if (window.haptic) window.haptic.error();
     console.warn('Morning create receipt failure', res);
   }
