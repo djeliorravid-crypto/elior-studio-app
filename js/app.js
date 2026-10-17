@@ -1773,7 +1773,20 @@ function renderIncomeSpent(o) {
   } else h += '<div class="fz-empty">עוד אין הכנסות ב' + MONTHS_HE[curMonth] + '</div>';
   host.innerHTML = h;
 }
+// v615: a pending income that doesn't belong to this month — move it or stop carrying it
+window.incMonthActs = function(id) {
+  const it = (load('income') || []).find(x => String(x.id) === String(id)); window._incTapId = null;
+  if (!it || (it.status || 'pending') === 'paid') return [];
+  const d = new Date(String(it.date).slice(0, 10) + 'T12:00:00'), view = new Date(curYear, curMonth, 1);
+  const carried = d < view, upd = fn => { const L = load('income'), x = L.find(y => String(y.id) === String(id)); if (!x) return; fn(x); save('income', L); try { refreshAll(); } catch (_) {} };
+  const acts = [];
+  if (carried) acts.push({ label: 'לא שייך לחודש הזה — להפסיק להציג', run: () => upd(x => { x.noCarry = true; toast('לא יוצג יותר בחודשים הבאים · נשאר ב' + MONTHS_HE[d.getMonth()]); }) });
+  acts.push({ label: 'להעביר לחודש הבא', run: () => upd(x => { const n = new Date(d); n.setMonth(n.getMonth() + (carried ? (view.getFullYear() * 12 + view.getMonth()) - (d.getFullYear() * 12 + d.getMonth()) + 1 : 1)); x.date = dailyDateStr(n); delete x.noCarry; toast('הועבר ל' + MONTHS_HE[n.getMonth()]); }) });
+  acts.push({ label: 'לבחור חודש אחר', run: () => spFlowOpen({ title: 'מתי זה אמור להיכנס?', vals: { date: dailyDateStr(new Date(Math.max(d, view))) }, steps: [{ k: 'date', type: 'date', q: 'באיזה תאריך?', future: true }], onSave: v => upd(x => { x.date = v.date; delete x.noCarry; toast('נקבע ל-' + (+v.date.slice(8)) + '.' + (+v.date.slice(5, 7))); }) }) });
+  return acts;
+};
 window.incOpenEntry = function(id) {
+  window._incTapId = id;
   const row = document.querySelector('.inc-row[onclick*="' + id + '"], .inc-row [onclick*="' + id + '"]');
   if (row) { const r = row.closest('.inc-row') || row; try { incRowTap({ target: r }, r); return; } catch (_) {} }
   try { openIncomeEdit(id); } catch (_) {}
@@ -2103,6 +2116,7 @@ function renderIncome() {
   const _monthStart = new Date(curYear, curMonth, 1);
   const carryEntries = income.filter(i => {
     if ((i.status || 'pending') === 'paid') return false;
+    if (i.noCarry) return false;   // v615: he said it doesn't belong to later months
     const d = new Date(i.date);
     if (isNaN(d.getTime()) || d >= _monthStart) return false;
     if (cf && i.clientId !== cf) return false;
@@ -2421,6 +2435,7 @@ window.incRowTap = function(ev, row) {
     const pri = /סמן כשולם/.test(label) || b.classList.contains('wa');
     return { label, danger, pri, wa: b.classList.contains('wa'), run: () => b.click() };
   }).sort((a, b) => ((a.wa ? 0 : a.danger ? 2 : 1) - (b.wa ? 0 : b.danger ? 2 : 1)))
+    .concat(incMonthActs(window._incTapId)).sort((a, b) => (a.danger ? 1 : 0) - (b.danger ? 1 : 0))
     .concat(_paidRow && !_mc ? [{ label: 'קבלה: Morning לא מחובר — לחבר עכשיו', pri: true, run: () => { try { openNotifSettings(); setTimeout(() => { const m = document.getElementById('morning-id'); if (m) m.scrollIntoView({ block: 'center' }); }, 350); } catch (_) {} } }] : []));
 };
 window.spentSheet = function(title, sub, actions) {
