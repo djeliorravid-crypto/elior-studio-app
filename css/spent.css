@@ -1868,3 +1868,24 @@ html[data-skin="spent"] .fz-tk.on, html[data-skin="spent"] .fcs-tick.on { animat
 .st-row-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; border: none; border-top: 1px solid #eef0f6; background: none !important; padding: 13px 0; margin-top: 8px; font-family: inherit; text-align: right; cursor: pointer; }
 .st-row-btn span:first-child { display: flex; flex-direction: column; gap: 2px; } .st-row-btn b { font-size: 15.5px; font-weight: 600; color: #161c45; } .st-row-btn small { font-size: 12.5px; color: #8a8fae; }
 .st-ar { color: #8a8fae; font-size: 18px; }
+
+/* v617 — "לזכור", clearer */
+.rm-lbl { margin-top: 14px; }
+.rm-add { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 999px; padding: 7px 13px 7px 11px; font-family: inherit; font-size: 14px; font-weight: 600; color: #fff; cursor: pointer;
+  background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); box-shadow: 0 4px 12px rgba(22,28,69,.2); }
+.rm-add svg { width: 15px; height: 15px; }
+.rm-card { padding: 2px 14px !important; }
+.rm-row { gap: 12px; padding: 13px 0; }
+.rm-m b { font-size: 16px; }
+.rm-when-chip { display: inline-block; background: #eef0f8; color: #252e6b; font-weight: 600; border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+.rm-row.late .rm-when-chip { background: #fdf3e3; color: #a8660f; }
+.rm-row.late .rm-m small { color: #8a8fae; font-weight: 400; }
+.rm-go { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; border: none; border-radius: 999px; padding: 8px 12px; font-family: inherit; font-size: 13.5px; font-weight: 600; color: #fff; cursor: pointer;
+  background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); box-shadow: 0 4px 10px rgba(22,28,69,.2); }
+.rm-row.k-msg .rm-go, .rm-row.k-send .rm-go { background: radial-gradient(120% 100% at 28% 6%, rgba(190,230,205,.30), rgba(44,85,69,0) 62%), linear-gradient(180deg,#2c5545,#18342a); box-shadow: 0 4px 10px rgba(24,52,42,.22); }
+.rm-go svg { width: 15px; height: 15px; }
+.rm-kinds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0 2px; }
+.rm-kinds button { display: flex; flex-direction: column; align-items: center; gap: 6px; border: none; background: #fff; border-radius: 16px; padding: 11px 4px; font-family: inherit; font-size: 13px; font-weight: 600; color: #6b7299; cursor: pointer; box-shadow: 0 2px 8px rgba(22,28,69,.05); }
+.rm-kinds button svg { width: 21px; height: 21px; }
+.rm-kinds button.on { color: #fff; background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); }
+.rm-who { background: #eef0f8; color: #252e6b; border-radius: 999px; padding: 2px 9px; font-size: 12.5px; font-weight: 600; }

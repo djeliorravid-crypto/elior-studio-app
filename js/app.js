@@ -1794,12 +1794,34 @@ function renderIncomeSpent(o) {
   if (latest.length) {
     h += '<div class="fz-lbl">אחרונים</div><div class="fz-card">' + latest.map(i => { const paid = (i.status || 'pending') === 'paid';
       return '<button class="fz-row" onclick="incOpenEntry(\'' + i.id + '\')">' + fzPayIc(i)
-        + '<span class="fz-m"><b>' + _escape(i.clientName || i.client || i.description || 'הכנסה') + '</b><small>' + (i.date ? (+String(i.date).slice(8, 10)) + '.' + (+String(i.date).slice(5, 7)) + ' · ' : '') + _escape(i.category || i.description || '') + ' · ' + ({ wait: 'ממתין', ok: 'שולם', norc: 'שולם · בלי קבלה' })[fzPayState(i)] + '</small></span>'
+        + '<span class="fz-m"><b>' + _escape(i.clientName || i.client || i.description || 'הכנסה') + '</b><small>' + (i.date ? (+String(i.date).slice(8, 10)) + '.' + (+String(i.date).slice(5, 7)) + ' · ' : '') + (i.origAmount && (i.status || 'pending') !== 'paid' ? 'נשאר ' + fmtMoney(i.amount) + ' מתוך ' + fmtMoney(i.origAmount) : i.partOf ? 'חלק מתשלום' : _escape(i.category || i.description || '')) + ' · ' + ({ wait: 'ממתין', ok: 'שולם', norc: 'שולם · בלי קבלה' })[fzPayState(i)] + '</small></span>'
         + '<span class="fz-v">' + fmtMoney(i.amount) + '</span></button>'; }).join('')
       + '<button class="fz-more" onclick="window._incAllOpen=!window._incAllOpen;renderIncome()">' + (allOpen ? 'פחות' : 'הכל ›') + '</button></div>';
   } else h += '<div class="fz-empty">עוד אין הכנסות ב' + MONTHS_HE[curMonth] + '</div>';
   host.innerHTML = h;
 }
+// v617: part of a payment arrived — split it: the received part becomes a paid
+// income (today), the original stays pending with what's left. Totals stay right
+// ("נכנס" counts the part, "בדרך" counts the rest) and a receipt can go out for the part.
+window.incPartial = function(id) {
+  const it = (load('income') || []).find(x => String(x.id) === String(id)); if (!it) return;
+  const total = Number(it.amount) || 0;
+  spFlowOpen({ title: (it.clientName || 'תשלום') + ' · ' + fmtMoney(total), vals: { a: '' },
+    steps: [{ k: 'a', type: 'money', q: 'כמה נכנס עכשיו?' }],
+    onSave: v => {
+      const got = Math.round(Number(v.a) || 0);
+      if (!(got > 0) || got >= total) { toast(got >= total ? 'זה כל הסכום — סמן כשולם' : 'סכום לא תקין'); return; }
+      const L = load('income'), x = L.find(y => String(y.id) === String(id)); if (!x) return;
+      const part = Object.assign({}, x, { id: genId(), amount: got, status: 'paid', date: dailyDateStr(), paidAt: new Date().toISOString(), partOf: x.id,
+        description: (x.description || 'תשלום') + ' · חלק', morningDocId: undefined, morningDocNumber: undefined, morningDocUrl: undefined, morningError: undefined, noCarry: undefined });
+      Object.keys(part).forEach(k => part[k] === undefined && delete part[k]);
+      x.origAmount = x.origAmount || total; x.amount = total - got; x.partsPaid = (x.partsPaid || 0) + got;
+      L.push(part); save('income', L);
+      try { refreshAll(); } catch (_) {}
+      spDone('נרשם', fmtMoney(got) + ' נכנסו', 'נשארו ' + fmtMoney(total - got));
+      setTimeout(() => { try { if (window.morningConnected && morningConnected()) spentSheet('להוציא קבלה על ' + fmtMoney(got) + '?', it.clientName || '', [{ label: 'כן, להוציא קבלה', pri: true, run: () => morningRetryReceipt(part.id) }, { label: 'לא עכשיו', run: () => {} }]); } catch (_) {} }, 1600);
+    } });
+};
 // v615: a pending income that doesn't belong to this month — move it or stop carrying it
 window.incMonthActs = function(id) {
   const it = (load('income') || []).find(x => String(x.id) === String(id)); window._incTapId = null;
@@ -1807,6 +1829,7 @@ window.incMonthActs = function(id) {
   const d = new Date(String(it.date).slice(0, 10) + 'T12:00:00'), view = new Date(curYear, curMonth, 1);
   const carried = d < view, upd = fn => { const L = load('income'), x = L.find(y => String(y.id) === String(id)); if (!x) return; fn(x); save('income', L); try { refreshAll(); } catch (_) {} };
   const acts = [];
+  acts.push({ label: 'נכנס רק חלק מהסכום', pri: true, run: () => incPartial(id) });
   if (carried) acts.push({ label: 'לא שייך לחודש הזה — להפסיק להציג', run: () => upd(x => { x.noCarry = true; toast('לא יוצג יותר בחודשים הבאים · נשאר ב' + MONTHS_HE[d.getMonth()]); }) });
   acts.push({ label: 'להעביר לחודש הבא', run: () => upd(x => { const n = new Date(d); n.setMonth(n.getMonth() + (carried ? (view.getFullYear() * 12 + view.getMonth()) - (d.getFullYear() * 12 + d.getMonth()) + 1 : 1)); x.date = dailyDateStr(n); delete x.noCarry; toast('הועבר ל' + MONTHS_HE[n.getMonth()]); }) });
   acts.push({ label: 'לבחור חודש אחר', run: () => spFlowOpen({ title: 'מתי זה אמור להיכנס?', vals: { date: dailyDateStr(new Date(Math.max(d, view))) }, steps: [{ k: 'date', type: 'date', q: 'באיזה תאריך?', future: true }], onSave: v => upd(x => { x.date = v.date; delete x.noCarry; toast('נקבע ל-' + (+v.date.slice(8)) + '.' + (+v.date.slice(5, 7))); }) }) });
@@ -10930,20 +10953,68 @@ function _rmWhen(p) {
   const dd = p.day === 0 ? 'היום' : p.day === 1 ? 'מחר' : p.day === 2 ? 'מחרתיים' : 'יום ' + ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][new Date(p.date + 'T12:00:00').getDay()] + ' ' + (+p.date.slice(8)) + '.' + (+p.date.slice(5, 7));
   return dd + (p.at ? ' · ' + String(p.at.getHours()).padStart(2, '0') + ':' + String(p.at.getMinutes()).padStart(2, '0') : '');
 }
+// v617: what kind of thing to remember, and with whom
+const _RM_KINDS = {
+  call: { t: 'להתקשר', re: /^(?:ל)?(?:התקשר|להתקשר|לחייג|שיחה)\s*(?:ל|עם|אל)?\s*/, ic: '<path d="M6.6 3.75h2.5l1.5 4-2 1.3a10.5 10.5 0 0 0 6.35 6.35l1.3-2 4 1.5v2.5a2 2 0 0 1-2.1 2A16.4 16.4 0 0 1 4.6 5.85a2 2 0 0 1 2-2.1z"/>' },
+  msg:  { t: 'לכתוב', re: /^(?:ל)?(?:כתוב|לכתוב|לשלוח הודעה|להודיע|לענות|לחזור)\s*(?:ל|אל|עם)?\s*/, ic: '<path d="M19.75 11.6a7.6 7.6 0 0 1-11 6.8L4.5 19.5l1.15-3.9a7.6 7.6 0 1 1 14.1-4z"/>' },
+  send: { t: 'לשלוח', re: /^(?:ל)?(?:שלוח|לשלוח|להעביר|לשתף)\s+/, ic: '<path d="M20.25 3.75 10.5 13.5M20.25 3.75l-6 16.5-3.75-6.75-6.75-3.75z"/>' },
+  todo: { t: 'לעשות', re: null, ic: '<path d="M5.5 12.5l4 4L18.5 8"/>' }
+};
+function _rmKind(text) {
+  const t = String(text || '').trim();
+  if (_RM_KINDS.call.re.test(t)) return 'call';
+  if (_RM_KINDS.msg.re.test(t)) return 'msg';
+  if (_RM_KINDS.send.re.test(t)) return 'send';
+  return 'todo';
+}
+// find a person in the text: a client name, or the word after ל/את/אל/עם
+function _rmWho(text) {
+  const t = ' ' + String(text || '') + ' ';
+  const cl = (load('clients') || []).filter(c => c && c.name).sort((a, b) => b.name.length - a.name.length);
+  for (const c of cl) { const n = c.name.trim(), f = n.split(/\s+/)[0]; if (n && (t.indexOf(' ' + n) >= 0 || t.indexOf('ל' + n) >= 0)) return { name: n, phone: c.phone || '' };
+    if (f.length > 1 && new RegExp('[\\sל]' + f + '[\\s,.]').test(t)) return { name: n, phone: c.phone || '' }; }
+  // after the verb: "להתקשר לאבי…", "לכתוב לדנה…", "לשלוח למשה את…"
+  const k = _rmKind(text); if (k === 'todo') return null;
+  const rest = String(text || '').trim().replace(_RM_KINDS[k].re, '');
+  const m = (/^את\s/.test(rest) ? null : rest.match(/^(?:ל|אל\s+|עם\s+)?([א-ת][א-ת'"]{1,15})(?:\s|$)/)) || (' ' + rest).match(/\sל([א-ת][א-ת'"]{1,15})(?:\s|$)/);
+  const stop = /^(את|על|של|זה|כל|הודעה|קובץ|מייל)$/;
+  return m && !stop.test(m[1]) ? { name: m[1], phone: '' } : null;
+}
+function _rmIcon(k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + (_RM_KINDS[k] || _RM_KINDS.todo).ic + '</svg>'; }
+window.rmAct = function(id) {
+  const all = load('daily_tasks'), t = all.find(x => x.id === id); if (!t) return;
+  const go = ph => {
+    const p = _waPhone(ph); if (!p) { toast('אין מספר'); return; }
+    if (t.kind === 'call') window.location.href = 'tel:+' + p; else window.open('https://wa.me/' + p, '_blank');
+    setTimeout(() => spentSheet(t.kind === 'call' ? 'דיברתם?' : 'נשלח?', t.text, [{ label: 'כן — לסמן שבוצע', pri: true, run: () => rmTick(id) }, { label: 'עוד לא', run: () => {} }]), 1500);
+  };
+  if (t.phone) { go(t.phone); return; }
+  contactPick(t.who || '', (ph) => { const L = load('daily_tasks'), x = L.find(y => y.id === id); if (x) { x.phone = ph; save('daily_tasks', L); } try { if (t.who && _clientByName(t.who)) setClientPhone(t.who, ph); } catch (_) {} go(ph); });
+};
 window.rmOpen = function(prefill) {
   let ov = document.getElementById('fz-rem'); if (!ov) { ov = document.createElement('div'); ov.id = 'fz-rem'; ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); }; document.body.appendChild(ov); }
   ov.innerHTML = '<div class="rm-box"><div class="sm-grab"></div><div class="rm-t">מה לזכור?</div>'
-    + '<textarea id="rm-in" rows="2" placeholder="למשל: מחר להתקשר לרן ב-11"></textarea>'
+    + '<textarea id="rm-in" rows="2" placeholder="מחר להתקשר לרן ב-11 · לשלוח לדנה את המיקס"></textarea>'
     + '<div class="rm-when" id="rm-when"></div>'
+    + '<div class="rm-kinds">' + ['call', 'msg', 'send', 'todo'].map(k => '<button data-k="' + k + '">' + _rmIcon(k) + '<span>' + _RM_KINDS[k].t + '</span></button>').join('') + '</div>'
     + '<div class="rm-chips"><button data-w="מחר">מחר</button><button data-w="מחר בבוקר">מחר בבוקר</button><button data-w="בערב">בערב</button><button data-w="בעוד שבוע">בעוד שבוע</button></div>'
     + '<button class="rm-save">לזכור</button></div>';
   const inp = ov.querySelector('#rm-in'), when = ov.querySelector('#rm-when');
-  const upd = () => { const p = rmParse(inp.value); when.innerHTML = p.text ? '<span>' + (p.at ? 'אזכיר לך' : 'יופיע במסך הבית') + '</span><b>' + _rmWhen(p) + '</b>' : ''; };
+  window._rmKindSel = null;
+  const upd = () => { const p = rmParse(inp.value); const k = window._rmKindSel || _rmKind(p.text), w = _rmWho(p.text);
+    ov.querySelectorAll('.rm-kinds button').forEach(b => b.classList.toggle('on', b.dataset.k === k && !!p.text));
+    when.innerHTML = p.text ? '<span>' + (p.at ? 'אזכיר לך' : 'יופיע במסך הבית') + '</span><b>' + _rmWhen(p) + '</b>' + (w ? '<span class="rm-who">' + _escape(w.name) + (w.phone ? ' · יש מספר' : '') + '</span>' : '') : ''; };
+  ov.querySelectorAll('.rm-kinds button').forEach(b => b.onclick = () => { window._rmKindSel = b.dataset.k;
+    const pre = { call: 'להתקשר ל', msg: 'לכתוב ל', send: 'לשלוח ל', todo: '' }[b.dataset.k];
+    if (pre && !_RM_KINDS[b.dataset.k].re.test(inp.value.replace(/^\s*(מחר|היום|מחרתיים)\s+/, ''))) { const m = inp.value.match(/^\s*(מחר|היום|מחרתיים)\s+/); inp.value = (m ? m[0] : '') + pre + inp.value.replace(/^\s*(מחר|היום|מחרתיים)\s+/, ''); }
+    upd(); inp.focus(); });
   inp.value = prefill || ''; inp.oninput = upd; upd();
   ov.querySelectorAll('.rm-chips button').forEach(b => b.onclick = () => { inp.value = (inp.value.replace(/\s*(מחר בבוקר|מחר|בערב|בעוד שבוע)\s*$/, '') + ' ' + b.dataset.w).trim() + ' '; upd(); inp.focus(); });
   ov.querySelector('.rm-save').onclick = () => {
     const p = rmParse(inp.value); if (!p.text) { inp.focus(); return; }
     const task = { id: genId(), date: p.date, text: p.text, done: false, createdAt: new Date().toISOString(), src: 'rem' };
+    const kind = window._rmKindSel || _rmKind(p.text), who = _rmWho(p.text);
+    task.kind = kind; if (who) { task.who = who.name; if (who.phone) task.phone = who.phone; }
     if (p.at && p.at > new Date()) task.remindAt = p.at.toISOString();
     const all = load('daily_tasks'); all.push(task); save('daily_tasks', all);
     try { if (task.remindAt) _scheduleDailyTaskNotif(task); } catch (_) {}
@@ -10965,16 +11036,18 @@ window.rmLater = function(id) {
 window.spRememberHtml = function() {
   const today = dailyDateStr(), tm = new Date(); tm.setDate(tm.getDate() + 1); const tmr = dailyDateStr(tm);
   const all = (load('daily_tasks') || []).filter(t => t && !t.deleted);
-  const open = all.filter(t => !t.done && t.date <= today).sort((a, b) => String(a.remindAt || a.date).localeCompare(String(b.remindAt || b.date)));
+  const open = all.filter(t => !t.done && t.date <= today).sort((a, b) => ((a.date < today ? 0 : 1) - (b.date < today ? 0 : 1)) || String(a.remindAt || '9').localeCompare(String(b.remindAt || '9')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
   const doneToday = all.filter(t => t.done && t.date === today);
   const tomorrow = all.filter(t => !t.done && t.date === tmr);
-  const row = t => { const late = t.date < today, at = t.remindAt ? new Date(t.remindAt) : null;
-    const sub = late ? 'מ' + (Math.round((new Date(today) - new Date(t.date)) / 864e5) === 1 ? 'אתמול' : (+t.date.slice(8)) + '.' + (+t.date.slice(5, 7))) : at ? 'היום · ' + String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : 'היום';
-    return '<div class="rm-row' + (t.done ? ' done' : '') + (late ? ' late' : '') + '"><button class="rm-tk' + (t.done ? ' on' : '') + '" onclick="rmTick(\'' + t.id + '\')" aria-label="בוצע">' + FZ.check + '</button>'
-      + '<span class="rm-m"><b>' + _escape(t.text) + '</b><small>' + sub + '</small></span>'
-      + (t.done ? '' : '<button class="rm-later" onclick="rmLater(\'' + t.id + '\')">למחר</button>') + '</div>'; };
+  const row = t => { const late = t.date < today, at = t.remindAt ? new Date(t.remindAt) : null, k = t.kind || _rmKind(t.text);
+    const when = late ? 'מ' + (Math.round((new Date(today) - new Date(t.date)) / 864e5) === 1 ? 'אתמול' : (+t.date.slice(8)) + '.' + (+t.date.slice(5, 7))) : at ? String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : 'היום';
+    const act = !t.done && (k === 'call' || k === 'msg' || k === 'send') ? '<button class="rm-go" onclick="event.stopPropagation();rmAct(\'' + t.id + '\')">' + _rmIcon(k) + '<span>' + (k === 'call' ? 'להתקשר' : 'וואטסאפ') + '</span></button>' : '';
+    return '<div class="rm-row k-' + k + (t.done ? ' done' : '') + (late ? ' late' : '') + '">'
+      + '<button class="rm-tk' + (t.done ? ' on' : '') + '" onclick="rmTick(\'' + t.id + '\')" aria-label="בוצע">' + FZ.check + '</button>'
+      + '<span class="rm-m"><b>' + _escape(t.text) + '</b><small><span class="rm-when-chip">' + when + '</span>' + (t.who ? ' · ' + _escape(t.who) : '') + '</small></span>'
+      + act + (t.done || act ? '' : '<button class="rm-later" onclick="rmLater(\'' + t.id + '\')">למחר</button>') + '</div>'; };
   const list = open.concat(doneToday.slice(-2));
-  return '<div class="fz-lbl rm-lbl"><span>לזכור</span><button class="ex-clear" onclick="rmOpen(new Date().getHours() >= 17 ? \'מחר \' : \'\')">+ להוסיף</button></div>'
+  return '<div class="fz-lbl rm-lbl"><span>לזכור' + (open.length ? ' · ' + open.length : '') + '</span><button class="rm-add" onclick="rmOpen(new Date().getHours() >= 17 ? \'מחר \' : \'\')">' + FZ.plus + '<span>להוסיף</span></button></div>'
     + '<div class="fz-card rm-card">' + (list.length ? list.map(row).join('') : '<button class="rm-empty" onclick="rmOpen(new Date().getHours() >= 17 ? \'מחר \' : \'\')"><span>' + FZ.plus + '</span>מה צריך לזכור? כתוב כמו שאתה אומר — "מחר להתקשר לרן ב-11"</button>')
     + (tomorrow.length ? '<div class="rm-tmr">מחר: ' + tomorrow.slice(0, 3).map(t => _escape(t.text)).join(' · ') + (tomorrow.length > 3 ? ' ועוד ' + (tomorrow.length - 3) : '') + '</div>' : '')
     + '</div>';
@@ -11078,10 +11151,11 @@ function spLobbyRender() {
   box.innerHTML =
     '<div class="fz-top"><span class="fz-date">' + _escape(dateTxt) + '</span><span class="fz-tic"><button onclick="quickAction(\'search\')" aria-label="חיפוש">' + FZ.search + '</button><button onclick="openNotifSettings()" aria-label="הגדרות">' + FZ.bell + '</button></span></div>'
   + '<div class="fz-me"><span class="fz-av"><svg viewBox="70 180 830 520" aria-hidden="true"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#141414" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="33" fill="#141414"/></svg></span><div class="fz-bub">' + hello + ' <b>אליאור</b>.<br>' + bubble + '</div></div>'
+  + spRememberHtml()
   + (next ? '<div class="fz-focus" onclick="' + (next.go || '') + '"><div class="k">הדבר הבא</div><div class="t">' + _escape(next.t) + '</div><div class="s">' + _escape(next.s) + '</div>'
       + (next.fc ? '<span class="fz-go" onclick="event.stopPropagation();spTick(\'' + next.id + '\');fcAskYes(\'' + next.fc + '\')">כן, ירד</span>' : '<span class="fz-go">' + (next.cta || 'פתח') + '</span><span class="fz-skip" onclick="event.stopPropagation();spTick(\'' + next.id + '\')">סיימתי</span>') + '</div>' : '')
   + (later.length ? '<div class="fz-lbl">' + (next ? 'אחר כך' : 'היום') + '</div><div class="fz-card">' + later.map(row).join('') + '</div>' : '')
-  + spRememberHtml() + spGoalHtml() + spEveningHtml(items, isDone)
+  + spGoalHtml() + spEveningHtml(items, isDone)
   + '<button class="fz-goal" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה ›</button>'
   + '<button class="fz-fab" onclick="spLobbyAdd()" aria-label="הוספה">' + FZ.plus + '</button>'
   + '<div class="oz-nav">'
