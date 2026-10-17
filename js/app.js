@@ -11166,7 +11166,7 @@ function spLobbyRender() {
   if (wa) items.push({ id: 'wa', k: 'chat', tint: 'mint', t: wa === 1 ? 'מישהו כתב לך' : wa + ' אנשים כתבו לך', s: 'וואטסאפ', go: 'waGoInbox()', cta: 'לקרוא' });
   const open = items.filter(x => !isDone(x.id)), total = items.length;
   let rmN = 0; try { const td = dailyDateStr(); rmN = (load('daily_tasks') || []).filter(t => t && !t.done && !t.deleted && t.date <= td).length; } catch (_) {}
-  const bubble = !total && rmN ? (rmN === 1 ? 'יש דבר אחד לזכור היום.' : 'יש ' + rmN + ' דברים לזכור היום.')
+  let bubble = !total && rmN ? (rmN === 1 ? 'יש דבר אחד לזכור היום.' : 'יש ' + rmN + ' דברים לזכור היום.')
     : !total ? 'יום פנוי היום. זמן טוב ליצור משהו חדש.'
     : !open.length ? 'סגרת הכל להיום. יום טוב באמת — אני שומר על הכל.'
     : (open.length === 1 ? 'נשאר לך דבר אחד היום.' : 'יש לך ' + open.length + ' דברים היום. נתחיל?');
@@ -11186,6 +11186,10 @@ function spLobbyRender() {
   })();
   const after = next ? (window._calAfter || []) : []; window._calAfter = null;
   const later = items.filter(x => (!next || x.id !== next.id) && String(x.id).indexOf('s_') !== 0);   // calendar items live in the timeline under the card
+  // the greeting counts what's on screen: today's remaining events + what to remember today
+  { const evToday = (next && /^היום/.test(next.s) ? 1 : 0) + after.filter(a => a.key === tk).length, n = evToday + rmN;
+    bubble = !n ? 'יום פנוי היום. זמן טוב ליצור משהו חדש.'
+      : (evToday ? (evToday === 1 ? 'אירוע אחד בלו״ז' : evToday + ' אירועים בלו״ז') : '') + (evToday && rmN ? ' ו' : '') + (rmN ? (rmN === 1 ? 'דבר אחד לזכור' : rmN + ' דברים לזכור') : '') + ' היום.'; }
   const afterHtml = after.length ? '<div class="fz-after"><div class="k">לאחר מכן בלו״ז</div>' + after.map(a => '<button class="fz-arow" onclick="chooseMode(\'business\');showPage(\'schedule\');_scheduleDate=\'' + a.key + '\';setTimeout(renderSchedule,50)"><span class="tm">' + (a.time || '—') + '</span><span class="tt">' + _escape(a.title) + '</span></button>').join('') + '</div>' : '';
   const row = x => {
     const d = isDone(x.id);
@@ -11195,13 +11199,13 @@ function spLobbyRender() {
     return '<div class="fz-row' + (d ? ' done' : '') + '"' + (x.go ? ' onclick="' + x.go + '"' : '') + '>' + fzIc(x.k, x.tint) + '<span class="fz-m"><b>' + _escape(x.t) + '</b><small>' + _escape(x.s) + '</small></span>' + tail + '</div>';
   };
   box.innerHTML =
-    '<div class="fz-top"><span class="fz-date">' + _escape(dateTxt) + '</span><span class="fz-tic"><button onclick="quickAction(\'search\')" aria-label="חיפוש">' + FZ.search + '</button><button onclick="openNotifSettings()" aria-label="הגדרות">' + FZ.bell + '</button></span></div>'
+    '<div class="fz-top"><span class="fz-date">' + _escape(dateTxt) + '</span><span class="fz-tic">' + (() => { let n = 0; try { n = _waWaitingCount() || 0; } catch (_) {} return '<button class="fz-wa" onclick="waGoInbox()" aria-label="וואטסאפ">' + FZ.chat + (n ? '<i class="fz-badge">' + (n > 99 ? '99+' : n) + '</i>' : '') + '</button>'; })() + '<button onclick="quickAction(\'search\')" aria-label="חיפוש">' + FZ.search + '</button><button onclick="openNotifSettings()" aria-label="הגדרות">' + FZ.bell + '</button></span></div>'
   + '<div class="fz-me"><span class="fz-av"><svg viewBox="70 180 830 520" aria-hidden="true"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#141414" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="33" fill="#141414"/></svg></span><div class="fz-bub">' + hello + ' <b>אליאור</b>.<br>' + bubble + '</div></div>'
   + (next ? '<div class="fz-focus" onclick="' + (next.go || '') + '"><div class="k">האירוע הבא בלו״ז</div><div class="t">' + _escape(next.t) + '</div><div class="s">' + _escape(next.s) + '</div>'
       + (next.fc ? '<span class="fz-go" onclick="event.stopPropagation();spTick(\'' + next.id + '\');fcAskYes(\'' + next.fc + '\')">כן, ירד</span>' : '<span class="fz-go">' + (next.cta || 'פתח') + '</span><span class="fz-skip" onclick="event.stopPropagation();spTick(\'' + next.id + '\')">סיימתי</span>') + '</div>' : '')
   + afterHtml
   + spRememberHtml()
-  + (later.length ? '<div class="fz-lbl">' + 'עוד היום' + '</div><div class="fz-card">' + later.map(row).join('') + '</div>' : '')
+  // v621: no "עוד היום" list — home is the calendar, what to remember, and WhatsApp up top
   + spGoalHtml() + spEveningHtml(items, isDone)
   + '<button class="fz-goal" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה ›</button>'
   + '<button class="fz-fab" onclick="spLobbyAdd()" aria-label="הוספה">' + FZ.plus + '</button>'
