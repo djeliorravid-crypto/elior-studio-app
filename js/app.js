@@ -1,3 +1,30 @@
+// v616: on the iPhone, plain GETs to the Firebase database fail ("Load failed")
+// while the Firebase SDK works. Every database read in the app goes through
+// fetch(...firebaseio.com/...json) — so on native, answer those GETs from the
+// SDK instead (same data), falling back to the network if the SDK isn't ready.
+(function () {
+  const isNative = () => !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+  const DB = 'https://elior-studio-default-rtdb.firebaseio.com/';
+  const orig = window.fetch.bind(window);
+  window.fetch = async function (input, init) {
+    try {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+      if (isNative() && method === 'GET' && url.indexOf(DB) === 0 && typeof firebaseDB !== 'undefined' && firebaseDB) {
+        const u = new URL(url), path = decodeURIComponent(u.pathname.replace(/^\//, '').replace(/\.json$/, ''));
+        const shallow = u.searchParams.get('shallow') === 'true';
+        try {
+          if (shallow) throw new Error('shallow');   // SDK has no shallow read — use the network for these
+          const snap = await Promise.race([firebaseDB.ref(path || '/').once('value'), new Promise((_, rej) => setTimeout(() => rej(new Error('sdk timeout')), 12000))]);
+          const body = JSON.stringify(snap.val());
+          return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
+        } catch (e) { /* fall through to the network */ }
+        try { return await orig(input, Object.assign({}, init || {}, { cache: undefined })); } catch (e) { throw e; }
+      }
+    } catch (_) {}
+    return orig(input, init);
+  };
+})();
 // ===== STATE =====
 const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 let curYear = new Date().getFullYear();
