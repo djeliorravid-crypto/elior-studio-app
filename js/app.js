@@ -10831,6 +10831,28 @@ window.phoneTypeSheet = function(name, done) {
   ov.querySelector('.ok').onclick = () => { const v = inp.value.replace(/[^\d+]/g, ''); if (v.length < 9) { toast('מספר לא תקין'); return; } ov.classList.remove('open'); done(v); };
   ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); };
 };
+// v618: device contacts, cached for the session; find by full name or first name
+window._ctAll = async function() {
+  if (window._ctCache) return window._ctCache;
+  const C = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.ContactsBridge; if (!C) return [];
+  let res; try { res = await C.getAll(); } catch (_) {}
+  if (!res || !res.granted) return [];
+  const all = []; (res.contacts || []).forEach(ct => (ct.phones || []).forEach(ph => all.push({ n: String(ct.name || '').trim(), ph })));
+  window._ctCache = all; setTimeout(() => { window._ctCache = null; }, 10 * 60 * 1000); return all;
+};
+const _ctClean = n => String(n || '').replace(/[^֐-׿A-Za-z0-9\s'"-]/g, '').replace(/\s+/g, ' ').trim();
+window._ctFind = async function(name) {
+  const q = _ctClean(name); if (!q) return [];
+  const all = await _ctAll(), seen = new Set(), uniq = [];
+  all.forEach(x => { const k = _waPhone(x.ph); if (!seen.has(k)) { seen.add(k); uniq.push(x); } });
+  const words = q.split(' ');
+  const hits = uniq.filter(x => { const w = _ctClean(x.n).split(' '); return words.every(qw => w.indexOf(qw) >= 0); });
+  const exact = hits.filter(x => _ctClean(x.n) === q);
+  // a full name that matches exactly wins; a bare first name is only "sure" when nobody else shares it
+  if (exact.length === 1 && (words.length > 1 || hits.length === 1)) return exact;
+  return hits;
+};
+const _phPretty = ph => { const d = String(ph || '').replace(/\D/g, '').replace(/^972/, '0'); return d.length === 10 ? d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6) : (ph || ''); };
 window.contactPick = async function(name, done) {
   const C = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.ContactsBridge;
   if (!C) { phoneTypeSheet(name, done); return; }
@@ -10843,7 +10865,8 @@ window.contactPick = async function(name, done) {
   ov.classList.add('open');
   const list = ov.querySelector('.fzc-list'), q = ov.querySelector('.fzc-q');
   const paint = () => { const t = q.value.trim(); const f = all.filter(x => !t || x.n.indexOf(t) >= 0 || x.ph.replace(/\D/g, '').indexOf(t.replace(/\D/g, '') || '§') >= 0).slice(0, 80);
-    list.innerHTML = f.length ? f.map((x, i) => '<button data-i="' + all.indexOf(x) + '"><b>' + _escape(x.n) + '</b><small>' + _escape(x.ph) + '</small></button>').join('') : '<div class="fzc-empty">לא נמצא</div>'; };
+    list.innerHTML = f.length ? f.map((x, i) => { const nm = _ctClean(x.n) || x.n, ini = (nm.split(' ').map(w => w[0]).join('').slice(0, 2)) || '·';
+        return '<button data-i="' + all.indexOf(x) + '"><span class="fzc-av">' + _escape(ini) + '</span><span class="fzc-t"><b>' + _escape(nm) + '</b><small dir="ltr">' + _escape(_phPretty(x.ph)) + '</small></span><span class="fzc-ar">‹</span></button>'; }).join('') : '<div class="fzc-empty">לא נמצא — אפשר לחפש במספר</div>'; };
   q.oninput = paint; paint();
   list.onclick = e => { const b = e.target.closest('button[data-i]'); if (!b) return; const x = all[+b.dataset.i]; ov.classList.remove('open'); done(x.ph, x.n); };
   ov.querySelector('.x').onclick = () => ov.classList.remove('open');
@@ -10981,7 +11004,7 @@ function _rmWho(text) {
   return m && !stop.test(m[1]) ? { name: m[1], phone: '' } : null;
 }
 function _rmIcon(k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + (_RM_KINDS[k] || _RM_KINDS.todo).ic + '</svg>'; }
-window.rmAct = function(id) {
+window.rmAct = async function(id) {
   const all = load('daily_tasks'), t = all.find(x => x.id === id); if (!t) return;
   const go = ph => {
     const p = _waPhone(ph); if (!p) { toast('אין מספר'); return; }
@@ -10989,6 +11012,8 @@ window.rmAct = function(id) {
     setTimeout(() => spentSheet(t.kind === 'call' ? 'דיברתם?' : 'נשלח?', t.text, [{ label: 'כן — לסמן שבוצע', pri: true, run: () => rmTick(id) }, { label: 'עוד לא', run: () => {} }]), 1500);
   };
   if (t.phone) { go(t.phone); return; }
+  const save1 = ph => { const L = load('daily_tasks'), x = L.find(y => y.id === id); if (x) { x.phone = ph; save('daily_tasks', L); } };
+  if (t.who) { const m = await _ctFind(t.who); if (m.length === 1) { save1(m[0].ph); go(m[0].ph); return; } }
   contactPick(t.who || '', (ph) => { const L = load('daily_tasks'), x = L.find(y => y.id === id); if (x) { x.phone = ph; save('daily_tasks', L); } try { if (t.who && _clientByName(t.who)) setClientPhone(t.who, ph); } catch (_) {} go(ph); });
 };
 window.rmOpen = function(prefill) {
@@ -11003,7 +11028,11 @@ window.rmOpen = function(prefill) {
   window._rmKindSel = null;
   const upd = () => { const p = rmParse(inp.value); const k = window._rmKindSel || _rmKind(p.text), w = _rmWho(p.text);
     ov.querySelectorAll('.rm-kinds button').forEach(b => b.classList.toggle('on', b.dataset.k === k && !!p.text));
-    when.innerHTML = p.text ? '<span>' + (p.at ? 'אזכיר לך' : 'יופיע במסך הבית') + '</span><b>' + _rmWhen(p) + '</b>' + (w ? '<span class="rm-who">' + _escape(w.name) + (w.phone ? ' · יש מספר' : '') + '</span>' : '') : ''; };
+    window._rmRes = null;
+    when.innerHTML = p.text ? '<span>' + (p.at ? 'אזכיר לך' : 'יופיע במסך הבית') + '</span><b>' + _rmWhen(p) + '</b>' + (w ? '<span class="rm-who" id="rm-who">' + _escape(w.name) + (w.phone ? ' · ' + _phPretty(w.phone) : '') + '</span>' : '') : '';
+    if (w && !w.phone && k !== 'todo') { const want = w.name; clearTimeout(window._rmFT); window._rmFT = setTimeout(async () => { const m = await _ctFind(want); const el = document.getElementById('rm-who'); if (!el || (_rmWho(rmParse(inp.value).text) || {}).name !== want) return;
+      if (m.length === 1) { window._rmRes = { name: _ctClean(m[0].n), phone: m[0].ph }; el.textContent = _ctClean(m[0].n) + ' · ' + _phPretty(m[0].ph); el.classList.add('ok'); }
+      else if (m.length > 1) { el.textContent = want + ' · ' + m.length + ' אנשי קשר — תבחר כשתלחץ'; } }, 250); } };
   ov.querySelectorAll('.rm-kinds button').forEach(b => b.onclick = () => { window._rmKindSel = b.dataset.k;
     const pre = { call: 'להתקשר ל', msg: 'לכתוב ל', send: 'לשלוח ל', todo: '' }[b.dataset.k];
     if (pre && !_RM_KINDS[b.dataset.k].re.test(inp.value.replace(/^\s*(מחר|היום|מחרתיים)\s+/, ''))) { const m = inp.value.match(/^\s*(מחר|היום|מחרתיים)\s+/); inp.value = (m ? m[0] : '') + pre + inp.value.replace(/^\s*(מחר|היום|מחרתיים)\s+/, ''); }
@@ -11015,6 +11044,7 @@ window.rmOpen = function(prefill) {
     const task = { id: genId(), date: p.date, text: p.text, done: false, createdAt: new Date().toISOString(), src: 'rem' };
     const kind = window._rmKindSel || _rmKind(p.text), who = _rmWho(p.text);
     task.kind = kind; if (who) { task.who = who.name; if (who.phone) task.phone = who.phone; }
+    if (!task.phone && window._rmRes && who && kind !== 'todo') { task.phone = window._rmRes.phone; task.who = window._rmRes.name; }
     if (p.at && p.at > new Date()) task.remindAt = p.at.toISOString();
     const all = load('daily_tasks'); all.push(task); save('daily_tasks', all);
     try { if (task.remindAt) _scheduleDailyTaskNotif(task); } catch (_) {}
