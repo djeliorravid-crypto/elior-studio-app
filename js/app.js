@@ -11170,7 +11170,21 @@ function spLobbyRender() {
     : !total ? 'יום פנוי היום. זמן טוב ליצור משהו חדש.'
     : !open.length ? 'סגרת הכל להיום. יום טוב באמת — אני שומר על הכל.'
     : (open.length === 1 ? 'נשאר לך דבר אחד היום.' : 'יש לך ' + open.length + ' דברים היום. נתחיל?');
-  const next = open[0], later = items.filter(x => x !== next);
+  // v619: the big card = the next event in the calendar (app schedule + iPhone/Google), up to a week ahead
+  const next = (() => {
+    const ev = [];
+    const nowM = now.getHours() * 60 + now.getMinutes();
+    for (let k = 0; k < 8; k++) { const d = new Date(today); d.setDate(d.getDate() + k); const key = dailyDateStr(d);
+      (load('schedule') || []).filter(x => x && x.date === key && !x.done && !x.deleted).forEach(x => ev.push({ k, key, time: x.time || '', title: x.title || 'פגישה', id: 's_' + x.id }));
+      (window._eventKitCache || []).filter(x => x && x.date === key && !x.allDay).forEach(x => { if (!ev.some(e => e.key === key && e.time === x.time && e.title === x.title)) ev.push({ k, key, time: x.time || '', title: x.title || 'אירוע', id: 'ek_' + x.id }); });
+      const up = ev.filter(e => e.k === k && !isDone(e.id) && (k > 0 || !e.time || (+e.time.slice(0, 2)) * 60 + (+e.time.slice(3, 5)) >= nowM - 30)).sort((a, b) => String(a.time || '99').localeCompare(String(b.time || '99')));
+      if (up.length) { const e = up[0]; let when = k === 0 ? 'היום' : k === 1 ? 'מחר' : 'יום ' + ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][d.getDay()];
+        let soon = ''; if (k === 0 && e.time) { const mins = (+e.time.slice(0, 2)) * 60 + (+e.time.slice(3, 5)) - nowM; soon = mins <= 0 ? 'עכשיו' : mins < 60 ? 'בעוד ' + mins + ' דקות' : mins < 120 ? 'בעוד שעה' : 'בעוד ' + Math.round(mins / 60) + ' שעות'; }
+        return { id: e.id, k: 'cal', tint: 'mint', t: e.title, s: when + (e.time ? ' ב-' + e.time : '') + (soon ? ' · ' + soon : ''), go: "chooseMode('business');showPage('schedule');_scheduleDate='" + e.key + "';setTimeout(renderSchedule,50)", cta: 'פתח בלו״ז' }; }
+    }
+    return null;
+  })();
+  const later = items.filter(x => !next || x.id !== next.id);
   const row = x => {
     const d = isDone(x.id);
     const tail = x.fc
@@ -11181,10 +11195,10 @@ function spLobbyRender() {
   box.innerHTML =
     '<div class="fz-top"><span class="fz-date">' + _escape(dateTxt) + '</span><span class="fz-tic"><button onclick="quickAction(\'search\')" aria-label="חיפוש">' + FZ.search + '</button><button onclick="openNotifSettings()" aria-label="הגדרות">' + FZ.bell + '</button></span></div>'
   + '<div class="fz-me"><span class="fz-av"><svg viewBox="70 180 830 520" aria-hidden="true"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#141414" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="33" fill="#141414"/></svg></span><div class="fz-bub">' + hello + ' <b>אליאור</b>.<br>' + bubble + '</div></div>'
-  + spRememberHtml()
-  + (next ? '<div class="fz-focus" onclick="' + (next.go || '') + '"><div class="k">הדבר הבא</div><div class="t">' + _escape(next.t) + '</div><div class="s">' + _escape(next.s) + '</div>'
+  + (next ? '<div class="fz-focus" onclick="' + (next.go || '') + '"><div class="k">האירוע הבא בלו״ז</div><div class="t">' + _escape(next.t) + '</div><div class="s">' + _escape(next.s) + '</div>'
       + (next.fc ? '<span class="fz-go" onclick="event.stopPropagation();spTick(\'' + next.id + '\');fcAskYes(\'' + next.fc + '\')">כן, ירד</span>' : '<span class="fz-go">' + (next.cta || 'פתח') + '</span><span class="fz-skip" onclick="event.stopPropagation();spTick(\'' + next.id + '\')">סיימתי</span>') + '</div>' : '')
-  + (later.length ? '<div class="fz-lbl">' + (next ? 'אחר כך' : 'היום') + '</div><div class="fz-card">' + later.map(row).join('') + '</div>' : '')
+  + spRememberHtml()
+  + (later.length ? '<div class="fz-lbl">' + 'עוד היום' + '</div><div class="fz-card">' + later.map(row).join('') + '</div>' : '')
   + spGoalHtml() + spEveningHtml(items, isDone)
   + '<button class="fz-goal" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה ›</button>'
   + '<button class="fz-fab" onclick="spLobbyAdd()" aria-label="הוספה">' + FZ.plus + '</button>'
