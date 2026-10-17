@@ -1905,3 +1905,13 @@ html[data-skin="spent"] .fz-tk.on, html[data-skin="spent"] .fcs-tick.on { animat
 .fzc-ar { color: #c3c7d8; font-size: 18px; }
 .rm-who.ok { background: #e4efe9; color: #24493b; }
 #fz-contacts .fzc-q { background: #fff !important; border: 1.5px solid #e3e6f1 !important; box-shadow: none !important; }
+
+/* v620 — the timeline attached under "האירוע הבא בלו״ז" */
+#sp-lobby .fz-focus { position: relative; z-index: 2; }
+.fz-after { position: relative; z-index: 1; margin: -34px 10px 10px; padding: 44px 18px 8px; border-radius: 0 0 26px 26px;
+  background: linear-gradient(180deg, #e3e7f6 0%, #eef0f8 100%); box-shadow: 0 8px 20px rgba(22,28,69,.08); }
+.fz-after .k { font-size: 12.5px; font-weight: 600; color: #6b7299; margin: 0 2px 4px; }
+.fz-arow { width: 100%; display: flex; align-items: center; gap: 12px; border: none; background: none; padding: 9px 2px; font-family: inherit; text-align: right; cursor: pointer; border-top: 1px solid rgba(22,28,69,.07); }
+.fz-arow:first-of-type { border-top: none; }
+.fz-arow .tm { flex: 0 0 auto; min-width: 50px; text-align: center; font-size: 13.5px; font-weight: 700; color: #252e6b; background: #fff; border-radius: 999px; padding: 4px 8px; font-variant-numeric: tabular-nums; }
+.fz-arow .tt { flex: 1; font-size: 15px; font-weight: 600; color: #161c45; }
