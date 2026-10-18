@@ -1920,3 +1920,29 @@ html[data-skin="spent"] .fz-tk.on, html[data-skin="spent"] .fcs-tick.on { animat
 .fz-tic .fz-wa { position: relative; }
 .fz-badge { position: absolute; top: -3px; left: -3px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px; background: #e0603f; color: #fff;
   font-style: normal; font-size: 11.5px; font-weight: 700; line-height: 20px; text-align: center; box-shadow: 0 0 0 2.5px #eef0f8; font-variant-numeric: tabular-nums; }
+
+/* v622 — "לזכור", calm: one line each, a small round action, details behind a tap */
+.rm-lbl { margin: 22px 6px 8px !important; }
+.rm-lbl > span { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: #161c45; font-weight: 700; }
+.rm-lbl em { font-style: normal; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #e6e9f5; color: #252e6b; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.rm-add { width: 32px; height: 32px; padding: 0 !important; justify-content: center; border-radius: 16px !important; box-shadow: 0 3px 8px rgba(22,28,69,.18) !important; }
+.rm-add svg { width: 16px; height: 16px; }
+.rm-card { padding: 2px 16px !important; }
+.rm-row { gap: 12px; padding: 12px 0; min-height: 44px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rm-row:active .rm-m b { color: #3a4690; }
+.rm-tk { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 12px; box-shadow: inset 0 0 0 1.6px #c9cee3; }
+.rm-tk svg { width: 12px; height: 12px; }
+.rm-m { gap: 3px; }
+.rm-m b { font-size: 15.5px !important; font-weight: 500; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rm-m small { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #8a8fae !important; font-weight: 400 !important; }
+.rm-m small i { font-style: normal; color: #c3c7da; }
+.rm-t2 { color: #6b7299; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rm-t2.late { color: #b07418; }
+.rm-go { width: 36px; height: 36px; padding: 0 !important; justify-content: center; border-radius: 18px !important; background: #eef0f8 !important; color: #252e6b !important; box-shadow: none !important; }
+.rm-row.k-msg .rm-go, .rm-row.k-send .rm-go { background: #e7f0eb !important; color: #24493b !important; }
+.rm-go svg { width: 17px; height: 17px; }
+.rm-go:active { transform: scale(.92); }
+.rm-more { width: 100%; border: none; border-top: 1px solid #eef0f6; background: none; padding: 11px 0 12px; font-family: inherit; font-size: 13.5px; font-weight: 600; color: #252e6b; text-align: center; cursor: pointer; }
+.rm-tmr { display: flex; gap: 8px; align-items: baseline; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rm-tmr span { flex-shrink: 0; color: #252e6b; font-weight: 600; }
+.rm-empty { font-size: 14px; }

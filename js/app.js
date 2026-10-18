@@ -11069,18 +11069,35 @@ window.spRememberHtml = function() {
   const open = all.filter(t => !t.done && t.date <= today).sort((a, b) => ((a.date < today ? 0 : 1) - (b.date < today ? 0 : 1)) || String(a.remindAt || '9').localeCompare(String(b.remindAt || '9')) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
   const doneToday = all.filter(t => t.done && t.date === today);
   const tomorrow = all.filter(t => !t.done && t.date === tmr);
+  // v622: calm rows — one line of text, a quiet time/person line, one small round action; everything else behind a tap
   const row = t => { const late = t.date < today, at = t.remindAt ? new Date(t.remindAt) : null, k = t.kind || _rmKind(t.text);
-    const when = late ? 'מ' + (Math.round((new Date(today) - new Date(t.date)) / 864e5) === 1 ? 'אתמול' : (+t.date.slice(8)) + '.' + (+t.date.slice(5, 7))) : at ? String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : 'היום';
-    const act = !t.done && (k === 'call' || k === 'msg' || k === 'send') ? '<button class="rm-go" onclick="event.stopPropagation();rmAct(\'' + t.id + '\')">' + _rmIcon(k) + '<span>' + (k === 'call' ? 'להתקשר' : 'וואטסאפ') + '</span></button>' : '';
-    return '<div class="rm-row k-' + k + (t.done ? ' done' : '') + (late ? ' late' : '') + '">'
-      + '<button class="rm-tk' + (t.done ? ' on' : '') + '" onclick="rmTick(\'' + t.id + '\')" aria-label="בוצע">' + FZ.check + '</button>'
-      + '<span class="rm-m"><b>' + _escape(t.text) + '</b><small><span class="rm-when-chip">' + when + '</span>' + (t.who ? ' · ' + _escape(t.who) : '') + '</small></span>'
-      + act + (t.done || act ? '' : '<button class="rm-later" onclick="rmLater(\'' + t.id + '\')">למחר</button>') + '</div>'; };
-  const list = open.concat(doneToday.slice(-2));
-  return '<div class="fz-lbl rm-lbl"><span>לזכור' + (open.length ? ' · ' + open.length : '') + '</span><button class="rm-add" onclick="rmOpen(new Date().getHours() >= 17 ? \'מחר \' : \'\')">' + FZ.plus + '<span>להוסיף</span></button></div>'
-    + '<div class="fz-card rm-card">' + (list.length ? list.map(row).join('') : '<button class="rm-empty" onclick="rmOpen(new Date().getHours() >= 17 ? \'מחר \' : \'\')"><span>' + FZ.plus + '</span>מה צריך לזכור? כתוב כמו שאתה אומר — "מחר להתקשר לרן ב-11"</button>')
-    + (tomorrow.length ? '<div class="rm-tmr">מחר: ' + tomorrow.slice(0, 3).map(t => _escape(t.text)).join(' · ') + (tomorrow.length > 3 ? ' ועוד ' + (tomorrow.length - 3) : '') + '</div>' : '')
+    const days = late ? Math.round((new Date(today) - new Date(t.date)) / 864e5) : 0;
+    const when = late ? (days === 1 ? 'מאתמול' : 'מ-' + (+t.date.slice(8)) + '.' + (+t.date.slice(5, 7))) : at ? String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : '';
+    const who = t.who && String(t.text).indexOf(t.who) < 0 ? t.who : '';
+    const meta = [when ? '<span class="rm-t2' + (late ? ' late' : '') + '">' + when + '</span>' : '', who ? _escape(who) : ''].filter(Boolean).join('<i>·</i>');
+    const act = k === 'call' || k === 'msg' || k === 'send' ? '<button class="rm-go" onclick="event.stopPropagation();rmAct(\'' + t.id + '\')" aria-label="' + (k === 'call' ? 'להתקשר' : 'וואטסאפ') + '">' + _rmIcon(k) + '</button>' : '';
+    return '<div class="rm-row k-' + k + (late ? ' late' : '') + '" onclick="rmMenu(\'' + t.id + '\')">'
+      + '<button class="rm-tk" onclick="event.stopPropagation();rmTick(\'' + t.id + '\')" aria-label="בוצע">' + FZ.check + '</button>'
+      + '<span class="rm-m"><b>' + _escape(t.text) + '</b>' + (meta ? '<small>' + meta + '</small>' : '') + '</span>' + act + '</div>'; };
+  const CAP = 4, more = open.length - CAP, showAll = !!window._rmAll;
+  const list = showAll || more <= 1 ? open : open.slice(0, CAP);
+  const add = 'rmOpen(new Date().getHours() >= 17 ? \'מחר \' : \'\')';
+  return '<div class="fz-lbl rm-lbl"><span>לזכור' + (open.length ? '<em>' + open.length + '</em>' : '') + '</span><button class="rm-add" onclick="' + add + '" aria-label="להוסיף">' + FZ.plus + '</button></div>'
+    + '<div class="fz-card rm-card">' + (list.length ? list.map(row).join('')
+        + (more > 1 ? '<button class="rm-more" onclick="window._rmAll=!window._rmAll;spLobbyRender()">' + (showAll ? 'להציג פחות' : 'עוד ' + more + ' ›') + '</button>' : '')
+      : '<button class="rm-empty" onclick="' + add + '"><span>' + FZ.plus + '</span>' + (doneToday.length ? 'הכל סגור להיום. משהו נוסף לזכור?' : 'מה צריך לזכור? כתוב כמו שאתה אומר — "מחר להתקשר לרן ב-11"') + '</button>')
+    + (tomorrow.length ? '<div class="rm-tmr"><span>מחר</span>' + tomorrow.slice(0, 2).map(t => _escape(t.text)).join(' · ') + (tomorrow.length > 2 ? ' ועוד ' + (tomorrow.length - 2) : '') + '</div>' : '')
     + '</div>';
+};
+// tap a reminder: everything you can do with it, in one quiet sheet
+window.rmMenu = function(id) {
+  const t = (load('daily_tasks') || []).find(x => x.id === id); if (!t) return;
+  const k = t.kind || _rmKind(t.text), acts = [];
+  if (k === 'call' || k === 'msg' || k === 'send') acts.push({ label: k === 'call' ? 'להתקשר עכשיו' : 'לפתוח בוואטסאפ', pri: true, run: () => rmAct(id) });
+  acts.push({ label: 'בוצע', pri: acts.length === 0, run: () => rmTick(id) });
+  acts.push({ label: 'להעביר למחר', run: () => rmLater(id) });
+  acts.push({ label: 'למחוק', danger: true, run: () => { const L = load('daily_tasks'), x = L.find(y => y.id === id); if (!x) return; x.deleted = true; x.updatedAt = new Date().toISOString(); save('daily_tasks', L); spLobbyRender(); } });
+  spentSheet(t.text, t.who ? t.who + (t.phone ? ' · ' + _phPretty(t.phone) : '') : '', acts);
 };
 // ── v600 monthly goal: a quiet ring, percent only on home (amounts in the sheet) ──
 // the goal lives in the synced 'monthlyGoal' ({v}) so phone and Mac see the same one
