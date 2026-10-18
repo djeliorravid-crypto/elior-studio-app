@@ -1,0 +1,87 @@
+# Nightly server-side backup — runs even when no phone opens the app.
+#  1. copies all of studio_data (+ studio_meta) to studio_backups/<date>-srv in Firebase
+#     (shows up in the app under גיבוי יומי, restorable from the phone or from DB health)
+#  2. keeps an encrypted off-site copy as a workflow artifact for 90 days
+#     (key = the SEND_SECRET repo secret; the file is useless without it)
+# COUNTS ONLY in the log (public repo): no names, amounts, phones or keys are printed.
+# If the live data suddenly shrinks, the run still saves everything and then fails,
+# so GitHub emails a warning.
+name: Nightly backup
+on:
+  schedule:
+    - cron: '23 0 * * *'   # ~03:23 Israel
+  workflow_dispatch:
+concurrency: nightly-backup
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Snapshot Firebase
+        id: snap
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, urllib.error, time, datetime, os, sys
+          R = 'https://elior-studio-default-rtdb.firebaseio.com'
+          def req(p, method='GET', body=None):
+              for i in range(4):
+                  try:
+                      r = urllib.request.Request(R + p, data=None if body is None else json.dumps(body).encode(), method=method)
+                      with urllib.request.urlopen(r, timeout=120) as x: return x.status, json.loads(x.read() or b'null')
+                  except Exception as e:
+                      err = str(e)[:120]; time.sleep(2 ** (i + 1))
+              print('::error::' + method + ' failed after retries: ' + err); sys.exit(1)
+          note = lambda m: print('::notice::' + m)
+          _, data = req('/studio_data.json'); _, meta = req('/studio_meta.json')
+          if not isinstance(data, dict) or not data: print('::error::studio_data empty or unreadable — nothing saved'); sys.exit(1)
+          def n(v): return len([x for x in v if x]) if isinstance(v, list) else len(v) if isinstance(v, dict) else 0
+          counts = {k: n(v) for k, v in data.items() if isinstance(v, (list, dict))}
+          now = int(time.time() * 1000); day = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+          snap = {'ts': now, 'at': now, 'src': 'server', 'data': data, 'meta': meta}
+          json.dump(snap, open('/tmp/snap.json', 'w'))
+          # compare with the most recent previous server backup (before writing today's)
+          _, keys = req('/studio_backups.json?shallow=true')
+          ks = sorted(k for k in (keys or {}) if k.endswith('-srv') and k != day + '-srv')
+          drop = []
+          if ks:
+              for k in ('income', 'expenses', 'clients', 'schedule', 'fixed_costs'):
+                  _, pv = req(f'/studio_backups/{ks[-1]}/data/{k}.json'); p = n(pv)
+                  if p >= 5 and counts.get(k, 0) < p * 0.8: drop.append(f'{k} {p}->{counts.get(k, 0)}')
+          req(f'/studio_backups/{day}-srv.json', 'PUT', snap)
+          _, back = req(f'/studio_backups/{day}-srv/data/income.json')
+          ok = n(back) == counts.get('income', 0)
+          note(f'saved studio_backups/{day}-srv verified={ok} lists={len(counts)} ' + ' '.join(f'{k}={v}' for k, v in sorted(counts.items()) if k in ('income','expenses','clients','schedule','fixed_costs','productions','daily_tasks')))
+          # retention for server copies: 60 days, plus the first one of every month forever
+          cut = (datetime.datetime.utcnow() - datetime.timedelta(days=60)).strftime('%Y-%m-%d'); seen = set(); gone = 0
+          for k in sorted(k for k in (keys or {}) if k.endswith('-srv')):
+              m = k[:7]
+              if k[:10] >= cut or m not in seen: seen.add(m); continue
+              req(f'/studio_backups/{k}.json', 'DELETE'); gone += 1
+          note(f'server backups pruned={gone}')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f: f.write(f'day={day}\nverified={str(ok).lower()}\ndrop={";".join(drop)}\n')
+          if not ok: print('::error::read-back did not match'); sys.exit(1)
+          PY
+
+      - name: Encrypt off-site copy
+        env:
+          KEY: ${{ secrets.SEND_SECRET }}
+        run: |
+          set -e
+          test -n "$KEY" || { echo "::error::no key"; exit 1; }
+          gzip -9 /tmp/snap.json
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -in /tmp/snap.json.gz -out backup.enc -pass env:KEY
+          rm -f /tmp/snap.json.gz
+          # prove it can be opened again before keeping it
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in backup.enc -pass env:KEY | gunzip | python3 -c "import json,sys; d=json.load(sys.stdin); print('::notice::off-site copy decrypts ok, lists=' + str(len(d.get('data') or {})))"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: maestro-backup-${{ steps.snap.outputs.day }}
+          path: backup.enc
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Warn if data shrank
+        if: steps.snap.outputs.drop != ''
+        run: |
+          echo "::error::live data shrank vs the last server backup: ${{ steps.snap.outputs.drop }} — everything was still saved; restore from DB health if this was not on purpose"
+          exit 1

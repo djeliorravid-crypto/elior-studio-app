@@ -674,14 +674,14 @@ window.backupOpen = async function() {
   }
   const last = Number(localStorage.getItem('bk_last') || 0);
   const acts = [{ label: 'לגבות עכשיו', pri: true, run: async () => { toast('מגבה…'); toast((await backupNow()) ? '✓ גובה עכשיו' : 'הגיבוי לא הצליח — נסה כשיש אינטרנט'); } }]
-    .concat(keys.slice(0, 20).map(k => ({ label: /^before-restore-/.test(k) ? 'לפני שחזור · ' + new Date(+k.slice(15)).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'לראות את הגיבוי מ־' + (+k.slice(8, 10)) + '.' + (+k.slice(5, 7)) + (k.length > 10 ? ' (נוסף)' : ''), run: () => backupPreview(k) })));
+    .concat(keys.slice(0, 20).map(k => ({ label: /^before-restore-/.test(k) ? 'לפני שחזור · ' + new Date(+k.slice(15)).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : (/-srv$/.test(k) ? 'גיבוי לילה מ־' : 'לראות את הגיבוי מ־') + (+k.slice(8, 10)) + '.' + (+k.slice(5, 7)) + (k.length > 10 && !/-srv$/.test(k) ? ' (נוסף)' : ''), run: () => backupPreview(k) })));
   // local copies the sync engine set aside (no cloud needed)
   let conf = []; try { conf = JSON.parse(localStorage.getItem('_sync_conflicts') || '[]'); } catch (_) {}
   conf.forEach((c, i) => { if (!c || !c.key || c.data == null) return;
     acts.push({ label: 'עותק מהסנכרון · ' + (_BK_NAMES[c.key] || c.key) + ' · ' + _bkCount(c.data) + ' · ' + new Date(c.at || c.ts || 0).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }), run: () => backupPreview('__conf' + i) }); });
   const nowInc = (() => { const n = new Date(); const L = (load('income') || []).filter(i => i && i.date && +String(i.date).slice(0, 4) === n.getFullYear() && +String(i.date).slice(5, 7) - 1 === n.getMonth()); return L.length; })();
   const diag = keys.length ? '' : ' · לא נמצאו גיבויים קודמים' + (window._bkProbe ? ' (קוד ' + window._bkProbe + ')' : '');
-  spentSheet('גיבוי יומי', 'עכשיו במכשיר: ' + nowInc + ' הכנסות ב' + MONTHS_HE[new Date().getMonth()] + diag + ' · ' + (last ? 'גיבוי אחרון: ' + new Date(last).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'עוד לא היה גיבוי') + ' · נשמרים 30 ימים', acts);
+  spentSheet('גיבוי יומי', 'עכשיו במכשיר: ' + nowInc + ' הכנסות ב' + MONTHS_HE[new Date().getMonth()] + diag + ' · ' + (last ? 'גיבוי אחרון: ' + new Date(last).toLocaleString('he-IL', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'עוד לא היה גיבוי') + ' · גיבוי במכשיר בכל פתיחה + גיבוי לילה בשרת כל יום + עותק מוצפן נפרד', acts);
 };
 window.backupPreview = async function(id) {
   if (String(id).indexOf('__conf') === 0) {
@@ -852,6 +852,7 @@ function _pruneBackups() {
     const monthKept = {};
     const updates = {};
     dates.forEach(d => {
+      if (/-srv$/.test(d)) return;          // v624: nightly server copies are pruned by the server job
       if (d >= cutoffStr) return;            // בתוך החלון היומי — שומרים הכל
       const month = d.slice(0, 7);            // YYYY-MM
       if (!monthKept[month]) monthKept[month] = d;  // צ'קפוינט חודשי — נשמר לתמיד
