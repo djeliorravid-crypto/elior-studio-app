@@ -11145,6 +11145,21 @@ window.spEveningHtml = function(items, isDone) {
   return '<div class="fz-eve"><div class="k">סיכום היום</div><div class="t">' + _escape(line) + '</div><div class="s">' + (now.getHours() >= 22 ? 'לילה טוב. מחר ממשיכים.' : 'ערב טוב. מגיע לך לנוח.') + '</div>'
     + '<button class="eve-rm" onclick="rmOpen(\'מחר \')">משהו לזכור למחר?</button></div>';
 };
+const _SP_MOTTO = {
+  am: ['יום חדש, דף חלק. בוא נעשה ממנו משהו טוב.', 'הצעד הראשון של הבוקר קובע את הקצב של כל היום.', 'כל שיר גדול התחיל בבוקר רגיל כמו זה.', 'תתחיל מהדבר הקטן. השאר כבר יבוא.', 'היום זה יום טוב לסגור משהו שמחכה.'],
+  day: ['אתה באמצע הדרך. תמשיך בקצב שלך.', 'מה שאתה בונה עכשיו — ישמע מצוין בעוד שנה.', 'דבר אחד בכל פעם. ככה בונים משהו גדול.', 'עקביות מנצחת כישרון. ויש לך את שניהם.', 'תעשה היום משהו שהגרסה של מחר שלך תודה לך עליו.'],
+  pm: ['עוד דחיפה קטנה ונסגור את היום יפה.', 'מה שעשית היום נחשב. גם הדברים הקטנים.', 'ערב טוב לסיים משהו — או פשוט לנוח. שניהם בסדר.', 'היום בנית עוד לבנה. מחר ממשיכים.'],
+  night: ['תנוח. הרעיונות הכי טובים מגיעים אחרי שינה טובה.', 'סגרת עוד יום. מחר מתחילים מחדש, רעננים.', 'גם מנוחה היא חלק מהעבודה.', 'מה שלא נסגר היום — מחכה לך מחר בסבלנות.']
+};
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') window._spMot = null; });   // back to the app = a fresh line
+function _spMotto(hr) {
+  const part = hr >= 5 && hr < 12 ? 'am' : hr >= 12 && hr < 17 ? 'day' : hr >= 17 && hr < 22 ? 'pm' : 'night', L = _SP_MOTTO[part];
+  if (window._spMot && window._spMot.p === part) return L[window._spMot.i];
+  let last = -1; try { const o = JSON.parse(localStorage.getItem('sp_motto') || 'null'); if (o && o.p === part) last = o.i; } catch (_) {}
+  let i = Math.floor(Math.random() * L.length); if (i === last) i = (i + 1) % L.length;
+  window._spMot = { p: part, i }; try { localStorage.setItem('sp_motto', JSON.stringify(window._spMot)); } catch (_) {}
+  return L[i];
+}
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
@@ -11203,10 +11218,8 @@ function spLobbyRender() {
   })();
   const after = next ? (window._calAfter || []) : []; window._calAfter = null;
   const later = items.filter(x => (!next || x.id !== next.id) && String(x.id).indexOf('s_') !== 0);   // calendar items live in the timeline under the card
-  // the greeting counts what's on screen: today's remaining events + what to remember today
-  { const evToday = (next && /^היום/.test(next.s) ? 1 : 0) + after.filter(a => a.key === tk).length, n = evToday + rmN;
-    bubble = !n ? 'יום פנוי היום. זמן טוב ליצור משהו חדש.'
-      : (evToday ? (evToday === 1 ? 'אירוע אחד בלו״ז' : evToday + ' אירועים בלו״ז') : '') + (evToday && rmN ? ' ו' : '') + (rmN ? (rmN === 1 ? 'דבר אחד לזכור' : rmN + ' דברים לזכור') : '') + ' היום.'; }
+  // v623: the greeting is one warm line of motivation — a new one each time the app opens (never the same twice in a row)
+  bubble = _spMotto(hr);
   const afterHtml = after.length ? '<div class="fz-after"><div class="k">לאחר מכן בלו״ז</div>' + after.map(a => '<button class="fz-arow" onclick="chooseMode(\'business\');showPage(\'schedule\');_scheduleDate=\'' + a.key + '\';setTimeout(renderSchedule,50)"><span class="tm">' + (a.time || '—') + '</span><span class="tt">' + _escape(a.title) + '</span></button>').join('') + '</div>' : '';
   const row = x => {
     const d = isDone(x.id);
