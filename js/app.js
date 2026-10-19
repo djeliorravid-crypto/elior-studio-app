@@ -19500,8 +19500,11 @@ window.wedRender = function() {
         : c.bill >= c.at ? '<div class="wd-tip ok">אתם במחיר הזול — ' + M(+w.priceHi || 0) + ' למנה. ירידה ל־' + (c.at - 1) + ' תעלה ' + M((c.at - 1) * c.loI - c.bill * c.hiI > 0 ? (c.at - 1) * c.loI - c.bill * c.hiI : 0) + ' יותר.</div>' : '')
     // expenses
     + '<div class="wd-lbl wd-lbl-row"><span>הוצאות החתונה</span><button class="rm-add" onclick="wedExp()" aria-label="להוסיף הוצאה">' + FZ.plus + '</button></div>'
-    + '<div class="wd-card">' + (ex.length ? ex.map(x => '<button class="wd-ex" onclick="wedExp(\'' + x.id + '\')"><span class="wd-ex-m"><b>' + _escape(x.name) + '</b>'
-        + '<small>' + (+x.paid >= +x.amount && +x.amount ? '<i class="ok">שולם</i>' : +x.paid ? 'שולם ' + M(+x.paid) : 'עוד לא שולם') + '</small></span><b class="wd-ex-a">' + M(+x.amount || 0) + '</b></button>').join('')
+    + '<div class="wd-card">' + (ex.length ? ex.map(x => { const k = _wdWho(x);
+        return '<div class="wd-ex" onclick="wedExpTap(\'' + x.id + '\')"><span class="wd-ex-m"><b>' + _escape(k.name) + '</b>'
+        + '<small>' + (k.phone ? '<span class="wd-who">' + _escape(k.who || _phPretty(k.phone)) + '</span>' : '') + (+x.paid >= +x.amount && +x.amount ? '<i class="ok">שולם</i>' : +x.paid ? 'שולם ' + M(+x.paid) : 'עוד לא שולם') + '</small></span>'
+        + (k.phone ? '<button class="rm-go wd-wa" onclick="event.stopPropagation();wedReach(\'' + x.id + '\',\'wa\')" aria-label="וואטסאפ">' + _rmIcon('msg') + '</button><button class="rm-go" onclick="event.stopPropagation();wedReach(\'' + x.id + '\',\'tel\')" aria-label="להתקשר">' + _rmIcon('call') + '</button>' : '')
+        + '<b class="wd-ex-a">' + M(+x.amount || 0) + '</b></div>'; }).join('')
         + '<div class="wd-line total"><span>סך הכל הוצאות</span><b>' + M(c.other) + '</b></div>'
       : '<button class="rm-empty" onclick="wedExp()"><span>' + FZ.plus + '</span>צלם, שמלה, טבעות… כל הוצאה נכנסת לסך הכל</button>') + '</div>'
     // our checklist
@@ -19546,6 +19549,29 @@ window.wedTodo = function(id) { const L = load('wedding_todo') || [], x = L.find
 window.wedTodoDel = function(id) { const L = load('wedding_todo') || [], x = L.find(y => y.id === id); if (!x) return; x.deleted = true; x.updatedAt = new Date().toISOString(); save('wedding_todo', L);
   const y = document.getElementById('wed').scrollTop; wedRender(); document.getElementById('wed').scrollTop = y; };
 window.wedChk = function(k) { try { window.haptic.light(); } catch (_) {} _wdSet(x => { x.chk[k] = !x.chk[k]; }); };
+// v627: each expense can carry its person — set once from the contacts, then one tap to WhatsApp or call.
+// A phone typed into the name ("מפיק אירועים- שחר 052-…") is picked up and shown as the contact.
+function _wdWho(x) { let name = String(x.name || ''), phone = x.phone || '', who = x.who || '';
+  const m = name.match(/(\+?972[\s-]?|0)5\d[\s-]?\d{3}[\s-]?\d{4}/);
+  if (m) { if (!phone) phone = m[0].replace(/[\s-]/g, ''); name = name.replace(m[0], '').replace(/[\s\-–,·:]+$/, '').trim() || name; }
+  return { name, phone, who }; }
+window.wedExpTap = function(id) {
+  const x = _wdExp().find(y => y.id === id); if (!x) return; const k = _wdWho(x);
+  const acts = k.phone ? [{ label: 'וואטסאפ', pri: true, run: () => wedReach(id, 'wa') }, { label: 'להתקשר', run: () => wedReach(id, 'tel') }] : [];
+  acts.push({ label: k.phone ? 'להחליף איש קשר' : 'לבחור איש קשר', pri: !k.phone, run: () => wedWho(id) });
+  acts.push({ label: 'לערוך את ההוצאה', run: () => wedExp(id) });
+  if (x.phone) acts.push({ label: 'להסיר את איש הקשר', danger: true, run: () => { const L = load('wedding_exp') || [], y = L.find(z => z.id === id); if (!y) return; delete y.phone; delete y.who; y.updatedAt = new Date().toISOString(); save('wedding_exp', L); wedRender(); } });
+  spentSheet(k.name, k.phone ? (k.who ? k.who + ' · ' : '') + _phPretty(k.phone) : 'עוד אין איש קשר', acts);
+};
+window.wedWho = function(id) {
+  const x = _wdExp().find(y => y.id === id); if (!x) return; const k = _wdWho(x);
+  contactPick(k.who || '', (ph, nm) => { const L = load('wedding_exp') || [], y = L.find(z => z.id === id); if (!y) return;
+    y.phone = ph; y.who = nm ? _ctClean(nm) || nm : ''; y.name = k.name; y.updatedAt = new Date().toISOString(); save('wedding_exp', L); wedRender(); toast('נשמר · ' + (y.who || _phPretty(ph))); });
+};
+window.wedReach = function(id, how) {
+  const x = _wdExp().find(y => y.id === id); if (!x) return; const p = _waPhone(_wdWho(x).phone); if (!p) { wedWho(id); return; }
+  if (how === 'tel') window.location.href = 'tel:+' + p; else window.open('https://wa.me/' + p, '_blank');
+};
 window.wedExp = function(id) {
   const L = load('wedding_exp') || [], cur = id ? L.find(x => x.id === id) : null;
   spFlowOpen({ title: cur ? 'הוצאה לחתונה' : 'הוצאה חדשה לחתונה', editing: !!cur, deleteLabel: 'למחוק את ההוצאה',

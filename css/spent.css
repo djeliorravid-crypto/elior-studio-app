@@ -2026,3 +2026,11 @@ html.desk #wed .wd-page { padding-top: 28px; }
 .wd-chk.on .rm-m small { opacity: .6; }
 .wd-del { border: none; background: none; color: #c3c7da; font-size: 13px; width: 30px; height: 30px; border-radius: 15px; cursor: pointer; flex-shrink: 0; }
 .wd-del:active { background: #f4f5fa; }
+
+/* v627 — wedding expense contacts */
+.wd-ex .rm-go { width: 34px; height: 34px; flex: 0 0 34px; }
+.wd-ex .rm-go svg { width: 16px; height: 16px; }
+.wd-ex .wd-wa { background: #e7f0eb !important; color: #24493b !important; }
+.wd-ex-a { min-width: 64px; text-align: left; }
+.wd-ex-m small { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wd-who { background: #eef0f8; color: #252e6b; border-radius: 999px; padding: 1px 8px; font-weight: 600; font-size: 12px; }
