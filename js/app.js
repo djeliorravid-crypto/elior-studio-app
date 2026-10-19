@@ -288,7 +288,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals','fixed_costs','wedding','wedding_exp','wedding_todo'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals','fixed_costs','wedding','wedding_exp','wedding_todo','wedding_meet'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -19470,10 +19470,14 @@ window.wedRender = function() {
     const v = !a ? '<em>לא הוגדר</em>' : a.mode === 'incl' ? 'כלול' : a.mode === 'flat' ? M(+a.v || 0) + ' לאירוע' : M(+a.v || 0) + ' למנה';
     return '<button class="wd-line" onclick="wedAdd(\'' + k + '\')"><span>' + t + '</span><b>' + v + '</b></button>'; };
   const done = WD_CHECK.filter(([k]) => w.chk[k]).length;
-  ov.innerHTML = '<div class="wd-page">'
+  const meets = _wdMeets(), upN = meets.filter(m => !m.done && m.date >= dailyDateStr()).length;
+  const head = '<div class="wd-page">'
     + '<div class="wd-top"><button class="wd-x" onclick="wedClose()" aria-label="סגירה">✕</button><span class="wd-rings">' + WD_RINGS + '</span><span style="width:40px"></span></div>'
     + '<div class="wd-hd"><div class="wd-k">אולמי גבריאל · נס ציונה</div><h1>החתונה של דרי ואליאור</h1>'
     + '<button class="wd-date" onclick="wedDate()">' + _escape(dTxt) + (days != null ? '<i>' + (days > 1 ? 'עוד ' + days + ' ימים' : days === 1 ? 'מחר' : days === 0 ? 'היום!' : 'מזל טוב') + '</i>' : '') + '</button></div>'
+    + '<div class="wd-tabs"><button class="' + (window._wdTab !== 'meet' ? 'on' : '') + '" onclick="wedTab(\'\')">תקציב</button><button class="' + (window._wdTab === 'meet' ? 'on' : '') + '" onclick="wedTab(\'meet\')">פגישות' + (upN ? '<i>' + upN + '</i>' : '') + '</button></div>';
+  if (window._wdTab === 'meet') { ov.innerHTML = head + wedMeetHtml(meets) + '<div class="wd-foot">מזל טוב</div></div>'; return; }
+  ov.innerHTML = head
     // the whole picture
     + '<div class="wd-hero"><div class="k">סך הכל החתונה</div><div class="v">' + M(c.total) + '</div>'
     + '<div class="wd-bar"><span style="width:' + pct + '%"></span></div>'
@@ -19572,6 +19576,85 @@ window.wedReach = function(id, how) {
   const x = _wdExp().find(y => y.id === id); if (!x) return; const p = _waPhone(_wdWho(x).phone); if (!p) { wedWho(id); return; }
   if (how === 'tel') window.location.href = 'tel:+' + p; else window.open('https://wa.me/' + p, '_blank');
 };
+// ── v628: wedding meetings — a calm agenda (date tile, time, place, who, notes), next one highlighted ──
+const WD_MEET_TYPES = ['ערב טעימות', 'פגישה באולם', 'מפיק אירועים', 'צלם', 'מדידת שמלה', 'חליפה', 'רב', 'עיצוב ופרחים', 'איפור ושיער', 'די ג׳יי'];
+const WD_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+function _wdMeets() { return (load('wedding_meet') || []).filter(x => x && !x.deleted); }
+window.wedTab = function(t) { window._wdTab = t; const ov = document.getElementById('wed'); wedRender(); if (ov) ov.scrollTop = 0; try { window.haptic.light(); } catch (_) {} };
+function _wdMeetWhen(m) { const d = new Date(m.date + 'T12:00'), n = new Date(); n.setHours(12, 0, 0, 0); const k = Math.round((d - n) / 864e5);
+  return k === 0 ? 'היום' : k === 1 ? 'מחר' : k > 1 && k < 7 ? 'בעוד ' + k + ' ימים' : k >= 7 && k < 14 ? 'בעוד שבוע' : k >= 14 && k < 60 ? 'בעוד ' + Math.round(k / 7) + ' שבועות' : ''; }
+window.wedMeetHtml = function(L) {
+  const today = dailyDateStr();
+  const up = L.filter(m => m.date >= today && !m.done).sort((a, b) => (a.date + (a.time || '99')).localeCompare(b.date + (b.time || '99')));
+  const past = L.filter(m => m.date < today || m.done).sort((a, b) => (b.date + (b.time || '')).localeCompare(a.date + (a.time || '')));
+  const card = (m, i) => { const d = new Date(m.date + 'T12:00'), when = _wdMeetWhen(m), hasP = !!m.phone;
+    return '<div class="wm-row' + (i === 0 ? ' next' : '') + (m.done || m.date < today ? ' past' : '') + '" onclick="wedMeetTap(\'' + m.id + '\')">'
+      + '<span class="wm-day"><b>' + d.getDate() + '</b><small>' + MONTHS_HE[d.getMonth()].slice(0, 3) + '</small></span>'
+      + '<span class="wm-m">' + (i === 0 && when ? '<em>' + when + '</em>' : '') + '<b>' + _escape(m.title) + '</b>'
+      + '<small>' + ['יום ' + WD_DAYS[d.getDay()] + (m.time ? ' · ' + m.time : ''), m.place ? _escape(m.place) : '', m.who ? _escape(m.who) : ''].filter(Boolean).join('<i>·</i>') + '</small>'
+      + (m.notes ? '<span class="wm-n">' + _escape(m.notes) + '</span>' : '') + '</span>'
+      + (hasP && !(m.done || m.date < today) ? '<button class="rm-go wd-wa" onclick="event.stopPropagation();wedMeetReach(\'' + m.id + '\',\'wa\')" aria-label="וואטסאפ">' + _rmIcon('msg') + '</button>' : '')
+      + '</div>'; };
+  return '<div class="wd-lbl wd-lbl-row"><span>הפגישות הבאות</span><button class="rm-add" onclick="wedMeet()" aria-label="פגישה חדשה">' + FZ.plus + '</button></div>'
+    + (up.length ? '<div class="wm-list">' + up.map(card).join('') + '</div>'
+      : '<div class="wd-card"><button class="rm-empty" onclick="wedMeet()"><span>' + FZ.plus + '</span>ערב טעימות, פגישה עם המפיק, מדידות… כל פגישה עם שעה, מקום ומי</button></div>')
+    + (past.length ? '<details class="wm-past"><summary>היו כבר · ' + past.length + '</summary><div class="wm-list">' + past.map(m => card(m, -1)).join('') + '</div></details>' : '');
+};
+window.wedMeet = function(id) {
+  const L = load('wedding_meet') || [], cur = id ? L.find(x => x.id === id) : null;
+  spFlowOpen({ title: cur ? 'פגישה לחתונה' : 'פגישה חדשה לחתונה', editing: !!cur, deleteLabel: 'למחוק את הפגישה',
+    vals: cur ? { t: cur.title, d: cur.date, h: cur.time || '', p: cur.place || '', n: cur.notes || '' } : {},
+    steps: [{ k: 't', type: 'text', q: 'איזו פגישה?', ph: 'ערב טעימות, צלם…', recent: WD_MEET_TYPES, req: 'כתוב איזו פגישה' },
+      { k: 'd', type: 'date', future: true, q: 'באיזה יום?' },
+      { k: 'h', type: 'time', q: 'באיזו שעה?', optional: true },
+      { k: 'p', type: 'text', q: 'איפה?', ph: 'כתובת או מקום', recent: ['גבריאל, נס ציונה', 'בזום', 'בבית'], optional: true },
+      { k: 'n', type: 'text', q: 'מה חשוב לזכור?', ph: 'מה להביא, מה לשאול…', optional: true }],
+    onSave: v => { const A = load('wedding_meet') || [], now = new Date().toISOString();
+      let m = cur ? A.find(y => y.id === cur.id) : null;
+      if (!m) { m = { id: genId(), createdAt: now }; A.push(m); }
+      Object.assign(m, { title: String(v.t || '').trim(), date: v.d, time: v.h || '', place: String(v.p || '').trim(), notes: String(v.n || '').trim(), updatedAt: now });
+      save('wedding_meet', A); _wdMeetNotif(m); window._wdTab = 'meet'; wedRender();
+      if (!cur && !m.phone) setTimeout(() => spentSheet('לחבר איש קשר?', 'כדי לשלוח וואטסאפ או להתקשר בלחיצה', [{ label: 'לבחור מאנשי הקשר', pri: true, run: () => wedMeetWho(m.id) }, { label: 'לא עכשיו', run: () => {} }]), 350); },
+    onDelete: () => { const A = load('wedding_meet') || [], x = A.find(y => y.id === id); if (!x) return; x.deleted = true; x.updatedAt = new Date().toISOString(); save('wedding_meet', A); _wdMeetNotif(x); wedRender(); } });
+};
+window.wedMeetTap = function(id) {
+  const m = _wdMeets().find(y => y.id === id); if (!m) return;
+  const d = new Date(m.date + 'T12:00'), acts = [];
+  if (m.phone) { acts.push({ label: 'וואטסאפ' + (m.who ? ' ל' + m.who : ''), pri: true, run: () => wedMeetReach(id, 'wa') }); acts.push({ label: 'להתקשר', run: () => wedMeetReach(id, 'tel') }); }
+  if (m.place && !/זום|zoom|טלפון|בבית/i.test(m.place)) acts.push({ label: 'ניווט בוויז', run: () => window.open('https://waze.com/ul?q=' + encodeURIComponent(m.place) + '&navigate=yes', '_blank') });
+  acts.push({ label: 'להוסיף ליומן', run: () => { const p = n => String(n).padStart(2, '0'), ymd = m.date.replace(/-/g, '');
+    const t = m.time ? ymd + 'T' + m.time.replace(':', '') + '00' : ymd, e = m.time ? (() => { const [H, M] = m.time.split(':').map(Number), z = H * 60 + M + 60; return ymd + 'T' + p(Math.floor(z / 60) % 24) + p(z % 60) + '00'; })() : ymd;
+    window.open('https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(m.title + ' · חתונה') + '&dates=' + t + '/' + e + '&ctz=Asia%2FJerusalem' + (m.place ? '&location=' + encodeURIComponent(m.place) : '') + (m.notes ? '&details=' + encodeURIComponent(m.notes) : ''), '_blank'); } });
+  acts.push({ label: m.done ? 'להחזיר לפגישות הבאות' : 'הפגישה הייתה', run: () => { const A = load('wedding_meet') || [], x = A.find(y => y.id === id); if (!x) return; x.done = !x.done; x.updatedAt = new Date().toISOString(); save('wedding_meet', A); wedRender(); } });
+  acts.push({ label: m.phone ? 'להחליף איש קשר' : 'לבחור איש קשר', run: () => wedMeetWho(id) });
+  acts.push({ label: 'לערוך', run: () => wedMeet(id) });
+  spentSheet(m.title, 'יום ' + WD_DAYS[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + (m.time ? ' · ' + m.time : '') + (m.place ? ' · ' + m.place : '') + (m.notes ? ' — ' + m.notes : ''), acts);
+};
+window.wedMeetWho = function(id) {
+  const m = _wdMeets().find(y => y.id === id); if (!m) return;
+  contactPick(m.who || '', (ph, nm) => { const A = load('wedding_meet') || [], x = A.find(y => y.id === id); if (!x) return;
+    x.phone = ph; x.who = nm ? _ctClean(nm) || nm : ''; x.updatedAt = new Date().toISOString(); save('wedding_meet', A); wedRender(); toast('נשמר · ' + (x.who || _phPretty(ph))); });
+};
+window.wedMeetReach = function(id, how) {
+  const m = _wdMeets().find(y => y.id === id); if (!m) return; const p = _waPhone(m.phone); if (!p) { wedMeetWho(id); return; }
+  if (how === 'tel') window.location.href = 'tel:+' + p; else window.open('https://wa.me/' + p, '_blank');
+};
+// a quiet reminder on the phone: the evening before at 20:00, and an hour before (09:00 on the day when there's no time)
+async function _wdMeetNotif(m) {
+  try {
+    const LN = window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform() && Capacitor.Plugins && Capacitor.Plugins.LocalNotifications; if (!LN) return;
+    const base = Math.abs(String('wm' + m.id).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0)) % 1e9, ids = [base, base + 1];
+    await LN.cancel({ notifications: ids.map(id => ({ id })) }).catch(() => {});
+    if (m.deleted || m.done) return;
+    const at = new Date(m.date + 'T' + (m.time || '09:00') + ':00'), eve = new Date(m.date + 'T20:00:00'); eve.setDate(eve.getDate() - 1);
+    const soon = new Date(at); if (m.time) soon.setHours(soon.getHours() - 1);
+    const N = [];
+    if (eve > new Date()) N.push({ id: ids[0], title: 'מחר: ' + m.title, body: (m.time ? 'ב-' + m.time : 'מחר') + (m.place ? ' · ' + m.place : ''), schedule: { at: eve, allowWhileIdle: true } });
+    if (soon > new Date()) N.push({ id: ids[1], title: m.title, body: (m.time ? 'בעוד שעה · ' + m.time : 'היום') + (m.place ? ' · ' + m.place : ''), schedule: { at: soon, allowWhileIdle: true } });
+    N.forEach(n => { n.subtitle = 'החתונה'; n.sound = _notifSound(); n.threadIdentifier = 'wedding'; });
+    if (N.length) await LN.schedule({ notifications: N });
+  } catch (_) {}
+}
 window.wedExp = function(id) {
   const L = load('wedding_exp') || [], cur = id ? L.find(x => x.id === id) : null;
   spFlowOpen({ title: cur ? 'הוצאה לחתונה' : 'הוצאה חדשה לחתונה', editing: !!cur, deleteLabel: 'למחוק את ההוצאה',
