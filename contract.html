@@ -138,6 +138,14 @@
   .terms .n { width: 20px; height: 20px; flex: 0 0 20px; font-size: 11px; }
   .one .sig-card { margin-top: 14px; }
   .signed-stamp img { height: 36px; margin-inline-start: auto; filter: brightness(0) invert(1); opacity: .85; }
+  /* v632 — the dream first, the price quietly */
+  .hero.dream { padding: 26px 20px 24px; }
+  .hero.dream .k { font-size: 13px; letter-spacing: .04em; color: rgba(255,255,255,.6); }
+  .hero.dream h1 { font-size: 30px; font-weight: 700; margin: 8px 0 10px; }
+  .hero.dream .line { font-size: 15px; line-height: 1.6; color: rgba(255,255,255,.78); }
+  .inv { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 6px 0; padding: 12px 16px; border-radius: 16px; background: rgba(255,255,255,.6); font-size: 13.5px; color: var(--mute); }
+  .inv .iv { text-align: left; line-height: 1.6; }
+  .inv b { font-weight: 600; color: var(--ink2); font-variant-numeric: tabular-nums; }
   @keyframes emailFade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes emailSlide { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 </style>
@@ -211,14 +219,15 @@ function render(c){
   const signed = !!(c.signature && c.signature.dataUrl);
   const ic = d => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
   const tiles = [
-    [ic('<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>'), 'הפקה, מיקס<br>ומאסטרינג'],
-    [ic('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>'), 'עד 5 סבבי<br>תיקונים'],
-    [ic('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'), 'מאסטר, פלייבק<br>וערוצים להופעות']
+    [ic('<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>'), 'הקלטה<br>והפקה'],
+    [ic('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>'), 'מיקס עד<br>שזה מושלם'],
+    [ic('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'), 'מוכן לעולם<br>ולבמה']
   ];
   const rights = (c.rightsMode === 'split' && Array.isArray(c.splitShares) && c.splitShares.length)
     ? 'זכויות הכתיבה: ' + c.splitShares.filter(s => s.name && s.percent > 0).map(s => s.percent + '% ' + escHtml(s.name)).join(' · ')
     : 'זכויות הכתיבה באקו״ם על שם ' + producer;
   const know = [
+    'בסוף מקבלים <b>מאסטר</b>, <b>פלייבק</b> ו<b>ערוצים להופעות</b>. עד <b>5 סבבי תיקונים</b> על המיקס.',
     '<b>המאסטר שלך</b> — לכל שימוש. ' + rights + '.',
     'ביטול או דחייה של סשן — עד <b>48 שעות</b> לפני.',
     'הערות על גרסה — תוך <b>7 ימים</b>. סבב נוסף או שינוי מהותי — בתשלום נוסף.',
@@ -227,24 +236,23 @@ function render(c){
   const pWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') : (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
 
   document.getElementById('root').innerHTML = '<div class="wrap one">'
-    + '<div class="c-head"><span class="c-logo">' + _LOGO + '</span><span><b>' + (signed ? 'יאללה, מתחילים' : 'היי ' + first) + '</b><small>' + (signed ? 'הכל סגור. נתראה באולפן.' : 'הנה כל מה שסיכמנו, בקצרה') + '</small></span></div>'
+    + '<div class="c-head"><span class="c-logo">' + _LOGO + '</span><span><b>' + (signed ? 'יאללה, מתחילים' : 'היי ' + first) + '</b><small>' + (signed ? 'הכל סגור. נתראה באולפן.' : 'זה הרגע שהשיר שלך יוצא לדרך') + '</small></span></div>'
 
-    + '<div class="hero"><div class="k">' + (kind.plural ? kind.metaLabel : 'הפקת סינגל') + '</div>'
+    + '<div class="hero dream"><div class="k">הצעד הבא שלך</div>'
     + '<h1>' + escHtml(songsLabel) + '</h1>'
-    + '<div class="tot">' + fmtMoney(total) + '</div>'
-    + '<div class="pays"><span><small>בתחילת העבודה</small><b>' + fmtMoney(halfA) + '</b></span><span><small>בשלב המיקס</small><b>' + fmtMoney(halfB) + '</b></span></div></div>'
-
-    + '<div class="tiles">' + tiles.map(t => '<div class="tile"><span class="ti">' + t[0] + '</span><span>' + t[1] + '</span></div>').join('') + '</div>'
+    + '<div class="line">מהרעיון — ל' + (kind.plural ? 'שירים מוכנים' : 'שיר מוכן') + ' שמתנגן בכל הפלטפורמות.<br>עם סאונד שכיף להיות גאים בו.</div></div>'
+    + '<div class="lbl2">הדרך</div><div class="tiles">' + tiles.map(t => '<div class="tile"><span class="ti">' + t[0] + '</span><span>' + t[1] + '</span></div>').join('') + '</div>'
     + (extras.length ? '<div class="extra">כולל גם: ' + extras.map(e => escHtml(e.label || '')).filter(Boolean).join(' · ') + '</div>' : '')
 
     + '<div class="lbl2">חשוב לדעת</div><div class="card terms">' + know.map((t, i) => '<div class="t1"><span class="n">' + (i + 1) + '</span><span>' + t + '</span></div>').join('') + '</div>'
 
+    + '<div class="inv"><span>ההשקעה</span><span class="iv"><b>' + fmtMoney(halfA) + '</b> עכשיו<br><b>' + fmtMoney(halfB) + '</b> בשלב המיקס</span></div>'
     + (signed
       ? '<div class="signed-stamp"><span class="check">' + _CK + '</span><span><b>נחתם</b><small>' + escHtml(c.signature.clientName || c.clientName) + (c.signature.signedAt ? ' · ' + new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '') + '</small></span></div>'
       : '<div class="card sig-card">'
         + '<input class="name-input" id="signer-name" type="text" placeholder="שם מלא" value="' + escHtml(c.clientName || '') + '">'
         + '<div class="sig-canvas-wrap"><canvas id="sig-canvas"></canvas><div class="sig-hint" id="sig-hint">חתימה באצבע</div><button class="sig-clear" onclick="clearSig()">ניקוי</button></div>'
-        + '<button class="btn-confirm" id="confirm-btn" onclick="submitSignature()">מאשר/ת וחותם/ת</button>'
+        + '<button class="btn-confirm" id="confirm-btn" onclick="submitSignature()">יוצאים לדרך — מאשר/ת וחותם/ת</button>'
         + (c.producerSignature ? '<div class="psig"><img src="' + c.producerSignature + '" alt=""><span>' + producer + ' כבר חתם' + (pWhen ? ' · ' + pWhen : '') + '</span></div>' : '')
         + '</div>')
     + '</div>';
@@ -524,7 +532,7 @@ async function submitSignature(){
   } catch(err) {
     console.error('signature submit failed:', err);
     btn.disabled = false;
-    btn.textContent = 'מאשר/ת וחותם/ת';
+    btn.textContent = 'יוצאים לדרך — מאשר/ת וחותם/ת';
     const code = err && (err.code || err.message) || err;
     alert('שגיאה בשליחה: ' + code + '\nנסה שוב או רענן.');
   }
