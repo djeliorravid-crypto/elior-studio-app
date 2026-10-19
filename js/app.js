@@ -288,7 +288,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals','fixed_costs','wedding','wedding_exp'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals','fixed_costs','wedding','wedding_exp','wedding_todo'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -19436,17 +19436,21 @@ const WD_CHECK = [
   ['pay', 'לוח תשלומים', 'מקדמה, תשלומים, תשלום אחרון'],
   ['park', 'חניה ונגישות', 'לאורחים מבוגרים']
 ];
-function _wdGet() { const w = Object.assign({ date: '', guests: 0, confirmed: 0, minGuests: 0, plate: 0, venuePaid: 0, add: {}, chk: {} }, loadObj('wedding') || {}); w.add = w.add || {}; w.chk = w.chk || {}; return w; }
+function _wdGet() { const w = Object.assign({ date: '', guests: 0, confirmed: 0, minGuests: 0, plate: 0, venuePaid: 0, add: {}, chk: {}, tierAt: 450, priceHi: 400, priceLo: 420, extras: 44 }, loadObj('wedding') || {}); w.add = w.add || {}; w.chk = w.chk || {}; return w; }
 function _wdSet(fn) { const w = _wdGet(); fn(w); w.updatedAt = Date.now(); save('wedding', w); wedRender(); }
 function _wdExp() { return (load('wedding_exp') || []).filter(x => x && !x.deleted); }
+// v626: the deal with Gabriel — commit to 450+ and a plate is 400; even one less (449) and it's 420.
+// sound, lighting and drinks add the same amount on top either way (400 → 444, so 420 → 464)
+function _wdTier(w, n) { return n >= (+w.tierAt || 0) ? +w.priceHi || 0 : +w.priceLo || 0; }
 function _wdCalc(w) {
-  const bill = Math.max(+w.guests || 0, +w.minGuests || 0);
-  let perAdd = 0, flat = 0;
-  WD_ADDS.forEach(([k]) => { const a = w.add[k]; if (!a || a.mode === 'incl') return; if (a.mode === 'flat') flat += +a.v || 0; else perAdd += +a.v || 0; });
-  const plate = +w.plate || 0, incl = plate + perAdd + (bill ? flat / bill : 0);
-  const venue = bill * (plate + perAdd) + flat;
+  const bill = Math.max(+w.minGuests || 0, +w.confirmed || 0);          // what we pay for: the commitment, or more if more confirm
+  const plate = _wdTier(w, bill), extra = +w.extras || 0, incl = plate + extra;
+  const venue = bill * incl;
   const ex = _wdExp(), other = ex.reduce((t, x) => t + (+x.amount || 0), 0), paid = ex.reduce((t, x) => t + (+x.paid || 0), 0) + (+w.venuePaid || 0);
-  return { bill, plate, incl, venue, other, total: venue + other, paid };
+  // below the line, how many guests still make the cheaper tier worth it
+  const hiI = (+w.priceHi || 0) + extra, loI = (+w.priceLo || 0) + extra, at = +w.tierAt || 0;
+  const even = loI ? Math.ceil(at * hiI / loI) : 0;                        // from here up, committing to the line costs less
+  return { bill, plate, incl, venue, other, total: venue + other, paid, hiI, loI, at, even };
 }
 window.wedOpen = function() {
   let ov = document.getElementById('wed');
@@ -19477,32 +19481,44 @@ window.wedRender = function() {
     + '<div class="wd-split dim"><span>אולם ' + M(c.venue) + '</span><span>שאר ההוצאות ' + M(c.other) + '</span></div></div>'
     // guests
     + '<div class="wd-lbl">מוזמנים</div><div class="wd-card wd-guests">'
+    + '<button onclick="wedNum(\'minGuests\')"><b>' + (+w.minGuests || 0) + '</b><small>התחייבות לאולם</small></button>'
     + '<button onclick="wedNum(\'guests\')"><b>' + (+w.guests || 0) + '</b><small>מוזמנים</small></button>'
-    + '<button onclick="wedNum(\'confirmed\')"><b>' + (+w.confirmed || 0) + '</b><small>אישרו הגעה</small></button>'
-    + '<button onclick="wedNum(\'minGuests\')"><b>' + (+w.minGuests || '—') + '</b><small>מינימום בחוזה</small></button></div>'
-    + (w.minGuests && +w.guests < +w.minGuests ? '<div class="wd-note">משלמים על ' + w.minGuests + ' מנות — המינימום בחוזה</div>' : '')
-    // the plate
-    + '<div class="wd-lbl">המנה שסגרנו</div><div class="wd-card">'
-    + '<button class="wd-line big" onclick="wedNum(\'plate\')"><span>מחיר מנה<small>לא כולל הגברה, תאורה ושתייה</small></span><b>' + (w.plate ? M(+w.plate) : '<em>להזין</em>') + '</b></button>'
-    + WD_ADDS.map(addRow).join('')
-    + '<div class="wd-line total"><span>מנה כולל הכל</span><b>' + (c.plate ? M(c.incl) : '—') + '</b></div>'
-    + '<div class="wd-line"><span>לאולם בסך הכל' + (c.bill ? '<small>' + c.bill + ' מנות × ' + M(c.incl) + '</small>' : '') + '</span><b>' + M(c.venue) + '</b></div>'
+    + '<button onclick="wedNum(\'confirmed\')"><b>' + (+w.confirmed || 0) + '</b><small>אישרו הגעה</small></button></div>'
+    // the plate — both tiers side by side, the one that applies is lit
+    + '<div class="wd-lbl">המנה בגבריאל</div>'
+    + '<div class="wd-tiers">' + [[true, c.at + ' ומעלה', +w.priceHi || 0, c.hiI], [false, 'פחות מ־' + c.at, +w.priceLo || 0, c.loI]].map(([hi, t, p, i]) =>
+        '<button class="wd-tier' + ((c.bill >= c.at) === hi && c.bill ? ' on' : '') + '" onclick="wedNum(\'' + (hi ? 'priceHi' : 'priceLo') + '\')"><span class="t">' + t + '</span>'
+        + '<span class="p">' + M(p) + '<small>לפני תוספות</small></span><span class="i">' + M(i) + '<small>כולל הכל</small></span></button>').join('') + '</div>'
+    + '<div class="wd-card">'
+    + '<button class="wd-line" onclick="wedNum(\'extras\')"><span>הגברה, תאורה ודמי שתייה<small>אותה תוספת בשני המחירים</small></span><b>+' + M(+w.extras || 0) + ' למנה</b></button>'
+    + '<button class="wd-line" onclick="wedNum(\'tierAt\')"><span>הקו של המחיר הזול</span><b>' + c.at + ' איש</b></button>'
+    + '<div class="wd-line total"><span>לאולם בסך הכל' + (c.bill ? '<small>' + c.bill + ' מנות × ' + M(c.incl) + '</small>' : '<small>מלא את ההתחייבות</small>') + '</span><b>' + M(c.venue) + '</b></div>'
     + '<button class="wd-line" onclick="wedNum(\'venuePaid\')"><span>כבר שילמנו לאולם</span><b>' + M(+w.venuePaid || 0) + '</b></button></div>'
+    + (c.bill && c.bill < c.at
+        ? (c.bill >= c.even ? '<div class="wd-tip">להתחייב ל־' + c.at + ' יוצא <b>זול יותר ב־' + M(c.bill * c.loI - c.at * c.hiI) + '</b> — ' + (c.at - c.bill === 1 ? 'מנה אחת' : (c.at - c.bill) + ' מנות') + ' יותר, ובכל זאת פחות כסף.</div>'
+                            : '<div class="wd-tip">מתחת ל־' + c.even + ' איש המחיר של ' + M(+w.priceLo || 0) + ' משתלם יותר מלהתחייב ל־' + c.at + '.</div>')
+        : c.bill >= c.at ? '<div class="wd-tip ok">אתם במחיר הזול — ' + M(+w.priceHi || 0) + ' למנה. ירידה ל־' + (c.at - 1) + ' תעלה ' + M((c.at - 1) * c.loI - c.bill * c.hiI > 0 ? (c.at - 1) * c.loI - c.bill * c.hiI : 0) + ' יותר.</div>' : '')
     // expenses
     + '<div class="wd-lbl wd-lbl-row"><span>הוצאות החתונה</span><button class="rm-add" onclick="wedExp()" aria-label="להוסיף הוצאה">' + FZ.plus + '</button></div>'
     + '<div class="wd-card">' + (ex.length ? ex.map(x => '<button class="wd-ex" onclick="wedExp(\'' + x.id + '\')"><span class="wd-ex-m"><b>' + _escape(x.name) + '</b>'
         + '<small>' + (+x.paid >= +x.amount && +x.amount ? '<i class="ok">שולם</i>' : +x.paid ? 'שולם ' + M(+x.paid) : 'עוד לא שולם') + '</small></span><b class="wd-ex-a">' + M(+x.amount || 0) + '</b></button>').join('')
         + '<div class="wd-line total"><span>סך הכל הוצאות</span><b>' + M(c.other) + '</b></div>'
       : '<button class="rm-empty" onclick="wedExp()"><span>' + FZ.plus + '</span>צלם, שמלה, טבעות… כל הוצאה נכנסת לסך הכל</button>') + '</div>'
+    // our checklist
+    + (() => { const T = _wdTodo(), dn = T.filter(x => x.done).length;
+        return '<div class="wd-lbl">צ׳ק ליסט' + (T.length ? ' · ' + dn + '/' + T.length : '') + '</div><div class="wd-card">'
+          + '<div class="wd-new"><input id="wd-new" placeholder="להוסיף משהו לרשימה…" enterkeyhint="done" onkeydown="if(event.key===\'Enter\'){event.preventDefault();wedTodoAdd()}"/><button onclick="wedTodoAdd()" aria-label="להוסיף">' + FZ.plus + '</button></div>'
+          + T.sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0) || String(a.createdAt).localeCompare(String(b.createdAt))).map(x => '<div class="wd-chk' + (x.done ? ' on' : '') + '" onclick="wedTodo(\'' + x.id + '\')"><span class="rm-tk' + (x.done ? ' on' : '') + '">' + FZ.check + '</span><span class="rm-m"><b>' + _escape(x.text) + '</b></span><button class="wd-del" onclick="event.stopPropagation();wedTodoDel(\'' + x.id + '\')" aria-label="מחיקה">✕</button></div>').join('')
+          + '</div>'; })()
     // what to close with the venue
     + '<div class="wd-lbl">לסגור עם גבריאל · ' + done + '/' + WD_CHECK.length + '</div><div class="wd-card">'
     + WD_CHECK.map(([k, t, s]) => '<div class="wd-chk' + (w.chk[k] ? ' on' : '') + '" onclick="wedChk(\'' + k + '\')"><span class="rm-tk' + (w.chk[k] ? ' on' : '') + '">' + FZ.check + '</span><span class="rm-m"><b>' + t + '</b><small>' + s + '</small></span></div>').join('')
     + '</div><div class="wd-foot">מזל טוב</div></div>';
 };
 window.wedNum = function(k) {
-  const w = _wdGet(), money = k === 'plate' || k === 'venuePaid';
-  const q = { guests: 'כמה מוזמנים?', confirmed: 'כמה אישרו הגעה?', minGuests: 'מה המינימום בחוזה?', plate: 'כמה עולה מנה?', venuePaid: 'כמה כבר שילמתם לאולם?' }[k];
-  const hint = { plate: 'בלי הגברה, תאורה ושתייה — אותם מוסיפים בנפרד', minGuests: 'כמה מנות משלמים גם אם מגיעים פחות. אם אין — אפשר לדלג' }[k];
+  const w = _wdGet(), money = /^(plate|venuePaid|priceHi|priceLo|extras)$/.test(k);
+  const q = { guests: 'כמה מוזמנים?', confirmed: 'כמה אישרו הגעה?', minGuests: 'לכמה אנשים התחייבתם?', plate: 'כמה עולה מנה?', venuePaid: 'כמה כבר שילמתם לאולם?', priceHi: 'מחיר מנה מ־' + w.tierAt + ' איש ומעלה?', priceLo: 'מחיר מנה מתחת ל־' + w.tierAt + '?', extras: 'כמה מוסיפים הגברה, תאורה ודמי שתייה למנה?', tierAt: 'מכמה אנשים המחיר הזול?' }[k];
+  const hint = { priceHi: 'לפני הגברה, תאורה ושתייה', priceLo: 'לפני הגברה, תאורה ושתייה', minGuests: 'על כמה מנות משלמים גם אם מגיעים פחות', extras: 'אצלכם: 400 ← 444, כלומר 44' }[k];
   spFlowOpen({ title: 'החתונה', vals: { n: +w[k] ? String(w[k]) : '' }, steps: [{ k: 'n', type: 'money', unit: money ? '₪' : '#', q, hint, optional: true }],
     onSave: v => _wdSet(x => { x[k] = Math.max(0, Math.round(Number(String(v.n || '0').replace(',', '.')) || 0)); }) });
 };
@@ -19521,6 +19537,14 @@ window.wedDate = function() {
   spFlowOpen({ title: 'החתונה', vals: { d: w.date || '' }, steps: [{ k: 'd', type: 'date', future: true, q: 'מתי החתונה?' }],
     onSave: v => _wdSet(x => { x.date = v.d || ''; }) });
 };
+function _wdTodo() { return (load('wedding_todo') || []).filter(x => x && !x.deleted); }
+window.wedTodoAdd = function() { const el = document.getElementById('wd-new'), t = el && el.value.trim(); if (!t) { if (el) el.focus(); return; }
+  const L = load('wedding_todo') || []; L.push({ id: genId(), text: t, done: false, createdAt: new Date().toISOString() }); save('wedding_todo', L);
+  const y = document.getElementById('wed').scrollTop; wedRender(); document.getElementById('wed').scrollTop = y; const n = document.getElementById('wd-new'); if (n) n.focus(); };
+window.wedTodo = function(id) { const L = load('wedding_todo') || [], x = L.find(y => y.id === id); if (!x) return; x.done = !x.done; x.updatedAt = new Date().toISOString(); save('wedding_todo', L);
+  try { x.done ? window.haptic.success() : window.haptic.light(); } catch (_) {} const y = document.getElementById('wed').scrollTop; wedRender(); document.getElementById('wed').scrollTop = y; };
+window.wedTodoDel = function(id) { const L = load('wedding_todo') || [], x = L.find(y => y.id === id); if (!x) return; x.deleted = true; x.updatedAt = new Date().toISOString(); save('wedding_todo', L);
+  const y = document.getElementById('wed').scrollTop; wedRender(); document.getElementById('wed').scrollTop = y; };
 window.wedChk = function(k) { try { window.haptic.light(); } catch (_) {} _wdSet(x => { x.chk[k] = !x.chk[k]; }); };
 window.wedExp = function(id) {
   const L = load('wedding_exp') || [], cur = id ? L.find(x => x.id === id) : null;

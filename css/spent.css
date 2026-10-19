@@ -2000,3 +2000,29 @@ html[data-skin="spent"] .fz-tk.on, html[data-skin="spent"] .fcs-tick.on { animat
 .sm-wed .sm-ic { color: #252e6b; }
 html.desk #wed .wd-page { padding-top: 28px; }
 .wd-guests button { border-radius: 0; } .wd-guests button + button { box-shadow: none; border-right: 1px solid #eef0f6; }
+
+/* v626 — Gabriel price tiers + our checklist */
+.wd-tiers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.wd-tier { border: none; border-radius: 20px; background: #fff; padding: 14px 14px 12px; font-family: inherit; text-align: right; cursor: pointer; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 2px 10px rgba(22,28,69,.05); color: #161c45; transition: transform .15s; }
+.wd-tier:active { transform: scale(.97); }
+.wd-tier .t { font-size: 13px; font-weight: 600; color: #8a8fae; }
+.wd-tier .p, .wd-tier .i { display: flex; flex-direction: column; font-variant-numeric: tabular-nums; }
+.wd-tier .p { font-size: 15px; font-weight: 500; color: #6b7299; }
+.wd-tier .i { font-size: 22px; font-weight: 700; }
+.wd-tier small { font-size: 11.5px; font-weight: 400; color: #a3a8c3; }
+.wd-tier.on { color: #fff; background: radial-gradient(120% 90% at 20% 0%, rgba(160,175,255,.30), rgba(30,38,94,0) 60%), linear-gradient(160deg,#252e6b,#141a3c); box-shadow: 0 10px 22px rgba(22,28,69,.25); }
+.wd-tier.on .t, .wd-tier.on .p, .wd-tier.on small { color: rgba(255,255,255,.7); }
+.wd-tip { margin: 10px 6px 0; font-size: 13.5px; line-height: 1.5; color: #6b7299; }
+.wd-tip b { color: #a8660f; font-weight: 600; }
+.wd-tip.ok { color: #24493b; }
+.wd-new { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eef0f6; }
+.wd-new input { flex: 1; min-width: 0; border: none; background: #f4f5fa; border-radius: 14px; padding: 11px 14px; font-family: inherit; font-size: 15.5px; color: #161c45; outline: none; }
+.wd-new input:focus { background: #eef0f8; }
+.wd-new button { width: 40px; height: 40px; flex: 0 0 40px; border: none; border-radius: 20px; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); }
+.wd-new button svg { width: 17px; height: 17px; }
+.wd-card > .wd-new:last-child { border-bottom: none; }
+.wd-chk .rm-m b { transition: color .2s; }
+.wd-chk.on .rm-m b { color: #8a9a92 !important; text-decoration: line-through !important; text-decoration-color: #2c5545 !important; text-decoration-thickness: 1.5px !important; }
+.wd-chk.on .rm-m small { opacity: .6; }
+.wd-del { border: none; background: none; color: #c3c7da; font-size: 13px; width: 30px; height: 30px; border-radius: 15px; cursor: pointer; flex-shrink: 0; }
+.wd-del:active { background: #f4f5fa; }
