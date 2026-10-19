@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>סיכום הפקה · אליאור רביד</title>
-<meta name="theme-color" content="#f5e8d3">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#e6e9f6">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&family=Heebo:wght@400;600;700;800;900&family=Frank+Ruhl+Libre:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -15,190 +15,89 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0;
-    font-family: 'Heebo', system-ui, sans-serif;
-    background: #fdf8f0;
-    color: #2a1810;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-  }
-  body { padding: 0 18px 60px; }
-  .wrap { max-width: 720px; margin: 0 auto; padding-top: 34px; }
-  .brand {
-    text-align: center; font-size: 11px; letter-spacing: .25em;
-    color: #a06c48; font-weight: 800; margin-bottom: 18px;
-    text-transform: uppercase;
-  }
-  h1 {
-    font-family: 'Frank Ruhl Libre', 'Heebo', serif;
-    font-size: 32px; font-weight: 900; text-align: center;
-    margin: 0 0 4px; letter-spacing: -.02em; color: #2a1810;
-  }
-  .subline { text-align: center; font-size: 14px; color: #6b4423; margin-bottom: 24px; }
-  .card {
-    background: #fff;
-    border: 1px solid rgba(176,124,62,0.2);
-    border-radius: 18px;
-    padding: 22px 24px;
-    margin-bottom: 16px;
-    box-shadow: 0 10px 30px -10px rgba(160,108,72,0.2);
-  }
-  .card h2 {
-    font-family: 'Frank Ruhl Libre','Heebo',serif;
-    font-size: 19px; font-weight: 900; color: #2a1810;
-    margin: 0 0 12px; letter-spacing: -.015em;
-  }
-  .card p { font-size: 15px; line-height: 1.7; color: #3d2818; margin: 0 0 10px; }
-  .card p:last-child { margin-bottom: 0; }
-  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .meta-cell { background: rgba(212,165,116,0.08); border-radius: 12px; padding: 12px 14px; }
-  .meta-label { font-size: 10.5px; color: #a06c48; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
-  .meta-val { font-size: 16px; color: #2a1810; font-weight: 800; margin-top: 4px; word-break: break-word; }
-
-  table.price {
-    width: 100%; border-collapse: collapse; margin-bottom: 8px;
-  }
-  table.price td {
-    padding: 10px 4px;
-    border-bottom: 1px dashed rgba(176,124,62,0.25);
-    font-size: 15px; color: #3d2818;
-  }
-  table.price tr:last-child td { border-bottom: none; }
-  table.price td:last-child { text-align: left; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
-  table.price tr.total td {
-    font-weight: 900; font-size: 18px; color: #2a1810;
-    border-top: 2px solid #b07c3e; padding-top: 14px;
-  }
-  table.price tr.total td:last-child { color: #a06c48; }
-
-  /* Signature block */
-  .sig-card { background: linear-gradient(135deg, #fff 0%, #fef5e3 100%); border: 2px solid rgba(176,124,62,0.25); }
-  .sig-canvas-wrap {
-    background: #fff;
-    border: 1.5px dashed rgba(176,124,62,0.45);
-    border-radius: 12px;
-    height: 180px;
-    position: relative;
-    touch-action: none;
-    overflow: hidden;
-  }
+  :root { --ink: #161c45; --ink2: #2a3160; --mute: #6b7299; --soft: #8a8fae; --line: #eef0f6; --navy: #252e6b; --navy2: #141a3c; --green: #2c5545; --green2: #18342a; }
+  html, body { margin: 0; padding: 0; font-family: 'Rubik', 'Heebo', system-ui, sans-serif; background: #f4f5fa; color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+  body { background: linear-gradient(180deg, #e6e9f6 0, #f4f5fa 320px, #f8f8fb 100%); padding: 0 16px calc(env(safe-area-inset-bottom, 0px) + 48px); }
+  .wrap { max-width: 560px; margin: 0 auto; padding-top: calc(env(safe-area-inset-top, 0px) + 26px); }
+  .c-top { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px; text-align: center; }
+  .c-logo { width: 52px; height: 52px; border-radius: 26px; display: flex; align-items: center; justify-content: center; background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); box-shadow: 0 8px 20px rgba(22,28,69,.25); }
+  .c-logo svg { width: 32px; height: 22px; }
+  .c-top .k { font-size: 12.5px; color: var(--soft); font-weight: 600; letter-spacing: .04em; }
+  .c-top .to { font-size: 15px; color: var(--mute); }
+  .c-top .to b { color: var(--ink); font-weight: 600; }
+  .hero { border-radius: 26px; padding: 22px 22px 18px; color: #fff; background: radial-gradient(120% 90% at 20% 0%, rgba(160,175,255,.30), rgba(30,38,94,0) 60%), linear-gradient(160deg, var(--navy), var(--navy2)); box-shadow: 0 16px 34px rgba(22,28,69,.28); }
+  .hero .k { font-size: 12.5px; color: rgba(255,255,255,.62); font-weight: 500; }
+  .hero h1 { font-size: 26px; font-weight: 700; margin: 4px 0 4px; line-height: 1.25; letter-spacing: -.01em; word-break: break-word; }
+  .hero .s { font-size: 14px; color: rgba(255,255,255,.72); }
+  .hero .sum { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; border-top: 1px solid rgba(255,255,255,.14); margin-top: 18px; padding-top: 14px; }
+  .hero .sum .v { font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .hero .sum .p { font-size: 13px; color: rgba(255,255,255,.72); text-align: left; line-height: 1.55; }
+  .hero .sum .p b { color: #fff; font-weight: 600; }
+  .lbl { font-size: 15px; font-weight: 700; color: var(--ink); margin: 24px 6px 8px; }
+  .card { background: #fff; border-radius: 22px; padding: 6px 18px; box-shadow: 0 2px 10px rgba(22,28,69,.05); }
+  .li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 15px; line-height: 1.5; color: var(--ink2); }
+  .li:last-child { border-bottom: none; }
+  .li b { color: var(--ink); font-weight: 600; }
+  .ck { width: 22px; height: 22px; flex: 0 0 22px; border-radius: 11px; margin-top: 1px; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(180deg, var(--green), var(--green2)); }
+  .ck svg { width: 12px; height: 12px; }
+  .n { width: 22px; height: 22px; flex: 0 0 22px; border-radius: 11px; margin-top: 1px; display: flex; align-items: center; justify-content: center; background: #eef0f8; color: var(--navy); font-size: 12px; font-weight: 700; }
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; color: var(--ink2); }
+  .row:last-child { border-bottom: none; }
+  .row span:last-child { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .row.total span { font-weight: 700; color: var(--ink); font-size: 16px; }
+  .songs { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 0; }
+  .songs span { background: #eef0f8; color: var(--navy); border-radius: 999px; padding: 5px 12px; font-size: 13.5px; font-weight: 500; }
+  /* signing */
+  .sig-card { padding: 18px; }
+  .sig-card p { margin: 0 0 12px; font-size: 14px; color: var(--mute); line-height: 1.5; }
+  .name-input { width: 100%; background: #f4f5fa; border: 1.5px solid transparent; border-radius: 14px; padding: 13px 14px; font-size: 16px; font-weight: 500; color: var(--ink); direction: rtl; font-family: inherit; outline: none; }
+  .name-input:focus { border-color: var(--navy); background: #fff; }
+  .sig-canvas-wrap { background: #fafbfe; border: 1.5px dashed #c9cee3; border-radius: 16px; height: 170px; position: relative; touch-action: none; overflow: hidden; margin-top: 10px; }
   #sig-canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
-  .sig-hint {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    color: rgba(160,108,72,0.4); font-size: 14px; pointer-events: none;
-    transition: opacity .2s;
-  }
-  .sig-clear {
-    margin-top: 8px; background: transparent; border: none; color: #a06c48;
-    font-size: 13px; font-weight: 700; cursor: pointer; padding: 4px 0;
-  }
-  .name-input {
-    width: 100%; background: #fff; border: 1.5px solid rgba(176,124,62,0.35);
-    border-radius: 12px; padding: 12px 14px;
-    font-size: 16px; font-weight: 700; color: #2a1810; direction: rtl;
-    font-family: inherit; outline: none; margin-top: 14px;
-  }
-  .name-input:focus { border-color: #a06c48; }
-  .btn-confirm {
-    display: block; width: 100%; margin-top: 16px;
-    background: linear-gradient(135deg, #ff9558, #ff6b4a); color: #fff;
-    border: none; border-radius: 14px; padding: 16px;
-    font-size: 16px; font-weight: 900; cursor: pointer;
-    font-family: inherit;
-    box-shadow: 0 12px 30px -8px rgba(255,107,74,0.45);
-    transition: transform .12s;
-  }
+  .sig-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #b4b9d2; font-size: 14.5px; pointer-events: none; transition: opacity .2s; }
+  .sig-clear { margin-top: 6px; background: transparent; border: none; color: var(--mute); font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 2px; font-family: inherit; }
+  .btn-confirm { display: block; width: 100%; margin-top: 12px; height: 56px; border: none; border-radius: 999px; color: #fff; font-family: inherit; font-size: 17px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, var(--navy), var(--navy2)); box-shadow: 0 12px 26px rgba(22,28,69,.28); transition: transform .12s; }
   .btn-confirm:active { transform: scale(.98); }
   .btn-confirm:disabled { opacity: .55; cursor: not-allowed; }
-
-  .signed-stamp {
-    text-align: center; padding: 24px;
-    background: rgba(52,199,89,0.08); border-radius: 14px; border: 1.5px solid rgba(52,199,89,0.3);
-  }
-  .signed-stamp .check { font-size: 42px; color: #16a34a; }
-  .signed-stamp .name { font-family: 'Frank Ruhl Libre','Heebo',serif; font-size: 22px; font-weight: 900; color: #2a1810; margin-top: 8px; }
-  .signed-stamp .when { font-size: 12px; color: #6b4423; margin-top: 4px; }
-  .signed-stamp img.sig-img { display: block; margin: 14px auto 4px; max-height: 80px; }
-
-  .loading, .error {
-    text-align: center; padding: 100px 20px; color: #a06c48;
-    font-size: 16px; font-weight: 700;
-  }
-  .error b { color: #c2410c; display: block; margin-bottom: 6px; font-size: 18px; }
-
-  @media (max-width: 480px) {
-    h1 { font-size: 26px; }
-    .meta { grid-template-columns: 1fr; }
-  }
-
+  .sigs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 0; }
+  .sig { background: #f8f9fc; border-radius: 16px; padding: 12px 10px; text-align: center; }
+  .sig .k { font-size: 11.5px; color: var(--soft); font-weight: 600; }
+  .sig img { display: block; max-width: 100%; max-height: 56px; margin: 6px auto 2px; }
+  .sig .nm { font-size: 14.5px; font-weight: 600; color: var(--ink); }
+  .sig .d { font-size: 11.5px; color: var(--soft); margin-top: 2px; }
+  .sig.ok { background: #eef6f1; }
+  .sig.ok .k { color: var(--green); }
+  .sig .none { color: #b4b9d2; font-size: 13px; padding: 16px 2px; }
+  .signed-stamp { display: flex; align-items: center; gap: 14px; border-radius: 22px; padding: 18px; margin-top: 16px; color: #fff; background: radial-gradient(120% 100% at 28% 6%, rgba(190,230,205,.25), rgba(44,85,69,0) 62%), linear-gradient(160deg, var(--green), var(--green2)); box-shadow: 0 12px 26px rgba(24,52,42,.25); }
+  .signed-stamp .check { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 21px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; }
+  .signed-stamp .check svg { width: 20px; height: 20px; }
+  .signed-stamp b { display: block; font-size: 17px; font-weight: 600; }
+  .signed-stamp small { font-size: 13px; color: rgba(255,255,255,.75); }
+  .foot { text-align: center; margin-top: 28px; color: #a3a8c3; font-size: 12px; }
+  .loading, .error { text-align: center; padding: 110px 20px; color: var(--mute); font-size: 16px; font-weight: 500; }
+  .error b { color: var(--ink); display: block; margin-bottom: 6px; font-size: 19px; }
   /* Email-copy popup */
-  .email-modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(20,12,6,0.55);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 9999; padding: 18px;
-    animation: emailFade .22s ease;
-  }
-  .email-modal {
-    background: #fff;
-    border-radius: 22px;
-    padding: 28px 24px 22px;
-    max-width: 400px; width: 100%;
-    text-align: center;
-    box-shadow: 0 22px 60px rgba(0,0,0,0.32);
-    animation: emailSlide .28s cubic-bezier(.2,.8,.25,1);
-  }
-  .email-modal-icon {
-    font-size: 42px; margin-bottom: 10px; line-height: 1;
-  }
-  .email-modal h3 {
-    font-family: 'Frank Ruhl Libre', 'Heebo', serif;
-    font-size: 22px; font-weight: 900; margin: 0 0 6px; color: #2a1810;
-  }
-  .email-modal-sub {
-    font-size: 14px; color: #6b4423; margin: 0 0 18px; line-height: 1.5;
-  }
-  #email-input {
-    width: 100%; padding: 14px 16px;
-    border: 1.5px solid rgba(176,124,62,0.4); border-radius: 12px;
-    font-family: inherit; font-size: 16px;
-    direction: ltr; text-align: left;
-    outline: none; margin-bottom: 14px; color: #2a1810;
-    background: #fff;
-  }
-  #email-input:focus { border-color: #a06c48; }
+  .email-modal-overlay { position: fixed; inset: 0; background: rgba(15,18,45,.4); display: flex; align-items: flex-end; justify-content: center; z-index: 9999; padding: 0; animation: emailFade .22s ease; }
+  .email-modal { background: #f8f8fb; border-radius: 28px 28px 0 0; padding: 24px 20px calc(env(safe-area-inset-bottom, 0px) + 22px); max-width: 560px; width: 100%; text-align: center; box-shadow: 0 -10px 40px rgba(15,18,45,.2); animation: emailSlide .3s cubic-bezier(.2,.8,.25,1); }
+  .email-modal-icon { width: 48px; height: 48px; margin: 0 auto 10px; border-radius: 24px; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(180deg, var(--green), var(--green2)); }
+  .email-modal-icon svg { width: 22px; height: 22px; }
+  .email-modal h3 { font-size: 21px; font-weight: 700; margin: 0 0 6px; color: var(--ink); }
+  .email-modal-sub { font-size: 14px; color: var(--mute); margin: 0 0 16px; line-height: 1.5; }
+  #email-input { width: 100%; padding: 14px 16px; border: 1.5px solid #e3e6f1; border-radius: 16px; font-family: inherit; font-size: 16px; direction: ltr; text-align: left; outline: none; margin-bottom: 12px; color: var(--ink); background: #fff; }
+  #email-input:focus { border-color: var(--navy); }
   .email-modal-actions { display: flex; gap: 10px; }
-  .email-skip {
-    flex: 1; background: transparent;
-    border: 1.5px solid rgba(176,124,62,0.3);
-    border-radius: 12px; padding: 13px;
-    font-family: inherit; font-size: 15px; font-weight: 700; color: #6b4423;
-    cursor: pointer;
-  }
-  .email-send {
-    flex: 1.6;
-    background: linear-gradient(135deg, #ff9558, #ff6b4a); color: #fff;
-    border: none; border-radius: 12px; padding: 13px;
-    font-family: inherit; font-size: 15px; font-weight: 900;
-    cursor: pointer; box-shadow: 0 8px 22px -6px rgba(255,107,74,0.45);
-  }
+  .email-skip { flex: 1; background: #eef0f8; border: none; border-radius: 999px; padding: 14px; font-family: inherit; font-size: 15px; font-weight: 600; color: var(--navy); cursor: pointer; }
+  .email-send { flex: 1.6; background: linear-gradient(135deg, var(--navy), var(--navy2)); color: #fff; border: none; border-radius: 999px; padding: 14px; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 8px 20px rgba(22,28,69,.25); }
   .email-send:disabled { opacity: .6; cursor: wait; }
-  .email-result {
-    margin-top: 14px; font-size: 14px; font-weight: 700; min-height: 18px;
-  }
-  .email-result.success { color: #16a34a; }
-  .email-result.error { color: #c2410c; }
+  .email-result { margin-top: 12px; font-size: 14px; font-weight: 600; min-height: 18px; }
+  .email-result.success { color: var(--green); }
+  .email-result.error { color: #b4441f; }
   @keyframes emailFade { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes emailSlide {
-    from { transform: translateY(18px) scale(.97); opacity: 0; }
-    to   { transform: translateY(0) scale(1); opacity: 1; }
-  }
+  @keyframes emailSlide { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 </style>
 </head>
 <body>
-  <div id="root"><div class="loading">⏳ טוען...</div></div>
+  <div id="root"><div class="loading">טוען…</div></div>
 
 <script>
 const firebaseConfig = {
@@ -250,183 +149,96 @@ function _ctrPriceBreakdown(c){
   return { itemized: false, base: parseFloat(c.basePrice) || 0 };
 }
 
+const _CK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const _LOGO = '<svg viewBox="70 180 830 520" aria-hidden="true"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#fff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="36" fill="#fff"/></svg>';
 function render(c){
   const songs = (c.songs && c.songs.length) ? c.songs : (c.songTitle ? [c.songTitle] : []);
   const kind = _ctrKindLabel(c);
-  const songsLabel = songs.length <= 1 ? (songs[0] || '—') : songs.join(', ');
+  const songsLabel = songs.length <= 1 ? (songs[0] || '—') : (kind.metaLabel);
   const breakdown = _ctrPriceBreakdown(c);
-  const extrasTotal = (c.extras || []).reduce(function(s,e){ return s + (parseFloat(e.price)||0); }, 0);
+  const extras = c.extras || [];
+  const extrasTotal = extras.reduce(function(s,e){ return s + (parseFloat(e.price)||0); }, 0);
   const total = breakdown.base + extrasTotal;
-  const halfA = Math.round(total / 2);
-  const halfB = total - halfA;
+  const halfA = Math.round(total / 2), halfB = total - halfA;
+  const producer = escHtml(c.producerName || 'אליאור רביד');
+  const signed = !!(c.signature && c.signature.dataUrl);
+  const each = kind.plural ? ' לכל שיר' : '';
+  const li = (ic, html) => '<div class="li">' + ic + '<span>' + html + '</span></div>';
+  const ck = '<span class="ck">' + _CK + '</span>';
+  let k = 0; const num = () => '<span class="n">' + (++k) + '</span>';
 
-  // Itemized price rows — recording, mastering, production+mix, then extras.
+  // price lines — only when there's something to break down
   let priceRows = '';
   if (breakdown.itemized) {
-    priceRows += '<tr><td>הקלטת נגן</td><td>' + fmtMoney(breakdown.recording) + '</td></tr>';
-    priceRows += '<tr><td>מאסטרינג</td><td>' + fmtMoney(breakdown.mastering) + '</td></tr>';
-    priceRows += '<tr><td>הפקה מוזיקלית + מיקס</td><td>' + fmtMoney(breakdown.productionMix) + '</td></tr>';
-  } else {
-    const baseDesc = kind.plural
-      ? 'חבילת הפקה — ' + kind.metaLabel
-      : 'חבילת הפקה בסיסית';
-    priceRows += '<tr><td>' + baseDesc + '</td><td>' + fmtMoney(breakdown.base) + '</td></tr>';
+    priceRows += '<div class="row"><span>הקלטת נגן</span><span>' + fmtMoney(breakdown.recording) + '</span></div>'
+      + '<div class="row"><span>הפקה מוזיקלית ומיקס</span><span>' + fmtMoney(breakdown.productionMix) + '</span></div>'
+      + '<div class="row"><span>מאסטרינג</span><span>' + fmtMoney(breakdown.mastering) + '</span></div>';
+  } else if (extras.length) {
+    priceRows += '<div class="row"><span>' + (kind.plural ? 'חבילת הפקה — ' + kind.metaLabel : 'חבילת הפקה') + '</span><span>' + fmtMoney(breakdown.base) + '</span></div>';
   }
-  (c.extras || []).forEach(function(e){
-    priceRows += '<tr><td>' + escHtml(e.label || (e.type === 'musician' ? 'נגן נוסף' : e.type === 'revisions' ? 'סבב תיקונים נוסף' : 'תוספת')) + '</td><td>' + fmtMoney(e.price || 0) + '</td></tr>';
-  });
-  priceRows += '<tr class="total"><td>סה"כ</td><td>' + fmtMoney(total) + '</td></tr>';
+  extras.forEach(function(e){ priceRows += '<div class="row"><span>' + escHtml(e.label || (e.type === 'musician' ? 'נגן נוסף' : e.type === 'revisions' ? 'סבב תיקונים נוסף' : 'תוספת')) + '</span><span>' + fmtMoney(e.price || 0) + '</span></div>'; });
+  if (priceRows) priceRows += '<div class="row total"><span>סך הכל</span><span>' + fmtMoney(total) + '</span></div>';
 
-  // Rights paragraph
-  const rightsTarget = kind.plural ? 'השירים (מילים ולחן)' : 'השיר (מילים ולחן)';
-  let rightsHtml = '';
+  const rightsTarget = kind.plural ? 'השירים' : 'השיר';
+  let rights;
   if (c.rightsMode === 'split' && Array.isArray(c.splitShares) && c.splitShares.length) {
-    const parts = c.splitShares.filter(s => s.name && s.percent > 0).map(s => s.percent + '% ' + escHtml(s.name));
-    rightsHtml = 'זכויות הכתיבה של ' + rightsTarget + ' מתחלקות: ' + parts.join(' · ') + ', ורשומות בהתאם באקו"ם.';
+    rights = 'זכויות הכתיבה של ' + rightsTarget + ' (מילים ולחן) מתחלקות: ' + c.splitShares.filter(s => s.name && s.percent > 0).map(s => s.percent + '% ' + escHtml(s.name)).join(' · ') + ', ונרשמות כך באקו״ם.';
   } else {
-    rightsHtml = 'זכויות הכתיבה של ' + rightsTarget + ' רשומות על שם <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> באקו"ם.';
+    rights = 'זכויות הכתיבה של ' + rightsTarget + ' (מילים ולחן) רשומות באקו״ם על שם <b>' + producer + '</b>.';
   }
 
-  // Songs list (when multi)
-  const songsBlock = songs.length > 1
-    ? '<div class="card"><h2>השירים בפרויקט</h2><ol style="padding-right:20px;margin:6px 0;font-size:16px;line-height:1.8;color:#3d2818">' +
-      songs.map(s => '<li>' + escHtml(s) + '</li>').join('') + '</ol></div>'
-    : '';
+  const pWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') : (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
+  const sigs = '<div class="sigs">'
+    + '<div class="sig' + (c.producerSignature ? ' ok' : '') + '"><div class="k">המפיק</div>' + (c.producerSignature ? '<img src="' + c.producerSignature + '" alt="">' : '<div class="none">—</div>') + '<div class="nm">' + producer + '</div>' + (pWhen ? '<div class="d">' + pWhen + '</div>' : '') + '</div>'
+    + (signed
+      ? '<div class="sig ok"><div class="k">✓ האמן/ית</div><img src="' + c.signature.dataUrl + '" alt=""><div class="nm">' + escHtml(c.signature.clientName || c.clientName) + '</div><div class="d">' + (c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '') + '</div></div>'
+      : '<div class="sig"><div class="k">האמן/ית</div><div class="none">מחכה לחתימה</div><div class="nm">' + escHtml(c.clientName || '') + '</div></div>')
+    + '</div>';
 
-  // Two-up signature block — producer always shown if exists, client signed/pending
-  const producerImg = c.producerSignature
-    ? '<img class="sig-img" src="' + c.producerSignature + '" alt="חתימת מפיק" style="max-width:100%;max-height:70px;height:auto;display:block;margin:6px auto">'
-    : '<div style="color:#b07c3e;font-style:italic;padding:18px 4px">— ללא חתימה דיגיטלית —</div>';
-  const producerWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') : (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
-  const producerCell =
-    '<div style="background:rgba(212,165,116,0.06);border:1.5px solid rgba(176,124,62,0.25);border-radius:14px;padding:16px 14px;text-align:center">' +
-      '<div style="font-size:11px;color:#a06c48;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">חתימת המפיק</div>' +
-      producerImg +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:18px;font-weight:900;color:#2a1810;margin-top:4px">' + escHtml(c.producerName || 'אליאור רביד') + '</div>' +
-      (producerWhen ? '<div style="font-size:11px;color:#6b4423;margin-top:4px">' + producerWhen + '</div>' : '') +
-    '</div>';
+  document.getElementById('root').innerHTML = '<div class="wrap">'
+    + '<div class="c-top"><span class="c-logo">' + _LOGO + '</span><div class="k">סיכום הפקה</div><div class="to"><b>' + producer + '</b> ו<b>' + escHtml(c.clientName || '') + '</b></div></div>'
 
-  // Client cell: either the signed result OR the live signature pad (only here, never duplicated below)
-  let clientCell;
-  if (c.signature && c.signature.dataUrl) {
-    clientCell =
-      '<div style="background:rgba(52,199,89,0.08);border:1.5px solid rgba(52,199,89,0.3);border-radius:14px;padding:16px 14px;text-align:center">' +
-        '<div style="font-size:11px;color:#16a34a;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">✓ חתימת הזמר/ת</div>' +
-        '<img class="sig-img" src="' + c.signature.dataUrl + '" alt="חתימה" style="max-width:100%;max-height:70px;height:auto;display:block;margin:6px auto">' +
-        '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:18px;font-weight:900;color:#2a1810;margin-top:4px">' + escHtml(c.signature.clientName || c.clientName) + '</div>' +
-        '<div style="font-size:11px;color:#6b4423;margin-top:4px">' + (c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleString('he-IL') : '') + '</div>' +
-      '</div>';
-  } else {
-    clientCell =
-      '<div style="background:rgba(255,255,255,0.5);border:1.5px dashed rgba(176,124,62,0.4);border-radius:14px;padding:16px 14px;text-align:center">' +
-        '<div style="font-size:11px;color:#a06c48;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">חתימת הזמר/ת</div>' +
-        '<div style="color:#b07c3e;font-size:13px;font-style:italic;padding:14px 4px">הוסף את חתימתך למטה</div>' +
-      '</div>';
-  }
+    + '<div class="hero"><div class="k">' + (kind.plural ? kind.metaLabel : 'הפקת סינגל') + (c.projectDate ? ' · ' + escHtml(fmtDate(c.projectDate)) : '') + '</div>'
+    + '<h1>' + escHtml(songsLabel) + '</h1>'
+    + '<div class="sum"><span class="v">' + fmtMoney(total) + '</span><span class="p"><b>' + fmtMoney(halfA) + '</b> בתחילת העבודה<br><b>' + fmtMoney(halfB) + '</b> בשלב המיקס</span></div></div>'
 
-  const signaturesBlock =
-    '<div class="card"><h2>חתימות</h2>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' + producerCell + clientCell + '</div>' +
-    '</div>';
+    + (songs.length > 1 ? '<div class="lbl">השירים</div><div class="card"><div class="songs">' + songs.map(s => '<span>' + escHtml(s) + '</span>').join('') + '</div></div>' : '')
 
-  const signedThanks = c.signature && c.signature.dataUrl ? (
-    '<div class="signed-stamp" style="margin-top:20px">' +
-      '<div class="check">✓</div>' +
-      '<div style="font-weight:800;color:#16a34a;font-size:17px">סיכום ההפקה אושר</div>' +
-      '<div style="font-size:13px;color:#3d2818;margin-top:6px">העתק נשמר ויישלח אליך.</div>' +
-    '</div>'
-  ) : '';
+    + '<div class="lbl">מה כלול</div><div class="card">'
+    + li(ck, 'הקלטת נגן, הפקה מוזיקלית, מיקס ומאסטרינג' + each)
+    + li(ck, 'עד <b>5 סבבי תיקונים</b> על המיקס' + each + ' · סבב נוסף ₪300')
+    + li(ck, 'בסוף מקבלים: <b>מאסטר סופי</b>, <b>פלייבק</b> ו<b>ערוצים נפרדים להופעות</b> — מוכן להעלאה לכל הפלטפורמות')
+    + (extras.length ? li(ck, 'תוספות: ' + extras.map(e => escHtml(e.label || '')).filter(Boolean).join(' · ')) : '')
+    + '</div>'
 
-  const signPad = !(c.signature && c.signature.dataUrl) ? (
-    '<div class="card sig-card">' +
-      '<h2>אישור וחתימה</h2>' +
-      '<p style="margin-bottom:14px">אנא חתום/י באזור החתימה ואשר/י את תנאי ההסכם. עותק חתום יישלח אליך במייל ויישמר אצל המפיק.</p>' +
-      '<div class="sig-canvas-wrap"><canvas id="sig-canvas"></canvas><div class="sig-hint" id="sig-hint">חתום פה באצבע</div></div>' +
-      '<button class="sig-clear" onclick="clearSig()">↺ נקה חתימה</button>' +
-      '<input class="name-input" id="signer-name" type="text" placeholder="שם מלא של הזמר/ת" value="' + escHtml(c.clientName || '') + '">' +
-      '<button class="btn-confirm" id="confirm-btn" onclick="submitSignature()">✓ אני מאשר/ת את תנאי ההסכם</button>' +
-    '</div>'
-  ) : '';
+    + (priceRows ? '<div class="lbl">המחיר</div><div class="card">' + priceRows + '</div>' : '')
 
-  document.getElementById('root').innerHTML =
-    '<div class="wrap">' +
-      '<div class="brand">אליאור רביד · אולפן</div>' +
-      '<h1>סיכום הפקה</h1>' +
-      '<div class="subline">בין <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> לבין <b>' + escHtml(c.clientName || '') + '</b></div>' +
+    + '<div class="lbl">בקצרה</div><div class="card">'
+    + li(num(), '<b>המאסטר שלך</b> — לגמרי, לכל שימוש.')
+    + li(num(), rights)
+    + li(num(), 'שני סשנים נקבעים מראש מיום החתימה. ביטול או דחייה — עד <b>48 שעות</b> לפני.')
+    + li(num(), 'הערות על כל גרסה תוך <b>7 ימים</b>. אחרי זה הסבב נחשב מאושר.')
+    + li(num(), 'שינוי מהותי אחרי שההפקה אושרה — עבודה חדשה, בתמחור נפרד.')
+    + li(num(), 'נגן לייב נוסף, אם יהיה — משולם ישירות לנגן.')
+    + li(num(), 'עדכונים בכל שלב, עבודה ברמה אולפנית מלאה, ודיסקרטיות עד הפרסום.')
+    + li(num(), 'הקבצים הסופיים נמסרים אחרי התשלום המלא.')
+    + '</div>'
 
-      '<div class="card">' +
-        '<div class="meta">' +
-          '<div class="meta-cell"><div class="meta-label">שם הפרויקט</div><div class="meta-val">' + escHtml(songsLabel) + '</div></div>' +
-          '<div class="meta-cell"><div class="meta-label">סוג / תאריך</div><div class="meta-val">' + kind.metaLabel + ' · ' + escHtml(fmtDate(c.projectDate) || '—') + '</div></div>' +
-        '</div>' +
-      '</div>' +
+    + '<div class="lbl">חתימה</div><div class="card sig-card">'
+    + (signed ? sigs
+      : sigs.replace('<div class="sigs">', '<div class="sigs" style="padding-top:0">')
+        + '<p>קראת, מסכים/ה? כותבים שם, חותמים באצבע — וזהו.</p>'
+        + '<input class="name-input" id="signer-name" type="text" placeholder="שם מלא" value="' + escHtml(c.clientName || '') + '">'
+        + '<div class="sig-canvas-wrap"><canvas id="sig-canvas"></canvas><div class="sig-hint" id="sig-hint">לחתום כאן באצבע</div></div>'
+        + '<button class="sig-clear" onclick="clearSig()">לנקות ולחתום מחדש</button>'
+        + '<button class="btn-confirm" id="confirm-btn" onclick="submitSignature()">מאשר/ת וחותם/ת</button>')
+    + '</div>'
+    + (signed ? '<div class="signed-stamp"><span class="check">' + _CK + '</span><span><b>נחתם. יאללה, מתחילים!</b><small>עותק נשמר אצל ' + producer + '.</small></span></div>' : '')
 
-      songsBlock +
+    + '<div class="foot">' + producer + ' · מפיק מוזיקלי</div>'
+    + '</div>';
 
-      '<div class="card"><h2>מה כולל הפרויקט</h2>' +
-        '<p>' + (kind.plural
-          ? 'חבילת ההפקה כוללת לכל שיר הקלטת נגן, הפקה מוזיקלית, מיקס ומאסטרינג.'
-          : 'חבילת ההפקה כוללת הקלטת נגן, הפקה מוזיקלית, מיקס ומאסטרינג.'
-        ) + '</p>' +
-        '<p><b>' + (kind.plural
-          ? 'בסיום ההפקה ימסור המפיק לזמר את השירים מוגמרים, מוכנים לחלוטין להעלאה לכל הפלטפורמות.'
-          : 'בסיום ההפקה ימסור המפיק לזמר שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.'
-        ) + '</b></p>' +
-        ((c.extras || []).length ? '<p style="margin-top:12px"><b>תוספות שנבחרו:</b><br>' + c.extras.map(e => '• ' + escHtml(e.label || '')).join('<br>') + '</p>' : '') +
-      '</div>' +
-
-      '<div class="card"><h2>זכויות</h2>' +
-        '<p style="font-weight:600;color:#2a1810"><b>ההקלטה הסופית (המאסטר) שייכת לזמר לחלוטין.</b></p>' +
-        '<p style="font-weight:600;color:#2a1810">הזמר רשאי לעשות בה כל שימוש שיחפוץ.</p>' +
-        '<p style="font-weight:600;color:#2a1810">' + rightsHtml + '</p>' +
-      '</div>' +
-
-      '<div class="card"><h2>התחייבויות המפיק</h2>' +
-        '<ul style="padding-right:20px;margin:6px 0;font-size:15px;line-height:1.85;color:#3d2818">' +
-          '<li>לקבוע ולשריין <b>2 סשני אולפן</b> קדימה ממועד חתימת ההסכם.</li>' +
-          '<li>לעדכן את הזמר בכל שלב משמעותי בהתפתחות ההפקה.</li>' +
-          '<li>לבצע את העבודה במלוא המקצועיות ובמיטב הסטנדרטים האולפניים.</li>' +
-          '<li>לשמור על דיסקרטיות מלאה ביחס לחומרים בטרם פרסומם על-ידי הזמר.</li>' +
-          '<li>למסור לזמר בסיום ההפקה: <b>קובץ מאסטר סופי</b> של השיר המופק, <b>פלייבק מלא</b>, ו<b>ערוצים נפרדים להופעות חיות</b>.</li>' +
-        '</ul>' +
-      '</div>' +
-
-      '<div class="card"><h2>התחייבויות הזמר</h2>' +
-        '<ul style="padding-right:20px;margin:6px 0;font-size:15px;line-height:1.85;color:#3d2818">' +
-          '<li>להגיע לסשנים שנקבעו במועדם. ביטול או דחייה — בהודעה לפחות <b>48 שעות מראש</b>.</li>' +
-          '<li>למסור הערות לכל סבב תיקונים בתוך <b>7 ימים</b> מקבלת הגרסה. לאחר 7 ימים, הסבב ייחשב כמאושר.</li>' +
-          '<li>לעמוד בלוח התשלומים המפורט בהסכם.</li>' +
-        '</ul>' +
-      '</div>' +
-
-      '<div class="card"><h2>תיקונים</h2>' +
-        '<p>המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס' + (kind.plural ? ' לכל שיר' : '') + '.</p>' +
-        '<p>כל סבב הוא רשימת הערות אחת.</p>' +
-        '<p>סבב נוסף (אם יידרש) — <b>₪300</b>.</p>' +
-        '<p>כל שינוי מהותי בהפקה שהזמר יבקש לאחר שההפקה אושרה, ייחשב לעבודה חדשה ויתומחר בנפרד.</p>' +
-      '</div>' +
-
-      '<div class="card"><h2>נגנים נוספים</h2>' +
-        '<p>במידה והזמר או המפיק ימצאו לנכון לשלב <b>נגן לייב נוסף</b> בהפקה — מעבר להקלטת הנגן הכלולה בחבילה — התשלום עבור עבודתו של אותו נגן ישולם על-ידי הזמר <b>ישירות לנגן</b>, ולא דרך המפיק.</p>' +
-      '</div>' +
-
-      '<div class="card"><h2>מחיר</h2><table class="price">' + priceRows + '</table></div>' +
-
-      '<div class="card"><h2>תנאי תשלום</h2>' +
-        '<p><b>' + fmtMoney(halfA) + '</b> עם תחילת העבודה.</p>' +
-        '<p><b>' + fmtMoney(halfB) + '</b> בשלב המיקס.</p>' +
-        '<p style="margin-top:10px;font-size:13.5px;color:#6b4423">הקבצים הסופיים יימסרו לזמר לאחר השלמת התשלום.</p>' +
-      '</div>' +
-
-      signaturesBlock +
-      signPad +
-      signedThanks +
-
-      '<div style="text-align:center;margin-top:30px;color:#a06c48;font-size:12px;font-weight:600">סיכום הפקה של <b>אליאור רביד</b> · מפיק מוזיקלי</div>' +
-    '</div>';
-
-  if (!c.signature) initSignaturePad();
-
+  if (!signed) initSignaturePad();
   window._currentContract = c;
   document.title = 'סיכום הפקה — ' + (songsLabel || c.clientName || 'אליאור רביד');
 }
@@ -456,8 +268,8 @@ function buildPdfPrintable(c){
     rightsHtml = 'זכויות הכתיבה של ' + rightsTarget + ' רשומות על שם <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> באקו"ם.';
   }
 
-  const rowCellL = 'padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);font-size:12px;color:#3d2818';
-  const rowCellR = 'padding:5px 0;border-bottom:1px dashed rgba(176,124,62,0.3);text-align:left;font-weight:700;font-size:12px;color:#3d2818;white-space:nowrap';
+  const rowCellL = 'padding:5px 0;border-bottom:1px dashed rgba(37,46,107,0.3);font-size:12px;color:#2a3160';
+  const rowCellR = 'padding:5px 0;border-bottom:1px dashed rgba(37,46,107,0.3);text-align:left;font-weight:700;font-size:12px;color:#2a3160;white-space:nowrap';
   let priceRows = '';
   if (breakdown.itemized) {
     priceRows += '<tr><td style="' + rowCellL + '">הקלטת נגן</td><td style="' + rowCellR + '">' + fmtMoney(breakdown.recording) + '</td></tr>';
@@ -470,24 +282,24 @@ function buildPdfPrintable(c){
   (c.extras || []).forEach(function(e){
     priceRows += '<tr><td style="' + rowCellL + '">' + escHtml(e.label || '') + '</td><td style="' + rowCellR + '">' + fmtMoney(e.price || 0) + '</td></tr>';
   });
-  priceRows += '<tr><td style="padding:8px 0 0;font-weight:900;font-size:14px;border-top:1.5px solid #b07c3e;color:#2a1810">סה"כ</td>' +
-               '<td style="padding:8px 0 0;font-weight:900;font-size:15px;border-top:1.5px solid #b07c3e;color:#a06c48;text-align:left;white-space:nowrap">' + fmtMoney(total) + '</td></tr>';
+  priceRows += '<tr><td style="padding:8px 0 0;font-weight:900;font-size:14px;border-top:1.5px solid #8a8fae;color:#161c45">סה"כ</td>' +
+               '<td style="padding:8px 0 0;font-weight:900;font-size:15px;border-top:1.5px solid #8a8fae;color:#6b7299;text-align:left;white-space:nowrap">' + fmtMoney(total) + '</td></tr>';
 
   const songsBlock = songs.length > 1
-    ? '<div style="margin-bottom:10px"><div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13px;font-weight:900;color:#2a1810;margin-bottom:3px">השירים בפרויקט</div>' +
-      '<ol style="padding-right:18px;margin:0;font-size:12px;line-height:1.5;color:#3d2818">' +
+    ? '<div style="margin-bottom:10px"><div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13px;font-weight:900;color:#161c45;margin-bottom:3px">השירים בפרויקט</div>' +
+      '<ol style="padding-right:18px;margin:0;font-size:12px;line-height:1.5;color:#2a3160">' +
       songs.map(function(s){ return '<li>' + escHtml(s) + '</li>'; }).join('') + '</ol></div>'
     : '';
 
   const producerImg = c.producerSignature
     ? '<img src="' + c.producerSignature + '" style="max-height:52px;display:block;margin:4px auto 2px">'
-    : '<div style="color:#b07c3e;font-style:italic;padding:10px 4px;font-size:10px">— ללא חתימה דיגיטלית —</div>';
+    : '<div style="color:#8a8fae;font-style:italic;padding:10px 4px;font-size:10px">— ללא חתימה דיגיטלית —</div>';
   const producerWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') :
                        (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
 
   const clientImg = c.signature && c.signature.dataUrl
     ? '<img src="' + c.signature.dataUrl + '" style="max-height:52px;display:block;margin:4px auto 2px">'
-    : '<div style="color:#b07c3e;font-style:italic;padding:10px 4px;font-size:10px">— טרם נחתם —</div>';
+    : '<div style="color:#8a8fae;font-style:italic;padding:10px 4px;font-size:10px">— טרם נחתם —</div>';
   const clientWhen = c.signature && c.signature.signedAt ? new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '';
   const clientFullName = (c.signature && c.signature.clientName) || c.clientName || '';
 
@@ -502,57 +314,57 @@ function buildPdfPrintable(c){
   // user doesn't see anything behind it.
   wrap.style.cssText =
     'position:fixed;left:0;top:0;width:760px;z-index:1;' +
-    'background:#fdf8f0;padding:30px 34px;box-sizing:border-box;' +
-    "font-family:'Heebo',system-ui,sans-serif;color:#2a1810;line-height:1.5;direction:rtl;text-align:right;";
+    'background:#f6f7fb;padding:30px 34px;box-sizing:border-box;' +
+    "font-family:'Heebo',system-ui,sans-serif;color:#161c45;line-height:1.5;direction:rtl;text-align:right;";
 
   wrap.innerHTML =
-    '<div style="text-align:center;padding-bottom:12px;border-bottom:1px solid rgba(176,124,62,0.3);margin-bottom:14px">' +
-      '<div style="font-size:10px;letter-spacing:2.5px;color:#a06c48;font-weight:800;text-transform:uppercase">אליאור רביד · אולפן</div>' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:28px;font-weight:900;margin:6px 0 3px;color:#2a1810">סיכום הפקה</div>' +
-      '<div style="font-size:12px;color:#6b4423">בין <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> לבין <b>' + escHtml(c.clientName || '') + '</b></div>' +
+    '<div style="text-align:center;padding-bottom:12px;border-bottom:1px solid rgba(37,46,107,0.3);margin-bottom:14px">' +
+      '<div style="font-size:10px;letter-spacing:2.5px;color:#6b7299;font-weight:800;text-transform:uppercase">אליאור רביד · אולפן</div>' +
+      '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:28px;font-weight:900;margin:6px 0 3px;color:#161c45">סיכום הפקה</div>' +
+      '<div style="font-size:12px;color:#6b7299">בין <b>' + escHtml(c.producerName || 'אליאור רביד') + '</b> לבין <b>' + escHtml(c.clientName || '') + '</b></div>' +
     '</div>' +
 
     '<div style="display:flex;gap:10px;margin-bottom:12px;direction:rtl">' +
-      '<div style="flex:1;background:rgba(212,165,116,0.10);border-radius:8px;padding:8px 12px">' +
-        '<div style="font-size:9px;color:#a06c48;font-weight:800;text-transform:uppercase;letter-spacing:1.2px">שם הפרויקט</div>' +
-        '<div style="font-size:14px;font-weight:800;margin-top:2px;color:#2a1810">' + escHtml(songsLabel) + '</div>' +
+      '<div style="flex:1;background:rgba(37,46,107,0.10);border-radius:8px;padding:8px 12px">' +
+        '<div style="font-size:9px;color:#6b7299;font-weight:800;text-transform:uppercase;letter-spacing:1.2px">שם הפרויקט</div>' +
+        '<div style="font-size:14px;font-weight:800;margin-top:2px;color:#161c45">' + escHtml(songsLabel) + '</div>' +
       '</div>' +
-      '<div style="flex:1;background:rgba(212,165,116,0.10);border-radius:8px;padding:8px 12px">' +
-        '<div style="font-size:9px;color:#a06c48;font-weight:800;text-transform:uppercase;letter-spacing:1.2px">סוג / תאריך</div>' +
-        '<div style="font-size:14px;font-weight:800;margin-top:2px;color:#2a1810">' + kind.metaLabel + ' · ' + escHtml(fmtDate(c.projectDate) || '—') + '</div>' +
+      '<div style="flex:1;background:rgba(37,46,107,0.10);border-radius:8px;padding:8px 12px">' +
+        '<div style="font-size:9px;color:#6b7299;font-weight:800;text-transform:uppercase;letter-spacing:1.2px">סוג / תאריך</div>' +
+        '<div style="font-size:14px;font-weight:800;margin-top:2px;color:#161c45">' + kind.metaLabel + ' · ' + escHtml(fmtDate(c.projectDate) || '—') + '</div>' +
       '</div>' +
     '</div>' +
 
     songsBlock +
 
     '<div style="margin-bottom:9px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">מה כולל הפרויקט</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">' +
+      '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13.5px;font-weight:900;color:#161c45;margin-bottom:3px">מה כולל הפרויקט</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a3160">' +
         (kind.plural
           ? 'חבילת ההפקה כוללת לכל שיר הקלטת נגן, הפקה מוזיקלית, מיקס ומאסטרינג.'
           : 'חבילת ההפקה כוללת הקלטת נגן, הפקה מוזיקלית, מיקס ומאסטרינג.') +
       '</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;margin-top:2px"><b>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#161c45;margin-top:2px"><b>' +
         (kind.plural
           ? 'בסיום ההפקה ימסור המפיק לזמר את השירים מוגמרים, מוכנים לחלוטין להעלאה לכל הפלטפורמות.'
           : 'בסיום ההפקה ימסור המפיק לזמר שיר מוגמר, מוכן לחלוטין להעלאה לכל הפלטפורמות.') +
       '</b></div>' +
       ((c.extras || []).length
-        ? '<div style="margin-top:4px;font-size:11.5px;color:#3d2818"><b>תוספות שנבחרו:</b> ' +
+        ? '<div style="margin-top:4px;font-size:11.5px;color:#2a3160"><b>תוספות שנבחרו:</b> ' +
           c.extras.map(function(e){ return escHtml(e.label || ''); }).join(' · ') + '</div>'
         : '') +
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">זכויות</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;font-weight:600"><b>ההקלטה הסופית (המאסטר) שייכת לזמר לחלוטין.</b></div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;font-weight:600">הזמר רשאי לעשות בה כל שימוש שיחפוץ.</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#2a1810;font-weight:600;margin-top:2px">' + rightsHtml + '</div>' +
+      '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13.5px;font-weight:900;color:#161c45;margin-bottom:3px">זכויות</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#161c45;font-weight:600"><b>ההקלטה הסופית (המאסטר) שייכת לזמר לחלוטין.</b></div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#161c45;font-weight:600">הזמר רשאי לעשות בה כל שימוש שיחפוץ.</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#161c45;font-weight:600;margin-top:2px">' + rightsHtml + '</div>' +
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">התחייבויות המפיק</div>' +
-      '<ul style="padding-right:16px;margin:2px 0 0;font-size:11px;line-height:1.5;color:#3d2818">' +
+      '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13.5px;font-weight:900;color:#161c45;margin-bottom:3px">התחייבויות המפיק</div>' +
+      '<ul style="padding-right:16px;margin:2px 0 0;font-size:11px;line-height:1.5;color:#2a3160">' +
         '<li>לקבוע ולשריין <b>2 סשני אולפן</b> קדימה ממועד חתימת ההסכם.</li>' +
         '<li>לעדכן את הזמר בכל שלב משמעותי בהתפתחות ההפקה.</li>' +
         '<li>לבצע את העבודה במלוא המקצועיות ובמיטב הסטנדרטים האולפניים.</li>' +
@@ -562,8 +374,8 @@ function buildPdfPrintable(c){
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">התחייבויות הזמר</div>' +
-      '<ul style="padding-right:16px;margin:2px 0 0;font-size:11px;line-height:1.5;color:#3d2818">' +
+      '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13.5px;font-weight:900;color:#161c45;margin-bottom:3px">התחייבויות הזמר</div>' +
+      '<ul style="padding-right:16px;margin:2px 0 0;font-size:11px;line-height:1.5;color:#2a3160">' +
         '<li>להגיע לסשנים שנקבעו במועדם. ביטול או דחייה — בהודעה לפחות <b>48 שעות מראש</b>.</li>' +
         '<li>למסור הערות לכל סבב תיקונים בתוך <b>7 ימים</b> מקבלת הגרסה. לאחר 7 ימים, הסבב ייחשב כמאושר.</li>' +
         '<li>לעמוד בלוח התשלומים המפורט בהסכם.</li>' +
@@ -571,45 +383,45 @@ function buildPdfPrintable(c){
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">תיקונים</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס' + (kind.plural ? ' לכל שיר' : '') + '.</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">כל סבב הוא רשימת הערות אחת.</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">סבב נוסף (אם יידרש) — <b>₪300</b>.</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">כל שינוי מהותי בהפקה שהזמר יבקש לאחר שההפקה אושרה, ייחשב לעבודה חדשה ויתומחר בנפרד.</div>' +
+      '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13.5px;font-weight:900;color:#161c45;margin-bottom:3px">תיקונים</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a3160">המחיר כולל עד <b>5 סבבי תיקונים</b> על המיקס' + (kind.plural ? ' לכל שיר' : '') + '.</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a3160">כל סבב הוא רשימת הערות אחת.</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a3160">סבב נוסף (אם יידרש) — <b>₪300</b>.</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a3160">כל שינוי מהותי בהפקה שהזמר יבקש לאחר שההפקה אושרה, ייחשב לעבודה חדשה ויתומחר בנפרד.</div>' +
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">נגנים נוספים</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#3d2818">במידה והזמר או המפיק ימצאו לנכון לשלב <b>נגן לייב נוסף</b> בהפקה — מעבר להקלטת הנגן הכלולה בחבילה — התשלום עבור עבודתו של אותו נגן ישולם על-ידי הזמר <b>ישירות לנגן</b>, ולא דרך המפיק.</div>' +
+      '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13.5px;font-weight:900;color:#161c45;margin-bottom:3px">נגנים נוספים</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a3160">במידה והזמר או המפיק ימצאו לנכון לשלב <b>נגן לייב נוסף</b> בהפקה — מעבר להקלטת הנגן הכלולה בחבילה — התשלום עבור עבודתו של אותו נגן ישולם על-ידי הזמר <b>ישירות לנגן</b>, ולא דרך המפיק.</div>' +
     '</div>' +
 
     '<div style="margin-bottom:9px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:3px">מחיר</div>' +
+      '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13.5px;font-weight:900;color:#161c45;margin-bottom:3px">מחיר</div>' +
       '<table style="width:100%;border-collapse:collapse;direction:rtl">' + priceRows + '</table>' +
     '</div>' +
 
-    '<div style="margin-bottom:9px;background:rgba(212,165,116,0.06);border:1px solid rgba(176,124,62,0.25);border-radius:8px;padding:8px 12px">' +
-      '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:13.5px;font-weight:900;color:#2a1810;margin-bottom:2px">תנאי תשלום</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#3d2818"><b>' + fmtMoney(halfA) + '</b> עם תחילת העבודה · <b>' + fmtMoney(halfB) + '</b> בשלב המיקס.</div>' +
-      '<div style="font-size:11px;color:#6b4423;margin-top:2px">הקבצים הסופיים יימסרו לזמר לאחר השלמת התשלום.</div>' +
+    '<div style="margin-bottom:9px;background:rgba(37,46,107,0.06);border:1px solid rgba(37,46,107,0.25);border-radius:8px;padding:8px 12px">' +
+      '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13.5px;font-weight:900;color:#161c45;margin-bottom:2px">תנאי תשלום</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a3160"><b>' + fmtMoney(halfA) + '</b> עם תחילת העבודה · <b>' + fmtMoney(halfB) + '</b> בשלב המיקס.</div>' +
+      '<div style="font-size:11px;color:#6b7299;margin-top:2px">הקבצים הסופיים יימסרו לזמר לאחר השלמת התשלום.</div>' +
     '</div>' +
 
     '<div style="display:flex;gap:10px;margin-top:14px;page-break-inside:avoid;direction:rtl">' +
-      '<div style="flex:1;background:rgba(212,165,116,0.08);border:1.5px solid rgba(176,124,62,0.35);border-radius:10px;padding:10px 12px;text-align:center">' +
-        '<div style="font-size:9px;color:#a06c48;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px">חתימת המפיק</div>' +
+      '<div style="flex:1;background:rgba(37,46,107,0.08);border:1.5px solid rgba(37,46,107,0.35);border-radius:10px;padding:10px 12px;text-align:center">' +
+        '<div style="font-size:9px;color:#6b7299;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px">חתימת המפיק</div>' +
         producerImg +
-        '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-top:3px">' + escHtml(c.producerName || 'אליאור רביד') + '</div>' +
-        (producerWhen ? '<div style="font-size:10px;color:#6b4423;margin-top:2px">' + producerWhen + '</div>' : '') +
+        '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:14px;font-weight:900;color:#161c45;margin-top:3px">' + escHtml(c.producerName || 'אליאור רביד') + '</div>' +
+        (producerWhen ? '<div style="font-size:10px;color:#6b7299;margin-top:2px">' + producerWhen + '</div>' : '') +
       '</div>' +
       '<div style="flex:1;background:rgba(52,199,89,0.10);border:1.5px solid rgba(52,199,89,0.4);border-radius:10px;padding:10px 12px;text-align:center">' +
         '<div style="font-size:9px;color:#16a34a;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px">✓ חתימת הזמר/ת</div>' +
         clientImg +
-        '<div style="font-family:\'Frank Ruhl Libre\',serif;font-size:14px;font-weight:900;color:#2a1810;margin-top:3px">' + escHtml(clientFullName) + '</div>' +
-        (clientWhen ? '<div style="font-size:10px;color:#6b4423;margin-top:2px">' + clientWhen + '</div>' : '') +
+        '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:14px;font-weight:900;color:#161c45;margin-top:3px">' + escHtml(clientFullName) + '</div>' +
+        (clientWhen ? '<div style="font-size:10px;color:#6b7299;margin-top:2px">' + clientWhen + '</div>' : '') +
       '</div>' +
     '</div>' +
 
-    '<div style="text-align:center;margin-top:14px;padding-top:8px;border-top:1px solid rgba(176,124,62,0.25);color:#a06c48;font-size:10px;font-weight:600">סיכום הפקה של <b>אליאור רביד</b> · מפיק מוזיקלי</div>';
+    '<div style="text-align:center;margin-top:14px;padding-top:8px;border-top:1px solid rgba(37,46,107,0.25);color:#6b7299;font-size:10px;font-weight:600">סיכום הפקה של <b>אליאור רביד</b> · מפיק מוזיקלי</div>';
 
   return wrap;
 }
@@ -630,7 +442,7 @@ function initSignaturePad(){
     _sigCtx.lineWidth = 2.4;
     _sigCtx.lineCap = 'round';
     _sigCtx.lineJoin = 'round';
-    _sigCtx.strokeStyle = '#1a1410';
+    _sigCtx.strokeStyle = '#161c45';
   }
   fit();
   function pos(e){
@@ -673,7 +485,7 @@ async function submitSignature(){
   if (!name) { alert('נא להזין שם מלא'); return; }
   const btn = document.getElementById('confirm-btn');
   btn.disabled = true;
-  btn.textContent = '⏳ שולח...';
+  btn.textContent = 'שולח…';
   const dataUrl = _sigCanvas.toDataURL('image/png');
   const id = getId();
   try {
@@ -701,7 +513,7 @@ async function submitSignature(){
   } catch(err) {
     console.error('signature submit failed:', err);
     btn.disabled = false;
-    btn.textContent = '✓ אני מאשר/ת את התנאים';
+    btn.textContent = 'מאשר/ת וחותם/ת';
     const code = err && (err.code || err.message) || err;
     alert('שגיאה בשליחה: ' + code + '\nנסה שוב או רענן.');
   }
@@ -716,9 +528,9 @@ function openEmailModal(clientName){
   wrap.dataset.clientName = clientName || '';
   wrap.innerHTML =
     '<div class="email-modal" role="dialog" aria-modal="true">' +
-      '<div class="email-modal-icon">📧</div>' +
-      '<h3>קבל עותק במייל</h3>' +
-      '<div class="email-modal-sub">נשמח לשלוח אליך עותק של ההסכם החתום.<br>הכנס/י כתובת מייל:</div>' +
+      '<div class="email-modal-icon">' + _CK + '</div>' +
+      '<h3>נחתם. רוצה עותק במייל?</h3>' +
+      '<div class="email-modal-sub">נשלח אליך PDF של הסיכום החתום.</div>' +
       '<input id="email-input" type="email" placeholder="your@email.com" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false">' +
       '<div class="email-modal-actions">' +
         '<button class="email-skip" type="button" onclick="closeEmailModal()">לא, תודה</button>' +
@@ -785,7 +597,7 @@ async function generateContractPdf(filename){
 
   const overlay = document.getElementById('email-modal');
   const prevBg = overlay ? overlay.style.background : null;
-  if (overlay) overlay.style.background = '#fdf8f0';
+  if (overlay) overlay.style.background = '#f6f7fb';
 
   try {
     // Wait for web fonts to load — otherwise the snapshot may use a
@@ -809,7 +621,7 @@ async function generateContractPdf(filename){
     const canvas = await html2canvas(el, {
       scale: 1.0,
       useCORS: true,
-      backgroundColor: '#fdf8f0',
+      backgroundColor: '#f6f7fb',
       letterRendering: true,
       logging: false,
       windowWidth: document.documentElement.clientWidth,
@@ -916,7 +728,7 @@ async function sendContractEmail(){
 function renderError(msg){
   document.getElementById('root').innerHTML =
     '<div class="error"><b>אופס</b><div style="white-space:pre-line">' + escHtml(msg) + '</div>' +
-    '<div style="margin-top:18px"><button onclick="location.reload()" style="background:linear-gradient(135deg,#ff9558,#ff6b4a);color:#fff;border:none;border-radius:12px;padding:11px 22px;font-size:14px;font-weight:900;cursor:pointer;font-family:inherit">🔄 נסה שוב</button></div>' +
+    '<div style="margin-top:18px"><button onclick="location.reload()" style="background:linear-gradient(135deg,#252e6b,#141a3c);color:#fff;border:none;border-radius:999px;padding:12px 24px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">לנסות שוב</button></div>' +
     '</div>';
 }
 
