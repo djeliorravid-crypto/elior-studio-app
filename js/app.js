@@ -288,7 +288,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals','fixed_costs'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals','fixed_costs','wedding','wedding_exp'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -1896,7 +1896,7 @@ function _spRender() {
   const st = f.steps[f.i], last = f.i === f.steps.length - 1, val = f.vals[st.k] == null ? '' : String(f.vals[st.k]);
   let body = '';
   if (st.type === 'money') {
-    body = '<div class="spf-money"><span>₪</span><input id="spf-in" inputmode="decimal" autocomplete="off" value="' + _escape(val) + '" placeholder="0"/></div>';
+    body = '<div class="spf-money"><span>' + (st.unit || '₪') + '</span><input id="spf-in" inputmode="decimal" autocomplete="off" value="' + _escape(val) + '" placeholder="0"/></div>';
   } else if (st.type === 'text') {
     body = '<input id="spf-in" class="spf-text" autocomplete="off" value="' + _escape(val) + '" placeholder="' + _escape(st.ph || '') + '"/>';
     if (st.recent && st.recent.length) body += '<div class="spf-chips">' + st.recent.map(r => '<button class="spf-chip" data-v="' + _escape(r) + '">' + _escape(r) + '</button>').join('') + '</div>';
@@ -19410,8 +19410,132 @@ window.spentMoreOpen = function(nav) {
     b.onclick = () => { ov.classList.remove('open'); a.click(); };
     grid.appendChild(b);
   });
+  // v625: the wedding card
+  { const b = document.createElement('button'); b.type = 'button'; b.className = 'sm-tile sm-wed';
+    b.innerHTML = '<span class="sm-ic">' + WD_RINGS + '</span><span class="sm-t">החתונה</span>';
+    b.onclick = () => { ov.classList.remove('open'); wedOpen(); }; grid.insertBefore(b, grid.firstChild); }
   requestAnimationFrame(() => ov.classList.add('open'));
 };
+// ── v625: החתונה של דרי ואליאור — budget, guests, the plate at Gabriel (Nes Ziona) ──
+// synced keys: 'wedding' (settings object) and 'wedding_exp' (list of expenses, id-based so the sync guard protects it)
+const WD_RINGS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="14" r="5.5"/><circle cx="15" cy="14" r="5.5"/><path d="M10.5 4.5 12 3l1.5 1.5L12 6z"/></svg>';
+const WD_ADDS = [['sound', 'הגברה'], ['light', 'תאורה'], ['drinks', 'שתייה ובר']];
+const WD_VENDORS = ['צלם', 'וידאו', 'די ג׳יי', 'שמלה', 'חליפה', 'איפור ושיער', 'טבעות', 'רב', 'הזמנות', 'עיצוב ופרחים', 'הסעות', 'זמר לחופה'];
+// what to pin down with Gabriel — prices there change by season, weekday and date, so everything goes in the contract
+const WD_CHECK = [
+  ['price', 'מחיר מנה סופי בחוזה', 'לפי היום בשבוע והעונה — אצלם זה משתנה'],
+  ['min', 'מינימום מוזמנים', 'כמה מנות משלמים גם אם מגיעים פחות'],
+  ['incl', 'מה בדיוק כלול במנה', 'הגברה, תאורה, בר ושתייה — מה כלול ומה בתוספת'],
+  ['chuppah', 'החופה על המים', 'עיצוב, שעה, ואם יש תוספת'],
+  ['led', 'מסכים וקיר לדים', 'כלול או בתוספת'],
+  ['dj', 'מוזיקה', 'אם מביאים ספק מבחוץ — מותר? יש דמי ספק?'],
+  ['after', 'אפטר־פארטי ושעת סיום', 'עד מתי האולם, ומה המחיר לשעה נוספת'],
+  ['taste', 'ערב טעימות', 'לקבוע תאריך'],
+  ['menu', 'תפריט וכשרות', 'מנות צמחוניות, טבעוניות, ילדים'],
+  ['final', 'סגירת כמות סופית', 'עד מתי, ומה קורה עם מנות שלא הגיעו'],
+  ['pay', 'לוח תשלומים', 'מקדמה, תשלומים, תשלום אחרון'],
+  ['park', 'חניה ונגישות', 'לאורחים מבוגרים']
+];
+function _wdGet() { const w = Object.assign({ date: '', guests: 0, confirmed: 0, minGuests: 0, plate: 0, venuePaid: 0, add: {}, chk: {} }, loadObj('wedding') || {}); w.add = w.add || {}; w.chk = w.chk || {}; return w; }
+function _wdSet(fn) { const w = _wdGet(); fn(w); w.updatedAt = Date.now(); save('wedding', w); wedRender(); }
+function _wdExp() { return (load('wedding_exp') || []).filter(x => x && !x.deleted); }
+function _wdCalc(w) {
+  const bill = Math.max(+w.guests || 0, +w.minGuests || 0);
+  let perAdd = 0, flat = 0;
+  WD_ADDS.forEach(([k]) => { const a = w.add[k]; if (!a || a.mode === 'incl') return; if (a.mode === 'flat') flat += +a.v || 0; else perAdd += +a.v || 0; });
+  const plate = +w.plate || 0, incl = plate + perAdd + (bill ? flat / bill : 0);
+  const venue = bill * (plate + perAdd) + flat;
+  const ex = _wdExp(), other = ex.reduce((t, x) => t + (+x.amount || 0), 0), paid = ex.reduce((t, x) => t + (+x.paid || 0), 0) + (+w.venuePaid || 0);
+  return { bill, plate, incl, venue, other, total: venue + other, paid };
+}
+window.wedOpen = function() {
+  let ov = document.getElementById('wed');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'wed'; document.body.appendChild(ov); }
+  wedRender(); requestAnimationFrame(() => ov.classList.add('open'));
+};
+window.wedClose = function() { const ov = document.getElementById('wed'); if (ov) ov.classList.remove('open'); };
+document.addEventListener('visibilitychange', () => { const ov = document.getElementById('wed'); if (document.visibilityState === 'visible' && ov && ov.classList.contains('open')) setTimeout(wedRender, 1500); });
+window.wedRender = function() {
+  const ov = document.getElementById('wed'); if (!ov) return;
+  const w = _wdGet(), c = _wdCalc(w), ex = _wdExp().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  const M = v => fmtMoney(Math.round(v));
+  let days = null; if (w.date) { const t = new Date(w.date + 'T00:00'), n = new Date(); n.setHours(0, 0, 0, 0); days = Math.round((t - n) / 864e5); }
+  const dTxt = w.date ? new Date(w.date + 'T00:00').toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'לקבוע תאריך';
+  const pct = c.total ? Math.min(100, Math.round(c.paid / c.total * 100)) : 0;
+  const addRow = ([k, t]) => { const a = w.add[k];
+    const v = !a ? '<em>לא הוגדר</em>' : a.mode === 'incl' ? 'כלול' : a.mode === 'flat' ? M(+a.v || 0) + ' לאירוע' : M(+a.v || 0) + ' למנה';
+    return '<button class="wd-line" onclick="wedAdd(\'' + k + '\')"><span>' + t + '</span><b>' + v + '</b></button>'; };
+  const done = WD_CHECK.filter(([k]) => w.chk[k]).length;
+  ov.innerHTML = '<div class="wd-page">'
+    + '<div class="wd-top"><button class="wd-x" onclick="wedClose()" aria-label="סגירה">✕</button><span class="wd-rings">' + WD_RINGS + '</span><span style="width:40px"></span></div>'
+    + '<div class="wd-hd"><div class="wd-k">אולמי גבריאל · נס ציונה</div><h1>החתונה של דרי ואליאור</h1>'
+    + '<button class="wd-date" onclick="wedDate()">' + _escape(dTxt) + (days != null ? '<i>' + (days > 1 ? 'עוד ' + days + ' ימים' : days === 1 ? 'מחר' : days === 0 ? 'היום!' : 'מזל טוב') + '</i>' : '') + '</button></div>'
+    // the whole picture
+    + '<div class="wd-hero"><div class="k">סך הכל החתונה</div><div class="v">' + M(c.total) + '</div>'
+    + '<div class="wd-bar"><span style="width:' + pct + '%"></span></div>'
+    + '<div class="wd-split"><span>שולם <b>' + M(c.paid) + '</b></span><span>נשאר <b>' + M(Math.max(0, c.total - c.paid)) + '</b></span></div>'
+    + '<div class="wd-split dim"><span>אולם ' + M(c.venue) + '</span><span>שאר ההוצאות ' + M(c.other) + '</span></div></div>'
+    // guests
+    + '<div class="wd-lbl">מוזמנים</div><div class="wd-card wd-guests">'
+    + '<button onclick="wedNum(\'guests\')"><b>' + (+w.guests || 0) + '</b><small>מוזמנים</small></button>'
+    + '<button onclick="wedNum(\'confirmed\')"><b>' + (+w.confirmed || 0) + '</b><small>אישרו הגעה</small></button>'
+    + '<button onclick="wedNum(\'minGuests\')"><b>' + (+w.minGuests || '—') + '</b><small>מינימום בחוזה</small></button></div>'
+    + (w.minGuests && +w.guests < +w.minGuests ? '<div class="wd-note">משלמים על ' + w.minGuests + ' מנות — המינימום בחוזה</div>' : '')
+    // the plate
+    + '<div class="wd-lbl">המנה שסגרנו</div><div class="wd-card">'
+    + '<button class="wd-line big" onclick="wedNum(\'plate\')"><span>מחיר מנה<small>לא כולל הגברה, תאורה ושתייה</small></span><b>' + (w.plate ? M(+w.plate) : '<em>להזין</em>') + '</b></button>'
+    + WD_ADDS.map(addRow).join('')
+    + '<div class="wd-line total"><span>מנה כולל הכל</span><b>' + (c.plate ? M(c.incl) : '—') + '</b></div>'
+    + '<div class="wd-line"><span>לאולם בסך הכל' + (c.bill ? '<small>' + c.bill + ' מנות × ' + M(c.incl) + '</small>' : '') + '</span><b>' + M(c.venue) + '</b></div>'
+    + '<button class="wd-line" onclick="wedNum(\'venuePaid\')"><span>כבר שילמנו לאולם</span><b>' + M(+w.venuePaid || 0) + '</b></button></div>'
+    // expenses
+    + '<div class="wd-lbl wd-lbl-row"><span>הוצאות החתונה</span><button class="rm-add" onclick="wedExp()" aria-label="להוסיף הוצאה">' + FZ.plus + '</button></div>'
+    + '<div class="wd-card">' + (ex.length ? ex.map(x => '<button class="wd-ex" onclick="wedExp(\'' + x.id + '\')"><span class="wd-ex-m"><b>' + _escape(x.name) + '</b>'
+        + '<small>' + (+x.paid >= +x.amount && +x.amount ? '<i class="ok">שולם</i>' : +x.paid ? 'שולם ' + M(+x.paid) : 'עוד לא שולם') + '</small></span><b class="wd-ex-a">' + M(+x.amount || 0) + '</b></button>').join('')
+        + '<div class="wd-line total"><span>סך הכל הוצאות</span><b>' + M(c.other) + '</b></div>'
+      : '<button class="rm-empty" onclick="wedExp()"><span>' + FZ.plus + '</span>צלם, שמלה, טבעות… כל הוצאה נכנסת לסך הכל</button>') + '</div>'
+    // what to close with the venue
+    + '<div class="wd-lbl">לסגור עם גבריאל · ' + done + '/' + WD_CHECK.length + '</div><div class="wd-card">'
+    + WD_CHECK.map(([k, t, s]) => '<div class="wd-chk' + (w.chk[k] ? ' on' : '') + '" onclick="wedChk(\'' + k + '\')"><span class="rm-tk' + (w.chk[k] ? ' on' : '') + '">' + FZ.check + '</span><span class="rm-m"><b>' + t + '</b><small>' + s + '</small></span></div>').join('')
+    + '</div><div class="wd-foot">מזל טוב</div></div>';
+};
+window.wedNum = function(k) {
+  const w = _wdGet(), money = k === 'plate' || k === 'venuePaid';
+  const q = { guests: 'כמה מוזמנים?', confirmed: 'כמה אישרו הגעה?', minGuests: 'מה המינימום בחוזה?', plate: 'כמה עולה מנה?', venuePaid: 'כמה כבר שילמתם לאולם?' }[k];
+  const hint = { plate: 'בלי הגברה, תאורה ושתייה — אותם מוסיפים בנפרד', minGuests: 'כמה מנות משלמים גם אם מגיעים פחות. אם אין — אפשר לדלג' }[k];
+  spFlowOpen({ title: 'החתונה', vals: { n: +w[k] ? String(w[k]) : '' }, steps: [{ k: 'n', type: 'money', unit: money ? '₪' : '#', q, hint, optional: true }],
+    onSave: v => _wdSet(x => { x[k] = Math.max(0, Math.round(Number(String(v.n || '0').replace(',', '.')) || 0)); }) });
+};
+window.wedAdd = function(k) {
+  const t = WD_ADDS.find(a => a[0] === k)[1], cur = _wdGet().add[k];
+  const ask = mode => spFlowOpen({ title: t, vals: { n: cur && cur.v ? String(cur.v) : '' }, steps: [{ k: 'n', type: 'money', q: mode === 'flat' ? 'כמה עולה ' + t + ' לכל האירוע?' : 'כמה ' + t + ' מוסיפה לכל מנה?' }],
+    onSave: v => _wdSet(x => { x.add[k] = { mode, v: Math.round(Number(String(v.n).replace(',', '.')) || 0) }; }) });
+  spentSheet(t, 'איך זה מחושב באולם?', [
+    { label: 'תוספת לכל מנה', pri: true, run: () => ask('plate') },
+    { label: 'סכום אחד לכל האירוע', run: () => ask('flat') },
+    { label: 'כלול במחיר המנה', run: () => _wdSet(x => { x.add[k] = { mode: 'incl', v: 0 }; }) }]
+    .concat(cur ? [{ label: 'לנקות', danger: true, run: () => _wdSet(x => { delete x.add[k]; }) }] : []));
+};
+window.wedDate = function() {
+  const w = _wdGet();
+  spFlowOpen({ title: 'החתונה', vals: { d: w.date || '' }, steps: [{ k: 'd', type: 'date', future: true, q: 'מתי החתונה?' }],
+    onSave: v => _wdSet(x => { x.date = v.d || ''; }) });
+};
+window.wedChk = function(k) { try { window.haptic.light(); } catch (_) {} _wdSet(x => { x.chk[k] = !x.chk[k]; }); };
+window.wedExp = function(id) {
+  const L = load('wedding_exp') || [], cur = id ? L.find(x => x.id === id) : null;
+  spFlowOpen({ title: cur ? 'הוצאה לחתונה' : 'הוצאה חדשה לחתונה', editing: !!cur, deleteLabel: 'למחוק את ההוצאה',
+    vals: cur ? { n: cur.name, a: String(cur.amount || ''), p: cur.paid ? String(cur.paid) : '' } : {},
+    steps: [{ k: 'n', type: 'text', q: 'על מה?', ph: 'צלם, שמלה, טבעות…', recent: WD_VENDORS, req: 'כתוב על מה' },
+      { k: 'a', type: 'money', q: 'כמה זה עולה בסך הכל?' },
+      { k: 'p', type: 'money', q: 'כמה כבר שילמתם?', hint: 'אם עוד לא — לדלג', optional: true }],
+    onSave: v => { const A = load('wedding_exp') || [], now = new Date().toISOString(), num = s => Math.round(Number(String(s || '0').replace(',', '.')) || 0);
+      if (cur) { const x = A.find(y => y.id === cur.id); if (x) { x.name = v.n.trim(); x.amount = num(v.a); x.paid = num(v.p); x.updatedAt = now; } }
+      else A.push({ id: genId(), name: v.n.trim(), amount: num(v.a), paid: num(v.p), createdAt: now });
+      save('wedding_exp', A); wedRender(); },
+    onDelete: () => { const A = load('wedding_exp') || [], x = A.find(y => y.id === id); if (!x) return; x.deleted = true; x.updatedAt = new Date().toISOString(); save('wedding_exp', A); wedRender(); } });
+};
+
 // Switch between the new SPENT design and the original (classic) one.
 window.setSkin = function(skin) {
   skin = skin === 'classic' ? 'classic' : 'spent';
