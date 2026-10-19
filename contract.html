@@ -225,7 +225,7 @@ function render(c){
         + '<input class="name-input" id="signer-name" type="text" placeholder="שם מלא" value="' + escHtml(c.clientName || '') + '">'
         + '<div class="sig-canvas-wrap"><canvas id="sig-canvas"></canvas><div class="sig-hint" id="sig-hint">לחתום כאן באצבע</div><button class="sig-clear" onclick="clearSig()">ניקוי</button></div>'
         + '<button class="btn-confirm" id="confirm-btn" onclick="submitSignature()">מאשר/ת וחותם/ת</button>'
-        + '<div class="psig">' + (c.producerSignature ? '<img src="' + c.producerSignature + '" alt="">' : '') + '<span>' + producer + ' כבר חתם' + (pWhen ? ' · ' + pWhen : '') + '</span></div>'
+        + '<div class="psig">' + (c.producerSignature ? '<img src="' + c.producerSignature + '" alt="">' : '') + '<span>' + producer + (c.producerSignature ? ' כבר חתם' : '') + (pWhen ? ' · ' + pWhen : '') + '</span></div>'
         + '</div>')
     + '</div>';
 
