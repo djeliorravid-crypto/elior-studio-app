@@ -146,6 +146,19 @@
   .inv { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 16px 6px 0; padding: 12px 16px; border-radius: 16px; background: rgba(255,255,255,.6); font-size: 13.5px; color: var(--mute); }
   .inv .iv { text-align: left; line-height: 1.6; }
   .inv b { font-weight: 600; color: var(--ink2); font-variant-numeric: tabular-nums; }
+  /* v633 — formal, with the discount as a gift */
+  .docline { display: flex; justify-content: space-between; margin: -4px 6px 12px; font-size: 11.5px; color: var(--soft); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+  .inv2 { padding: 6px 18px 14px; }
+  .inv2 .r { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; color: var(--ink2); }
+  .inv2 .was { color: var(--soft); text-decoration: line-through; text-decoration-color: rgba(138,143,174,.6); font-variant-numeric: tabular-nums; }
+  .inv2 .gift span:first-child { color: var(--green); font-weight: 600; }
+  .inv2 .gift span:last-child { color: var(--green); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .inv2 .pay { border-bottom: none; }
+  .inv2 .pay span { font-weight: 700; color: var(--ink); font-size: 16px; font-variant-numeric: tabular-nums; }
+  .inv2 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+  .inv2 .split span { background: #f4f5fa; border-radius: 14px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; text-align: center; }
+  .inv2 .split small { font-size: 11.5px; color: var(--soft); }
+  .inv2 .split b { font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
   @keyframes emailFade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes emailSlide { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 </style>
@@ -205,6 +218,11 @@ function _ctrPriceBreakdown(c){
 
 const _CK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const _LOGO = '<svg viewBox="70 180 830 520" aria-hidden="true"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#fff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="36" fill="#fff"/></svg>';
+function _discAmt(sub, d){
+  if (!d || !(parseFloat(d.v) > 0)) return 0;
+  const a = d.mode === 'pct' ? Math.round(sub * Math.min(100, parseFloat(d.v)) / 100) : Math.round(parseFloat(d.v));
+  return Math.max(0, Math.min(sub, a));
+}
 function render(c){
   // v631: calm and friendly — what you get (3 tiles), 4 things worth knowing, sign
   const songs = (c.songs && c.songs.length) ? c.songs : (c.songTitle ? [c.songTitle] : []);
@@ -212,7 +230,8 @@ function render(c){
   const songsLabel = songs.length <= 1 ? (songs[0] || '—') : songs.join(' · ');
   const breakdown = _ctrPriceBreakdown(c);
   const extras = c.extras || [];
-  const total = breakdown.base + extras.reduce(function(s,e){ return s + (parseFloat(e.price)||0); }, 0);
+  const sub = breakdown.base + extras.reduce(function(s,e){ return s + (parseFloat(e.price)||0); }, 0);
+  const disc = _discAmt(sub, c.discount), total = sub - disc;
   const halfA = Math.round(total / 2), halfB = total - halfA;
   const producer = escHtml(c.producerName || 'אליאור רביד');
   const first = escHtml(String(c.clientName || '').trim().split(' ')[0]);
@@ -236,7 +255,8 @@ function render(c){
   const pWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') : (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
 
   document.getElementById('root').innerHTML = '<div class="wrap one">'
-    + '<div class="c-head"><span class="c-logo">' + _LOGO + '</span><span><b>' + (signed ? 'יאללה, מתחילים' : 'היי ' + first) + '</b><small>' + (signed ? 'הכל סגור. נתראה באולפן.' : 'זה הרגע שהשיר שלך יוצא לדרך') + '</small></span></div>'
+    + '<div class="c-head"><span class="c-logo">' + _LOGO + '</span><span><b>' + (signed ? 'יוצאים לדרך' : 'לכבוד ' + escHtml(c.clientName || '')) + '</b><small>' + (signed ? 'ההסכם נחתם. נתראה באולפן.' : 'סיכום הפקה · ' + producer + ' · מפיק מוזיקלי') + '</small></span></div>'
+    + '<div class="docline"><span>מס׳ ' + escHtml(String(c.id || '').replace(/^ctr_/, '').slice(-6).toUpperCase()) + '</span><span>' + new Date(c.createdAt || Date.now()).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }) + '</span></div>'
 
     + '<div class="hero dream"><div class="k">הצעד הבא שלך</div>'
     + '<h1>' + escHtml(songsLabel) + '</h1>'
@@ -246,7 +266,11 @@ function render(c){
 
     + '<div class="lbl2">חשוב לדעת</div><div class="card terms">' + know.map((t, i) => '<div class="t1"><span class="n">' + (i + 1) + '</span><span>' + t + '</span></div>').join('') + '</div>'
 
-    + '<div class="inv"><span>ההשקעה</span><span class="iv"><b>' + fmtMoney(halfA) + '</b> עכשיו<br><b>' + fmtMoney(halfB) + '</b> בשלב המיקס</span></div>'
+    + '<div class="lbl2">ההשקעה</div><div class="card inv2">'
+      + (disc ? '<div class="r"><span>מחיר ההפקה</span><span class="was">' + fmtMoney(sub) + '</span></div>'
+        + '<div class="r gift"><span>' + (c.discount && c.discount.note ? escHtml(c.discount.note) : 'הנחה אישית') + (c.discount && c.discount.mode === 'pct' ? ' · ' + parseFloat(c.discount.v) + '%' : '') + '</span><span>−' + fmtMoney(disc) + '</span></div>' : '')
+      + '<div class="r pay"><span>' + (disc ? 'לתשלום' : 'סך ההשקעה') + '</span><span>' + fmtMoney(total) + '</span></div>'
+      + '<div class="split"><span><small>בתחילת העבודה</small><b>' + fmtMoney(halfA) + '</b></span><span><small>בשלב המיקס</small><b>' + fmtMoney(halfB) + '</b></span></div></div>'
     + (signed
       ? '<div class="signed-stamp"><span class="check">' + _CK + '</span><span><b>נחתם</b><small>' + escHtml(c.signature.clientName || c.clientName) + (c.signature.signedAt ? ' · ' + new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '') + '</small></span></div>'
       : '<div class="card sig-card">'
@@ -273,7 +297,8 @@ function buildPdfPrintable(c){
   const songsLabel = songs.length <= 1 ? (songs[0] || '—') : songs.join(', ');
   const breakdown = _ctrPriceBreakdown(c);
   const extrasTotal = (c.extras || []).reduce(function(s,e){ return s + (parseFloat(e.price)||0); }, 0);
-  const total = breakdown.base + extrasTotal;
+  const sub = breakdown.base + extrasTotal, disc = _discAmt(sub, c.discount);
+  const total = sub - disc;
   const halfA = Math.round(total / 2);
   const halfB = total - halfA;
 
@@ -301,6 +326,7 @@ function buildPdfPrintable(c){
   (c.extras || []).forEach(function(e){
     priceRows += '<tr><td style="' + rowCellL + '">' + escHtml(e.label || '') + '</td><td style="' + rowCellR + '">' + fmtMoney(e.price || 0) + '</td></tr>';
   });
+  if (disc) priceRows += '<tr><td style="' + rowCellL + ';color:#2c5545">' + escHtml((c.discount && c.discount.note) || 'הנחה') + '</td><td style="' + rowCellR + ';color:#2c5545">−' + fmtMoney(disc) + '</td></tr>';
   priceRows += '<tr><td style="padding:8px 0 0;font-weight:900;font-size:14px;border-top:1.5px solid #8a8fae;color:#161c45">סה"כ</td>' +
                '<td style="padding:8px 0 0;font-weight:900;font-size:15px;border-top:1.5px solid #8a8fae;color:#6b7299;text-align:left;white-space:nowrap">' + fmtMoney(total) + '</td></tr>';
 

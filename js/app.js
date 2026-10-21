@@ -15586,16 +15586,32 @@ function _ctrPriceFields(){
   };
 }
 
-function _ctrTotal(){
+// v633: a discount on the summary — a fixed amount or a percent of the price (with an optional note)
+function _ctrDiscAmt(sub, d){
+  if (!d || !(parseFloat(d.v) > 0)) return 0;
+  const a = d.mode === 'pct' ? Math.round(sub * Math.min(100, parseFloat(d.v)) / 100) : Math.round(parseFloat(d.v));
+  return Math.max(0, Math.min(sub, a));
+}
+let _ctrDiscMode = 'amt';
+window.ctrDiscMode = function(m){ _ctrDiscMode = m === 'pct' ? 'pct' : 'amt';
+  ['amt','pct'].forEach(k => { const b = document.getElementById('ctr-disc-' + k); if (b) b.classList.toggle('active', k === _ctrDiscMode); });
+  _ctrRefreshTotal(); };
+function _ctrDiscRead(){ const v = parseFloat(document.getElementById('ctr-discount')?.value) || 0;
+  return v > 0 ? { mode: _ctrDiscMode, v: v, note: (document.getElementById('ctr-discount-note')?.value || '').trim() } : null; }
+function _ctrSubtotal(){
   const p = _ctrPriceFields();
-  const base = p.recording + p.mastering + p.productionMix;
-  const extrasTotal = _ctrExtras.reduce((s, e) => s + (parseFloat(e.price) || 0), 0);
-  return base + extrasTotal;
+  return p.recording + p.mastering + p.productionMix + _ctrExtras.reduce((s, e) => s + (parseFloat(e.price) || 0), 0);
+}
+function _ctrTotal(){
+  const sub = _ctrSubtotal();
+  return sub - _ctrDiscAmt(sub, _ctrDiscRead());
 }
 
 function _ctrRefreshTotal(){
   const el = document.getElementById('ctr-total');
   if (el) el.textContent = fmtMoney(_ctrTotal());
+  const h = document.getElementById('ctr-disc-hint'), sub = _ctrSubtotal(), da = _ctrDiscAmt(sub, _ctrDiscRead());
+  if (h) h.textContent = da ? 'הנחה של ' + fmtMoney(da) + ' · במקום ' + fmtMoney(sub) : 'יופיע ללקוח בעדינות, מתחת להשקעה';
 }
 
 function ctrAddExtra(type){
@@ -15760,6 +15776,8 @@ function openContractEditor(id){
   });
 
   _ctrExtras = c && Array.isArray(c.extras) ? c.extras.map(e => Object.assign({}, e)) : [];
+  { const d = c && c.discount, di = document.getElementById('ctr-discount'), dn = document.getElementById('ctr-discount-note');
+    if (di) di.value = d && d.v ? d.v : ''; if (dn) dn.value = d && d.note ? d.note : ''; ctrDiscMode(d && d.mode === 'pct' ? 'pct' : 'amt'); }
   _ctrRights = c && c.rightsMode ? c.rightsMode : 'solo';
   _ctrShares = c && Array.isArray(c.splitShares) && c.splitShares.length
     ? c.splitShares.map(s => Object.assign({}, s))
@@ -15812,6 +15830,8 @@ function saveContract(){
   c.priceMastering = pf.mastering;
   c.priceProductionMix = pf.productionMix;
   c.extras = _ctrExtras.slice();
+  c.discount = _ctrDiscRead();
+  c.basePrice = basePrice;   // the price before the discount (the page subtracts it)
   c.rightsMode = _ctrRights;
   c.splitShares = _ctrRights === 'split' ? _ctrShares.slice() : [];
   // Always refresh the producer's stamp to the current saved one (so changing
@@ -16375,7 +16395,8 @@ async function shareContract(id){
 }
 
 function _ctrCardHtml(c){
-  const total = (c.basePrice||0) + (c.extras||[]).reduce((s,e)=>s+(parseFloat(e.price)||0),0);
+  const sub0 = (c.basePrice||0) + (c.extras||[]).reduce((s,e)=>s+(parseFloat(e.price)||0),0);
+  const total = sub0 - _ctrDiscAmt(sub0, c.discount);
   const dateLabel = c.projectDate ? new Date(c.projectDate).toLocaleDateString('he-IL', {day:'numeric', month:'short', year:'numeric'}) : '';
   const signed = c.status === 'signed';
   const statusLabel = signed ? '✓ נחתם' : c.status === 'sent' ? '↗ נשלח' : '✎ טיוטה';
@@ -16474,7 +16495,7 @@ function _ctrRenderPrintable(c, opts){
   const kind = _ctrKindLabel(c);
   const breakdown = _ctrPriceBreakdownFor(c);
   const extrasTotal = (c.extras||[]).reduce((s,e)=>s+(parseFloat(e.price)||0),0);
-  const total = breakdown.base + extrasTotal;
+  const total = breakdown.base + extrasTotal - _ctrDiscAmt(breakdown.base + extrasTotal, c.discount);
   const halfA = Math.round(total/2), halfB = total - halfA;
   const dateStr = c.projectDate ? new Date(c.projectDate).toLocaleDateString('he-IL', {day:'numeric', month:'long', year:'numeric'}) : '—';
 
