@@ -263,10 +263,10 @@ function render(c){
     + '<div class="c-head"><span class="c-logo">' + _LOGO + '</span><span><b>' + (signed ? 'יוצאים לדרך' : 'לכבוד ' + escHtml(c.clientName || '')) + '</b><small>' + (signed ? 'ההסכם נחתם. נתראה באולפן.' : 'סיכום הפקה · ' + producer + ' · מפיק מוזיקלי') + '</small></span></div>'
     + '<div class="docline"><span>מס׳ ' + escHtml(String(c.id || '').replace(/^ctr_/, '').slice(-6).toUpperCase()) + '</span><span>' + new Date(c.createdAt || Date.now()).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }) + '</span></div>'
 
-    + '<div class="hero dream"><div class="k">הצעד הבא שלך</div>'
+    + '<div class="hero dream"><div class="k">הסכם עבודה</div>'
     + '<h1>' + escHtml(songsLabel) + '</h1>'
-    + '<div class="line">מהרעיון — ל' + (kind.plural ? 'שירים מוכנים' : 'שיר מוכן') + ' שמתנגן בכל הפלטפורמות.<br>עם סאונד שכיף להיות גאים בו.</div></div>'
-    + '<div class="lbl2">הדרך</div><div class="tiles">' + tiles.map(t => '<div class="tile"><span class="ti">' + t[0] + '</span><span>' + t[1] + '</span></div>').join('') + '</div>'
+    + '<div class="line">על פרויקט הפקה מוזיקלית' + (kind.plural ? ' · ' + kind.metaLabel : ' · סינגל') + '<br>בין ' + producer + ' לבין ' + escHtml(c.clientName || '') + '</div></div>'
+    + '<div class="lbl2">מה כולל הפרויקט</div><div class="tiles">' + tiles.map(t => '<div class="tile"><span class="ti">' + t[0] + '</span><span>' + t[1] + '</span></div>').join('') + '</div>'
     + (extras.length ? '<div class="extra">כולל גם: ' + extras.map(e => escHtml(e.label || '')).filter(Boolean).join(' · ') + '</div>' : '')
 
     + '<div class="lbl2">תנאי ההסכם</div><div class="card terms"><div class="parties">הסכם זה נערך בין <b>' + producer + '</b> (״המפיק״) לבין <b>' + escHtml(c.clientName || '') + '</b> (״האמן/ית״), ביום ' + new Date(c.createdAt || Date.now()).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }) + '.</div>' + know.map((t, i) => '<div class="t1"><span class="n">' + (i + 1) + '</span><span>' + t + '</span></div>').join('') + '</div>'
@@ -282,7 +282,7 @@ function render(c){
         + '<p class="decl">בחתימתי אני מאשר/ת שקראתי את תנאי ההסכם, הבנתי אותם ואני מסכים/ה להם.</p>'
         + '<input class="name-input" id="signer-name" type="text" placeholder="שם מלא" value="' + escHtml(c.clientName || '') + '">'
         + '<div class="sig-canvas-wrap"><canvas id="sig-canvas"></canvas><div class="sig-hint" id="sig-hint">חתימה באצבע</div><button class="sig-clear" onclick="clearSig()">ניקוי</button></div>'
-        + '<button class="btn-confirm" id="confirm-btn" onclick="submitSignature()">יוצאים לדרך — מאשר/ת וחותם/ת</button>'
+        + '<button class="btn-confirm" id="confirm-btn" onclick="submitSignature()">מאשר/ת וחותם/ת על ההסכם</button>'
         + (c.producerSignature ? '<div class="psig"><img src="' + c.producerSignature + '" alt=""><span>' + producer + ' כבר חתם' + (pWhen ? ' · ' + pWhen : '') + '</span></div>' : '')
         + '</div>')
     + '</div>';
@@ -564,7 +564,7 @@ async function submitSignature(){
   } catch(err) {
     console.error('signature submit failed:', err);
     btn.disabled = false;
-    btn.textContent = 'יוצאים לדרך — מאשר/ת וחותם/ת';
+    btn.textContent = 'מאשר/ת וחותם/ת על ההסכם';
     const code = err && (err.code || err.message) || err;
     alert('שגיאה בשליחה: ' + code + '\nנסה שוב או רענן.');
   }
