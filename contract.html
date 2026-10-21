@@ -159,6 +159,11 @@
   .inv2 .split span { background: #f4f5fa; border-radius: 14px; padding: 9px 10px; display: flex; flex-direction: column; gap: 2px; text-align: center; }
   .inv2 .split small { font-size: 11.5px; color: var(--soft); }
   .inv2 .split b { font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  /* v634 — contract feel */
+  .parties { font-size: 13.5px; line-height: 1.6; color: var(--ink2); padding: 10px 0 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  .parties b { font-weight: 600; color: var(--ink); }
+  .terms .t1 { line-height: 1.6; }
+  .decl { font-size: 13px !important; color: var(--ink2) !important; line-height: 1.55 !important; margin: 0 2px 12px !important; }
   @keyframes emailFade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes emailSlide { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 </style>
@@ -243,14 +248,14 @@ function render(c){
     [ic('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'), 'מוכן לעולם<br>ולבמה']
   ];
   const rights = (c.rightsMode === 'split' && Array.isArray(c.splitShares) && c.splitShares.length)
-    ? 'זכויות הכתיבה: ' + c.splitShares.filter(s => s.name && s.percent > 0).map(s => s.percent + '% ' + escHtml(s.name)).join(' · ')
-    : 'זכויות הכתיבה באקו״ם על שם ' + producer;
+    ? 'זכויות הכתיבה (מילים ולחן) מתחלקות כדלקמן: ' + c.splitShares.filter(s => s.name && s.percent > 0).map(s => s.percent + '% ל' + escHtml(s.name)).join(', ') + ', ויירשמו כך באקו״ם'
+    : 'זכויות הכתיבה (מילים ולחן) יירשמו באקו״ם על שם ' + producer;
+  // v634: the terms as numbered contract clauses
   const know = [
-    'בסוף מקבלים <b>מאסטר</b>, <b>פלייבק</b> ו<b>ערוצים להופעות</b>. עד <b>5 סבבי תיקונים</b> על המיקס.',
-    '<b>המאסטר שלך</b> — לכל שימוש. ' + rights + '.',
-    'ביטול או דחייה של סשן — עד <b>48 שעות</b> לפני.',
-    'הערות על גרסה — תוך <b>7 ימים</b>. סבב נוסף או שינוי מהותי — בתשלום נוסף.',
-    'הקבצים הסופיים נמסרים אחרי התשלום המלא.'
+    'המפיק יבצע עבור האמן/ית הקלטה, הפקה מוזיקלית, מיקס ומאסטרינג, וימסור בסיום <b>קובץ מאסטר סופי</b>, <b>פלייבק</b> ו<b>ערוצים נפרדים להופעות</b>. ההפקה כוללת עד <b>5 סבבי תיקונים</b> על המיקס.',
+    'ההקלטה הסופית (המאסטר) שייכת לאמן/ית במלואה, והאמן/ית רשאי/ת לעשות בה כל שימוש. ' + rights + '.',
+    'ביטול או דחייה של סשן ייעשו בהודעה של <b>48 שעות</b> מראש לפחות.',
+    'ההשקעה תשולם בשני תשלומים, כמפורט להלן. הקבצים הסופיים יימסרו עם השלמת התשלום המלא.'
   ];
   const pWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') : (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
 
@@ -264,7 +269,7 @@ function render(c){
     + '<div class="lbl2">הדרך</div><div class="tiles">' + tiles.map(t => '<div class="tile"><span class="ti">' + t[0] + '</span><span>' + t[1] + '</span></div>').join('') + '</div>'
     + (extras.length ? '<div class="extra">כולל גם: ' + extras.map(e => escHtml(e.label || '')).filter(Boolean).join(' · ') + '</div>' : '')
 
-    + '<div class="lbl2">חשוב לדעת</div><div class="card terms">' + know.map((t, i) => '<div class="t1"><span class="n">' + (i + 1) + '</span><span>' + t + '</span></div>').join('') + '</div>'
+    + '<div class="lbl2">תנאי ההסכם</div><div class="card terms"><div class="parties">הסכם זה נערך בין <b>' + producer + '</b> (״המפיק״) לבין <b>' + escHtml(c.clientName || '') + '</b> (״האמן/ית״), ביום ' + new Date(c.createdAt || Date.now()).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }) + '.</div>' + know.map((t, i) => '<div class="t1"><span class="n">' + (i + 1) + '</span><span>' + t + '</span></div>').join('') + '</div>'
 
     + '<div class="lbl2">ההשקעה</div><div class="card inv2">'
       + (disc ? '<div class="r"><span>מחיר ההפקה</span><span class="was">' + fmtMoney(sub) + '</span></div>'
@@ -274,6 +279,7 @@ function render(c){
     + (signed
       ? '<div class="signed-stamp"><span class="check">' + _CK + '</span><span><b>נחתם</b><small>' + escHtml(c.signature.clientName || c.clientName) + (c.signature.signedAt ? ' · ' + new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '') + '</small></span></div>'
       : '<div class="card sig-card">'
+        + '<p class="decl">בחתימתי אני מאשר/ת שקראתי את תנאי ההסכם, הבנתי אותם ואני מסכים/ה להם.</p>'
         + '<input class="name-input" id="signer-name" type="text" placeholder="שם מלא" value="' + escHtml(c.clientName || '') + '">'
         + '<div class="sig-canvas-wrap"><canvas id="sig-canvas"></canvas><div class="sig-hint" id="sig-hint">חתימה באצבע</div><button class="sig-clear" onclick="clearSig()">ניקוי</button></div>'
         + '<button class="btn-confirm" id="confirm-btn" onclick="submitSignature()">יוצאים לדרך — מאשר/ת וחותם/ת</button>'
