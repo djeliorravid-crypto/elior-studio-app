@@ -58,10 +58,13 @@ jobs:
 
       - name: Morning address probe (dummy keys, codes only)
         run: |
-          for u in https://api.greeninvoice.co.il/api/v1/account/token https://api.greeninvoice.co.il/api/v1/documents/search https://api.greeninvoice.co.il/ https://www.greeninvoice.co.il/api/v1/account/token https://app.greeninvoice.co.il/api/v1/account/token https://api.morning.co/v1/account/token https://api.greeninvoice.co.il/api/v1/businesses/me; do
-            out=$(curl -s -m 25 -o /tmp/b -w '%{http_code} %{content_type}' -X POST "$u" -H 'Content-Type: application/json' -d '{"id":"xxxxxxxxxxxxxxxxxxxx","secret":"yyyyyyyyyyyyyyyyyyyy"}')
-            echo "::notice::PROBE $u -> $out $(head -c 100 /tmp/b | tr '\n' ' ')"
+          B=https://api.greeninvoice.co.il/api
+          for u in $B/v1/auth/token $B/v1/oauth/token $B/v1/token $B/v1/account/login $B/v1/auth/login $B/v2/auth/token $B/v1/account/api-token $B/v1/accounts/token; do
+            out=$(curl -s -m 25 -o /tmp/b -w '%{http_code}' -X POST "$u" -H 'Content-Type: application/json' -d '{"id":"xxxxxxxxxxxxxxxxxxxx","secret":"yyyyyyyyyyyyyyyyyyyy"}')
+            echo "::notice::PROBE ${u#$B} -> $out $(head -c 90 /tmp/b | tr '\n' ' ')"
           done
+          curl -s -m 30 https://jsapi.apiary.io/apis/greeninvoice.apib -o /tmp/doc || true
+          echo "::notice::DOC bytes=$(wc -c < /tmp/doc 2>/dev/null) $(grep -o -i -m3 '[^ ]*account/token[^ ]*\|[^ ]*/token[^ ]*' /tmp/doc 2>/dev/null | tr '\n' ' ' | head -c 300)"
           out=$(curl -s -m 25 -o /tmp/b -w '%{http_code}' -X POST https://api.greeninvoice.co.il/api/v1/account/token -H 'Content-Type: application/json' -H 'User-Agent: curl/8' -d '{"id":"x","secret":"y"}'); echo "::notice::PROBE curl-ua -> $out $(head -c 100 /tmp/b)"
 
       - name: Report
