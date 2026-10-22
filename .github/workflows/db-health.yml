@@ -49,19 +49,20 @@ jobs:
               try: jj = json.loads(txt); info = (jj.get('errorCode'), jj.get('errorMessage'), 'token' if jj.get('token') else '')
               except Exception: info = ('non-json', txt[:80].replace('\n', ' ') if label == 'dummy-keys' or st != 200 else '')
               n(f'MORNING {label}: status={st} type={ct} {info}')
-          for u in ['https://api.greeninvoice.co.il/api/v1/account/token', 'https://api.greeninvoice.co.il/api/v1/account/token/', 'https://api.greeninvoice.co.il/api/v2/account/token', 'https://api.morning.co/api/v1/account/token', 'https://api.greeninvoice.com/api/v1/account/token', 'https://sandbox.d.greeninvoice.co.il/api/v1/account/token', 'https://api.greeninvoice.co.il/api/v1/documents/search']:
-              st, ct, txt = raw(u, {'id': 'x'*20, 'secret': 'y'*20})
-              n(f'PROBE {u.split("//")[1]}: {st} {ct} ' + txt[:90].replace('\n', ' '))
-          try:
-              with urllib.request.urlopen(urllib.request.Request('https://api.greeninvoice.co.il/', headers={'User-Agent':'Mozilla/5.0'}), timeout=30) as r: n(f'ROOT api.greeninvoice.co.il: {r.status} {r.read()[:120]!r}')
-          except urllib.error.HTTPError as e: n(f'ROOT api.greeninvoice.co.il: {e.code} {e.read()[:120]!r}')
-          except Exception as e: n(f'ROOT err {str(e)[:120]}')
           n(f'GitHub keys present: id={bool(os.environ.get("MORNING_API_ID","").strip())} secret={bool(os.environ.get("MORNING_API_SECRET","").strip())} idlen={len(os.environ.get("MORNING_API_ID","").strip())}')
           if tok:
               st3, r = post(W + '/morning/api', {'secret': sec, 'method': 'POST', 'path': '/documents/search', 'body': {'page': 1, 'pageSize': 1, 'type': [400]}, 'token': tok})
               jj = r.get('json') if isinstance(r, dict) else None
               n(f'read receipts with worker token: status={r.get("status") if isinstance(r, dict) else st3} ok={r.get("ok") if isinstance(r, dict) else ""} total={jj.get("total") if isinstance(jj, dict) else ""} err={(jj.get("errorMessage") or jj.get("errorCode")) if isinstance(jj, dict) else ""}')
           PY
+
+      - name: Morning address probe (dummy keys, codes only)
+        run: |
+          for u in https://api.greeninvoice.co.il/api/v1/account/token https://api.greeninvoice.co.il/api/v1/documents/search https://api.greeninvoice.co.il/ https://www.greeninvoice.co.il/api/v1/account/token https://app.greeninvoice.co.il/api/v1/account/token https://api.morning.co/v1/account/token https://api.greeninvoice.co.il/api/v1/businesses/me; do
+            out=$(curl -s -m 25 -o /tmp/b -w '%{http_code} %{content_type}' -X POST "$u" -H 'Content-Type: application/json' -d '{"id":"xxxxxxxxxxxxxxxxxxxx","secret":"yyyyyyyyyyyyyyyyyyyy"}')
+            echo "::notice::PROBE $u -> $out $(head -c 100 /tmp/b | tr '\n' ' ')"
+          done
+          out=$(curl -s -m 25 -o /tmp/b -w '%{http_code}' -X POST https://api.greeninvoice.co.il/api/v1/account/token -H 'Content-Type: application/json' -H 'User-Agent: curl/8' -d '{"id":"x","secret":"y"}'); echo "::notice::PROBE curl-ua -> $out $(head -c 100 /tmp/b)"
 
       - name: Report
         env:
