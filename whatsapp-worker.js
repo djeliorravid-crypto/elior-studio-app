@@ -706,12 +706,22 @@ export default {
       if (!env || !sendSecret(env) || !b || String(b.secret || '').trim() !== sendSecret(env)) return json({ error: 'forbidden' }, 403);
       if (!env.MORNING_API_ID || !env.MORNING_API_SECRET) return json({ error: 'no_server_keys' }, 500);
       try {
+        // Oct 2026: Morning moved token issuing to OAuth client-credentials on
+        // api.morning.co (same key id/secret); the old /account/token is 404. Legacy kept as fallback.
+        const id = String(env.MORNING_API_ID).trim(), secretK = String(env.MORNING_API_SECRET).trim();
+        const o = await fetch('https://api.morning.co/idp/v1/oauth/token', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ grant_type: 'client_credentials', client_id: id, client_secret: secretK })
+        });
+        const oj = await o.json().catch(() => null);
+        const otk = oj && (oj.accessToken || oj.access_token);
+        if (otk) return json({ ok: true, token: otk, expires: Math.min(Number(oj.expiresIn || oj.expires_in) || 3600, 3600) - 300, via: 'oauth' });
         const r = await fetch('https://api.greeninvoice.co.il/api/v1/account/token', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: String(env.MORNING_API_ID).trim(), secret: String(env.MORNING_API_SECRET).trim() })
+          body: JSON.stringify({ id, secret: secretK })
         });
         const tk = await r.json().catch(() => null);
-        if (!tk || !tk.token) return json({ error: 'token_failed', status: r.status, detail: (tk && (tk.errorMessage || tk.errorCode)) || '' }, 502);
+        if (!tk || !tk.token) return json({ error: 'token_failed', status: r.status, oauth: o.status, detail: (oj && (oj.error_description || oj.error || oj.message)) || (tk && (tk.errorMessage || tk.errorCode)) || '' }, 502);
         return json({ ok: true, token: tk.token, expires: tk.expires || 1800 });
       } catch (e) { return json({ error: 'network', detail: String(e && e.message).slice(0, 150) }, 502); }
     }

@@ -35,7 +35,8 @@ jobs:
           st, j = post(W + '/morning/token', {'secret': sec})
           tok = isinstance(j, dict) and j.get('token')
           n(f'worker /morning/token: status={st} ok={bool(tok)} err={(j.get("error"), j.get("detail")) if isinstance(j, dict) and not tok else ""}')
-          st2, d = post('https://api.greeninvoice.co.il/api/v1/account/token', {'id': os.environ.get('MORNING_API_ID','').strip(), 'secret': os.environ.get('MORNING_API_SECRET','').strip()})
+          st2, d = post('https://api.morning.co/idp/v1/oauth/token', {'grant_type': 'client_credentials', 'client_id': os.environ.get('MORNING_API_ID','').strip(), 'client_secret': os.environ.get('MORNING_API_SECRET','').strip()})
+          if isinstance(d, dict) and (d.get('accessToken') or d.get('access_token')): d['token'] = True
           n(f'GitHub-secret keys direct: status={st2} token={bool(isinstance(d, dict) and d.get("token"))} err={(d.get("errorMessage") or d.get("errorCode")) if isinstance(d, dict) else str(d)[:120]}')
           # what does Morning itself say (codes + Morning's own error text only)
           def raw(url, body):
@@ -66,20 +67,6 @@ jobs:
           curl -s -m 30 https://jsapi.apiary.io/apis/greeninvoice.apib -o /tmp/doc || true
           echo "::notice::DOC bytes=$(wc -c < /tmp/doc 2>/dev/null) $(grep -o -i -m3 '[^ ]*account/token[^ ]*\|[^ ]*/token[^ ]*' /tmp/doc 2>/dev/null | tr '\n' ' ' | head -c 300)"
           out=$(curl -s -m 25 -o /tmp/b -w '%{http_code}' -X POST https://api.greeninvoice.co.il/api/v1/account/token -H 'Content-Type: application/json' -H 'User-Agent: curl/8' -d '{"id":"x","secret":"y"}'); echo "::notice::PROBE curl-ua -> $out $(head -c 100 /tmp/b)"
-
-      - name: How current Morning clients log in (public packages)
-        run: |
-          mkdir -p /tmp/pk && cd /tmp/pk
-          for p in greeninvoice-mcp green-invoice-api morning-api greeninvoice; do
-            v=$(npm view $p version time.modified 2>/dev/null | tr '\n' ' '); [ -n "$v" ] && echo "::notice::NPM $p $v"
-          done
-          npm pack greeninvoice-mcp >/dev/null 2>&1 && tar xzf greeninvoice-mcp-*.tgz && echo "::notice::MCP $(grep -rhoE "https://[a-z.]*greeninvoice[a-z./0-9]*|https://[a-z.]*morning[a-z./0-9]*|account/token|/token[\"']" package | sort | uniq -c | tr '\n' ' ' | head -c 400)"
-          f=$(grep -rl "idp/v1/oauth/token" package | head -1); echo "::notice::FILE $f"
-          sed -n 48,92p "$f" | grep -v Authorization > /tmp/snip; split -l 6 /tmp/snip /tmp/sn_; i=0; for x in /tmp/sn_*; do i=$((i+1)); echo "::notice::SNIP$i $(tr '\n' '~' < $x | head -c 900)"; done
-          pip download --no-deps -q green-invoice -d py >/dev/null 2>&1; ls py | head -2 | tr '\n' ' ' | sed 's/^/::notice::PY /'; echo
-          cd py 2>/dev/null && for f in *; do (unzip -o -q "$f" 2>/dev/null || tar xzf "$f" 2>/dev/null); done; echo "::notice::PYURLS $(grep -rhoE "https://[a-z.]*greeninvoice[a-z./0-9]*|account/token" . 2>/dev/null | sort | uniq -c | tr '\n' ' ' | head -c 300)"
-          B=https://api.greeninvoice.co.il/api/v1/account/token
-          for m in GET PUT; do echo "::notice::METHOD $m $(curl -s -m 20 -o /tmp/b -w '%{http_code}' -X $m $B -H 'Content-Type: application/json' -d '{}') $(head -c 80 /tmp/b)"; done
 
       - name: Report
         env:

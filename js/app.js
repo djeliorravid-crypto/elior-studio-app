@@ -21361,11 +21361,18 @@ async function morningGetToken() {
   const sec = localStorage.getItem('wa_send_secret') || '';
   const keep = (tok, ttl) => { localStorage.setItem('morning_token', tok); localStorage.setItem('morning_token_exp', String(Date.now() + (ttl || 1800) * 1000)); return tok; };
   const c = morningCreds(), diag = [];
-  // v636: since 22.10 Morning answers /account/token only from regular
-  // (Israeli/home) connections — the worker and GitHub get an empty 404.
-  // So the phone asks Morning itself first (native HTTP, no CORS), with the
-  // keys saved in Settings. Every other Morning call still goes via the worker.
+  // v637: Morning retired POST /account/token (404 for everyone since ~21.10).
+  // Tokens now come from OAuth client-credentials on api.morning.co with the
+  // same key id/secret. The phone tries that itself, then the worker (which
+  // does the same with its own keys). API calls stay on api.greeninvoice.co.il.
   if (c.id && c.secret) {
+    // Oct 2026: tokens now come from Morning's OAuth endpoint (same key id/secret)
+    try {
+      const r = await _mptHttp('POST', 'https://api.morning.co/idp/v1/oauth/token', { grant_type: 'client_credentials', client_id: c.id, client_secret: c.secret });
+      diag.push('oauth=' + r.status);
+      const t = r.json && (r.json.accessToken || r.json.access_token);
+      if (t) { window._mtDiag = diag.join(' '); return keep(t, 1500); }
+    } catch (e) { diag.push('oauth-err=' + String(e && e.message || e).slice(0, 40)); }
     try {
       const r = await _mptHttp('POST', window.MORNING_BASE + '/account/token', { id: c.id, secret: c.secret });
       diag.push('direct=' + r.status);
