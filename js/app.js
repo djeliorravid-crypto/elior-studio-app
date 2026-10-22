@@ -21359,42 +21359,32 @@ async function morningGetToken() {
   const exp    = parseInt(localStorage.getItem('morning_token_exp') || '0');
   if (cached && Date.now() < exp - 60000) return cached;
   const sec = localStorage.getItem('wa_send_secret') || '';
-  // 1) Preferred: let the worker mint the token from the account keys it
-  // already holds (server-side, no CORS, independent of the app's stored
-  // keys which may be stale). This is the same account that issues receipts.
+  const keep = (tok, ttl) => { localStorage.setItem('morning_token', tok); localStorage.setItem('morning_token_exp', String(Date.now() + (ttl || 1800) * 1000)); return tok; };
+  const c = morningCreds(), diag = [];
+  // v636: since 22.10 Morning answers /account/token only from regular
+  // (Israeli/home) connections — the worker and GitHub get an empty 404.
+  // So the phone asks Morning itself first (native HTTP, no CORS), with the
+  // keys saved in Settings. Every other Morning call still goes via the worker.
+  if (c.id && c.secret) {
+    try {
+      const r = await _mptHttp('POST', window.MORNING_BASE + '/account/token', { id: c.id, secret: c.secret });
+      diag.push('direct=' + r.status);
+      if (r.json && r.json.token) { window._mtDiag = diag.join(' '); return keep(r.json.token, r.json.expires); }
+      if (r.json && (r.json.errorMessage || r.json.errorCode)) diag.push('msg=' + String(r.json.errorMessage || r.json.errorCode).slice(0, 60));
+    } catch (e) { diag.push('direct-err=' + String(e && e.message || e).slice(0, 40)); }
+  } else diag.push('no-keys-in-app');
+  // the worker, with the keys it holds (worked until 22.10 — kept in case Morning opens it again)
   if (sec) {
     try {
       const r = await _mptHttp('POST', WA_WORKER + '/morning/token', { secret: sec });
       const j = r.json || {};
-      if (r.ok && j.ok && j.token) {
-        localStorage.setItem('morning_token', j.token);
-        localStorage.setItem('morning_token_exp', String(Date.now() + (j.expires || 1800) * 1000));
-        return j.token;
-      }
-    } catch (_) {}
+      diag.push('worker=' + r.status);
+      if (r.ok && j.ok && j.token) { window._mtDiag = diag.join(' '); return keep(j.token, j.expires); }
+    } catch (_) { diag.push('worker-err'); }
   }
-  // 2) Fallback: use the keys the user entered in the app (direct, or via
-  // the worker relay). Kept so a user who only set up in-app still works.
-  const c = morningCreds();
-  if (!c.id || !c.secret) return null;
-  try {
-    let data = null;
-    if (sec) {
-      const r = await _morningCall('POST', '/account/token', { id: c.id, secret: c.secret }, null);
-      data = r && r.json;
-    }
-    if (!data || !data.token) {
-      const rd = await fetch(window.MORNING_BASE + '/account/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: c.id, secret: c.secret }) });
-      data = await rd.json().catch(() => null);
-    }
-    if (!data || !data.token) { console.warn('Morning token failed', data); return null; }
-    localStorage.setItem('morning_token',     data.token);
-    localStorage.setItem('morning_token_exp', String(Date.now() + (data.expires || 1800) * 1000));
-    return data.token;
-  } catch (e) {
-    console.warn('Morning token error', e);
-    return null;
-  }
+  window._mtDiag = diag.join(' ');
+  try { _rcTrail('token', window._mtDiag); } catch (_) {}
+  return null;
 }
 
 window.testMorningConnection = async function() {
@@ -21775,7 +21765,7 @@ function _morningErrorMessage(res) {
     }
     try { return JSON.stringify(d).slice(0, 140); } catch (e) {}
   }
-  if (res.error === 'no_token')     return 'אין טוקן — נסה לחבר שוב';
+  if (res.error === 'no_token')     return (morningCreds().id ? 'Morning לא נתן כניסה' : 'צריך להזין פעם אחת את מפתחות Morning בהגדרות') + (window._mtDiag ? ' · ' + window._mtDiag : '');
   if (res.error === 'network')      return 'תקלת רשת';
   if (res.error === 'timeout')      return 'Morning לא ענה אחרי 25 שניות — בדוק אינטרנט ונסה שוב';
   if (res.error === 'create_failed') return 'Morning דחה את הבקשה';
@@ -21911,6 +21901,7 @@ window._confirmMorningReceiptModal = async function() {
     const raw = (() => { try { return JSON.stringify({ e: res && res.error, s: res && res.status, d: res && res.detail }).slice(0, 600); } catch (_) { return String(res); } })();
     spentSheet('הקבלה לא נוצרה', 'Morning: ' + msg, [
       { label: 'לנסות שוב', pri: true, run: () => morningRetryReceipt(id) },
+      ...(res && res.error === 'no_token' ? [{ label: morningCreds().id ? 'לבדוק את מפתחות Morning' : 'להזין מפתחות Morning', run: () => { try { openNotifSettings(); setTimeout(() => { const mb = document.getElementById('morning-box'); if (mb) { mb.open = true; mb.scrollIntoView({ block: 'center', behavior: 'smooth' }); } }, 350); } catch (_) {} } }] : []),
       { label: 'העתקת הפרטים לשליחה', run: async () => { try { await navigator.clipboard.writeText('Morning receipt error · v' + ((document.querySelector('.ver-badge') || {}).textContent || '') + '\n' + msg + '\n' + raw); toast('הועתק — שלח לי את זה'); } catch (_) {} } }]);
     if (window.haptic) window.haptic.error();
     console.warn('Morning create receipt failure', res);
