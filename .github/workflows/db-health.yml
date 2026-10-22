@@ -75,7 +75,7 @@ jobs:
           done
           npm pack greeninvoice-mcp >/dev/null 2>&1 && tar xzf greeninvoice-mcp-*.tgz && echo "::notice::MCP $(grep -rhoE "https://[a-z.]*greeninvoice[a-z./0-9]*|https://[a-z.]*morning[a-z./0-9]*|account/token|/token[\"']" package | sort | uniq -c | tr '\n' ' ' | head -c 400)"
           f=$(grep -rl "idp/v1/oauth/token" package | head -1); echo "::notice::FILE $f"
-          grep -n -B3 -A25 "idp/v1/oauth/token" "$f" | head -80 > /tmp/snip; split -l 8 /tmp/snip /tmp/sn_; for x in /tmp/sn_*; do echo "::notice::SNIP $(tr '\n' '~' < $x | head -c 900)"; done
+          n=$(grep -n "OAUTH_SANDBOX : OAUTH_PRODUCTION\|OAUTH_PRODUCTION;" "$f" | head -1 | cut -d: -f1); echo "::notice::AT $n"; sed -n "$((n-12)),$((n+45))p" "$f" > /tmp/snip; split -l 8 /tmp/snip /tmp/sn_; for x in /tmp/sn_*; do echo "::notice::SNIP $(tr '\n' '~' < $x | head -c 900)"; done
           pip download --no-deps -q green-invoice -d py >/dev/null 2>&1; ls py | head -2 | tr '\n' ' ' | sed 's/^/::notice::PY /'; echo
           cd py 2>/dev/null && for f in *; do (unzip -o -q "$f" 2>/dev/null || tar xzf "$f" 2>/dev/null); done; echo "::notice::PYURLS $(grep -rhoE "https://[a-z.]*greeninvoice[a-z./0-9]*|account/token" . 2>/dev/null | sort | uniq -c | tr '\n' ' ' | head -c 300)"
           B=https://api.greeninvoice.co.il/api/v1/account/token
