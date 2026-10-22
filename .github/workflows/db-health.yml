@@ -67,6 +67,18 @@ jobs:
           echo "::notice::DOC bytes=$(wc -c < /tmp/doc 2>/dev/null) $(grep -o -i -m3 '[^ ]*account/token[^ ]*\|[^ ]*/token[^ ]*' /tmp/doc 2>/dev/null | tr '\n' ' ' | head -c 300)"
           out=$(curl -s -m 25 -o /tmp/b -w '%{http_code}' -X POST https://api.greeninvoice.co.il/api/v1/account/token -H 'Content-Type: application/json' -H 'User-Agent: curl/8' -d '{"id":"x","secret":"y"}'); echo "::notice::PROBE curl-ua -> $out $(head -c 100 /tmp/b)"
 
+      - name: How current Morning clients log in (public packages)
+        run: |
+          mkdir -p /tmp/pk && cd /tmp/pk
+          for p in greeninvoice-mcp green-invoice-api morning-api greeninvoice; do
+            v=$(npm view $p version time.modified 2>/dev/null | tr '\n' ' '); [ -n "$v" ] && echo "::notice::NPM $p $v"
+          done
+          npm pack greeninvoice-mcp >/dev/null 2>&1 && tar xzf greeninvoice-mcp-*.tgz && echo "::notice::MCP $(grep -rhoE "https://[a-z.]*greeninvoice[a-z./0-9]*|https://[a-z.]*morning[a-z./0-9]*|account/token|/token[\"']" package | sort | uniq -c | tr '\n' ' ' | head -c 400)"
+          pip download --no-deps -q green-invoice -d py >/dev/null 2>&1; ls py | head -2 | tr '\n' ' ' | sed 's/^/::notice::PY /'; echo
+          cd py 2>/dev/null && for f in *; do (unzip -o -q "$f" 2>/dev/null || tar xzf "$f" 2>/dev/null); done; echo "::notice::PYURLS $(grep -rhoE "https://[a-z.]*greeninvoice[a-z./0-9]*|account/token" . 2>/dev/null | sort | uniq -c | tr '\n' ' ' | head -c 300)"
+          B=https://api.greeninvoice.co.il/api/v1/account/token
+          for m in GET PUT; do echo "::notice::METHOD $m $(curl -s -m 20 -o /tmp/b -w '%{http_code}' -X $m $B -H 'Content-Type: application/json' -d '{}') $(head -c 80 /tmp/b)"; done
+
       - name: Report
         env:
           RESTORE: ${{ github.event.inputs.restore_from }}
