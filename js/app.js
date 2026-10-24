@@ -11161,6 +11161,13 @@ function _spMotto(hr) {
   window._spMot = { p: part, i }; try { localStorage.setItem('sp_motto', JSON.stringify(window._spMot)); } catch (_) {}
   return L[i];
 }
+// v638: a quiet year meter under the date — day N of the year, and how many are left
+function _spYearHtml(d) {
+  const y = d.getFullYear(), start = new Date(y, 0, 1), total = Math.round((new Date(y + 1, 0, 1) - start) / 864e5);
+  const day = Math.floor((new Date(y, d.getMonth(), d.getDate()) - start) / 864e5) + 1, left = total - day;
+  return '<span class="fz-yr" title="ימים שעברו בשנה"><span class="fz-yr-bar"><i style="width:' + (day / total * 100).toFixed(1) + '%"></i></span>'
+    + '<span class="fz-yr-t">יום ' + day + '/' + total + ' בשנה · ' + (left === 0 ? 'היום האחרון של ' + y : left === 1 ? 'עוד יום אחד לסוף ' + y : 'עוד ' + left + ' ימים לסוף ' + y) + '</span></span>';
+}
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
@@ -11230,7 +11237,7 @@ function spLobbyRender() {
     return '<div class="fz-row' + (d ? ' done' : '') + '"' + (x.go ? ' onclick="' + x.go + '"' : '') + '>' + fzIc(x.k, x.tint) + '<span class="fz-m"><b>' + _escape(x.t) + '</b><small>' + _escape(x.s) + '</small></span>' + tail + '</div>';
   };
   box.innerHTML =
-    '<div class="fz-top"><span class="fz-date">' + _escape(dateTxt) + '</span><span class="fz-tic">' + (() => { let n = 0; try { n = _waWaitingCount() || 0; } catch (_) {} return '<button class="fz-wa" onclick="waGoInbox()" aria-label="וואטסאפ">' + FZ.chat + (n ? '<i class="fz-badge">' + (n > 99 ? '99+' : n) + '</i>' : '') + '</button>'; })() + '<button onclick="quickAction(\'search\')" aria-label="חיפוש">' + FZ.search + '</button><button onclick="openNotifSettings()" aria-label="הגדרות">' + FZ.bell + '</button></span></div>'
+    '<div class="fz-top"><span class="fz-date">' + _escape(dateTxt) + _spYearHtml(now) + '</span><span class="fz-tic">' + (() => { let n = 0; try { n = _waWaitingCount() || 0; } catch (_) {} return '<button class="fz-wa" onclick="waGoInbox()" aria-label="וואטסאפ">' + FZ.chat + (n ? '<i class="fz-badge">' + (n > 99 ? '99+' : n) + '</i>' : '') + '</button>'; })() + '<button onclick="quickAction(\'search\')" aria-label="חיפוש">' + FZ.search + '</button><button onclick="openNotifSettings()" aria-label="הגדרות">' + FZ.bell + '</button></span></div>'
   + '<div class="fz-me"><span class="fz-av"><svg viewBox="70 180 830 520" aria-hidden="true"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#141414" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="33" fill="#141414"/></svg></span><div class="fz-bub">' + hello + ' <b>אליאור</b>.<br>' + bubble + '</div></div>'
   + (next ? '<div class="fz-focus" onclick="' + (next.go || '') + '"><div class="k">האירוע הבא בלו״ז</div><div class="t">' + _escape(next.t) + '</div><div class="s">' + _escape(next.s) + '</div>'
       + (next.fc ? '<span class="fz-go" onclick="event.stopPropagation();spTick(\'' + next.id + '\');fcAskYes(\'' + next.fc + '\')">כן, ירד</span>' : '<span class="fz-go">' + (next.cta || 'פתח') + '</span><span class="fz-skip" onclick="event.stopPropagation();spTick(\'' + next.id + '\')">סיימתי</span>') + '</div>' : '')
