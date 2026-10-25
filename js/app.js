@@ -11175,13 +11175,14 @@ function _spYearHtml(now) {
 }
 // v640: a cinematic opening — the signature draws itself, then today's line arrives word by word (~1.7s, tap to skip)
 const MZ_SIG = 'M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500';
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') window._introHid = Date.now(); else if (window._introHid && Date.now() - window._introHid > 20 * 60 * 1000) { window._introDone = false; window._introHid = 0; } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') window._introHid = Date.now(); else if (window._introHid && Date.now() - window._introHid > 20 * 60 * 1000) { window._introDone = false; window._introHid = 0; mzIntroBoot(); } });
+// play on launch, before anything else shows
+function mzIntroBoot() { try { if (document.documentElement.getAttribute('data-skin') !== 'spent') return; mzIntro(_spMotto(new Date().getHours())); } catch (_) {} }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mzIntroBoot); else mzIntroBoot();
 function mzIntro(line) {
   if (window._introDone) return; window._introDone = true;
   try { if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (_) {}
-  // wait behind Face ID / password — play the moment the lobby is really in view
-  const blocked = () => ['login-screen', 'face-id-lock'].some(id => { const el = document.getElementById(id); if (!el) return false; const cs = getComputedStyle(el); return cs.display !== 'none' && cs.visibility !== 'hidden' && +cs.opacity > 0.05; });
-  if (blocked()) { window._introDone = false; if (!window._introWait) { const t0 = Date.now(); window._introWait = setInterval(() => { if (!blocked()) { clearInterval(window._introWait); window._introWait = null; mzIntro(line); } else if (Date.now() - t0 > 120000) { clearInterval(window._introWait); window._introWait = null; } }, 250); } return; }
+  // v642: the very first thing on screen — above the welcome / Face ID / password screens
   const ov = document.createElement('div'); ov.id = 'mz-intro';
   const words = String(line || '').split(/\s+/).filter(Boolean);
   ov.innerHTML = '<svg class="mzi-sig" viewBox="70 180 830 520" aria-hidden="true"><path d="' + MZ_SIG + '" fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="30" fill="#fff"/></svg>'
