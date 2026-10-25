@@ -11205,7 +11205,8 @@ function mzIntro(line) {
 // From 3 hours before it starts until it ends: counts down to the start, then the elapsed time.
 // Today's events from the app schedule + iPhone/Google calendar; one at a time.
 async function laSync() {
-  const LA = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.LiveActivityBridge; if (!LA) return;
+  const LA = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.LiveActivityBridge;
+  if (!LA) { if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) _netDiag('la', 'no-plugin'); return; }
   try { if (localStorage.getItem('la_off') === '1') { if (localStorage.getItem('la_id')) { await LA.endAll(); localStorage.removeItem('la_id'); } return; } } catch (_) {}
   const now = new Date(), key = dailyDateStr(now);
   const at = hm => { const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); if (!m) return null; const d = new Date(now); d.setHours(+m[1], +m[2], 0, 0); return d; };
@@ -11219,14 +11220,29 @@ async function laSync() {
     if (pick) {
       const r = await LA.start({ id: pick.id, title: pick.title, subtitle: hhmm(pick.s) + '–' + hhmm(pick.e), start: +pick.s, end: +pick.e });
       if (r && r.ok) localStorage.setItem('la_id', pick.id);
-    } else if (localStorage.getItem('la_id')) { await LA.endAll(); localStorage.removeItem('la_id'); }
-  } catch (_) {}
+      _netDiag('la', 'start ' + JSON.stringify(r || null).slice(0, 150) + ' ev=' + ev.length);
+    } else { _netDiag('la', 'none ev=' + ev.length); if (localStorage.getItem('la_id')) { await LA.endAll(); localStorage.removeItem('la_id'); } }
+  } catch (e) { _netDiag('la', 'err ' + String(e && (e.message || e)).slice(0, 150)); }
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(laSync, 1500); });
 function laPaint() { const off = localStorage.getItem('la_off') === '1', el = document.getElementById('la-onoff'); if (el) el.textContent = off ? 'כבוי' : 'פועל'; }
 window.laToggle = function() { try { localStorage.getItem('la_off') === '1' ? localStorage.removeItem('la_off') : localStorage.setItem('la_off', '1'); } catch (_) {} laPaint(); laSync();
   toast(localStorage.getItem('la_off') === '1' ? 'האי הדינמי כבוי' : 'הסשן הבא יופיע באי הדינמי · 3 שעות לפני'); };
 document.addEventListener('DOMContentLoaded', laPaint);
+// v645: try it now — a test session that starts in 2 minutes, with the phone's exact answer on screen
+window.laTest = async function() {
+  const C = window.Capacitor, LA = C && C.Plugins && C.Plugins.LiveActivityBridge;
+  const native = !!(C && C.isNativePlatform && C.isNativePlatform());
+  if (!native) { spentSheet('האי הדינמי', 'עובד רק באפליקציה באייפון', []); return; }
+  if (!LA) { _netDiag('la', 'test no-plugin'); spentSheet('האי הדינמי לא זמין', 'הגרסה המותקנת עוד לא כוללת את זה — צריך לעדכן מ־TestFlight', []); return; }
+  let av = null, r = null;
+  try { av = await LA.available(); } catch (e) { av = { error: String(e && e.message || e) }; }
+  const s = Date.now() + 2 * 60e3;
+  try { r = await LA.start({ id: 'test', title: 'בדיקה · סשן', subtitle: 'מתחיל בעוד 2 דקות', start: s, end: s + 30 * 60e3 }); } catch (e) { r = { ok: false, error: String(e && e.message || e) }; }
+  _netDiag('la', 'test av=' + JSON.stringify(av) + ' r=' + JSON.stringify(r).slice(0, 150));
+  if (r && r.ok) { localStorage.setItem('la_id', 'test'); spentSheet('נשלח לאי הדינמי', 'תסגור את האפליקציה ותסתכל למעלה. כדי להעלים: "להסיר"', [{ label: 'להסיר את הבדיקה', run: async () => { try { await LA.endAll(); } catch (_) {} localStorage.removeItem('la_id'); } }]); }
+  else spentSheet('האי הדינמי לא נפתח', (av && av.ok === false ? 'באייפון כבויות "פעילויות בזמן אמת" — הגדרות ← Maestro ← פעילויות בזמן אמת · ' : '') + 'תשובת האייפון: ' + JSON.stringify(r || av).slice(0, 160), []);
+};
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
