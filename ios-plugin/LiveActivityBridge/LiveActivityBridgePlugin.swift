@@ -50,6 +50,7 @@ public class LiveActivityBridgePlugin: CAPPlugin, CAPBridgedPlugin {
             let state = SessionAttributes.ContentState(
                 title: call.getString("title") ?? "סשן",
                 subtitle: call.getString("subtitle") ?? "",
+                short: call.getString("short") ?? "סשן",
                 start: s, end: e)
             let content = ActivityContent(state: state, staleDate: e.addingTimeInterval(15 * 60))
             Task {

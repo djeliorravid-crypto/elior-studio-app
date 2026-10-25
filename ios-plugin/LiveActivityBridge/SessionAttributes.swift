@@ -11,6 +11,7 @@ public struct SessionAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         public var title: String      // e.g. "סשן עם נועה"
         public var subtitle: String   // e.g. "14:00–16:00 · אולפן"
+        public var short: String      // 1–2 words for the closed island, e.g. "נועה"
         public var start: Date        // the timer counts down to this, then up from it
         public var end: Date          // progress bar runs start…end
     }

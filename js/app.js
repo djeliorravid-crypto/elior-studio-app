@@ -11214,11 +11214,12 @@ async function laSync() {
   try { (load('schedule') || []).filter(x => x && x.date === key && !x.done && !x.deleted && x.time).forEach(x => ev.push({ id: 's_' + x.id, title: x.title || 'סשן', s: at(x.time), e: at(x.endTime) })); } catch (_) {}
   try { (window._eventKitCache || []).filter(x => x && x.date === key && !x.allDay && x.time).forEach(x => { if (!ev.some(e => e.title === x.title && +e.s === +at(x.time))) ev.push({ id: 'ek_' + x.id, title: x.title || 'אירוע', s: at(x.time), e: at(x.endTime) }); }); } catch (_) {}
   ev.forEach(e => { if (!e.e || e.e <= e.s) e.e = new Date(+e.s + 2 * 3600e3); });
-  const pick = ev.filter(e => e.s && e.e > now && e.s - now <= 3 * 3600e3).sort((a, b) => a.s - b.s)[0];
+  const pick = ev.filter(e => e.s && e.e > now && e.s - now <= 3600e3).sort((a, b) => a.s - b.s)[0];   // v647: from 1 hour before (battery)
   const hhmm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   try {
     if (pick) {
-      const r = await LA.start({ id: pick.id, title: pick.title, subtitle: hhmm(pick.s) + '–' + hhmm(pick.e), start: +pick.s, end: +pick.e });
+      const short = String(pick.title || 'סשן').replace(/^(סשן|הקלטה|פגישה)\s+(עם|של|ל)?\s*/, '').split(/\s+/).slice(0, 2).join(' ').slice(0, 10) || 'סשן';
+      const r = await LA.start({ id: pick.id, title: pick.title, short, subtitle: (pick.s > now ? 'מתחיל ב־' : 'התחיל ב־') + hhmm(pick.s) + ' · עד ' + hhmm(pick.e), start: +pick.s, end: +pick.e });
       if (r && r.ok) localStorage.setItem('la_id', pick.id);
       _netDiag('la', 'start ' + JSON.stringify(r || null).slice(0, 150) + ' ev=' + ev.length);
     } else { _netDiag('la', 'none ev=' + ev.length); if (localStorage.getItem('la_id')) { await LA.endAll(); localStorage.removeItem('la_id'); } }
@@ -11227,7 +11228,7 @@ async function laSync() {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(laSync, 1500); });
 function laPaint() { const off = localStorage.getItem('la_off') === '1', el = document.getElementById('la-onoff'); if (el) el.textContent = off ? 'כבוי' : 'פועל'; }
 window.laToggle = function() { try { localStorage.getItem('la_off') === '1' ? localStorage.removeItem('la_off') : localStorage.setItem('la_off', '1'); } catch (_) {} laPaint(); laSync();
-  toast(localStorage.getItem('la_off') === '1' ? 'האי הדינמי כבוי' : 'הסשן הבא יופיע באי הדינמי · 3 שעות לפני'); };
+  toast(localStorage.getItem('la_off') === '1' ? 'האי הדינמי כבוי' : 'הסשן הבא יופיע באי הדינמי · שעה לפני'); };
 document.addEventListener('DOMContentLoaded', laPaint);
 // v645: try it now — a test session that starts in 2 minutes, with the phone's exact answer on screen
 window.laTest = async function() {
@@ -11237,8 +11238,8 @@ window.laTest = async function() {
   if (!LA) { _netDiag('la', 'test no-plugin'); spentSheet('האי הדינמי לא זמין', 'הגרסה המותקנת עוד לא כוללת את זה — צריך לעדכן מ־TestFlight', []); return; }
   let av = null, r = null;
   try { av = await LA.available(); } catch (e) { av = { error: String(e && e.message || e) }; }
-  const s = Date.now() + 2 * 60e3;
-  try { r = await LA.start({ id: 'test', title: 'בדיקה · סשן', subtitle: 'מתחיל בעוד 2 דקות', start: s, end: s + 30 * 60e3 }); } catch (e) { r = { ok: false, error: String(e && e.message || e) }; }
+  const s = Date.now() + 60e3;
+  try { r = await LA.start({ id: 'test', title: 'בדיקה · סשן לדוגמה', short: 'בדיקה', subtitle: 'נעלם כשתפתח שוב את האפליקציה', start: s, end: s + 5 * 60e3 }); } catch (e) { r = { ok: false, error: String(e && e.message || e) }; }
   _netDiag('la', 'test av=' + JSON.stringify(av) + ' r=' + JSON.stringify(r).slice(0, 150));
   if (r && r.ok) { localStorage.setItem('la_id', 'test'); spentSheet('נשלח לאי הדינמי', 'תסגור את האפליקציה ותסתכל למעלה. כדי להעלים: "להסיר"', [{ label: 'להסיר את הבדיקה', run: async () => { try { await LA.endAll(); } catch (_) {} localStorage.removeItem('la_id'); } }]); }
   else spentSheet('האי הדינמי לא נפתח', (av && av.ok === false ? 'באייפון כבויות "פעילויות בזמן אמת" — הגדרות ← Maestro ← פעילויות בזמן אמת · ' : '') + 'תשובת האייפון: ' + JSON.stringify(r || av).slice(0, 160), []);

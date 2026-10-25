@@ -81,7 +81,15 @@ struct SessionLiveActivity: Widget {
                     .padding(.horizontal, 6)
                 }
             } compactLeading: {
-                Mark()
+                // what it is, in a word — so the timer on the right makes sense
+                HStack(spacing: 4) {
+                    Mark()
+                    Text(ctx.state.short)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .frame(maxWidth: 64, alignment: .leading)
+                }
             } compactTrailing: {
                 Text(ctx.state.start, style: .timer)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
