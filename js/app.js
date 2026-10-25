@@ -11173,6 +11173,26 @@ function _spYearHtml(now) {
   return '<span class="fz-yr" title="הדרך ליום ההולדת הבא"><span class="fz-yr-bar"><i style="width:' + (shown / total * 100).toFixed(1) + '%"></i></span>'
     + '<span class="fz-yr-t">' + shown + '/' + total + ' · ' + txt + '</span></span>';
 }
+// v640: a cinematic opening — the signature draws itself, then today's line arrives word by word (~1.7s, tap to skip)
+const MZ_SIG = 'M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500';
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') window._introHid = Date.now(); else if (window._introHid && Date.now() - window._introHid > 20 * 60 * 1000) { window._introDone = false; window._introHid = 0; } });
+function mzIntro(line) {
+  if (window._introDone) return; window._introDone = true;
+  try { if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (_) {}
+  // wait behind Face ID / password — play the moment the lobby is really in view
+  const blocked = () => ['login-screen', 'face-id-lock'].some(id => { const el = document.getElementById(id); if (!el) return false; const cs = getComputedStyle(el); return cs.display !== 'none' && cs.visibility !== 'hidden' && +cs.opacity > 0.05; });
+  if (blocked()) { window._introDone = false; if (!window._introWait) { const t0 = Date.now(); window._introWait = setInterval(() => { if (!blocked()) { clearInterval(window._introWait); window._introWait = null; mzIntro(line); } else if (Date.now() - t0 > 120000) { clearInterval(window._introWait); window._introWait = null; } }, 250); } return; }
+  const ov = document.createElement('div'); ov.id = 'mz-intro';
+  const words = String(line || '').split(/\s+/).filter(Boolean);
+  ov.innerHTML = '<svg class="mzi-sig" viewBox="70 180 830 520" aria-hidden="true"><path d="' + MZ_SIG + '" fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="30" fill="#fff"/></svg>'
+    + '<div class="mzi-line">' + words.map((w, i) => '<span style="animation-delay:' + (0.95 + i * 0.07).toFixed(2) + 's">' + _escape(w) + '</span>').join(' ') + '</div>';
+  document.body.appendChild(ov); document.documentElement.classList.add('mzi-on');
+  const path = ov.querySelector('path'); try { const L = path.getTotalLength(); path.style.strokeDasharray = L; path.style.strokeDashoffset = L; } catch (_) {}
+  const end = () => { if (!ov.isConnected || ov.classList.contains('out')) return; ov.classList.add('out'); document.documentElement.classList.remove('mzi-on'); setTimeout(() => ov.remove(), 450); };
+  ov.onclick = end;
+  requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('go')));
+  setTimeout(end, Math.min(3200, 1500 + words.length * 70 + 650));
+}
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
@@ -11233,6 +11253,7 @@ function spLobbyRender() {
   const later = items.filter(x => (!next || x.id !== next.id) && String(x.id).indexOf('s_') !== 0);   // calendar items live in the timeline under the card
   // v623: the greeting is one warm line of motivation — a new one each time the app opens (never the same twice in a row)
   bubble = _spMotto(hr);
+  try { if (!window._introDone && !ms.classList.contains('hidden')) mzIntro(bubble); } catch (_) {}
   const afterHtml = after.length ? '<div class="fz-after"><div class="k">לאחר מכן בלו״ז</div>' + after.map(a => '<button class="fz-arow" onclick="chooseMode(\'business\');showPage(\'schedule\');_scheduleDate=\'' + a.key + '\';setTimeout(renderSchedule,50)"><span class="tm">' + (a.time || '—') + '</span><span class="tt">' + _escape(a.title) + '</span></button>').join('') + '</div>' : '';
   const row = x => {
     const d = isDone(x.id);

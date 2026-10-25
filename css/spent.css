@@ -2074,3 +2074,18 @@ html.desk #wed .wd-page { padding-top: 28px; }
 .fz-yr-bar { display: block; width: 120px; height: 3px; border-radius: 2px; background: rgba(37,46,107,.10); overflow: hidden; }
 .fz-yr-bar i { display: block; height: 100%; border-radius: 2px; background: linear-gradient(90deg, #3a4690, #252e6b); opacity: .55; }
 .fz-yr-t { font-size: 11px; font-weight: 500; color: #a3a8c3; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+
+/* v640 — opening */
+#mz-intro { position: fixed; inset: 0; z-index: 200000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; padding: 0 32px; cursor: pointer;
+  background: radial-gradient(120% 80% at 30% 10%, rgba(160,175,255,.22), rgba(30,38,94,0) 60%), linear-gradient(170deg, #252e6b, #141a3c 70%); transition: opacity .45s ease, transform .45s ease; }
+#mz-intro.out { opacity: 0; transform: scale(1.03); pointer-events: none; }
+.mzi-sig { width: 150px; height: 94px; overflow: visible; }
+.mzi-sig path { transition: stroke-dashoffset 1s cubic-bezier(.55,.1,.3,1); filter: drop-shadow(0 0 10px rgba(180,195,255,.35)); }
+.mzi-sig circle { opacity: 0; transform-origin: 858px 492px; transform: scale(.2); transition: opacity .25s ease .92s, transform .35s cubic-bezier(.3,1.6,.5,1) .92s; }
+#mz-intro.go .mzi-sig path { stroke-dashoffset: 0 !important; }
+#mz-intro.go .mzi-sig circle { opacity: 1; transform: none; }
+.mzi-line { max-width: 320px; text-align: center; font-family: 'Rubik','Heebo',sans-serif; font-size: 19px; line-height: 1.55; font-weight: 500; color: rgba(255,255,255,.92); }
+.mzi-line span { display: inline-block; opacity: 0; transform: translateY(8px); filter: blur(4px); }
+#mz-intro.go .mzi-line span { animation: mziWord .5s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes mziWord { to { opacity: 1; transform: none; filter: none; } }
+html.mzi-on::before { opacity: 0 !important; }
