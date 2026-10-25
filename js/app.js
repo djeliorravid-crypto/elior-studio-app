@@ -11206,7 +11206,7 @@ function mzIntro(line) {
 // Today's events from the app schedule + iPhone/Google calendar; one at a time.
 async function laSync() {
   const LA = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.LiveActivityBridge;
-  if (!LA) { if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) _netDiag('la', 'no-plugin'); return; }
+  if (!LA) { if (window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) { let b = '?'; try { const i = await Capacitor.Plugins.App.getInfo(); b = i.build + '/' + i.version; } catch (_) {} _netDiag('la', 'no-plugin build=' + b + ' avail=' + (Capacitor.isPluginAvailable ? Capacitor.isPluginAvailable('LiveActivityBridge') : '?') + ' contacts=' + (Capacitor.isPluginAvailable ? Capacitor.isPluginAvailable('ContactsBridge') : '?')); } return; }
   try { if (localStorage.getItem('la_off') === '1') { if (localStorage.getItem('la_id')) { await LA.endAll(); localStorage.removeItem('la_id'); } return; } } catch (_) {}
   const now = new Date(), key = dailyDateStr(now);
   const at = hm => { const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); if (!m) return null; const d = new Date(now); d.setHours(+m[1], +m[2], 0, 0); return d; };
