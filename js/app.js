@@ -11161,12 +11161,17 @@ function _spMotto(hr) {
   window._spMot = { p: part, i }; try { localStorage.setItem('sp_motto', JSON.stringify(window._spMot)); } catch (_) {}
   return L[i];
 }
-// v638: a quiet year meter under the date — day N of the year, and how many are left
-function _spYearHtml(d) {
-  const y = d.getFullYear(), start = new Date(y, 0, 1), total = Math.round((new Date(y + 1, 0, 1) - start) / 864e5);
-  const day = Math.floor((new Date(y, d.getMonth(), d.getDate()) - start) / 864e5) + 1, left = total - day;
-  return '<span class="fz-yr" title="ימים שעברו בשנה"><span class="fz-yr-bar"><i style="width:' + (day / total * 100).toFixed(1) + '%"></i></span>'
-    + '<span class="fz-yr-t">יום ' + day + '/' + total + ' בשנה · ' + (left === 0 ? 'היום האחרון של ' + y : left === 1 ? 'עוד יום אחד לסוף ' + y : 'עוד ' + left + ' ימים לסוף ' + y) + '</span></span>';
+// v639: a quiet meter under the date — the year until Elior's next birthday (21.11.2003), renews every birthday
+const SP_BIRTH = { y: 2003, m: 10, d: 21 };   // month is 0-based (November)
+function _spYearHtml(now) {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let last = new Date(today.getFullYear(), SP_BIRTH.m, SP_BIRTH.d); if (last > today) last = new Date(today.getFullYear() - 1, SP_BIRTH.m, SP_BIRTH.d);
+  const next = new Date(last.getFullYear() + 1, SP_BIRTH.m, SP_BIRTH.d);
+  const total = Math.round((next - last) / 864e5), day = Math.round((today - last) / 864e5), left = total - day, age = next.getFullYear() - SP_BIRTH.y;
+  const txt = day === 0 ? 'יום הולדת ' + (age - 1) + ' שמח' : left === 1 ? 'מחר יום ההולדת ה־' + age : 'עוד ' + left + ' ימים ליום ההולדת ה־' + age;
+  const shown = day === 0 ? total : day;   // on the birthday itself the bar is full
+  return '<span class="fz-yr" title="הדרך ליום ההולדת הבא"><span class="fz-yr-bar"><i style="width:' + (shown / total * 100).toFixed(1) + '%"></i></span>'
+    + '<span class="fz-yr-t">' + shown + '/' + total + ' · ' + txt + '</span></span>';
 }
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
