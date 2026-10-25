@@ -11186,13 +11186,20 @@ function mzIntro(line) {
   const ov = document.createElement('div'); ov.id = 'mz-intro';
   const words = String(line || '').split(/\s+/).filter(Boolean);
   ov.innerHTML = '<svg class="mzi-sig" viewBox="70 180 830 520" aria-hidden="true"><path d="' + MZ_SIG + '" fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="30" fill="#fff"/></svg>'
-    + '<div class="mzi-line">' + words.map((w, i) => '<span style="animation-delay:' + (0.95 + i * 0.07).toFixed(2) + 's">' + _escape(w) + '</span>').join(' ') + '</div>';
+    + '<div class="mzi-line">' + words.map((w, i) => '<span style="animation-delay:' + (2.45 + i * 0.08).toFixed(2) + 's">' + _escape(w) + '</span>').join(' ') + '</div>';
   document.body.appendChild(ov); document.documentElement.classList.add('mzi-on');
-  const path = ov.querySelector('path'); try { const L = path.getTotalLength(); path.style.strokeDasharray = L; path.style.strokeDashoffset = L; } catch (_) {}
+  // drawn by script (Web Animations) so it runs even before the stylesheet has arrived
+  const path = ov.querySelector('path'), dot = ov.querySelector('circle');
+  try { const L = path.getTotalLength(); path.style.strokeDasharray = L; path.style.strokeDashoffset = L; path.style.transition = 'none';
+    path.animate([{ strokeDashoffset: L }, { strokeDashoffset: 0 }], { duration: 2100, delay: 150, easing: 'cubic-bezier(.45,.05,.35,1)', fill: 'forwards' });
+    dot.style.transition = 'none'; dot.style.opacity = '0';
+    dot.animate([{ opacity: 0, transform: 'scale(.2)' }, { opacity: 1, transform: 'scale(1.25)', offset: .7 }, { opacity: 1, transform: 'scale(1)' }], { duration: 450, delay: 2250, easing: 'ease-out', fill: 'forwards' });
+    dot.style.transformBox = 'fill-box'; dot.style.transformOrigin = 'center';
+  } catch (_) {}
   const end = () => { if (!ov.isConnected || ov.classList.contains('out')) return; ov.classList.add('out'); document.documentElement.classList.remove('mzi-on'); setTimeout(() => ov.remove(), 450); };
   ov.onclick = end;
   requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('go')));
-  setTimeout(end, Math.min(3200, 1500 + words.length * 70 + 650));
+  setTimeout(end, Math.min(4800, 2450 + words.length * 80 + 900));   // v643: the signature is drawn slowly, like a pen
 }
 // v641: the next session on the Dynamic Island / lock screen (iOS Live Activity).
 // From 3 hours before it starts until it ends: counts down to the start, then the elapsed time.
