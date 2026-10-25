@@ -2083,7 +2083,7 @@ html.desk #wed .wd-page { padding-top: 28px; }
 .mzi-sig path { filter: drop-shadow(0 0 10px rgba(180,195,255,.35)); }   /* drawn by script (v643) */
 .mzi-line { max-width: 320px; text-align: center; font-family: 'Rubik','Heebo',sans-serif; font-size: 19px; line-height: 1.55; font-weight: 500; color: rgba(255,255,255,.92); }
 .mzi-line span { display: inline-block; opacity: 0; transform: translateY(8px); filter: blur(4px); }
-#mz-intro.go .mzi-line span { animation: mziWord .5s cubic-bezier(.2,.8,.2,1) forwards; }
+#mz-intro.go .mzi-line span { animation: mziWord .38s cubic-bezier(.2,.8,.2,1) forwards; }
 @keyframes mziWord { to { opacity: 1; transform: none; filter: none; } }
 html.mzi-on::before { opacity: 0 !important; }
 /* v643 — the signature drawn slowly, like a pen */
