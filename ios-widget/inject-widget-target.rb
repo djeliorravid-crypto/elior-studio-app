@@ -44,13 +44,17 @@ FileUtils.cp("ios-plugin/HealthKitBridge/HealthKitBridgePlugin.swift",
              "#{plugin_dest}/HealthKitBridgePlugin.swift")
 FileUtils.cp("ios-plugin/ContactsBridge/ContactsBridgePlugin.swift",
              "#{plugin_dest}/ContactsBridgePlugin.swift")
+FileUtils.cp("ios-plugin/LiveActivityBridge/LiveActivityBridgePlugin.swift",
+             "#{plugin_dest}/LiveActivityBridgePlugin.swift")
+FileUtils.cp("ios-plugin/LiveActivityBridge/SessionAttributes.swift",
+             "#{plugin_dest}/SessionAttributes.swift")
 FileUtils.cp("ios-plugin/BridgeViewController.swift",
              "ios/App/App/BridgeViewController.swift")
 
 app_group = project.main_group['App']
 plugins_group = app_group['Plugins'] || app_group.new_group('Plugins', 'Plugins')
 
-['TaskWidgetBridgePlugin.swift', 'BiometricBridgePlugin.swift', 'IosCalendarBridgePlugin.swift', 'HealthKitBridgePlugin.swift', 'ContactsBridgePlugin.swift'].each do |fname|
+['TaskWidgetBridgePlugin.swift', 'BiometricBridgePlugin.swift', 'IosCalendarBridgePlugin.swift', 'HealthKitBridgePlugin.swift', 'ContactsBridgePlugin.swift', 'LiveActivityBridgePlugin.swift', 'SessionAttributes.swift'].each do |fname|
   unless plugins_group.files.any? { |f| f.path == fname }
     ref = plugins_group.new_file(fname)
     app_target.add_file_references([ref])
@@ -88,6 +92,8 @@ end
 widget_dest = "ios/TaskWidget"
 FileUtils.mkdir_p(widget_dest)
 FileUtils.cp("#{WIDGET_SRC_DIR}/TaskWidget.swift",     "#{widget_dest}/TaskWidget.swift")
+FileUtils.cp("#{WIDGET_SRC_DIR}/SessionLiveActivity.swift", "#{widget_dest}/SessionLiveActivity.swift")
+FileUtils.cp("ios-plugin/LiveActivityBridge/SessionAttributes.swift", "#{widget_dest}/SessionAttributes.swift")
 FileUtils.cp("#{WIDGET_SRC_DIR}/Info.plist",           "#{widget_dest}/Info.plist")
 FileUtils.cp("#{WIDGET_SRC_DIR}/TaskWidget.entitlements", "#{widget_dest}/TaskWidget.entitlements")
 
@@ -108,7 +114,8 @@ if project.targets.any? { |t| t.name == WIDGET_TGT_NAME }
 end
 
 # ── 5. Create the widget extension target.
-widget_target = project.new_target(:app_extension, WIDGET_TGT_NAME, :ios, '14.0')
+# 16.2: the session Live Activity (ActivityKit) lives in this extension too
+widget_target = project.new_target(:app_extension, WIDGET_TGT_NAME, :ios, '16.2')
 widget_target.build_configurations.each do |c|
   s = c.build_settings
   s['PRODUCT_BUNDLE_IDENTIFIER']      = BUNDLE_ID_WGT
@@ -116,7 +123,7 @@ widget_target.build_configurations.each do |c|
   s['INFOPLIST_FILE']                 = '$(SRCROOT)/../TaskWidget/Info.plist'
   s['CODE_SIGN_ENTITLEMENTS']         = '$(SRCROOT)/../TaskWidget/TaskWidget.entitlements'
   s['SWIFT_VERSION']                  = '5.0'
-  s['IPHONEOS_DEPLOYMENT_TARGET']     = '14.0'
+  s['IPHONEOS_DEPLOYMENT_TARGET']     = '16.2'
   s['TARGETED_DEVICE_FAMILY']         = '1,2'
   s['ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME'] = 'WidgetBackground'
   s['SKIP_INSTALL']                   = 'NO'
@@ -132,8 +139,8 @@ end
 
 # ── 6. Add the widget Swift source to the new target.
 widget_group = project.main_group.new_group('TaskWidget', '../TaskWidget')
-swift_ref = widget_group.new_file('TaskWidget.swift')
-widget_target.add_file_references([swift_ref])
+swift_refs = ['TaskWidget.swift', 'SessionLiveActivity.swift', 'SessionAttributes.swift'].map { |f| widget_group.new_file(f) }
+widget_target.add_file_references(swift_refs)
 
 # ── 7. Embed the widget extension in the main app bundle.
 embed_phase = app_target.copy_files_build_phases.find { |p| p.dst_subfolder_spec == '13' }

@@ -11193,6 +11193,32 @@ function mzIntro(line) {
   requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('go')));
   setTimeout(end, Math.min(3200, 1500 + words.length * 70 + 650));
 }
+// v641: the next session on the Dynamic Island / lock screen (iOS Live Activity).
+// From 3 hours before it starts until it ends: counts down to the start, then the elapsed time.
+// Today's events from the app schedule + iPhone/Google calendar; one at a time.
+async function laSync() {
+  const LA = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.LiveActivityBridge; if (!LA) return;
+  try { if (localStorage.getItem('la_off') === '1') { if (localStorage.getItem('la_id')) { await LA.endAll(); localStorage.removeItem('la_id'); } return; } } catch (_) {}
+  const now = new Date(), key = dailyDateStr(now);
+  const at = hm => { const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); if (!m) return null; const d = new Date(now); d.setHours(+m[1], +m[2], 0, 0); return d; };
+  const ev = [];
+  try { (load('schedule') || []).filter(x => x && x.date === key && !x.done && !x.deleted && x.time).forEach(x => ev.push({ id: 's_' + x.id, title: x.title || 'סשן', s: at(x.time), e: at(x.endTime) })); } catch (_) {}
+  try { (window._eventKitCache || []).filter(x => x && x.date === key && !x.allDay && x.time).forEach(x => { if (!ev.some(e => e.title === x.title && +e.s === +at(x.time))) ev.push({ id: 'ek_' + x.id, title: x.title || 'אירוע', s: at(x.time), e: at(x.endTime) }); }); } catch (_) {}
+  ev.forEach(e => { if (!e.e || e.e <= e.s) e.e = new Date(+e.s + 2 * 3600e3); });
+  const pick = ev.filter(e => e.s && e.e > now && e.s - now <= 3 * 3600e3).sort((a, b) => a.s - b.s)[0];
+  const hhmm = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  try {
+    if (pick) {
+      const r = await LA.start({ id: pick.id, title: pick.title, subtitle: hhmm(pick.s) + '–' + hhmm(pick.e), start: +pick.s, end: +pick.e });
+      if (r && r.ok) localStorage.setItem('la_id', pick.id);
+    } else if (localStorage.getItem('la_id')) { await LA.endAll(); localStorage.removeItem('la_id'); }
+  } catch (_) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(laSync, 1500); });
+function laPaint() { const off = localStorage.getItem('la_off') === '1', el = document.getElementById('la-onoff'); if (el) el.textContent = off ? 'כבוי' : 'פועל'; }
+window.laToggle = function() { try { localStorage.getItem('la_off') === '1' ? localStorage.removeItem('la_off') : localStorage.setItem('la_off', '1'); } catch (_) {} laPaint(); laSync();
+  toast(localStorage.getItem('la_off') === '1' ? 'האי הדינמי כבוי' : 'הסשן הבא יופיע באי הדינמי · 3 שעות לפני'); };
+document.addEventListener('DOMContentLoaded', laPaint);
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
@@ -11254,6 +11280,7 @@ function spLobbyRender() {
   // v623: the greeting is one warm line of motivation — a new one each time the app opens (never the same twice in a row)
   bubble = _spMotto(hr);
   try { if (!window._introDone && !ms.classList.contains('hidden')) mzIntro(bubble); } catch (_) {}
+  clearTimeout(window._laT); window._laT = setTimeout(laSync, 800);
   const afterHtml = after.length ? '<div class="fz-after"><div class="k">לאחר מכן בלו״ז</div>' + after.map(a => '<button class="fz-arow" onclick="chooseMode(\'business\');showPage(\'schedule\');_scheduleDate=\'' + a.key + '\';setTimeout(renderSchedule,50)"><span class="tm">' + (a.time || '—') + '</span><span class="tt">' + _escape(a.title) + '</span></button>').join('') + '</div>' : '';
   const row = x => {
     const d = isDone(x.id);

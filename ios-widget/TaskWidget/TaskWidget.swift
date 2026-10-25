@@ -423,7 +423,7 @@ private extension View {
 // MARK: - Widget configuration
 // ═════════════════════════════════════════════════════════
 
-@main
+// @main lives on MaestroWidgets (SessionLiveActivity.swift), which bundles this + the session Live Activity
 struct TaskWidget: Widget {
     let kind: String = "TaskWidget"
 

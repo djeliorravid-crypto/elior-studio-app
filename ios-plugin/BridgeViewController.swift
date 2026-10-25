@@ -22,6 +22,7 @@ class BridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(IosCalendarBridgePlugin())
         bridge?.registerPluginInstance(HealthKitBridgePlugin())
         bridge?.registerPluginInstance(ContactsBridgePlugin())
+        bridge?.registerPluginInstance(LiveActivityBridgePlugin())
 
         // 9.10: iOS 26 draws a whitish "scroll edge" fade behind the status
         // bar, which showed as a white strip over the app's lavender top.
