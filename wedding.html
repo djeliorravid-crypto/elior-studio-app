@@ -85,6 +85,15 @@ async function pushNow(k) {
 window.haptic = { light() { try { navigator.vibrate && navigator.vibrate(8); } catch (_) {} }, tap() {}, success() { try { navigator.vibrate && navigator.vibrate(14); } catch (_) {} }, error() {} };
 window.wedClose = function() {};
 
+// no key here (e.g. an icon saved before 30.10): paste the link from Elior once
+function askLink(why) {
+  const gate = document.getElementById('gate');
+  gate.innerHTML = '<b>החתונה של דרי ואליאור</b><span>' + (why ? why + ' ' : '') + 'הדביקי כאן את הקישור שאליאור שלח</span>'
+    + '<input id="wd-link" placeholder="הקישור מוואטסאפ" style="width:100%;max-width:320px;box-sizing:border-box;border:1.5px solid #e3e6f1;border-radius:16px;padding:14px;font-size:16px;font-family:inherit;direction:ltr;text-align:left;background:#fff">'
+    + '<button id="wd-go" style="width:100%;max-width:320px;height:52px;border:none;border-radius:999px;background:linear-gradient(135deg,#252e6b,#141a3c);color:#fff;font-family:inherit;font-size:16px;font-weight:600">כניסה</button>';
+  document.getElementById('wd-go').onclick = () => { const v = document.getElementById('wd-link').value; const m = /[#&?]k=([A-Za-z0-9]+)/.exec(v) || /^\s*([A-Za-z0-9]{12,})\s*$/.exec(v);
+    if (!m) { toast('זה לא נראה כמו הקישור'); return; } try { localStorage.setItem('wd_key', m[1]); } catch (_) {} location.replace(location.pathname + '#k=' + m[1]); location.reload(); };
+}
 async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
 (async function boot() {
   const gate = document.getElementById('gate'), say = t => { gate.querySelector('span').textContent = t; };
@@ -92,8 +101,10 @@ async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new Text
   try { await firebase.auth().signInAnonymously(); } catch (_) {}
   let w;
   try { w = (await db.ref('studio_data/wedding').once('value')).val() || {}; } catch (e) { say('אין חיבור — נסי שוב בעוד רגע'); return; }
-  if (!key || !w.shareHash || (await sha(key)) !== w.shareHash) { say('הקישור לא תקין או שבוטל. בקשי מאליאור קישור חדש.'); return; }
-  try { localStorage.setItem('wd_key', key); if (location.hash) history.replaceState(null, '', location.pathname); } catch (_) {}
+  if (!key || !w.shareHash || (await sha(key)) !== w.shareHash) { askLink(key ? 'הקישור הזה כבר לא פעיל.' : ''); return; }
+  // keep the key IN the address, so "Add to Home Screen" saves a link that works
+  // (on iPhone the home-screen icon doesn't share Safari's memory)
+  try { localStorage.setItem('wd_key', key); if (!location.hash) history.replaceState(null, '', location.pathname + '#k=' + key); } catch (_) {}
   let first = true;
   WK.forEach(k => db.ref('studio_data/' + k).on('value', s => {
     D[k] = s.val() ?? (isList(k) ? [] : {});
