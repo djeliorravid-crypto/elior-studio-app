@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-skin="spent">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>החתונה · דרי ואליאור</title>
+<meta name="theme-color" content="#e6e9f6">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="החתונה">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/spent.css?h=bf1b6087ff">
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<style>
+  html, body { margin: 0; background: #f4f5fa; font-family: 'Rubik', 'Heebo', sans-serif; -webkit-font-smoothing: antialiased; }
+  #wed { transform: none !important; }
+  #wed .wd-x { visibility: hidden; }
+  #gate { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 0 32px; text-align: center; color: #6b7299; font-size: 15px; background: linear-gradient(180deg, #e6e9f6, #f8f8fb); }
+  #gate b { color: #161c45; font-size: 19px; font-weight: 700; }
+  #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); transform: translate(-50%, 20px); opacity: 0; z-index: 100200; background: #161c45; color: #fff; border-radius: 999px; padding: 11px 18px; font-size: 14px; font-weight: 500; transition: opacity .2s, transform .2s; pointer-events: none; white-space: nowrap; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .wd-sync { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 14px); left: 16px; z-index: 10056; font-size: 11.5px; color: #8a8fae; background: rgba(255,255,255,.7); border-radius: 999px; padding: 4px 10px; }
+</style>
+</head>
+<body>
+<div id="gate"><b>החתונה של דרי ואליאור</b><span>טוען…</span></div>
+<div id="toast"></div>
+<script src="js/wedding.js?h=4cad78ffdc"></script>
+<script>
+// The wedding page on Dri's phone. It reads and writes ONLY the four wedding
+// lists (wedding, wedding_exp, wedding_todo, wedding_meet) — nothing else of
+// the app exists here. Elior's app picks the changes up on its next sync.
+// Every save merges with the cloud's latest first, so two phones editing at
+// the same time don't erase each other.
+firebase.initializeApp({
+  apiKey: "AIzaSyB1c6rZVcGrX50UbhEMx3Ra6uaO_S5Fb5o",
+  authDomain: "elior-studio.firebaseapp.com",
+  databaseURL: "https://elior-studio-default-rtdb.firebaseio.com",
+  projectId: "elior-studio"
+});
+const db = firebase.database();
+const WK = ['wedding', 'wedding_exp', 'wedding_todo', 'wedding_meet'];
+const D = {}, PATCH = {};
+const clone = v => v == null ? v : JSON.parse(JSON.stringify(v));
+const isList = k => k !== 'wedding';
+const asList = v => Array.isArray(v) ? v.filter(Boolean) : v && typeof v === 'object' ? Object.values(v).filter(Boolean) : [];
+
+window.load = k => clone(asList(D[k]));
+window.loadObj = k => { const v = D[k]; return v && typeof v === 'object' && !Array.isArray(v) ? clone(v) : {}; };
+window.save = function(k, v) {
+  if (WK.indexOf(k) < 0) return;                       // nothing outside the wedding, ever
+  const now = Date.now();
+  if (isList(k)) {
+    const prev = {}; asList(D[k]).forEach(x => { if (x && x.id != null) prev[String(x.id)] = JSON.stringify(Object.assign({}, x, { _u: 0 })); });
+    v.forEach(x => { if (x && x.id != null && prev[String(x.id)] !== JSON.stringify(Object.assign({}, x, { _u: 0 }))) x._u = now; });
+  } else {
+    const old = D[k] || {};
+    Object.keys(v).forEach(f => { if (JSON.stringify(v[f]) !== JSON.stringify(old[f])) PATCH[f] = clone(v[f]); });
+  }
+  D[k] = clone(v);
+  try { localStorage.setItem('wd_' + k, JSON.stringify(D[k])); } catch (_) {}
+  push(k);
+};
+const _q = {};
+function push(k) { _q[k] = (_q[k] || Promise.resolve()).then(() => pushNow(k)).catch(e => { console.warn('push', k, e); toast('לא נשמר — בדקי אינטרנט'); }); }
+async function pushNow(k) {
+  const cloud = (await db.ref('studio_data/' + k).once('value')).val();
+  let out;
+  if (isList(k)) {
+    const m = new Map(); asList(cloud).forEach(x => x && x.id != null && m.set(String(x.id), x));
+    asList(D[k]).forEach(x => { const c = m.get(String(x.id)); if (!c || (+x._u || 0) > (+c._u || 0)) m.set(String(x.id), x); });
+    out = [...m.values()];
+  } else {
+    out = Object.assign({}, cloud || {}); Object.keys(PATCH).forEach(f => { out[f] = PATCH[f]; delete PATCH[f]; });
+    out.updatedAt = Date.now();
+  }
+  const now = Date.now();
+  await db.ref().update({ ['studio_data/' + k]: out, ['studio_meta/' + k]: now });
+}
+
+window.haptic = { light() { try { navigator.vibrate && navigator.vibrate(8); } catch (_) {} }, tap() {}, success() { try { navigator.vibrate && navigator.vibrate(14); } catch (_) {} }, error() {} };
+window.wedClose = function() {};
+
+async function sha(s) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+(async function boot() {
+  const gate = document.getElementById('gate'), say = t => { gate.querySelector('span').textContent = t; };
+  const key = (new URLSearchParams(location.hash.slice(1)).get('k') || localStorage.getItem('wd_key') || '').trim();
+  try { await firebase.auth().signInAnonymously(); } catch (_) {}
+  let w;
+  try { w = (await db.ref('studio_data/wedding').once('value')).val() || {}; } catch (e) { say('אין חיבור — נסי שוב בעוד רגע'); return; }
+  if (!key || !w.shareHash || (await sha(key)) !== w.shareHash) { say('הקישור לא תקין או שבוטל. בקשי מאליאור קישור חדש.'); return; }
+  try { localStorage.setItem('wd_key', key); if (location.hash) history.replaceState(null, '', location.pathname); } catch (_) {}
+  let first = true;
+  WK.forEach(k => db.ref('studio_data/' + k).on('value', s => {
+    D[k] = s.val() ?? (isList(k) ? [] : {});
+    try { localStorage.setItem('wd_' + k, JSON.stringify(D[k])); } catch (_) {}
+    if (!first) { const ov = document.getElementById('wed'), y = ov ? ov.scrollTop : 0; if (!document.getElementById('sp-flow')?.classList.contains('open')) { wedRender(); if (ov) ov.scrollTop = y; } }
+  }));
+  // wait for all four, then show
+  await Promise.all(WK.map(k => db.ref('studio_data/' + k).once('value').then(s => { D[k] = s.val() ?? (isList(k) ? [] : {}); })));
+  first = false;
+  gate.remove();
+  wedOpen();
+})();
+</script>
+</body>
+</html>

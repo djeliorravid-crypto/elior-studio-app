@@ -11244,6 +11244,21 @@ window.laTest = async function() {
   if (r && r.ok) { localStorage.setItem('la_id', 'test'); spentSheet('נשלח לאי הדינמי', 'תסגור את האפליקציה ותסתכל למעלה. כדי להעלים: "להסיר"', [{ label: 'להסיר את הבדיקה', run: async () => { try { await LA.endAll(); } catch (_) {} localStorage.removeItem('la_id'); } }]); }
   else spentSheet('האי הדינמי לא נפתח', (av && av.ok === false ? 'באייפון כבויות "פעילויות בזמן אמת" — הגדרות ← Maestro ← פעילויות בזמן אמת · ' : '') + 'תשובת האייפון: ' + JSON.stringify(r || av).slice(0, 160), []);
 };
+// v650: share the wedding page with Dri — a private link to wedding.html that can see and edit ONLY the wedding.
+// The link key stays on this phone; the cloud keeps only its fingerprint. 'קישור חדש' cancels the old one.
+async function _wdSha(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+async function _wdNewKey() { const a = new Uint8Array(12); crypto.getRandomValues(a); const k = [...a].map(x => x.toString(36).padStart(2, '0')).join('').slice(0, 18);
+  const h = await _wdSha(k); _wdSet(x => { x.shareHash = h; }); try { localStorage.setItem('wd_share_key', k); } catch (_) {} return k; }
+window.wedShare = async function() {
+  let k = localStorage.getItem('wd_share_key'); const w = _wdGet();
+  if (!k || !w.shareHash || (await _wdSha(k)) !== w.shareHash) k = await _wdNewKey();
+  const url = location.origin + location.pathname.replace(/[^/]+$/, '') + 'wedding.html#k=' + k;
+  const msg = 'דרי, זה הדף של החתונה שלנו — ההוצאות, המוזמנים, הפגישות והצ׳ק ליסט. כל מה שתשני מתעדכן אצלי מיד.\nכדאי לשמור אותו במסך הבית: שיתוף ← הוספה למסך הבית.\n' + url;
+  spentSheet('לשתף את דף החתונה', 'דרי תראה ותוכל לשנות רק את החתונה — שום דבר אחר מהאפליקציה', [
+    { label: 'לשלוח לה בוואטסאפ', pri: true, run: () => window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank') },
+    { label: 'להעתיק את הקישור', run: async () => { try { await navigator.clipboard.writeText(url); toast('הקישור הועתק'); } catch (_) { prompt('הקישור:', url); } } },
+    { label: 'קישור חדש (הישן יפסיק לעבוד)', danger: true, run: async () => { await _wdNewKey(); toast('נוצר קישור חדש — שלח לה אותו'); setTimeout(wedShare, 300); } }]);
+};
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
@@ -19578,7 +19593,7 @@ window.wedRender = function() {
   const done = WD_CHECK.filter(([k]) => w.chk[k]).length;
   const meets = _wdMeets(), upN = meets.filter(m => !m.done && m.date >= dailyDateStr()).length;
   const head = '<div class="wd-page">'
-    + '<div class="wd-top"><button class="wd-x" onclick="wedClose()" aria-label="סגירה">✕</button><span class="wd-rings">' + WD_RINGS + '</span><span style="width:40px"></span></div>'
+    + '<div class="wd-top"><button class="wd-x" onclick="wedClose()" aria-label="סגירה">✕</button><span class="wd-rings">' + WD_RINGS + '</span>' + (typeof window.wedShare === 'function' ? '<button class="wd-x wd-share" onclick="wedShare()" aria-label="לשתף עם דרי"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.8-3 3-4.6 5.5-4.6s4.7 1.6 5.5 4.6"/><path d="M17 8v6M14 11h6"/></svg></button>' : '<span style="width:40px"></span>') + '</div>'
     + '<div class="wd-hd"><div class="wd-k">אולמי גבריאל · נס ציונה</div><h1>החתונה של דרי ואליאור</h1>'
     + '<button class="wd-date" onclick="wedDate()">' + _escape(dTxt) + (days != null ? '<i>' + (days > 1 ? 'עוד ' + days + ' ימים' : days === 1 ? 'מחר' : days === 0 ? 'היום!' : 'מזל טוב') + '</i>' : '') + '</button></div>'
     + '<div class="wd-tabs"><button class="' + (window._wdTab !== 'meet' ? 'on' : '') + '" onclick="wedTab(\'\')">תקציב</button><button class="' + (window._wdTab === 'meet' ? 'on' : '') + '" onclick="wedTab(\'meet\')">פגישות' + (upN ? '<i>' + upN + '</i>' : '') + '</button></div>';
