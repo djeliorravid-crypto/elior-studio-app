@@ -19589,6 +19589,17 @@ window.wedRender = function() {
     + '<div class="wd-bar"><span style="width:' + pct + '%"></span></div>'
     + '<div class="wd-split"><span>שולם <b>' + M(c.paid) + '</b></span><span>נשאר <b>' + M(Math.max(0, c.total - c.paid)) + '</b></span></div>'
     + '<div class="wd-split dim"><span>אולם ' + M(c.venue) + '</span><span>שאר ההוצאות ' + M(c.other) + '</span></div></div>'
+    // v648: what the wedding costs per guest who comes — vs. the average gift and the budget
+    + (() => { const come = +w.confirmed || +w.guests || +w.minGuests || 0, basis = +w.confirmed ? 'מי שאישרו הגעה' : +w.guests ? 'המוזמנים' : 'ההתחייבות';
+        if (!come || !c.total) return '';
+        const per = c.total / come, gift = +w.gift || 0, bud = +w.budget || 0, net = gift ? gift * come - c.total : null;
+        const bump = window._wdLastTotal != null && window._wdLastTotal !== c.total; window._wdLastTotal = c.total;
+        return '<div class="wd-card wd-per' + (bump ? ' bump' : '') + '"><div class="pk">עולה לנו לאורח</div><div class="pv">' + M(per) + '</div><div class="ps">' + M(c.total) + ' ÷ ' + come + ' (' + basis + ')</div>'
+          + '<button class="wd-line" onclick="wedNum(\'gift\')"><span>מתנה ממוצעת לאורח</span><b>' + (gift ? M(gift) : '<em>להזין</em>') + '</b></button>'
+          + (net != null ? '<div class="wd-line res ' + (net >= 0 ? 'up' : 'down') + '"><span>' + (net >= 0 ? 'צפוי רווח' : 'צפוי הפסד') + '<small>' + come + ' אורחים × ' + M(gift) + ' פחות ההוצאות</small></span><b>' + M(Math.abs(net)) + '</b></div>' : '')
+          + '<button class="wd-line" onclick="wedNum(\'budget\')"><span>התקציב שלנו</span><b>' + (bud ? M(bud) : '<em>להזין</em>') + '</b></button>'
+          + (bud ? '<div class="wd-line res ' + (c.total <= bud ? 'up' : 'down') + '"><span>' + (c.total <= bud ? 'נשאר בתקציב' : 'חרגנו מהתקציב') + '</span><b>' + M(Math.abs(bud - c.total)) + '</b></div>' : '')
+          + '</div>'; })()
     // guests
     + '<div class="wd-lbl">מוזמנים</div><div class="wd-card wd-guests">'
     + '<button onclick="wedNum(\'minGuests\')"><b>' + (+w.minGuests || 0) + '</b><small>התחייבות לאולם</small></button>'
@@ -19629,9 +19640,9 @@ window.wedRender = function() {
     + '</div><div class="wd-foot">מזל טוב</div></div>';
 };
 window.wedNum = function(k) {
-  const w = _wdGet(), money = /^(plate|venuePaid|priceHi|priceLo|extras)$/.test(k);
-  const q = { guests: 'כמה מוזמנים?', confirmed: 'כמה אישרו הגעה?', minGuests: 'לכמה אנשים התחייבתם?', plate: 'כמה עולה מנה?', venuePaid: 'כמה כבר שילמתם לאולם?', priceHi: 'מחיר מנה מ־' + w.tierAt + ' איש ומעלה?', priceLo: 'מחיר מנה מתחת ל־' + w.tierAt + '?', extras: 'כמה מוסיפים הגברה, תאורה ודמי שתייה למנה?', tierAt: 'מכמה אנשים המחיר הזול?' }[k];
-  const hint = { priceHi: 'לפני הגברה, תאורה ושתייה', priceLo: 'לפני הגברה, תאורה ושתייה', minGuests: 'על כמה מנות משלמים גם אם מגיעים פחות', extras: 'אצלכם: 400 ← 444, כלומר 44' }[k];
+  const w = _wdGet(), money = /^(plate|venuePaid|priceHi|priceLo|extras|gift|budget)$/.test(k);
+  const q = { guests: 'כמה מוזמנים?', confirmed: 'כמה אישרו הגעה?', minGuests: 'לכמה אנשים התחייבתם?', plate: 'כמה עולה מנה?', venuePaid: 'כמה כבר שילמתם לאולם?', priceHi: 'מחיר מנה מ־' + w.tierAt + ' איש ומעלה?', priceLo: 'מחיר מנה מתחת ל־' + w.tierAt + '?', extras: 'כמה מוסיפים הגברה, תאורה ודמי שתייה למנה?', tierAt: 'מכמה אנשים המחיר הזול?', gift: 'כמה בממוצע אורח נותן?', budget: 'מה התקציב שלנו לחתונה?' }[k];
+  const hint = { priceHi: 'לפני הגברה, תאורה ושתייה', priceLo: 'לפני הגברה, תאורה ושתייה', minGuests: 'על כמה מנות משלמים גם אם מגיעים פחות', extras: 'אצלכם: 400 ← 444, כלומר 44', gift: 'הערכה — לפי זה נדע אם יוצאים ברווח או בהפסד', budget: 'הסכום שהחלטתם לא לעבור' }[k];
   spFlowOpen({ title: 'החתונה', vals: { n: +w[k] ? String(w[k]) : '' }, steps: [{ k: 'n', type: 'money', unit: money ? '₪' : '#', q, hint, optional: true }],
     onSave: v => _wdSet(x => { x[k] = Math.max(0, Math.round(Number(String(v.n || '0').replace(',', '.')) || 0)); }) });
 };

@@ -15,7 +15,9 @@ const results = []; const ok = (name, cond, extra) => { results.push([cond ? 'PA
     ok('asset ' + f + ' hash is current', m && m[1] === h, m ? m[1] + ' vs ' + h : 'not linked'); } }
 (async () => {
   await new Promise(r => srv.listen(0, r)); const port = srv.address().port;
-  const b = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  // the pre-installed Chromium's folder name changes between machines — find it
+  const _fs = require('fs'), _exe = process.env.CHROME || (_fs.existsSync('/opt/pw-browsers') ? _fs.readdirSync('/opt/pw-browsers').filter(d => /^chromium-\d/.test(d)).flatMap(d => ['chrome-linux64', 'chrome-linux'].map(x => '/opt/pw-browsers/' + d + '/' + x + '/chrome')).find(f => _fs.existsSync(f)) : undefined);
+  const b = await chromium.launch(_exe ? { executablePath: _exe } : {});
   const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.route(/firebase|gstatic|googleapis|workers\.dev/, r => r.abort());

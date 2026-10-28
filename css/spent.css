@@ -2087,3 +2087,15 @@ html.desk #wed .wd-page { padding-top: 28px; }
 @keyframes mziWord { to { opacity: 1; transform: none; filter: none; } }
 html.mzi-on::before { opacity: 0 !important; }
 /* v643 — the signature drawn slowly, like a pen */
+
+/* v648 — cost per guest, gift, budget */
+.wd-per { margin-top: 12px; padding: 16px 18px 6px; }
+.wd-per .pk { font-size: 13px; color: #8a8fae; font-weight: 600; text-align: center; }
+.wd-per .pv { font-size: 34px; font-weight: 700; color: #161c45; text-align: center; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.wd-per .ps { font-size: 12px; color: #a3a8c3; text-align: center; margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
+.wd-per.bump .pv { animation: wdBump .6s cubic-bezier(.3,1.6,.5,1); }
+@keyframes wdBump { 0% { transform: scale(.9); color: #3a4690; } 100% { transform: none; } }
+.wd-line.res { cursor: default; }
+.wd-line.res.up span, .wd-line.res.up b { color: #24493b; font-weight: 700; }
+.wd-line.res.down span, .wd-line.res.down b { color: #a8441f; font-weight: 700; }
+.wd-line.res small { color: #8a8fae !important; font-weight: 400; }
