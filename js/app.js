@@ -12264,10 +12264,11 @@ async function _waPushInit() {
       try {
         const tok = t && t.value;
         if (!tok) return;
-        let prev = '';
-        try { prev = localStorage.getItem('wa_push_token') || ''; } catch (_) {}
-        if (tok === prev) return;
+        // v652: every launch, each device saves its own token under its id (the old single
+        // slot went stale — Apple answered BadDeviceToken and no push arrived). The worker
+        // sends to all of them and drops the dead ones.
         if (firebaseDB) {
+          firebaseDB.ref('whatsapp/push_tokens/' + _devId()).set({ token: tok, at: Date.now(), v: window.APP_BUILD || '' });
           firebaseDB.ref('whatsapp/push').set({ token: tok, at: Date.now() });
           try { localStorage.setItem('wa_push_token', tok); } catch (_) {}
         }
