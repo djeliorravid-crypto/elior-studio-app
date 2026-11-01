@@ -584,6 +584,8 @@ async function submitSignature(){
       'studio_data/contracts': arr,
       'studio_meta/contracts': Date.now() // nudges producer's device to re-sync
     });
+    // tell Elior right away (the helper re-checks the signature itself before it pushes)
+    try { fetch('https://ravid-whatsapp.djeliorravid.workers.dev/contract-signed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }), keepalive: true }).catch(function(){}); } catch(_) {}
     render(arr[idx]);
     window.scrollTo({top: 0, behavior: 'smooth'});
     setTimeout(function(){ openEmailModal(name); }, 700);

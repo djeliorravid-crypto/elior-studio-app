@@ -335,6 +335,29 @@ export default {
       return json({ ok: true, replies });
     }
 
+    // ── /contract-signed — the client page calls this right after a
+    // signature is saved. Public, so it trusts nothing it's told: it reads
+    // the contract from the database, checks it really was signed in the
+    // last 30 minutes, and sends ONE push (marked so it never repeats). ──
+    if (url.pathname === '/contract-signed') {
+      let b = null;
+      try { b = await request.json(); } catch (_) { return json({ error: 'bad json' }, 400); }
+      const id = String((b && b.id) || '').replace(/[^A-Za-z0-9_\-]/g, '').slice(0, 80);
+      if (!id) return json({ error: 'no id' }, 400);
+      const done = await fetch(DB_ROOT + '/studio_diag/signed_push/' + id + '.json').then(r => r.json()).catch(() => null);
+      if (done) return json({ ok: true, already: true });
+      const all = await fetch(DB_ROOT + '/studio_data/contracts.json').then(r => r.json()).catch(() => null);
+      const list = Array.isArray(all) ? all : all && typeof all === 'object' ? Object.values(all) : [];
+      const c = list.find(x => x && x.id === id);
+      const at = c && c.signature && Number(c.signature.signedAt);
+      if (!c || !c.signature || !c.signature.dataUrl || !at || Date.now() - at > 30 * 60 * 1000) return json({ ok: false, why: 'not signed' }, 409);
+      const who = String(c.signature.clientName || c.clientName || 'הלקוח').trim();
+      const songs = Array.isArray(c.songs) && c.songs.length ? c.songs.join(' · ') : String(c.songTitle || '');
+      await fetch(DB_ROOT + '/studio_diag/signed_push/' + id + '.json', { method: 'PUT', body: JSON.stringify(Date.now()) }).catch(() => {});
+      const r = await sendApns(env, 'מזל טוב! ההסכם נחתם', who + ' חתם/ה על סיכום ההפקה' + (songs ? ' של "' + songs + '"' : '') + '. יוצאים לדרך.');
+      return json({ ok: !!(r && r.ok), status: r ? r.status : 0 });
+    }
+
     // ── /testpush — fire one APNs alert and return Apple's verdict,
     // so push problems are diagnosed with a curl instead of guesswork ──
     if (url.pathname === '/testpush') {
