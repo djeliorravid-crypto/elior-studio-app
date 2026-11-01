@@ -164,6 +164,11 @@
   .parties b { font-weight: 600; color: var(--ink); }
   .terms .t1 { line-height: 1.6; }
   .decl { font-size: 13px !important; color: var(--ink2) !important; line-height: 1.55 !important; margin: 0 2px 12px !important; }
+  /* v651 — payment terms */
+  .inv2 .split.many { grid-template-columns: 1fr; }
+  .inv2 .split.many span { flex-direction: row; justify-content: space-between; text-align: right; padding: 10px 14px; }
+  .inv2 .paynote { margin-top: 10px; font-size: 13.5px; line-height: 1.55; color: var(--ink2); text-align: center; }
+  .inv2 .paynote b { color: var(--ink); font-weight: 600; }
   @keyframes emailFade { from { opacity: 0; } to { opacity: 1; } }
   @keyframes emailSlide { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 </style>
@@ -223,6 +228,24 @@ function _ctrPriceBreakdown(c){
 
 const _CK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 const _LOGO = '<svg viewBox="70 180 830 520" aria-hidden="true"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#fff" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="36" fill="#fff"/></svg>';
+// v651 (same as js/app.js): how the client pays — plan (half/full/installments/custom), method, a note
+const PAY_PLANS = { half: 'חצי מראש · חצי במיקס', full: 'הכל מראש', inst: 'בתשלומים', custom: 'אחר' };
+const PAY_METHODS = ['העברה בנקאית', 'ביט', 'פייבוקס', 'אשראי', 'מזומן', 'צ׳ק'];
+function _payRows(total, p) {
+  p = p || {}; const plan = p.plan || 'half';
+  if (plan === 'full') return [{ t: 'בתחילת העבודה', v: total }];
+  if (plan === 'inst') { const n = Math.max(2, Math.min(12, parseInt(p.n, 10) || 3)), a = Math.floor(total / n), rows = [];
+    const when = k => k === 0 ? 'בתחילת העבודה' : k === 1 ? 'חודש אחרי' : k === 2 ? 'חודשיים אחרי' : k + ' חודשים אחרי';
+    for (let k = 0; k < n; k++) rows.push({ t: 'תשלום ' + (k + 1) + ' · ' + when(k), v: k === n - 1 ? total - a * (n - 1) : a });
+    return rows; }
+  if (plan === 'custom') return [];
+  const A = Math.round(total / 2); return [{ t: 'בתחילת העבודה', v: A }, { t: 'בשלב המיקס', v: total - A }];
+}
+function _payClause(p) {
+  p = p || {}; const plan = p.plan || 'half', n = Math.max(2, Math.min(12, parseInt(p.n, 10) || 3));
+  const how = plan === 'full' ? 'ההשקעה תשולם במלואה בתחילת העבודה' : plan === 'inst' ? 'ההשקעה תשולם ב־' + n + ' תשלומים חודשיים, כמפורט להלן' : plan === 'custom' ? 'ההשקעה תשולם כמפורט להלן' : 'ההשקעה תשולם בשני תשלומים, כמפורט להלן';
+  return how + (p.method ? ', ב' + p.method : '') + '.';
+}
 function _discAmt(sub, d){
   if (!d || !(parseFloat(d.v) > 0)) return 0;
   const a = d.mode === 'pct' ? Math.round(sub * Math.min(100, parseFloat(d.v)) / 100) : Math.round(parseFloat(d.v));
@@ -255,7 +278,7 @@ function render(c){
     'המפיק יבצע עבור האמן/ית הקלטה, הפקה מוזיקלית, מיקס ומאסטרינג, וימסור בסיום <b>קובץ מאסטר סופי</b>, <b>פלייבק</b> ו<b>ערוצים נפרדים להופעות</b>. ההפקה כוללת עד <b>5 סבבי תיקונים</b> על המיקס.',
     'ההקלטה הסופית (המאסטר) שייכת לאמן/ית במלואה, והאמן/ית רשאי/ת לעשות בה כל שימוש. ' + rights + '.',
     'ביטול או דחייה של סשן ייעשו בהודעה של <b>48 שעות</b> מראש לפחות.',
-    'ההשקעה תשולם בשני תשלומים, כמפורט להלן. הקבצים הסופיים יימסרו עם השלמת התשלום המלא.'
+    _payClause(c.payment) + ' הקבצים הסופיים יימסרו עם השלמת התשלום המלא.'
   ];
   const pWhen = c.producerSignedAt ? new Date(c.producerSignedAt).toLocaleDateString('he-IL') : (c.createdAt ? new Date(c.createdAt).toLocaleDateString('he-IL') : '');
 
@@ -275,7 +298,9 @@ function render(c){
       + (disc ? '<div class="r"><span>מחיר ההפקה</span><span class="was">' + fmtMoney(sub) + '</span></div>'
         + '<div class="r gift"><span>' + (c.discount && c.discount.note ? escHtml(c.discount.note) : 'הנחה אישית') + (c.discount && c.discount.mode === 'pct' ? ' · ' + parseFloat(c.discount.v) + '%' : '') + '</span><span>−' + fmtMoney(disc) + '</span></div>' : '')
       + '<div class="r pay"><span>' + (disc ? 'לתשלום' : 'סך ההשקעה') + '</span><span>' + fmtMoney(total) + '</span></div>'
-      + '<div class="split"><span><small>בתחילת העבודה</small><b>' + fmtMoney(halfA) + '</b></span><span><small>בשלב המיקס</small><b>' + fmtMoney(halfB) + '</b></span></div></div>'
+      + (() => { const rows = _payRows(total, c.payment), p = c.payment || {};
+          return (rows.length ? '<div class="split' + (rows.length > 2 ? ' many' : '') + '">' + rows.map(r => '<span><small>' + escHtml(r.t) + '</small><b>' + fmtMoney(r.v) + '</b></span>').join('') + '</div>' : '')
+            + (p.method || p.note ? '<div class="paynote">' + (p.method ? '<b>אמצעי תשלום:</b> ' + escHtml(p.method) : '') + (p.method && p.note ? '<br>' : '') + (p.note ? escHtml(p.note) : '') + '</div>' : ''); })() + '</div>'
     + (signed
       ? '<div class="signed-stamp"><span class="check">' + _CK + '</span><span><b>נחתם</b><small>' + escHtml(c.signature.clientName || c.clientName) + (c.signature.signedAt ? ' · ' + new Date(c.signature.signedAt).toLocaleDateString('he-IL') : '') + '</small></span></div>'
       : '<div class="card sig-card">'
@@ -453,7 +478,8 @@ function buildPdfPrintable(c){
 
     '<div style="margin-bottom:9px;background:rgba(37,46,107,0.06);border:1px solid rgba(37,46,107,0.25);border-radius:8px;padding:8px 12px">' +
       '<div style="font-family:\'Rubik\',\'Heebo\',sans-serif;font-size:13.5px;font-weight:900;color:#161c45;margin-bottom:2px">תנאי תשלום</div>' +
-      '<div style="font-size:11.5px;line-height:1.5;color:#2a3160"><b>' + fmtMoney(halfA) + '</b> עם תחילת העבודה · <b>' + fmtMoney(halfB) + '</b> בשלב המיקס.</div>' +
+      '<div style="font-size:11.5px;line-height:1.5;color:#2a3160">' + (_payRows(total, c.payment).map(r => '<b>' + fmtMoney(r.v) + '</b> ' + escHtml(r.t)).join(' · ') || escHtml((c.payment && c.payment.note) || '')) + ((c.payment && c.payment.method) ? ' · ב' + escHtml(c.payment.method) : '') + '.</div>' +
+      ((c.payment && c.payment.note && _payRows(total, c.payment).length) ? '<div style="font-size:11px;color:#2a3160;margin-top:2px">' + escHtml(c.payment.note) + '</div>' : '') +
       '<div style="font-size:11px;color:#6b7299;margin-top:2px">הקבצים הסופיים יימסרו לזמר לאחר השלמת התשלום.</div>' +
     '</div>' +
 

@@ -1397,7 +1397,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v650</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v651</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -2852,6 +2852,30 @@
         <div style="font-size:11px;color:var(--text-muted);margin-top:6px" id="ctr-disc-hint">יופיע ללקוח בעדינות, מתחת להשקעה</div>
       </div>
 
+      <div class="form-group">
+        <label>תנאי תשלום</label>
+        <div id="ctr-pay-plans" style="display:flex;gap:6px;flex-wrap:wrap">
+          <button type="button" class="gp-btn" data-p="half" onclick="ctrPayPlan('half')">חצי מראש · חצי במיקס</button>
+          <button type="button" class="gp-btn" data-p="full" onclick="ctrPayPlan('full')">הכל מראש</button>
+          <button type="button" class="gp-btn" data-p="inst" onclick="ctrPayPlan('inst')">בתשלומים</button>
+          <button type="button" class="gp-btn" data-p="custom" onclick="ctrPayPlan('custom')">אחר</button>
+        </div>
+        <div id="ctr-pay-nwrap" style="display:none;align-items:center;gap:8px;margin-top:8px">
+          <span style="font-size:13px;color:var(--text)">כמה תשלומים</span>
+          <input type="number" id="ctr-pay-n" min="2" max="12" value="3" style="width:80px" oninput="_ctrRefreshTotal()">
+          <span style="font-size:12px;color:var(--text-muted)">פעם בחודש, הראשון בתחילת העבודה</span>
+        </div>
+        <div id="ctr-pay-methods" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <button type="button" class="gp-btn" data-m="העברה בנקאית" onclick="ctrPayMethod('העברה בנקאית')">העברה בנקאית</button>
+          <button type="button" class="gp-btn" data-m="ביט" onclick="ctrPayMethod('ביט')">ביט</button>
+          <button type="button" class="gp-btn" data-m="פייבוקס" onclick="ctrPayMethod('פייבוקס')">פייבוקס</button>
+          <button type="button" class="gp-btn" data-m="אשראי" onclick="ctrPayMethod('אשראי')">אשראי</button>
+          <button type="button" class="gp-btn" data-m="מזומן" onclick="ctrPayMethod('מזומן')">מזומן</button>
+          <button type="button" class="gp-btn" data-m="צ׳ק" onclick="ctrPayMethod('צ׳ק')">צ׳ק</button>
+        </div>
+        <input type="text" id="ctr-pay-note" placeholder="הערה לתשלום (לא חובה)" style="margin-top:8px" oninput="_ctrRefreshTotal()">
+      </div>
+
       <div class="form-group" style="margin-top:18px">
         <label>זכויות הכתיבה (פאבלישינג)</label>
         <div style="display:flex;gap:8px">
@@ -2866,7 +2890,7 @@
           <span style="font-size:13px;font-weight:800;color:var(--text-muted)">סה"כ</span>
           <span style="font-size:22px;font-weight:900;color:var(--text)" id="ctr-total">₪12,000</span>
         </div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">חצי מראש · חצי במיקס · קבצים סופיים אחרי תשלום</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px" id="ctr-pay-hint">חצי מראש · חצי במיקס · קבצים סופיים אחרי תשלום</div>
       </div>
 
       <div class="modal-actions">
@@ -3662,9 +3686,9 @@
 </div>
 
 
-<script src="js/app.js?h=515aea1673"></script>
+<script src="js/app.js?h=dff4249ff8"></script>
 <!--SPENT-START-->
-<link rel="stylesheet" id="spent-skin" href="css/spent.css?h=bf1b6087ff">
+<link rel="stylesheet" id="spent-skin" href="css/spent.css?h=5b826fd94a">
 <script>document.documentElement.classList.add("sp-ready")</script>
 <!--SPENT-END-->
 </body>

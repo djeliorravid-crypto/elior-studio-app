@@ -15686,6 +15686,24 @@ function _ctrPriceFields(){
   };
 }
 
+// v651: how the client pays — plan (half/full/installments/custom), method, a note
+const PAY_PLANS = { half: 'חצי מראש · חצי במיקס', full: 'הכל מראש', inst: 'בתשלומים', custom: 'אחר' };
+const PAY_METHODS = ['העברה בנקאית', 'ביט', 'פייבוקס', 'אשראי', 'מזומן', 'צ׳ק'];
+function _payRows(total, p) {
+  p = p || {}; const plan = p.plan || 'half';
+  if (plan === 'full') return [{ t: 'בתחילת העבודה', v: total }];
+  if (plan === 'inst') { const n = Math.max(2, Math.min(12, parseInt(p.n, 10) || 3)), a = Math.floor(total / n), rows = [];
+    const when = k => k === 0 ? 'בתחילת העבודה' : k === 1 ? 'חודש אחרי' : k === 2 ? 'חודשיים אחרי' : k + ' חודשים אחרי';
+    for (let k = 0; k < n; k++) rows.push({ t: 'תשלום ' + (k + 1) + ' · ' + when(k), v: k === n - 1 ? total - a * (n - 1) : a });
+    return rows; }
+  if (plan === 'custom') return [];
+  const A = Math.round(total / 2); return [{ t: 'בתחילת העבודה', v: A }, { t: 'בשלב המיקס', v: total - A }];
+}
+function _payClause(p) {
+  p = p || {}; const plan = p.plan || 'half', n = Math.max(2, Math.min(12, parseInt(p.n, 10) || 3));
+  const how = plan === 'full' ? 'ההשקעה תשולם במלואה בתחילת העבודה' : plan === 'inst' ? 'ההשקעה תשולם ב־' + n + ' תשלומים חודשיים, כמפורט להלן' : plan === 'custom' ? 'ההשקעה תשולם כמפורט להלן' : 'ההשקעה תשולם בשני תשלומים, כמפורט להלן';
+  return how + (p.method ? ', ב' + p.method : '') + '.';
+}
 // v633: a discount on the summary — a fixed amount or a percent of the price (with an optional note)
 function _ctrDiscAmt(sub, d){
   if (!d || !(parseFloat(d.v) > 0)) return 0;
@@ -15698,6 +15716,18 @@ window.ctrDiscMode = function(m){ _ctrDiscMode = m === 'pct' ? 'pct' : 'amt';
   _ctrRefreshTotal(); };
 function _ctrDiscRead(){ const v = parseFloat(document.getElementById('ctr-discount')?.value) || 0;
   return v > 0 ? { mode: _ctrDiscMode, v: v, note: (document.getElementById('ctr-discount-note')?.value || '').trim() } : null; }
+let _ctrPay = { plan: 'half' };
+window.ctrPayPlan = function(pl) { _ctrPay.plan = pl; _ctrPayPaint(); };
+window.ctrPayMethod = function(m) { _ctrPay.method = _ctrPay.method === m ? '' : m; _ctrPayPaint(); };
+function _ctrPayRead() { const n = document.getElementById('ctr-pay-n'), t = document.getElementById('ctr-pay-note');
+  return { plan: _ctrPay.plan || 'half', n: _ctrPay.plan === 'inst' ? Math.max(2, Math.min(12, parseInt(n && n.value, 10) || 3)) : undefined, method: _ctrPay.method || '', note: (t && t.value || '').trim() }; }
+function _ctrPayPaint() {
+  document.querySelectorAll('#ctr-pay-plans .gp-btn').forEach(b => b.classList.toggle('active', b.dataset.p === _ctrPay.plan));
+  document.querySelectorAll('#ctr-pay-methods .gp-btn').forEach(b => b.classList.toggle('active', b.dataset.m === _ctrPay.method));
+  const nw = document.getElementById('ctr-pay-nwrap'); if (nw) nw.style.display = _ctrPay.plan === 'inst' ? 'flex' : 'none';
+  const nt = document.getElementById('ctr-pay-note'); if (nt) nt.placeholder = _ctrPay.plan === 'custom' ? 'איך ישלם — למשל: 1,000 בכל חודש עד הסיום' : 'הערה לתשלום (לא חובה) — למשל: עד ה־10 בחודש';
+  _ctrRefreshTotal();
+}
 function _ctrSubtotal(){
   const p = _ctrPriceFields();
   return p.recording + p.mastering + p.productionMix + _ctrExtras.reduce((s, e) => s + (parseFloat(e.price) || 0), 0);
@@ -15712,6 +15742,9 @@ function _ctrRefreshTotal(){
   if (el) el.textContent = fmtMoney(_ctrTotal());
   const h = document.getElementById('ctr-disc-hint'), sub = _ctrSubtotal(), da = _ctrDiscAmt(sub, _ctrDiscRead());
   if (h) h.textContent = da ? 'הנחה של ' + fmtMoney(da) + ' · במקום ' + fmtMoney(sub) : 'יופיע ללקוח בעדינות, מתחת להשקעה';
+  const ph = document.getElementById('ctr-pay-hint');
+  if (ph) { const pp = _ctrPayRead(), rows = _payRows(_ctrTotal(), pp);
+    ph.textContent = (rows.length ? rows.map(r => fmtMoney(r.v) + ' ' + r.t.replace(/^תשלום \d+ · /, '')).join(' · ') : (pp.note || 'כתוב איך ישלם')) + (pp.method ? ' · ב' + pp.method : '') + ' · קבצים סופיים אחרי תשלום'; }
 }
 
 function ctrAddExtra(type){
@@ -15878,6 +15911,8 @@ function openContractEditor(id){
   _ctrExtras = c && Array.isArray(c.extras) ? c.extras.map(e => Object.assign({}, e)) : [];
   { const d = c && c.discount, di = document.getElementById('ctr-discount'), dn = document.getElementById('ctr-discount-note');
     if (di) di.value = d && d.v ? d.v : ''; if (dn) dn.value = d && d.note ? d.note : ''; ctrDiscMode(d && d.mode === 'pct' ? 'pct' : 'amt'); }
+  { const pp = (c && c.payment) || {}; _ctrPay = { plan: pp.plan || 'half', method: pp.method || '' };
+    const n = document.getElementById('ctr-pay-n'), t = document.getElementById('ctr-pay-note'); if (n) n.value = pp.n || 3; if (t) t.value = pp.note || ''; _ctrPayPaint(); }
   _ctrRights = c && c.rightsMode ? c.rightsMode : 'solo';
   _ctrShares = c && Array.isArray(c.splitShares) && c.splitShares.length
     ? c.splitShares.map(s => Object.assign({}, s))
@@ -15931,6 +15966,8 @@ function saveContract(){
   c.priceProductionMix = pf.productionMix;
   c.extras = _ctrExtras.slice();
   c.discount = _ctrDiscRead();
+  c.payment = _ctrPayRead();
+  if (c.payment.plan === 'custom' && !c.payment.note) { toast('כתוב איך הוא ישלם'); return; }
   c.basePrice = basePrice;   // the price before the discount (the page subtracts it)
   c.rightsMode = _ctrRights;
   c.splitShares = _ctrRights === 'split' ? _ctrShares.slice() : [];

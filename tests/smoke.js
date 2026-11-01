@@ -29,7 +29,7 @@ const results = []; const ok = (name, cond, extra) => { results.push([cond ? 'PA
     localStorage.setItem('morning_api_id', 'x'); localStorage.setItem('morning_api_secret', 'y');
     const t = new Date(), iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     const day = n => { const d = new Date(t); d.setDate(d.getDate() + n); return iso(d); };
-    localStorage.setItem('s_income', JSON.stringify([{ id: 'i1', client: 'מיה', clientName: 'מיה', category: 'הפקה', amount: 3000, date: day(-1), status: 'paid' }, { id: 'i2', client: 'רן', clientName: 'רן', amount: 1000, date: day(-20), status: 'pending' }]));
+    localStorage.setItem('s_income', JSON.stringify([{ id: 'i1', client: 'מיה', clientName: 'מיה', category: 'הפקה', amount: 3000, date: day(0), status: 'paid' }, { id: 'i2', client: 'רן', clientName: 'רן', amount: 1000, date: day(-20), status: 'pending' }]));
     localStorage.setItem('s_expenses', JSON.stringify([{ id: 'e1', description: 'שופרסל', amount: 86, date: day(0), category: '', paid: true }, { id: 'e2', description: 'נגן', amount: 600, date: day(0), category: 'נגנים', paid: true }]));
     localStorage.setItem('s_fixed_costs', JSON.stringify([{ id: 'f1', name: 'ארנונה', amount: 651, group: 'living', day: 15 }, { id: 'f2', name: 'מי עדן', amount: 180, amount2: 44, altAnchor: iso(t).slice(0, 7), group: 'living' }]));
     localStorage.setItem('s_clients', JSON.stringify([{ id: 'c1', name: 'מיה', phone: '0501234567', status: 'active' }]));
