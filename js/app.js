@@ -6558,7 +6558,7 @@ window.txCopyShortcutURL = async function() {
           if (host === 'free') {
             const o = window._freeOpt = window._freeOpt || { from: 600, range: 'next', min: 3, count: 3 };
             const f = /^(\d{1,2}):?(\d{2})?$/.exec(q('from')); if (f) o.from = (+f[1]) * 60 + (+(f[2] || 0));
-            if (q('hours')) o.min = Math.max(1, Math.min(8, +q('hours') || 3));
+            if (q('hours')) o.min = Math.max(0.5, Math.min(10, Math.round((+q('hours') || 3) * 2) / 2));
             if (/^\d{4}-\d{2}-\d{2}$/.test(q('date'))) { o.range = 'date'; o.date = q('date'); } else if (['this', 'next', 'month'].indexOf(q('range')) >= 0) o.range = q('range');
             if (q('count')) o.count = Math.max(1, Math.min(4, +q('count') || 3));
             showPage('schedule'); setTimeout(freeTimesOpen, 250); return;
@@ -11371,7 +11371,7 @@ window.spConfetti = function(x, y, n) {
 // v569: "מתי אתה פנוי?" — find free blocks (3h+) in the calendar and send them
 // on WhatsApp. Busy = manual schedule + studio sessions + iPhone/Google
 // calendar. An event without an end time counts as 2 hours.
-window._freeOpt = window._freeOpt || { from: 600, range: 'next', min: 3 };
+window._freeOpt = window._freeOpt || { from: 600, range: 'next', min: (() => { try { const v = +localStorage.getItem('ff_min'); return v >= 0.5 && v <= 10 ? v : 3; } catch (_) { return 3; } })() };
 if (window._freeOpt.range === 'two') window._freeOpt.range = 'month';
 // v571: you pick the start hour; per day it finds the first free block of
 // min hours from that hour on (busy = schedule + sessions + iPhone/Google).
@@ -11517,7 +11517,10 @@ window.freeTimesOpen = function() {
     + '<div class="ff-from"><span class="k">משעה</span><button class="st" aria-label="מוקדם יותר" onclick="window._freeOpt.from=Math.max(420,window._freeOpt.from-30);freeTimesOpen()">−</button>'
     + '<b dir="ltr">' + pad(Math.floor(o.from / 60)) + ':' + pad(o.from % 60) + '</b>'
     + '<button class="st" aria-label="מאוחר יותר" onclick="window._freeOpt.from=Math.min(1260,window._freeOpt.from+30);freeTimesOpen()">+</button></div>'
-    + seg('min', [[3, '3 שעות'], [4, '4 שעות']])
+    // v653: any length — half-hour steps from 30 minutes to 10 hours (remembered)
+    + '<div class="ff-from"><span class="k">כמה זמן</span><button class="st" aria-label="פחות" onclick="window._freeOpt.min=Math.max(0.5,window._freeOpt.min-0.5);try{localStorage.setItem(\'ff_min\',window._freeOpt.min)}catch(_){};freeTimesOpen()">−</button>'
+    + '<b>' + (o.min === 0.5 ? 'חצי שעה' : o.min === 1 ? 'שעה' : o.min === 1.5 ? 'שעה וחצי' : o.min === 2 ? 'שעתיים' : (o.min % 1 ? Math.floor(o.min) + ' וחצי' : o.min) + ' שעות') + '</b>'
+    + '<button class="st" aria-label="יותר" onclick="window._freeOpt.min=Math.min(10,window._freeOpt.min+0.5);try{localStorage.setItem(\'ff_min\',window._freeOpt.min)}catch(_){};freeTimesOpen()">+</button></div>'
     + '<div class="ff-seg ff-rng">' + [['this', 'השבוע'], ['next', 'שבוע הבא'], ['month', 'חודש']].map(([v, l]) => '<button class="' + (o.range === v ? 'on' : '') + '" onclick="window._freeOpt.range=\'' + v + '\';freeTimesOpen()">' + l + '</button>').join('')
     + '<label class="' + (o.range === 'date' ? 'on' : '') + '">' + (o.range === 'date' && o.date ? (+o.date.slice(8)) + '.' + (+o.date.slice(5, 7)) : 'תאריך') + '<input type="date" value="' + (o.date || '') + '" min="' + dailyDateStr() + '" onchange="if(this.value){window._freeOpt.date=this.value;window._freeOpt.range=\'date\';freeTimesOpen()}"></label></div>'
     + '<div class="ff-cnt"><span class="k">כמה אופציות</span><div class="ff-seg">' + [1, 2, 3, 4].map(n => '<button class="' + (o.count === n ? 'on' : '') + '" onclick="window._freeOpt.count=' + n + ';freeTimesOpen()">' + n + '</button>').join('') + '</div></div>'
