@@ -75,6 +75,12 @@ jobs:
           echo "::notice::PUSHLOG $(curl -s -m 20 https://elior-studio-default-rtdb.firebaseio.com/whatsapp/pushlog.json | python3 -c 'import sys,json; d=json.load(sys.stdin) or {}; print({k: d.get(k) for k in ("sent","err","count","at")})')"
           echo "::notice::APNS-DIAG $(curl -s -m 20 'https://elior-studio-default-rtdb.firebaseio.com/whatsapp/diag.json' | python3 -c 'import sys,json; d=json.load(sys.stdin) or {}; a=d.get("apns") if isinstance(d,dict) else None; print(str(a)[:200])')"
 
+      - name: Morning document types + VAT codes (from the public greeninvoice-mcp package)
+        run: |
+          mkdir -p /tmp/pk && cd /tmp/pk && npm pack greeninvoice-mcp >/dev/null 2>&1 && tar xzf greeninvoice-mcp-*.tgz
+          grep -rhn -iE "305|320|330|400|405|vatType|vat_type|includes VAT|exempt" package/dist | grep -viE "status|http|errorCode|ms|width" | head -60 > /tmp/snip
+          split -l 6 /tmp/snip /tmp/sn_; i=0; for x in /tmp/sn_*; do i=$((i+1)); echo "::notice::DOC$i $(tr '\n' '~' < $x | head -c 900)"; done
+
       - name: Report
         env:
           RESTORE: ${{ github.event.inputs.restore_from }}
