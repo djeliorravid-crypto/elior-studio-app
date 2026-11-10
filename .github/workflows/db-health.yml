@@ -52,6 +52,13 @@ jobs:
               n(f'MORNING {label}: status={st} type={ct} {info}')
           n(f'GitHub keys present: id={bool(os.environ.get("MORNING_API_ID","").strip())} secret={bool(os.environ.get("MORNING_API_SECRET","").strip())} idlen={len(os.environ.get("MORNING_API_ID","").strip())}')
           if tok:
+              # business type only (is it עוסק מורשה yet?) — no names or numbers printed
+              stb, rb = post(W + '/morning/api', {'secret': sec, 'method': 'GET', 'path': '/businesses/me', 'token': tok})
+              bj = rb.get('json') if isinstance(rb, dict) else None
+              if isinstance(bj, dict):
+                  n('BUSINESS ' + json.dumps({k: bj.get(k) for k in bj if any(w in k.lower() for w in ('type', 'vat', 'exempt', 'osek'))}, ensure_ascii=False)[:300])
+              else: n(f'BUSINESS status={rb.get("status") if isinstance(rb, dict) else stb}')
+          if tok:
               st3, r = post(W + '/morning/api', {'secret': sec, 'method': 'POST', 'path': '/documents/search', 'body': {'page': 1, 'pageSize': 1, 'type': [400]}, 'token': tok})
               jj = r.get('json') if isinstance(r, dict) else None
               n(f'read receipts with worker token: status={r.get("status") if isinstance(r, dict) else st3} ok={r.get("ok") if isinstance(r, dict) else ""} total={jj.get("total") if isinstance(jj, dict) else ""} err={(jj.get("errorMessage") or jj.get("errorCode")) if isinstance(jj, dict) else ""}')

@@ -607,8 +607,8 @@
      this dialog onto the receipt PDF. -->
 <div id="morning-receipt-overlay">
   <div id="morning-receipt-card">
-    <h3>פירוט הקבלה</h3>
-    <div class="notif-sub">על מה הקבלה?</div>
+    <h3>חשבונית מס קבלה</h3>
+    <div class="notif-sub">על מה החשבונית?</div>
     <div class="se-field">
       <label>שם הלקוח</label>
       <input id="mr-client" type="text" placeholder="שם הלקוח / שם החברה"
@@ -646,7 +646,7 @@
     </div>
     <div class="notif-actions">
       <button type="button" class="notif-close" onclick="_closeMorningReceiptModal()">ביטול</button>
-      <button type="button" class="btn btn-primary" onclick="_confirmMorningReceiptModal()" style="font-size:14px">צור קבלה</button>
+      <button type="button" class="btn btn-primary" onclick="_confirmMorningReceiptModal()" style="font-size:14px">צור חשבונית מס קבלה</button>
     </div>
   </div>
 </div>
@@ -751,7 +751,7 @@
     <div class="st-lbl">קבלות · Morning</div>
     <div class="st-card">
       <details id="morning-box" class="st-det">
-        <summary><span class="st-sum-t"><b>חיבור ל-Morning</b><small>הקבלות נוצרות רק כשאתה לוחץ "צור קבלה"</small></span><span id="morning-conn-dot"></span></summary>
+        <summary><span class="st-sum-t"><b>חיבור ל-Morning</b><small>חשבוניות מס קבלה נוצרות רק כשאתה לוחץ "צור חשבונית"</small></span><span id="morning-conn-dot"></span></summary>
         <div class="st-body">
           <input id="morning-id" type="text" placeholder="API ID" autocomplete="off" autocapitalize="off" spellcheck="false" class="st-in" dir="ltr"/>
           <input id="morning-secret" type="text" placeholder="API Secret" autocomplete="off" autocapitalize="off" spellcheck="false" class="st-in" dir="ltr"/>
@@ -1397,7 +1397,7 @@
     <svg class="sp-logo" viewBox="0 0 1024 1024" aria-hidden="true"><defs><linearGradient id="spMB3bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e265e"/><stop offset="1" stop-color="#151a41"/></linearGradient><radialGradient id="spMB3hl" cx=".3" cy=".08" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><rect width="1024" height="1024" rx="230" fill="url(#spMB3bg)"/><rect width="1024" height="1024" rx="230" fill="url(#spMB3hl)"/><g transform="translate(512 512) scale(1.02) translate(-490 -440)"><g transform="translate(0 0)"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="31" fill="#ffffff"/></g></g></svg>
     <div id="lobby-greet">שלום, אליאור</div>
     <small id="lobby-sub">בחר לאן רוצה להיכנס</small>
-    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v653</small>
+    <small id="lobby-version" style="display:block;margin-top:8px;font-size:11px;color:rgba(255,255,255,0.45);">v654</small>
   </div>
   <div class="mode-cards-row">
     <div class="mode-circle-wrap">
@@ -3686,7 +3686,7 @@
 </div>
 
 
-<script src="js/app.js?h=5098736fd1"></script>
+<script src="js/app.js?h=cca95f3957"></script>
 <!--SPENT-START-->
 <link rel="stylesheet" id="spent-skin" href="css/spent.css?h=5b826fd94a">
 <script>document.documentElement.classList.add("sp-ready")</script>

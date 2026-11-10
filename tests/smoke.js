@@ -50,9 +50,9 @@ const results = []; const ok = (name, cond, extra) => { results.push([cond ? 'PA
   await p.evaluate(() => showPage('income')); await p.waitForTimeout(400);
   await p.evaluate(() => { const r = [...document.querySelectorAll('#inc-spent .fz-row')].find(x => x.textContent.includes('מיה')); r.click(); }); await p.waitForTimeout(400);
   const acts = await p.evaluate(() => [...document.querySelectorAll('#spent-sheet.open .ss-btn')].map(x => x.textContent));
-  ok('paid income offers a receipt', acts.some(a => a.includes('צור קבלה')), acts.join(','));
-  await p.locator('#spent-sheet .ss-btn', { hasText: 'צור קבלה' }).click(); await p.waitForTimeout(700);
-  await p.locator('#morning-receipt-overlay button', { hasText: 'צור קבלה' }).click(); await p.waitForTimeout(2000);
+  ok('paid income offers a receipt', acts.some(a => a.includes('צור חשבונית מס קבלה')), acts.join(','));
+  await p.locator('#spent-sheet .ss-btn', { hasText: 'צור חשבונית מס קבלה' }).click(); await p.waitForTimeout(700);
+  await p.locator('#morning-receipt-overlay button', { hasText: 'צור חשבונית מס קבלה' }).click(); await p.waitForTimeout(2000);
   ok('receipt is created and saved', await p.evaluate(() => load('income').find(i => i.id === 'i1').morningDocId === 'DOC1'));
   // expenses
   await p.evaluate(() => { document.querySelectorAll('.open').forEach(x => x.classList.remove('open')); showPage('expenses'); }); await p.waitForTimeout(400);

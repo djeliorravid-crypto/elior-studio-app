@@ -1820,7 +1820,7 @@ window.incPartial = function(id) {
       L.push(part); save('income', L);
       try { refreshAll(); } catch (_) {}
       spDone('נרשם', fmtMoney(got) + ' נכנסו', 'נשארו ' + fmtMoney(total - got));
-      setTimeout(() => { try { if (window.morningConnected && morningConnected()) spentSheet('להוציא קבלה על ' + fmtMoney(got) + '?', it.clientName || '', [{ label: 'כן, להוציא קבלה', pri: true, run: () => morningRetryReceipt(part.id) }, { label: 'לא עכשיו', run: () => {} }]); } catch (_) {} }, 1600);
+      setTimeout(() => { try { if (window.morningConnected && morningConnected()) spentSheet('להוציא חשבונית מס קבלה על ' + fmtMoney(got) + '?', it.clientName || '', [{ label: 'כן, להוציא חשבונית', pri: true, run: () => morningRetryReceipt(part.id) }, { label: 'לא עכשיו', run: () => {} }]); } catch (_) {} }, 1600);
     } });
 };
 // v615: a pending income that doesn't belong to this month — move it or stop carrying it
@@ -2331,9 +2331,9 @@ function renderIncome() {
              '<button class="btn btn-sm" onclick="morningCancelReceipt(\'' + i.id + '\')" title="בטל קבלה והוצא חדשה (זיכוי ב-Morning)" style="background:rgba(220,60,60,0.16);border:1px solid rgba(220,60,60,0.4);border-radius:8px;color:#ff8b6b;font-weight:800;padding:4px 8px;font-size:11.5px;white-space:nowrap">✕</button>';
     }
     if (i.morningError) {
-      return '<button class="btn btn-sm" onclick="morningRetryReceipt(\'' + i.id + '\')" title="נסה שוב ליצור קבלה" style="background:rgba(220,60,60,0.18);border:1px dashed rgba(220,60,60,0.5);border-radius:8px;color:#ff8b6b;font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap">⚠️ נסה קבלה</button>';
+      return '<button class="btn btn-sm" onclick="morningRetryReceipt(\'' + i.id + '\')" title="נסה שוב ליצור חשבונית מס קבלה" style="background:rgba(220,60,60,0.18);border:1px dashed rgba(220,60,60,0.5);border-radius:8px;color:#ff8b6b;font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap">⚠️ נסה קבלה</button>';
     }
-    return '<button class="btn btn-sm" onclick="morningRetryReceipt(\'' + i.id + '\')" title="צור קבלה ב-Morning" style="background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--text-muted);font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap">🧾 צור קבלה</button>';
+    return '<button class="btn btn-sm" onclick="morningRetryReceipt(\'' + i.id + '\')" title="צור חשבונית מס קבלה ב-Morning" style="background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--text-muted);font-weight:700;padding:4px 10px;font-size:11.5px;white-space:nowrap">🧾 צור קבלה</button>';
   }
 
   // Payment-request pill. On unpaid rows we offer to issue one. On
@@ -2437,9 +2437,9 @@ function _incomeMorningBtns(i) {
            + '<button class="row-morning-btn wa" onclick="morningShareWA(\'' + idEsc + '\', \'receipt\')" title="שלח קבלה בוואטסאפ">וואטסאפ</button>'
            + '<button class="row-morning-btn danger" onclick="morningCancelReceipt(\'' + idEsc + '\')" title="בטל קבלה (זיכוי ב-Morning)">✕</button>';
     } else if (i.morningError) {
-      out += '<button class="row-morning-btn warn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="נסה שוב ליצור קבלה"><svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-alert-circle"/></svg> נסה קבלה</button>';
+      out += '<button class="row-morning-btn warn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="נסה שוב ליצור חשבונית מס קבלה"><svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-alert-circle"/></svg> נסה קבלה</button>';
     } else {
-      out += '<button class="row-morning-btn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="צור קבלה ב-Morning"><svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-doc-signed"/></svg> צור קבלה</button>';
+      out += '<button class="row-morning-btn" onclick="morningRetryReceipt(\'' + idEsc + '\')" title="צור חשבונית מס קבלה ב-Morning"><svg viewBox="0 0 24 24" style="width:12px;height:12px;vertical-align:-2px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#ic-doc-signed"/></svg> צור קבלה</button>';
     }
   }
 
@@ -21488,6 +21488,13 @@ window.MORNING_BASE     = 'https://api.greeninvoice.co.il/api/v1';
 // rejects for a regular payment. 400 is the right code for עוסק
 // פטור receiving a payment. Configurable via window.MORNING_DOC_TYPE.
 window.MORNING_DOC_TYPE = 400;
+// v654 (10.11.2026): Elior is now עוסק מורשה — every payment gets a
+// חשבונית מס/קבלה (320) instead of a קבלה (400). The amount he records is
+// what the client actually paid, so the line is marked "VAT included"
+// (vatType 1) and the payment equals it: the document closes in full and
+// Morning splits out the VAT. Old receipts (400) stay as they were.
+window.MORNING_DOC_TYPE = 320;
+window.MORNING_DOC_NAME = 'חשבונית מס קבלה';
 
 function morningCreds() {
   return {
@@ -21838,14 +21845,13 @@ async function morningCreateReceiptFor(income) {
     description: income.description || 'תשלום',
     lang:     'he',
     currency: 'ILS',
-    vatType:  0,    // 0 = exempt (matches עוסק פטור default)
     client:   _morningBuildClient(income),
     income: [{
       description: income.description || 'שירות',
       quantity:    1,
       price:       parseFloat(income.amount) || 0,
       currency:    'ILS',
-      vatType:     0
+      vatType:     window.MORNING_DOC_TYPE === 320 ? 1 : 0   // 1 = the price already includes VAT
     }],
     payment: [{
       // Prefer the exact moment the user tapped "סמן כשולם"
@@ -21884,9 +21890,10 @@ window.morningIssueReceiptForIncome = async function(incomeId) {
   if (res && res.id) {
     ff.morningDocId     = res.id;
     ff.morningDocNumber = res.number;
+    ff.morningDocType   = window.MORNING_DOC_TYPE;
     ff.morningDocUrl    = res.url && (res.url.he || res.url.en || (typeof res.url === 'string' ? res.url : ''));
     save('income', fresh);
-    toast('🧾 קבלה ' + (res.number || '') + ' נוצרה ב-Morning');
+    toast('🧾 ' + window.MORNING_DOC_NAME + ' ' + (res.number || '') + ' נוצרה ב-Morning');
     if (typeof renderIncome === 'function') renderIncome();
     try { receiptSendAsk(incomeId); } catch (_) {}
   } else {
@@ -21901,6 +21908,8 @@ window.morningIssueReceiptForIncome = async function(incomeId) {
 };
 function _morningErrorMessage(res) {
   if (!res) return 'תשובה ריקה';
+  // v654: Morning still has the business as עוסק פטור → 320 is refused; say exactly what to change
+  try { const d0 = res && res.detail; const code = d0 && (d0.errorCode || d0.code); if (window.MORNING_DOC_TYPE === 320 && (code === 2403 || /פטור|מורשה|2403/.test(String(d0 && d0.errorMessage || '')))) return 'ב-Morning העסק עדיין מוגדר עוסק פטור — צריך לעדכן שם ל"עוסק מורשה" (הגדרות ← פרטי העסק) ואז לנסות שוב'; } catch (_) {}
   // Persistent auth fail after token refresh — means the API key
   // can fetch a token but can't create documents. The fix is on
   // Morning's side: the user must grant "documents:write" scope
@@ -22026,7 +22035,7 @@ window._confirmMorningReceiptModal = async function() {
     return;
   }
   if (!(window.morningConnected && window.morningConnected())) { spentSheet('Morning לא מחובר', 'צריך לחבר את Morning במכשיר הזה כדי ליצור קבלות', [{ label: 'לחבר עכשיו', pri: true, run: () => { try { openNotifSettings(); } catch (_) {} } }]); return; }
-  toast('יוצר קבלה ב-Morning…');
+  toast('יוצר ' + window.MORNING_DOC_NAME + ' ב-Morning…');
   _rcTrail('send', 'mc=' + !!(window.morningConnected && window.morningConnected()) + ' ws=' + !!localStorage.getItem('wa_send_secret'));
   // never hang silently: give Morning 25 seconds, then explain
   const res = await Promise.race([
@@ -22040,9 +22049,10 @@ window._confirmMorningReceiptModal = async function() {
   if (res && res.id) {
     ff.morningDocId     = res.id;
     ff.morningDocNumber = res.number;
+    ff.morningDocType   = window.MORNING_DOC_TYPE;
     ff.morningDocUrl    = res.url && (res.url.he || res.url.en || (typeof res.url === 'string' ? res.url : ''));
     save('income', fresh);
-    toast('🧾 קבלה ' + (res.number || '') + ' נוצרה ב-Morning');
+    toast('🧾 ' + window.MORNING_DOC_NAME + ' ' + (res.number || '') + ' נוצרה ב-Morning');
     if (window.haptic) window.haptic.success();
     if (typeof renderIncome === 'function') renderIncome();
     try { receiptSendAsk(id); } catch (_) {}
@@ -22052,7 +22062,7 @@ window._confirmMorningReceiptModal = async function() {
     save('income', fresh);
     // v608: a sheet that stays, with the exact reason and the raw details to copy
     const raw = (() => { try { return JSON.stringify({ e: res && res.error, s: res && res.status, d: res && res.detail }).slice(0, 600); } catch (_) { return String(res); } })();
-    spentSheet('הקבלה לא נוצרה', 'Morning: ' + msg, [
+    spentSheet(window.MORNING_DOC_NAME + ' לא נוצרה', 'Morning: ' + msg, [
       { label: 'לנסות שוב', pri: true, run: () => morningRetryReceipt(id) },
       ...(res && res.error === 'no_token' ? [{ label: morningCreds().id ? 'לבדוק את מפתחות Morning' : 'להזין מפתחות Morning', run: () => { try { openNotifSettings(); setTimeout(() => { const mb = document.getElementById('morning-box'); if (mb) { mb.open = true; mb.scrollIntoView({ block: 'center', behavior: 'smooth' }); } }, 350); } catch (_) {} } }] : []),
       { label: 'העתקת הפרטים לשליחה', run: async () => { try { await navigator.clipboard.writeText('Morning receipt error · v' + ((document.querySelector('.ver-badge') || {}).textContent || '') + '\n' + msg + '\n' + raw); toast('הועתק — שלח לי את זה'); } catch (_) {} } }]);
@@ -22085,7 +22095,7 @@ window.morningShareWA = function(id, kind) {
   const first = (it.client || '').trim().split(/\s+/)[0];
   const msg = isPr
     ? 'שלום' + (first ? ' ' + first : '') + ',\nמצורפת דרישת תשלום' + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + (it.description ? ' עבור ' + it.description : '') + ':\n' + url + '\n\nתודה,\nאליאור רביד · Ravid Studio'
-    : 'תודה על התשלום! מצורפת הקבלה' + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + url + '\n\nאליאור רביד · Ravid Studio';
+    : 'תודה על התשלום! מצורפת ' + (Number(it.morningDocType) === 320 ? 'חשבונית מס/קבלה' : 'הקבלה') + (num ? ' #' + num : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + url + '\n\nאליאור רביד · Ravid Studio';
   window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
 };
 
@@ -22093,7 +22103,7 @@ window.morningShareWA = function(id, kind) {
 // Sends straight from the business number (worker); if WhatsApp's 24h rule
 // blocks that, or there's no send code, the chat opens with the message ready.
 function _rcptMsg(it, who) {
-  return 'תודה על התשלום! מצורפת הקבלה' + (it.morningDocNumber ? ' #' + it.morningDocNumber : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + (it.morningDocUrl || '');
+  return 'תודה על התשלום! מצורפת ' + (Number(it.morningDocType) === 320 ? 'חשבונית מס/קבלה' : 'הקבלה') + (it.morningDocNumber ? ' #' + it.morningDocNumber : '') + ' על סך ' + _ilsFmt(Number(it.amount) || 0) + ':\n' + (it.morningDocUrl || '');
 }
 async function _rcptSendTo(id, phone, name, who) {
   const it = (load('income') || []).find(x => String(x.id) === String(id)); if (!it || !it.morningDocUrl) { toast('אין קישור לקבלה'); return; }
@@ -22135,6 +22145,17 @@ window.receiptSendAsk = function(id) {
 // fresh receipt with the correct details.
 async function morningCreateCreditFor(income) {
   const amt = parseFloat(income.amount) || 0;
+  // v654: a חשבונית מס/קבלה is cancelled with a חשבונית זיכוי (330) linked to it
+  if (Number(income.morningDocType) === 320) {
+    return _morningPostDocWithRetry({
+      type: 330, lang: 'he', currency: 'ILS',
+      description: 'זיכוי לחשבונית ' + (income.morningDocNumber ? '#' + income.morningDocNumber : ''),
+      client: _morningBuildClient(income),
+      income: [{ description: 'זיכוי: ' + (income.description || ''), quantity: 1, price: amt, currency: 'ILS', vatType: 1 }],
+      linkedDocumentIds: income.morningDocId ? [income.morningDocId] : undefined,
+      linkType: income.morningDocId ? 1 : undefined
+    });
+  }
   // For עוסק פטור, type 405 (קבלה זיכוי) is rejected by Morning.
   // The accepted-in-Israel pattern: a second קבלה (type 400) with
   // NEGATIVE amount, referencing the original via
@@ -22171,7 +22192,7 @@ window.morningCancelReceipt = async function(incomeId) {
   const it = all.find(x => x.id === incomeId);
   if (!it || !it.morningDocId) { toast('אין קבלה לבטל'); return; }
   const num = it.morningDocNumber ? '#' + it.morningDocNumber : '';
-  if (!confirm('לבטל את קבלה ' + num + ' ולהוציא קבלת זיכוי ב-Morning?\n(אחר כך אפשר ליצור קבלה חדשה עם פרטים מתוקנים)')) return;
+  if (!confirm(Number(it.morningDocType) === 320 ? 'לבטל את חשבונית מס/קבלה ' + num + ' ולהוציא חשבונית זיכוי ב-Morning?\n(אחר כך אפשר להוציא חשבונית חדשה עם פרטים מתוקנים)' : 'לבטל את קבלה ' + num + ' ולהוציא קבלת זיכוי ב-Morning?\n(אחר כך אפשר ליצור קבלה חדשה עם פרטים מתוקנים)')) return;
   toast('מבטל קבלה ב-Morning…');
   const res = await morningCreateCreditFor(it);
   const fresh = load('income');
@@ -22194,7 +22215,7 @@ window.morningCancelReceipt = async function(incomeId) {
     delete ff.morningDocUrl;
     delete ff.morningError;
     save('income', fresh);
-    toast('✓ בוטל (זיכוי #' + (res.number || '') + ') — עכשיו אפשר ליצור קבלה חדשה');
+    toast('✓ בוטל (זיכוי #' + (res.number || '') + ') — עכשיו אפשר להוציא ' + window.MORNING_DOC_NAME + ' חדשה');
     if (window.haptic) window.haptic.success();
     if (typeof renderIncome === 'function') renderIncome();
   } else {
