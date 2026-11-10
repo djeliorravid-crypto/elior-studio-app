@@ -78,7 +78,7 @@ jobs:
       - name: Morning document types + VAT codes (from the public greeninvoice-mcp package)
         run: |
           mkdir -p /tmp/pk && cd /tmp/pk && npm pack greeninvoice-mcp >/dev/null 2>&1 && tar xzf greeninvoice-mcp-*.tgz
-          grep -rhn -iE "305|320|330|400|405|vatType|vat_type|includes VAT|exempt" package/dist | grep -viE "status|http|errorCode|ms|width" | head -60 > /tmp/snip
+          f=$(grep -rl "PAYMENT_REQUIRED_TYPES" package/dist | head -1); sed -n 55,110p "$f" > /tmp/snip; grep -rhn -iE "vatType.{0,160}" package/dist | grep -iE "includ|exempt|0 =|1 =|2 =|0=|1=|2=" | head -12 >> /tmp/snip
           split -l 6 /tmp/snip /tmp/sn_; i=0; for x in /tmp/sn_*; do i=$((i+1)); echo "::notice::DOC$i $(tr '\n' '~' < $x | head -c 900)"; done
 
       - name: Report
