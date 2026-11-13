@@ -1282,7 +1282,7 @@ function renderProfiles() {
           </div>
         </div>
         <div class="pc-name">${c.name}</div>
-        <div class="pc-type">${c.type}</div>
+        ${c.type ? `<div class="pc-type">${c.type}</div>` : ''}
         <div class="pc-contact">
           ${c.phone ? '📞 ' + c.phone : ''}
           ${c.phone && c.email ? '<br>' : ''}
@@ -16648,7 +16648,7 @@ function _ctrCardHtml(c){
     '<div class="ctr-actions">' +
       primaryAction +
       (signed ? '' : '<button class="btn btn-ghost btn-sm" onclick="openContractEditor(\'' + c.id + '\')"><svg class="icon"><use href="#ic-edit"/></svg> ערוך</button>') +
-      '<button class="btn btn-ghost btn-sm" onclick="deleteContract(\'' + c.id + '\')" style="color:#dc2626"><svg class="icon"><use href="#ic-trash"/></svg> מחק</button>' +
+      '<button class="btn btn-ghost btn-sm ctr-del" onclick="deleteContract(\'' + c.id + '\')" style="color:#a8441f"><svg class="icon"><use href="#ic-trash"/></svg> מחק</button>' +
     '</div>' +
   '</div>';
 }

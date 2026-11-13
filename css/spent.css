@@ -2157,3 +2157,58 @@ html.mzi-on::before { opacity: 0 !important; }
 .sm-rest summary::-webkit-details-marker { display: none; }
 .sm-rest summary::after { content: " ›"; }
 .sm-rest[open] summary::after { content: " ⌄"; }
+
+/* v657 — design pass: one header language, readable greys, real tap targets, press feedback */
+/* secondary pages get the same header as כסף / הפקות: a big title on the right, the "new" button beside it */
+html[data-skin="spent"]:not(.desk) #page-students > .page-header,
+html[data-skin="spent"]:not(.desk) #page-installments > .page-header,
+html[data-skin="spent"]:not(.desk) #page-proposals > .page-header,
+html[data-skin="spent"]:not(.desk) #page-contracts > .page-header,
+html[data-skin="spent"]:not(.desk) #page-profiles > .page-header,
+html[data-skin="spent"]:not(.desk) #page-workshops > .page-header {
+  display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important;
+  gap: 10px !important; flex-wrap: nowrap !important; text-align: right !important; margin: 46px 2px 16px !important; padding: 0 !important; }
+html[data-skin="spent"]:not(.desk) #page-students > .page-header h2,
+html[data-skin="spent"]:not(.desk) #page-installments > .page-header h2,
+html[data-skin="spent"]:not(.desk) #page-proposals > .page-header h2,
+html[data-skin="spent"]:not(.desk) #page-contracts > .page-header h2,
+html[data-skin="spent"]:not(.desk) #page-profiles > .page-header h2,
+html[data-skin="spent"]:not(.desk) #page-workshops > .page-header h2 {
+  font-size: 27px !important; font-weight: 700 !important; letter-spacing: -.01em !important; text-align: right !important; margin: 0 !important; color: #161c45 !important; justify-content: flex-start !important; white-space: nowrap; }
+html[data-skin="spent"]:not(.desk) #page-students > .page-header .btn-primary,
+html[data-skin="spent"]:not(.desk) #page-installments > .page-header .btn-primary,
+html[data-skin="spent"]:not(.desk) #page-proposals > .page-header .btn-primary,
+html[data-skin="spent"]:not(.desk) #page-contracts > .page-header .btn-primary,
+html[data-skin="spent"]:not(.desk) #page-profiles > .page-header .btn-primary,
+html[data-skin="spent"]:not(.desk) #page-workshops > .page-header .btn-primary {
+  margin: 0 !important; min-height: 44px !important; border-radius: 999px !important; padding: 0 16px !important; font-size: 14px !important; font-weight: 600 !important; box-shadow: 0 6px 16px rgba(22,28,69,.2) !important; }
+/* summary numbers: two calm columns instead of a tall stack */
+html[data-skin="spent"]:not(.desk) #students-summary { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+/* readable secondary text (the lightest greys were below comfortable contrast) */
+html[data-skin="spent"] { --sp-muted: #6f7596; --fz-mute: #6f7596; }
+.rm-m small, .wd-ex-m small, .wm-m small, .wd-line small, .fz-yr-t, .wk-left, .rm-tmr, .wd-k, .wd-per .ps, .wd-foot { color: #7a80a0 !important; }
+.fz-date { color: #5d6388 !important; }
+/* everything you can touch is at least 44px tall and answers the finger */
+html[data-skin="spent"] .btn, html[data-skin="spent"] .ss-btn, html[data-skin="spent"] .gp-btn, html[data-skin="spent"] .spf-chip, html[data-skin="spent"] .st-row-btn { min-height: 44px; }
+html[data-skin="spent"] button, html[data-skin="spent"] .fz-row, html[data-skin="spent"] .rm-row, html[data-skin="spent"] .sm-tile, html[data-skin="spent"] a[onclick] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+html[data-skin="spent"] .btn, html[data-skin="spent"] .ss-btn, html[data-skin="spent"] .sm-tile, html[data-skin="spent"] .gp-btn, html[data-skin="spent"] .spf-chip, html[data-skin="spent"] .spf-opt, html[data-skin="spent"] .fz-go, html[data-skin="spent"] .oz-nav button, html[data-skin="spent"] .fz-tic button, html[data-skin="spent"] .fz-fab { transition: transform .12s ease, opacity .12s ease; }
+html[data-skin="spent"] .btn:active, html[data-skin="spent"] .ss-btn:active, html[data-skin="spent"] .sm-tile:active, html[data-skin="spent"] .gp-btn:active, html[data-skin="spent"] .spf-chip:active, html[data-skin="spent"] .spf-opt:active, html[data-skin="spent"] .fz-go:active, html[data-skin="spent"] .oz-nav button:active, html[data-skin="spent"] .fz-tic button:active, html[data-skin="spent"] .fz-fab:active { transform: scale(.96); }
+html[data-skin="spent"] .fz-row:active, html[data-skin="spent"] .rm-row:active, html[data-skin="spent"] .wd-ex:active, html[data-skin="spent"] .wd-line:active { opacity: .7; }
+/* small round ticks and "⋯" get a bigger invisible touch area */
+.rm-tk, .wd-del { position: relative; }
+.rm-tk::after, .wd-del::after { content: ''; position: absolute; inset: -10px; }
+/* keyboard / switch-control focus is visible */
+html[data-skin="spent"] button:focus-visible, html[data-skin="spent"] a:focus-visible, html[data-skin="spent"] input:focus-visible { outline: 2px solid #3a4690; outline-offset: 2px; }
+/* inputs never trigger iOS zoom */
+html[data-skin="spent"] input, html[data-skin="spent"] textarea, html[data-skin="spent"] select { font-size: max(16px, 1em); }
+/* people who turn motion down get a still app */
+@media (prefers-reduced-motion: reduce) { html[data-skin="spent"] *, html[data-skin="spent"] *::before, html[data-skin="spent"] *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+/* destructive actions stay quiet until you mean them */
+html[data-skin="spent"] #page-contracts .btn-danger, html[data-skin="spent"] #page-proposals .btn-danger { background: none !important; box-shadow: none !important; color: #a8441f !important; }
+
+html[data-skin="spent"]:not(.desk) #page-students > .page-header > div:first-child, html[data-skin="spent"]:not(.desk) #page-installments > .page-header > div:first-child, html[data-skin="spent"]:not(.desk) #page-proposals > .page-header > div:first-child,
+html[data-skin="spent"]:not(.desk) #page-contracts > .page-header > div:first-child, html[data-skin="spent"]:not(.desk) #page-profiles > .page-header > div:first-child, html[data-skin="spent"]:not(.desk) #page-workshops > .page-header > div:first-child { flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; }
+html[data-skin="spent"]:not(.desk) .page-header .btn-primary { flex: 0 0 auto !important; width: auto !important; white-space: nowrap; }
+html[data-skin="spent"] .ctr-del { background: none !important; box-shadow: none !important; min-height: 40px; width: auto !important; flex: 0 0 auto !important; margin-inline-start: auto; font-weight: 500 !important; }
+html[data-skin="spent"]:not(.desk) #page-profiles > .page-header { flex-wrap: wrap !important; }
+html[data-skin="spent"]:not(.desk) #page-profiles > .page-header > div:first-child { flex: 1 1 100% !important; }
