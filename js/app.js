@@ -11019,12 +11019,12 @@ window.rmAct = async function(id) {
 };
 window.rmOpen = function(prefill) {
   let ov = document.getElementById('fz-rem'); if (!ov) { ov = document.createElement('div'); ov.id = 'fz-rem'; ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); }; document.body.appendChild(ov); }
-  ov.innerHTML = '<div class="rm-box"><div class="sm-grab"></div><div class="rm-t">מה לזכור?</div>'
+  ov.innerHTML = '<div class="rm-box"><div class="sm-grab"></div><div class="rm-t">משימה חדשה</div>'
     + '<textarea id="rm-in" rows="2" placeholder="מחר להתקשר לרן ב-11 · לשלוח לדנה את המיקס"></textarea>'
     + '<div class="rm-when" id="rm-when"></div>'
     + '<div class="rm-kinds">' + ['call', 'msg', 'send', 'todo'].map(k => '<button data-k="' + k + '">' + _rmIcon(k) + '<span>' + _RM_KINDS[k].t + '</span></button>').join('') + '</div>'
     + '<div class="rm-chips"><button data-w="מחר">מחר</button><button data-w="מחר בבוקר">מחר בבוקר</button><button data-w="בערב">בערב</button><button data-w="בעוד שבוע">בעוד שבוע</button></div>'
-    + '<button class="rm-save">לזכור</button></div>';
+    + '<button class="rm-save">להוסיף</button></div>';
   const inp = ov.querySelector('#rm-in'), when = ov.querySelector('#rm-when');
   window._rmKindSel = null;
   const upd = () => { const p = rmParse(inp.value); const k = window._rmKindSel || _rmKind(p.text), w = _rmWho(p.text);
@@ -11086,7 +11086,8 @@ window.spRememberHtml = function() {
   return '<div class="fz-lbl rm-lbl"><span>לזכור' + (open.length ? '<em>' + open.length + '</em>' : '') + '</span></div>'
     + '<div class="fz-card rm-card">' + (list.length ? list.map(row).join('')
         + (more > 1 ? '<button class="rm-more" onclick="window._rmAll=!window._rmAll;spLobbyRender()">' + (showAll ? 'להציג פחות' : 'עוד ' + more + ' ›') + '</button>' : '')
-      : '<button class="rm-empty" onclick="' + add + '"><span>' + FZ.plus + '</span>' + (doneToday.length ? 'הכל סגור להיום. משהו נוסף לזכור?' : 'מה צריך לזכור? כתוב כמו שאתה אומר — "מחר להתקשר לרן ב-11"') + '</button>')
+      : '<div class="rm-none">' + (doneToday.length ? 'הכל סגור להיום.' : 'אין משימות להיום.') + '</div>')
+    + '<div class="wd-new wk-new"><input id="rm-new" placeholder="משימה להיום…" enterkeyhint="done" onkeydown="if(event.key===\'Enter\'){event.preventDefault();rmQuick()}"/><button onclick="rmQuick()" aria-label="להוסיף">' + FZ.plus + '</button></div>'
     + (tomorrow.length ? '<div class="rm-tmr"><span>מחר</span>' + tomorrow.slice(0, 2).map(t => _escape(t.text)).join(' · ') + (tomorrow.length > 2 ? ' ועוד ' + (tomorrow.length - 2) : '') + '</div>' : '')
     + '</div>';
 };
@@ -11144,7 +11145,7 @@ window.spEveningHtml = function(items, isDone) {
   if (paid.length) parts.push('נכנס כסף מ' + (paid.length <= 2 ? paid.join(' ומ') : paid.length + ' לקוחות'));
   const line = parts.length ? parts.join(', ') + '.' : 'יום שקט. גם זה חשוב.';
   return '<div class="fz-eve"><div class="k">סיכום היום</div><div class="t">' + _escape(line) + '</div><div class="s">' + (now.getHours() >= 22 ? 'לילה טוב. מחר ממשיכים.' : 'ערב טוב. מגיע לך לנוח.') + '</div>'
-    + '<button class="eve-rm" onclick="rmOpen(\'מחר \')">משהו לזכור למחר?</button></div>';
+    + '<button class="eve-rm" onclick="rmOpen(\'מחר \')">משימה למחר?</button></div>';
 };
 const _SP_MOTTO = {
   am: ['יום חדש, דף חלק. בוא נעשה ממנו משהו טוב.', 'הצעד הראשון של הבוקר קובע את הקצב של כל היום.', 'כל שיר גדול התחיל בבוקר רגיל כמו זה.', 'תתחיל מהדבר הקטן. השאר כבר יבוא.', 'היום זה יום טוב לסגור משהו שמחכה.'],
@@ -11300,9 +11301,34 @@ window.wkMenu = function(id) { const t = _wkList().find(y => y.id === id); if (!
   const upd = fn => { const L = load('week_tasks') || [], x = L.find(y => y.id === id); if (!x) return; fn(x); x.updatedAt = new Date().toISOString(); save('week_tasks', L); _wkRe(); };
   spentSheet(t.text, 'משימה לשבוע', [
     { label: t.done ? 'להחזיר לפתוחות' : 'בוצע', pri: true, run: () => wkTick(id) },
-    { label: 'לעשות את זה היום (להעביר ל״לזכור״)', run: () => { const D = load('daily_tasks') || []; D.push({ id: genId(), date: dailyDateStr(), text: t.text, done: false, createdAt: new Date().toISOString(), src: 'rem', kind: _rmKind(t.text) }); save('daily_tasks', D); upd(x => { x.deleted = true; }); toast('עבר ל״לזכור״ של היום'); } },
+    { label: 'לעשות את זה היום', run: () => { const D = load('daily_tasks') || []; D.push({ id: genId(), date: dailyDateStr(), text: t.text, done: false, createdAt: new Date().toISOString(), src: 'rem', kind: _rmKind(t.text) }); save('daily_tasks', D); upd(x => { x.deleted = true; }); toast('עבר למשימות של היום'); } },
     { label: 'לדחות לשבוע הבא', run: () => upd(x => { const d = new Date(_wkKey() + 'T12:00'); d.setDate(d.getDate() + 7); x.week = dailyDateStr(d); x.done = false; }) },
     { label: 'למחוק', danger: true, run: () => upd(x => { x.deleted = true; }) }]);
+};
+// v659: one "המשימות" block with two tabs — היום / השבוע — instead of two stacked cards
+window.rmQuick = function() { const el = document.getElementById('rm-new'), v = el && el.value.trim(); if (!v) { if (el) el.focus(); return; }
+  const p = rmParse(v); if (!p.text) return;
+  const task = { id: genId(), date: p.date, text: p.text, done: false, createdAt: new Date().toISOString(), src: 'rem' };
+  const who = _rmWho(p.text); task.kind = _rmKind(p.text); if (who) { task.who = who.name; if (who.phone) task.phone = who.phone; }
+  if (p.at && p.at > new Date()) task.remindAt = p.at.toISOString();
+  const all = load('daily_tasks') || []; all.push(task); save('daily_tasks', all);
+  try { if (task.remindAt) _scheduleDailyTaskNotif(task); } catch (_) {}
+  try { window.haptic.light(); } catch (_) {}
+  if (p.date !== dailyDateStr()) toast('נוסף · ' + _rmWhen(p));
+  _wkRe(); const i = document.getElementById('rm-new'); if (i) i.focus({ preventScroll: true }); };
+window.spTasksTab = function(t) { try { localStorage.setItem('sp_tasks_tab', t); } catch (_) {} try { window.haptic.light(); } catch (_) {} _wkRe(); };
+window.spTasksHtml = function() {
+  let tab = 'day'; try { tab = localStorage.getItem('sp_tasks_tab') === 'week' ? 'week' : 'day'; } catch (_) {}
+  const td = dailyDateStr(), wk = _wkKey();
+  const dayN = (load('daily_tasks') || []).filter(t => t && !t.deleted && !t.done && t.date <= td).length;
+  const W = _wkList().filter(t => t.week === wk || (!t.done && t.week < wk)), wOpen = W.filter(t => !t.done).length;
+  const cut = h => h.slice(h.indexOf('<div class="fz-card'));
+  const end = new Date(wk + 'T12:00'); end.setDate(end.getDate() + 6); const left = Math.round((end - new Date(td + 'T12:00')) / 864e5);
+  return '<div class="tk-head"><span class="tk-title">' + (tab === 'day' ? 'המשימות של היום' : 'המשימות של השבוע') + '</span>'
+    + '<span class="tk-sub">' + (tab === 'day' ? (dayN ? dayN + ' פתוחות' : 'הכל סגור') : (left <= 0 ? 'היום האחרון בשבוע' : left === 1 ? 'עוד יום לשבוע' : 'עוד ' + left + ' ימים לשבוע')) + '</span></div>'
+    + '<div class="tk-seg"><button class="' + (tab === 'day' ? 'on' : '') + '" onclick="spTasksTab(\'day\')">היום' + (dayN ? '<i>' + dayN + '</i>' : '') + '</button>'
+    + '<button class="' + (tab === 'week' ? 'on' : '') + '" onclick="spTasksTab(\'week\')">השבוע' + (wOpen ? '<i>' + wOpen + '</i>' : '') + '</button></div>'
+    + '<div class="tk-body">' + cut(tab === 'day' ? spRememberHtml() : spWeekHtml()) + '</div>';
 };
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
@@ -11380,8 +11406,7 @@ function spLobbyRender() {
   + (next ? '<div class="fz-focus" onclick="' + (next.go || '') + '"><div class="k">האירוע הבא בלו״ז</div><div class="t">' + _escape(next.t) + '</div><div class="s">' + _escape(next.s) + '</div>'
       + (next.fc ? '<span class="fz-go" onclick="event.stopPropagation();spTick(\'' + next.id + '\');fcAskYes(\'' + next.fc + '\')">כן, ירד</span>' : '<span class="fz-go">' + (next.cta || 'פתח') + '</span><span class="fz-skip" onclick="event.stopPropagation();spTick(\'' + next.id + '\')">סיימתי</span>') + '</div>' : '')
   + afterHtml
-  + spRememberHtml()
-  + spWeekHtml()
+  + spTasksHtml()
   // v621: no "עוד היום" list — home is the calendar, what to remember, and WhatsApp up top
   + spGoalHtml() + spEveningHtml(items, isDone)
   + '<button class="fz-goal" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה ›</button>'
@@ -11582,7 +11607,7 @@ window.freeTimesOpen = function() {
 window.spLobbyAdd = function() {
   // v656: the one "+" on the home screen — what you most often add, first
   spentSheet('מה להוסיף?', '', [
-    { label: 'לזכור משהו', pri: true, run: () => rmOpen(new Date().getHours() >= 17 ? 'מחר ' : '') },
+    { label: 'משימה להיום', pri: true, run: () => rmOpen(new Date().getHours() >= 17 ? 'מחר ' : '') },
     { label: 'משימה לשבוע', run: () => wkAddOpen() },
     { label: 'הכנסה', run: () => quickAction('income') },
     { label: 'הוצאה', run: () => quickAction('expense') },
@@ -11609,7 +11634,7 @@ function _focusItems() {
     out.push({ kind: 'ev', id: 'ev_' + e.time + e.t, k: 'בלו״ז', t: e.t, s: d <= 0 ? 'התחיל ב־' + e.time : d < 60 ? 'בעוד ' + d + ' דקות · ' + e.time : 'בעוד שעה · ' + e.time }); });
   (load('daily_tasks') || []).filter(t => t && !t.deleted && !t.done && t.date <= td)
     .sort((a, b) => ((a.date < td ? 0 : 1) - (b.date < td ? 0 : 1)) || String(a.remindAt || '9').localeCompare(String(b.remindAt || '9')))
-    .forEach(t => { const k = t.kind || _rmKind(t.text); out.push({ kind: 'rm', id: t.id, k: t.date < td ? 'מחכה מאתמול' : 'לזכור היום', t: t.text, s: t.who || '', act: k === 'call' ? 'להתקשר' : (k === 'msg' || k === 'send') ? 'לפתוח וואטסאפ' : '' }); });
+    .forEach(t => { const k = t.kind || _rmKind(t.text); out.push({ kind: 'rm', id: t.id, k: t.date < td ? 'מחכה מאתמול' : 'משימה להיום', t: t.text, s: t.who || '', act: k === 'call' ? 'להתקשר' : (k === 'msg' || k === 'send') ? 'לפתוח וואטסאפ' : '' }); });
   const wk = _wkKey(); _wkList().filter(t => !t.done && t.week <= wk).forEach(t => out.push({ kind: 'wk', id: t.id, k: 'משימה לשבוע', t: t.text, s: '' }));
   return out;
 }

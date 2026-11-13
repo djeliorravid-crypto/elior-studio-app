@@ -2219,3 +2219,25 @@ html[data-skin="spent"]:not(.desk) #page-profiles > .page-header > div:first-chi
 .oz-nav button.oz-plus { width: 50px; height: 50px; flex: 0 0 50px; padding: 0 !important; border-radius: 25px !important; justify-content: center; color: #fff !important; background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41) !important; box-shadow: 0 6px 14px rgba(22,28,69,.28); }
 .oz-nav button.oz-plus svg { width: 22px; height: 22px; }
 #sp-lobby { padding-bottom: 110px; }
+
+/* v659 — one tasks block: title, two tabs (היום / השבוע), one card */
+.tk-head { display: flex; align-items: baseline; justify-content: space-between; margin: 26px 6px 10px; }
+.tk-title { font-size: 19px; font-weight: 700; color: #161c45; letter-spacing: -.01em; }
+.tk-sub { font-size: 12.5px; color: #7a80a0; font-weight: 500; }
+.tk-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: rgba(255,255,255,.65); border-radius: 999px; padding: 4px; margin-bottom: 10px; }
+.tk-seg button { border: none; background: none; border-radius: 999px; min-height: 40px; font-family: inherit; font-size: 15px; font-weight: 600; color: #6f7596; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: background .2s, color .2s; }
+.tk-seg button.on { background: #fff; color: #161c45; box-shadow: 0 2px 8px rgba(22,28,69,.08); }
+.tk-seg i { font-style: normal; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #e6e9f5; color: #252e6b; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.tk-seg button.on i { background: #252e6b; color: #fff; }
+.tk-body .fz-card { padding: 4px 16px 2px !important; margin: 0 !important; }
+.tk-body .rm-row { padding: 13px 0; }
+.tk-body .rm-m b, .tk-body .wk-row .rm-m b { font-size: 16px !important; font-weight: 500; white-space: normal !important; line-height: 1.35; }
+.rm-none { text-align: center; color: #7a80a0; font-size: 14.5px; padding: 18px 0 14px; }
+.tk-body .wk-new { border-top: 1px solid #eef0f6; padding: 10px 0 12px; }
+.tk-body .fz-card > .wk-new:first-child, .tk-body .rm-none + .wk-new { border-top: none; }
+.tk-body .wk-new input { font-size: 16px; }
+.tk-body .wk-sum { padding: 10px 2px 2px; font-size: 13px; }
+.tk-body .rm-tmr { border-top: 1px solid #eef0f6; }
+/* calmer spacing between the home blocks */
+#sp-lobby .fz-focus { margin-bottom: 0; }
+#sp-lobby .fz-goalc { margin-top: 18px; }
