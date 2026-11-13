@@ -11316,19 +11316,16 @@ window.rmQuick = function() { const el = document.getElementById('rm-new'), v = 
   try { window.haptic.light(); } catch (_) {}
   if (p.date !== dailyDateStr()) toast('נוסף · ' + _rmWhen(p));
   _wkRe(); const i = document.getElementById('rm-new'); if (i) i.focus({ preventScroll: true }); };
-window.spTasksTab = function(t) { try { localStorage.setItem('sp_tasks_tab', t); } catch (_) {} try { window.haptic.light(); } catch (_) {} _wkRe(); };
+// v660: both lists always on screen, one under the other — same header and card language for the two
 window.spTasksHtml = function() {
-  let tab = 'day'; try { tab = localStorage.getItem('sp_tasks_tab') === 'week' ? 'week' : 'day'; } catch (_) {}
   const td = dailyDateStr(), wk = _wkKey();
   const dayN = (load('daily_tasks') || []).filter(t => t && !t.deleted && !t.done && t.date <= td).length;
-  const W = _wkList().filter(t => t.week === wk || (!t.done && t.week < wk)), wOpen = W.filter(t => !t.done).length;
+  const W = _wkList().filter(t => t.week === wk || (!t.done && t.week < wk)), wDone = W.filter(t => t.done).length;
   const cut = h => h.slice(h.indexOf('<div class="fz-card'));
   const end = new Date(wk + 'T12:00'); end.setDate(end.getDate() + 6); const left = Math.round((end - new Date(td + 'T12:00')) / 864e5);
-  return '<div class="tk-head"><span class="tk-title">' + (tab === 'day' ? 'המשימות של היום' : 'המשימות של השבוע') + '</span>'
-    + '<span class="tk-sub">' + (tab === 'day' ? (dayN ? dayN + ' פתוחות' : 'הכל סגור') : (left <= 0 ? 'היום האחרון בשבוע' : left === 1 ? 'עוד יום לשבוע' : 'עוד ' + left + ' ימים לשבוע')) + '</span></div>'
-    + '<div class="tk-seg"><button class="' + (tab === 'day' ? 'on' : '') + '" onclick="spTasksTab(\'day\')">היום' + (dayN ? '<i>' + dayN + '</i>' : '') + '</button>'
-    + '<button class="' + (tab === 'week' ? 'on' : '') + '" onclick="spTasksTab(\'week\')">השבוע' + (wOpen ? '<i>' + wOpen + '</i>' : '') + '</button></div>'
-    + '<div class="tk-body">' + cut(tab === 'day' ? spRememberHtml() : spWeekHtml()) + '</div>';
+  const head = (t, sub) => '<div class="tk-head"><span class="tk-title">' + t + '</span><span class="tk-sub">' + sub + '</span></div>';
+  return head('המשימות של היום', dayN ? dayN + ' פתוחות' : 'הכל סגור') + '<div class="tk-body">' + cut(spRememberHtml()) + '</div>'
+    + head('המשימות של השבוע', (W.length ? wDone + '/' + W.length + ' · ' : '') + (left <= 0 ? 'היום האחרון' : left === 1 ? 'עוד יום' : 'עוד ' + left + ' ימים')) + '<div class="tk-body">' + cut(spWeekHtml()) + '</div>';
 };
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.

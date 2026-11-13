@@ -2241,3 +2241,9 @@ html[data-skin="spent"]:not(.desk) #page-profiles > .page-header > div:first-chi
 /* calmer spacing between the home blocks */
 #sp-lobby .fz-focus { margin-bottom: 0; }
 #sp-lobby .fz-goalc { margin-top: 18px; }
+
+/* v660 — two stacked task cards, a little tighter */
+.tk-head { margin: 24px 6px 8px !important; }
+.tk-title { font-size: 17px !important; }
+.tk-body .rm-row, .tk-body .wd-chk { padding: 11px 0 !important; }
+.tk-body .wk-sum { display: none; }
