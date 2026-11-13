@@ -2212,3 +2212,10 @@ html[data-skin="spent"]:not(.desk) .page-header .btn-primary { flex: 0 0 auto !i
 html[data-skin="spent"] .ctr-del { background: none !important; box-shadow: none !important; min-height: 40px; width: auto !important; flex: 0 0 auto !important; margin-inline-start: auto; font-weight: 500 !important; }
 html[data-skin="spent"]:not(.desk) #page-profiles > .page-header { flex-wrap: wrap !important; }
 html[data-skin="spent"]:not(.desk) #page-profiles > .page-header > div:first-child { flex: 1 1 100% !important; }
+
+/* v658 — the "+" inside the bottom bar */
+.oz-nav { padding: 0 8px 0 10px; box-sizing: border-box; }
+.oz-nav button { padding: 7px 9px !important; }
+.oz-nav button.oz-plus { width: 50px; height: 50px; flex: 0 0 50px; padding: 0 !important; border-radius: 25px !important; justify-content: center; color: #fff !important; background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41) !important; box-shadow: 0 6px 14px rgba(22,28,69,.28); }
+.oz-nav button.oz-plus svg { width: 22px; height: 22px; }
+#sp-lobby { padding-bottom: 110px; }

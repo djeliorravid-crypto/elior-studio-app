@@ -11385,13 +11385,14 @@ function spLobbyRender() {
   // v621: no "עוד היום" list — home is the calendar, what to remember, and WhatsApp up top
   + spGoalHtml() + spEveningHtml(items, isDone)
   + '<button class="fz-goal" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה ›</button>'
-  + '<button class="fz-fab" onclick="spLobbyAdd()" aria-label="הוספה">' + FZ.plus + '</button>'
   + '<div class="oz-nav">'
   +   '<button class="on">' + FZ.home + '<span>בית</span></button>'
   +   '<button onclick="chooseMode(\'business\');showPage(\'productions\')">' + FZ.note + '<span>הפקות</span></button>'
   +   '<button onclick="chooseMode(\'business\');showPage(\'income\')">' + FZ.money + '<span>כסף</span></button>'
   +   '<button onclick="chooseMode(\'business\');showPage(\'schedule\')">' + FZ.cal + '<span>לו״ז</span></button>'
   +   '<button onclick="chooseMode(\'business\');setTimeout(()=>{const n=document.querySelector(\'#business-sidebar nav\');if(n)spentMoreOpen(n)},60)">' + FZ.dots + '<span>עוד</span></button>'
+  // v658: the one "+" lives inside the bar — it never sits on top of the lists
+  +   '<button class="oz-plus" onclick="spLobbyAdd()" aria-label="הוספה">' + FZ.plus + '</button>'
   + '</div>';
 }
 // tick a step off — a little celebration, and a bigger one for the last
