@@ -11083,7 +11083,7 @@ window.spRememberHtml = function() {
   const CAP = 4, more = open.length - CAP, showAll = !!window._rmAll;
   const list = showAll || more <= 1 ? open : open.slice(0, CAP);
   const add = 'rmOpen(new Date().getHours() >= 17 ? \'מחר \' : \'\')';
-  return '<div class="fz-lbl rm-lbl"><span>לזכור' + (open.length ? '<em>' + open.length + '</em>' : '') + '</span><button class="rm-add" onclick="' + add + '" aria-label="להוסיף">' + FZ.plus + '</button></div>'
+  return '<div class="fz-lbl rm-lbl"><span>לזכור' + (open.length ? '<em>' + open.length + '</em>' : '') + '</span></div>'
     + '<div class="fz-card rm-card">' + (list.length ? list.map(row).join('')
         + (more > 1 ? '<button class="rm-more" onclick="window._rmAll=!window._rmAll;spLobbyRender()">' + (showAll ? 'להציג פחות' : 'עוד ' + more + ' ›') + '</button>' : '')
       : '<button class="rm-empty" onclick="' + add + '"><span>' + FZ.plus + '</span>' + (doneToday.length ? 'הכל סגור להיום. משהו נוסף לזכור?' : 'מה צריך לזכור? כתוב כמו שאתה אומר — "מחר להתקשר לרן ב-11"') + '</button>')
@@ -11268,18 +11268,28 @@ window.spWeekHtml = function() {
   const mine = all.filter(t => t.week === wk || (!t.done && t.week < wk));          // this week's + open leftovers
   const open = mine.filter(t => !t.done), done = mine.filter(t => t.done), n = mine.length;
   const end = new Date(wk + 'T12:00'); end.setDate(end.getDate() + 6); const left = Math.round((end - new Date(dailyDateStr() + 'T12:00')) / 864e5);
+  const own = all.some(t => t.week === wk), plan = !own && new Date().getDay() < 5;   // plan Sun–Thu; Fri/Sat just sum up
   const row = t => '<div class="wd-chk wk-row' + (t.done ? ' on' : '') + '" onclick="wkTick(\'' + t.id + '\')"><span class="rm-tk' + (t.done ? ' on' : '') + '">' + FZ.check + '</span>'
     + '<span class="rm-m"><b>' + _escape(t.text) + '</b>' + (!t.done && t.week < wk ? '<small><span class="rm-t2 late">מהשבוע שעבר</span></small>' : '') + '</span>'
     + '<button class="wd-del" onclick="event.stopPropagation();wkMenu(\'' + t.id + '\')" aria-label="עוד">⋯</button></div>';
   return '<div class="fz-lbl rm-lbl wk-lbl"><span>המשימות של השבוע' + (n ? '<em>' + done.length + '/' + n + '</em>' : '') + '</span><span class="wk-left">' + (left <= 0 ? 'היום האחרון בשבוע' : left === 1 ? 'עוד יום' : 'עוד ' + left + ' ימים') + '</span></div>'
     + '<div class="fz-card rm-card wk-card">'
     + (n ? '<div class="wk-bar"><i style="width:' + Math.round(done.length / n * 100) + '%"></i></div>' : '')
+    // Friday / Saturday: the week in one line
+    + (own && new Date().getDay() >= 5 ? '<div class="wk-sum">סיכום השבוע: סגרת <b>' + done.length + ' מתוך ' + n + '</b>' + (open.length ? ' · ' + (open.length === 1 ? 'אחת תעבור' : open.length + ' יעברו') + ' לשבוע הבא' : ' · שבוע נקי') + '</div>' : '')
+    // a new week with nothing planned yet: the three things that must happen
+    + (plan ? '<div class="wk-plan"><div class="wk-plan-t">' + (open.length ? 'שבוע חדש. ' : '') + 'מה שלושת הדברים שחייבים לקרות השבוע?</div>'
+        + [1, 2, 3].map(i => '<input class="wk-pi" placeholder="' + i + '." enterkeyhint="' + (i < 3 ? 'next' : 'done') + '" onkeydown="if(event.key===\'Enter\'){event.preventDefault();const n=this.nextElementSibling;if(n&&n.classList.contains(\'wk-pi\'))n.focus();else wkPlanSave()}"/>').join('')
+        + '<button class="wk-plan-go" onclick="wkPlanSave()">לקבוע את השבוע</button></div>' : '')
     + open.map(row).join('') + done.map(row).join('')
     + (n && !open.length ? '<div class="wk-all">סגרת את כל השבוע. כל הכבוד.</div>' : '')
     + (open.length > 5 ? '<div class="wk-hint">זה הרבה לשבוע אחד. מה שלושת הדברים הכי חשובים?</div>' : '')
-    + '<div class="wd-new wk-new"><input id="wk-new" placeholder="' + (n ? 'עוד משימה לשבוע…' : 'מה חייב לקרות השבוע?') + '" enterkeyhint="done" onkeydown="if(event.key===\'Enter\'){event.preventDefault();wkAdd()}"/><button onclick="wkAdd()" aria-label="להוסיף">' + FZ.plus + '</button></div>'
+    + (plan ? '' : '<div class="wd-new wk-new"><input id="wk-new" placeholder="' + (n ? 'עוד משימה לשבוע…' : 'מה חייב לקרות השבוע?') + '" enterkeyhint="done" onkeydown="if(event.key===\'Enter\'){event.preventDefault();wkAdd()}"/><button onclick="wkAdd()" aria-label="להוסיף">' + FZ.plus + '</button></div>')
     + '</div>';
 };
+window.wkPlanSave = function() { const v = [...document.querySelectorAll('.wk-pi')].map(i => i.value.trim()).filter(Boolean); if (!v.length) { const f = document.querySelector('.wk-pi'); if (f) f.focus(); return; }
+  const L = load('week_tasks') || [], now = Date.now(); v.forEach((t, i) => L.push({ id: genId() + i, text: t, done: false, week: _wkKey(), createdAt: new Date(now + i).toISOString() })); save('week_tasks', L);
+  try { window.haptic.success(); } catch (_) {} _wkRe(); toast('השבוע נקבע'); };
 function _wkRe(focus) { const sc = document.scrollingElement, y = sc ? sc.scrollTop : 0, ms = document.getElementById('mode-screen'), y2 = ms ? ms.scrollTop : 0; spLobbyRender(); if (sc) sc.scrollTop = y; if (ms) ms.scrollTop = y2; if (focus) { const i = document.getElementById('wk-new'); if (i) i.focus({ preventScroll: true }); } }
 window.wkAdd = function() { const el = document.getElementById('wk-new'), t = el && el.value.trim(); if (!t) { if (el) el.focus(); return; }
   const L = load('week_tasks') || []; L.push({ id: genId(), text: t, done: false, week: _wkKey(), createdAt: new Date().toISOString() }); save('week_tasks', L); try { window.haptic.light(); } catch (_) {} _wkRe(true); };
@@ -11366,7 +11376,7 @@ function spLobbyRender() {
   };
   box.innerHTML =
     '<div class="fz-top"><span class="fz-date">' + _escape(dateTxt) + _spYearHtml(now) + '</span><span class="fz-tic">' + (() => { let n = 0; try { n = _waWaitingCount() || 0; } catch (_) {} return '<button class="fz-wa" onclick="waGoInbox()" aria-label="וואטסאפ">' + FZ.chat + (n ? '<i class="fz-badge">' + (n > 99 ? '99+' : n) + '</i>' : '') + '</button>'; })() + '<button onclick="quickAction(\'search\')" aria-label="חיפוש">' + FZ.search + '</button><button onclick="openNotifSettings()" aria-label="הגדרות">' + FZ.bell + '</button></span></div>'
-  + '<div class="fz-me"><span class="fz-av"><svg viewBox="70 180 830 520" aria-hidden="true"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#141414" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="33" fill="#141414"/></svg></span><div class="fz-bub">' + hello + ' <b>אליאור</b>.<br>' + bubble + '</div></div>'
+  + '<div class="fz-me"><span class="fz-av"><svg viewBox="70 180 830 520" aria-hidden="true"><path d="M99 657 C220 470 420 250 523 214 C562 200 470 420 387 664 C420 520 560 330 645 346 C700 356 610 520 637 581 C655 610 730 540 781 500" fill="none" stroke="#141414" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/><circle cx="858" cy="492" r="33" fill="#141414"/></svg></span><div class="fz-bub">' + hello + ' <b>אליאור</b><small>' + bubble + '</small></div><button class="fz-now" onclick="focusOpen()">מה עכשיו?</button></div>'
   + (next ? '<div class="fz-focus" onclick="' + (next.go || '') + '"><div class="k">האירוע הבא בלו״ז</div><div class="t">' + _escape(next.t) + '</div><div class="s">' + _escape(next.s) + '</div>'
       + (next.fc ? '<span class="fz-go" onclick="event.stopPropagation();spTick(\'' + next.id + '\');fcAskYes(\'' + next.fc + '\')">כן, ירד</span>' : '<span class="fz-go">' + (next.cta || 'פתח') + '</span><span class="fz-skip" onclick="event.stopPropagation();spTick(\'' + next.id + '\')">סיימתי</span>') + '</div>' : '')
   + afterHtml
@@ -11569,18 +11579,61 @@ window.freeTimesOpen = function() {
   requestAnimationFrame(() => ov.classList.add('open'));
 };
 window.spLobbyAdd = function() {
+  // v656: the one "+" on the home screen — what you most often add, first
   spentSheet('מה להוסיף?', '', [
-    { label: 'הכנסה', pri: true, run: () => quickAction('income') },
+    { label: 'לזכור משהו', pri: true, run: () => rmOpen(new Date().getHours() >= 17 ? 'מחר ' : '') },
+    { label: 'משימה לשבוע', run: () => wkAddOpen() },
+    { label: 'הכנסה', run: () => quickAction('income') },
     { label: 'הוצאה', run: () => quickAction('expense') },
     { label: 'פגישה בלו״ז', run: () => quickAction('schedule') },
     { label: 'לשלוח מתי אני פנוי', run: () => freeTimesOpen() },
     { label: 'לקבוע מהודעה שהעתקתי', run: () => offerPaste() },
-    { label: 'לזכור משהו', pri: true, run: () => rmOpen(new Date().getHours() >= 17 ? 'מחר ' : '') },
-    { label: 'מטרה לחודש', run: () => spGoalOpen() },
     { label: 'הפקה חדשה', run: () => { chooseMode('business'); showPage('productions'); setTimeout(() => prodOpenAddModal(), 120); } },
-    { label: 'משימה', run: () => quickAction('task') }
+    { label: 'מטרה לחודש', run: () => spGoalOpen() }
   ]);
 };
+window.wkAddOpen = function() {
+  spFlowOpen({ title: 'משימה לשבוע', vals: {}, steps: [{ k: 't', type: 'text', q: 'מה חייב לקרות השבוע?', ph: 'לסיים את המיקס, לסגור תאריך…', req: 'כתוב את המשימה' }],
+    onSave: v => { const L = load('week_tasks') || []; L.push({ id: genId(), text: String(v.t).trim(), done: false, week: _wkKey(), createdAt: new Date().toISOString() }); save('week_tasks', L); spLobbyRender(); toast('נוסף למשימות של השבוע'); } });
+};
+// ── v656: "מה עכשיו?" — one thing on the screen. The event that's about to start, then what to
+// remember today (late first), then the week's open tasks. סיימתי → the next one. Nothing else. ──
+function _focusItems() {
+  const now = new Date(), td = dailyDateStr(), nowM = now.getHours() * 60 + now.getMinutes(), out = [];
+  const toM = t => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '')); return m ? +m[1] * 60 + +m[2] : null; };
+  const ev = [];
+  try { (load('schedule') || []).filter(x => x && x.date === td && !x.done && !x.deleted && x.time).forEach(x => ev.push({ t: x.title || 'פגישה', m: toM(x.time), time: x.time })); } catch (_) {}
+  try { (window._eventKitCache || []).filter(x => x && x.date === td && !x.allDay && x.time).forEach(x => { if (!ev.some(e => e.t === x.title && e.time === x.time)) ev.push({ t: x.title || 'אירוע', m: toM(x.time), time: x.time }); }); } catch (_) {}
+  ev.filter(e => e.m !== null && e.m - nowM <= 90 && e.m - nowM >= -30).sort((a, b) => a.m - b.m).slice(0, 1).forEach(e => { const d = e.m - nowM;
+    out.push({ kind: 'ev', id: 'ev_' + e.time + e.t, k: 'בלו״ז', t: e.t, s: d <= 0 ? 'התחיל ב־' + e.time : d < 60 ? 'בעוד ' + d + ' דקות · ' + e.time : 'בעוד שעה · ' + e.time }); });
+  (load('daily_tasks') || []).filter(t => t && !t.deleted && !t.done && t.date <= td)
+    .sort((a, b) => ((a.date < td ? 0 : 1) - (b.date < td ? 0 : 1)) || String(a.remindAt || '9').localeCompare(String(b.remindAt || '9')))
+    .forEach(t => { const k = t.kind || _rmKind(t.text); out.push({ kind: 'rm', id: t.id, k: t.date < td ? 'מחכה מאתמול' : 'לזכור היום', t: t.text, s: t.who || '', act: k === 'call' ? 'להתקשר' : (k === 'msg' || k === 'send') ? 'לפתוח וואטסאפ' : '' }); });
+  const wk = _wkKey(); _wkList().filter(t => !t.done && t.week <= wk).forEach(t => out.push({ kind: 'wk', id: t.id, k: 'משימה לשבוע', t: t.text, s: '' }));
+  return out;
+}
+window.focusOpen = function() {
+  let ov = document.getElementById('fz-focusm'); if (!ov) { ov = document.createElement('div'); ov.id = 'fz-focusm'; document.body.appendChild(ov); }
+  window._fcSkip = []; _focusPaint(); document.documentElement.classList.add('mzi-on'); requestAnimationFrame(() => ov.classList.add('open'));
+};
+window.focusClose = function() { const ov = document.getElementById('fz-focusm'); if (ov) ov.classList.remove('open'); document.documentElement.classList.remove('mzi-on'); try { spLobbyRender(); } catch (_) {} };
+function _focusPaint() {
+  const ov = document.getElementById('fz-focusm'); if (!ov) return;
+  const all = _focusItems(), left = all.filter(x => window._fcSkip.indexOf(x.id) < 0), it = left[0];
+  const x = '<button class="fm-x" onclick="focusClose()" aria-label="סגירה">✕</button>';
+  if (!it) { ov.innerHTML = x + '<div class="fm-body"><div class="fm-k">' + (all.length ? 'עברת על הכל' : 'אין כרגע כלום על הראש') + '</div><div class="fm-t">' + (all.length ? 'מה שדילגת עליו מחכה לך בדף הבית.' : 'זמן טוב ליצור, או פשוט לנשום.') + '</div></div><div class="fm-acts"><button class="fm-main" onclick="focusClose()">סגור</button></div>'; return; }
+  ov.innerHTML = x + '<div class="fm-n">' + (left.length === 1 ? 'הדבר האחרון' : 'עוד ' + left.length + ' דברים') + '</div>'
+    + '<div class="fm-body"><div class="fm-k">' + it.k + '</div><div class="fm-t">' + _escape(it.t) + '</div>' + (it.s ? '<div class="fm-s">' + _escape(it.s) + '</div>' : '') + '</div>'
+    + '<div class="fm-acts">' + (it.act ? '<button class="fm-sec" onclick="rmAct(\'' + it.id + '\')">' + it.act + '</button>' : '')
+    + '<button class="fm-main" onclick="focusDone()">' + (it.kind === 'ev' ? 'הבנתי, הבא' : 'סיימתי') + '</button><button class="fm-skip" onclick="focusSkip()">לא עכשיו</button></div>';
+  window._fcCur = it;
+}
+window.focusSkip = function() { if (window._fcCur) window._fcSkip.push(window._fcCur.id); _focusPaint(); };
+window.focusDone = function() { const it = window._fcCur; if (!it) return;
+  if (it.kind === 'rm') { const L = load('daily_tasks'), t = L.find(y => y.id === it.id); if (t) { t.done = true; t.doneAt = new Date().toISOString(); save('daily_tasks', L); } }
+  else if (it.kind === 'wk') { const L = load('week_tasks') || [], t = L.find(y => y.id === it.id); if (t) { t.done = true; t.doneAt = new Date().toISOString(); t.week = _wkKey(); t.updatedAt = t.doneAt; save('week_tasks', L); } }
+  else window._fcSkip.push(it.id);
+  try { window.haptic.success(); } catch (_) {} _focusPaint(); };
 window.spLobbyToggleHide = function() {
   try { localStorage.setItem('sp_hide_bal', localStorage.getItem('sp_hide_bal') === '1' ? '0' : '1'); } catch (_) {}
   spLobbyRender();
@@ -19598,20 +19651,20 @@ window.spentMoreOpen = function(nav) {
     ov.onclick = e => { if (e.target === ov) ov.classList.remove('open'); };
     document.body.appendChild(ov);
   }
-  ov.innerHTML = '<div class="sm-sheet"><div class="sm-grab"></div><div class="sm-title">עוד</div><div class="sm-grid"></div></div>';
-  const grid = ov.querySelector('.sm-grid');
-  items.forEach(a => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'sm-tile' + (a.classList.contains('active') ? ' on' : '');
-    const ic = a.querySelector('.nav-icon');
-    b.innerHTML = '<span class="sm-ic">' + (ic ? ic.innerHTML : '') + '</span><span class="sm-t">' + _escape((a.textContent || '').trim()) + '</span>';
-    b.onclick = () => { ov.classList.remove('open'); a.click(); };
-    grid.appendChild(b);
-  });
-  // v625: the wedding card
-  { const b = document.createElement('button'); b.type = 'button'; b.className = 'sm-tile sm-wed';
-    b.innerHTML = '<span class="sm-ic">' + WD_RINGS + '</span><span class="sm-t">החתונה</span>';
-    b.onclick = () => { ov.classList.remove('open'); wedOpen(); }; grid.insertBefore(b, grid.firstChild); }
+  // v656: the four you use most stay on top; the rest fold under "עוד דפים" (learned from your own taps)
+  let use = {}; try { use = JSON.parse(localStorage.getItem('sm_use') || '{}'); } catch (_) {}
+  const bump = k => { use[k] = (use[k] || 0) + 1; try { localStorage.setItem('sm_use', JSON.stringify(use)); } catch (_) {} };
+  const tiles = items.map((a, i) => ({ k: a.dataset.page, i, on: a.classList.contains('active'), ic: (a.querySelector('.nav-icon') || {}).innerHTML || '', t: (a.textContent || '').trim(), run: () => a.click() }));
+  tiles.unshift({ k: 'wedding', i: -1, ic: WD_RINGS, t: 'החתונה', run: () => wedOpen() });
+  const DEF = { wedding: 5, whatsapp: 4, installments: 3, contracts: 2, proposals: 1 };
+  tiles.sort((x, y) => ((use[y.k] || 0) + (DEF[y.k] || 0) / 10) - ((use[x.k] || 0) + (DEF[x.k] || 0) / 10) || x.i - y.i);
+  const top = tiles.slice(0, 4), rest = tiles.slice(4);
+  ov.innerHTML = '<div class="sm-sheet"><div class="sm-grab"></div><div class="sm-title">עוד</div><div class="sm-grid"></div>'
+    + (rest.length ? '<details class="sm-rest"' + (rest.some(t => t.on) ? ' open' : '') + '><summary>עוד דפים · ' + rest.length + '</summary><div class="sm-grid sm-grid2"></div></details>' : '') + '</div>';
+  const mk = (t, grid) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sm-tile' + (t.on ? ' on' : '');
+    b.innerHTML = '<span class="sm-ic">' + t.ic + '</span><span class="sm-t">' + _escape(t.t) + '</span>';
+    b.onclick = () => { bump(t.k); ov.classList.remove('open'); t.run(); }; grid.appendChild(b); };
+  top.forEach(t => mk(t, ov.querySelector('.sm-grid'))); rest.forEach(t => mk(t, ov.querySelector('.sm-grid2')));
   requestAnimationFrame(() => ov.classList.add('open'));
 };
 // ── v625: החתונה של דרי ואליאור — budget, guests, the plate at Gabriel (Nes Ziona) ──

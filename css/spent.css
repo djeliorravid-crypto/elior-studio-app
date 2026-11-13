@@ -2117,3 +2117,43 @@ html.mzi-on::before { opacity: 0 !important; }
 .wk-all { text-align: center; color: #24493b; font-weight: 600; font-size: 14px; padding: 10px 0; }
 .wk-hint { font-size: 12.5px; color: #a8660f; padding: 8px 2px; }
 .rm-lbl > span.wk-left { font-size: 12px !important; font-weight: 500 !important; color: #a3a8c3 !important; }
+
+/* v656 — calmer home: compact greeting + "מה עכשיו?", focus mode, weekly planning */
+.fz-me { align-items: center !important; gap: 10px !important; margin-bottom: 16px !important; }
+.fz-av { width: 40px !important; height: 40px !important; flex: 0 0 40px; border-radius: 20px !important; }
+.fz-av svg { width: 26px !important; }
+.fz-bub { flex: 1; min-width: 0; background: none !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; font-size: 15.5px !important; line-height: 1.3 !important; color: #161c45 !important; }
+.fz-bub small { display: block; font-size: 12.5px; font-weight: 400; color: #6f7596; line-height: 1.35; margin-top: 2px; }
+.fz-now { flex-shrink: 0; border: none; border-radius: 999px; height: 44px; padding: 0 16px; font-family: inherit; font-size: 14.5px; font-weight: 600; color: #fff; cursor: pointer; background: radial-gradient(120% 100% at 28% 6%, rgba(160,175,255,.38), rgba(30,38,94,0) 62%), linear-gradient(180deg,#232c6a,#151a41); box-shadow: 0 6px 16px rgba(22,28,69,.22); }
+.fz-now:active { transform: scale(.96); }
+.fz-fab { width: 54px !important; height: 54px !important; border-radius: 27px !important; }
+.wk-new button { background: #eef0f8 !important; color: #252e6b !important; }
+.wk-sum { font-size: 13.5px; color: #6f7596; padding: 10px 2px 6px; }
+.wk-sum b { color: #24493b; font-weight: 700; }
+.wk-plan { padding: 12px 0 14px; display: flex; flex-direction: column; gap: 8px; }
+.wk-plan-t { font-size: 15.5px; font-weight: 600; color: #161c45; line-height: 1.4; margin-bottom: 2px; }
+.wk-pi { border: none; background: #f4f5fa; border-radius: 14px; padding: 13px 14px; font-family: inherit; font-size: 16px; color: #161c45; outline: none; }
+.wk-pi:focus { background: #eef0f8; box-shadow: inset 0 0 0 1.5px #252e6b; }
+.wk-plan-go { height: 48px; border: none; border-radius: 999px; background: linear-gradient(135deg,#252e6b,#141a3c); color: #fff; font-family: inherit; font-size: 15.5px; font-weight: 600; cursor: pointer; margin-top: 2px; }
+#fz-focusm { position: fixed; inset: 0; z-index: 100040; display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top,0px) + 18px) 26px calc(env(safe-area-inset-bottom,0px) + 26px); color: #fff; font-family: 'Rubik','Heebo',sans-serif;
+  background: radial-gradient(120% 80% at 30% 10%, rgba(160,175,255,.22), rgba(30,38,94,0) 60%), linear-gradient(170deg,#252e6b,#141a3c 70%); opacity: 0; pointer-events: none; transform: translateY(14px); transition: opacity .28s ease, transform .28s cubic-bezier(.2,.8,.2,1); }
+#fz-focusm.open { opacity: 1; pointer-events: auto; transform: none; }
+.fm-x { position: absolute; top: calc(env(safe-area-inset-top,0px) + 14px); left: 18px; width: 44px; height: 44px; border: none; border-radius: 22px; background: rgba(255,255,255,.12); color: #fff; font-size: 16px; cursor: pointer; }
+.fm-n { text-align: center; font-size: 13px; color: rgba(255,255,255,.55); height: 44px; line-height: 44px; }
+.fm-body { flex: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; gap: 12px; }
+.fm-k { font-size: 14px; font-weight: 600; color: #a9b4ff; letter-spacing: .03em; }
+.fm-t { font-size: 30px; font-weight: 700; line-height: 1.3; letter-spacing: -.01em; }
+.fm-s { font-size: 16px; color: rgba(255,255,255,.7); }
+.fm-acts { display: flex; flex-direction: column; gap: 10px; }
+.fm-main, .fm-sec, .fm-skip { height: 56px; border: none; border-radius: 999px; font-family: inherit; font-size: 17px; font-weight: 600; cursor: pointer; }
+.fm-main { background: #fff; color: #161c45; }
+.fm-sec { background: rgba(255,255,255,.14); color: #fff; }
+.fm-skip { background: none; color: rgba(255,255,255,.6); height: 44px; font-size: 15px; font-weight: 500; }
+.fm-main:active, .fm-sec:active { transform: scale(.98); }
+
+/* v656 — "עוד": top four + folded rest */
+.sm-rest { margin-top: 14px; border-top: 1px solid #eef0f6; padding-top: 6px; }
+.sm-rest summary { list-style: none; cursor: pointer; font-size: 14px; font-weight: 600; color: #6f7596; padding: 12px 4px; min-height: 44px; box-sizing: border-box; }
+.sm-rest summary::-webkit-details-marker { display: none; }
+.sm-rest summary::after { content: " ›"; }
+.sm-rest[open] summary::after { content: " ⌄"; }
