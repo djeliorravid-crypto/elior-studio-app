@@ -288,7 +288,7 @@ function initFirebase() {
   }
 }
 
-const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals','fixed_costs','wedding','wedding_exp','wedding_todo','wedding_meet'];
+const ALL_KEYS = ['income','expenses','clients','plans','proj_notes','proj_done','proj_status','proj_services','proj_next','projects','productions','pending_tx','recurring_expenses','sessions','monthlyGoal','bankDeposit','tasks','daily_tasks','schedule','sketch_songs','workshops','sketch_aliases','sketch_versions','sketch_hidden','contracts','producer_settings','students','proposals','custom_exp_cats','custom_inc_cats','cat_rename_exp','cat_rename_inc','my_path','tx_rules','bank_credits','year_goals','fixed_costs','wedding','wedding_exp','wedding_todo','wedding_meet','week_tasks'];
 
 // ===== SYNC ENGINE — תור שמירה עמיד =====
 // כל שמירה נכנסת לתור ב-localStorage.
@@ -11259,6 +11259,41 @@ window.wedShare = async function() {
     { label: 'להעתיק את הקישור', run: async () => { try { await navigator.clipboard.writeText(url); toast('הקישור הועתק'); } catch (_) { prompt('הקישור:', url); } } },
     { label: 'קישור חדש (הישן יפסיק לעבוד)', danger: true, run: async () => { await _wdNewKey(); toast('נוצר קישור חדש — שלח לה אותו'); setTimeout(wedShare, 300); } }]);
 };
+// ── v655: "המשימות של השבוע" — a short list for the week (Sunday→Saturday), separate from the daily "לזכור".
+// What wasn't done last week rolls into this one by itself; done ones leave with their week.
+function _wkKey(d) { d = d ? new Date(d) : new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - d.getDay()); return dailyDateStr(d); }
+function _wkList() { return (load('week_tasks') || []).filter(t => t && !t.deleted); }
+window.spWeekHtml = function() {
+  const wk = _wkKey(), all = _wkList();
+  const mine = all.filter(t => t.week === wk || (!t.done && t.week < wk));          // this week's + open leftovers
+  const open = mine.filter(t => !t.done), done = mine.filter(t => t.done), n = mine.length;
+  const end = new Date(wk + 'T12:00'); end.setDate(end.getDate() + 6); const left = Math.round((end - new Date(dailyDateStr() + 'T12:00')) / 864e5);
+  const row = t => '<div class="wd-chk wk-row' + (t.done ? ' on' : '') + '" onclick="wkTick(\'' + t.id + '\')"><span class="rm-tk' + (t.done ? ' on' : '') + '">' + FZ.check + '</span>'
+    + '<span class="rm-m"><b>' + _escape(t.text) + '</b>' + (!t.done && t.week < wk ? '<small><span class="rm-t2 late">מהשבוע שעבר</span></small>' : '') + '</span>'
+    + '<button class="wd-del" onclick="event.stopPropagation();wkMenu(\'' + t.id + '\')" aria-label="עוד">⋯</button></div>';
+  return '<div class="fz-lbl rm-lbl wk-lbl"><span>המשימות של השבוע' + (n ? '<em>' + done.length + '/' + n + '</em>' : '') + '</span><span class="wk-left">' + (left <= 0 ? 'היום האחרון בשבוע' : left === 1 ? 'עוד יום' : 'עוד ' + left + ' ימים') + '</span></div>'
+    + '<div class="fz-card rm-card wk-card">'
+    + (n ? '<div class="wk-bar"><i style="width:' + Math.round(done.length / n * 100) + '%"></i></div>' : '')
+    + open.map(row).join('') + done.map(row).join('')
+    + (n && !open.length ? '<div class="wk-all">סגרת את כל השבוע. כל הכבוד.</div>' : '')
+    + (open.length > 5 ? '<div class="wk-hint">זה הרבה לשבוע אחד. מה שלושת הדברים הכי חשובים?</div>' : '')
+    + '<div class="wd-new wk-new"><input id="wk-new" placeholder="' + (n ? 'עוד משימה לשבוע…' : 'מה חייב לקרות השבוע?') + '" enterkeyhint="done" onkeydown="if(event.key===\'Enter\'){event.preventDefault();wkAdd()}"/><button onclick="wkAdd()" aria-label="להוסיף">' + FZ.plus + '</button></div>'
+    + '</div>';
+};
+function _wkRe(focus) { const sc = document.scrollingElement, y = sc ? sc.scrollTop : 0, ms = document.getElementById('mode-screen'), y2 = ms ? ms.scrollTop : 0; spLobbyRender(); if (sc) sc.scrollTop = y; if (ms) ms.scrollTop = y2; if (focus) { const i = document.getElementById('wk-new'); if (i) i.focus({ preventScroll: true }); } }
+window.wkAdd = function() { const el = document.getElementById('wk-new'), t = el && el.value.trim(); if (!t) { if (el) el.focus(); return; }
+  const L = load('week_tasks') || []; L.push({ id: genId(), text: t, done: false, week: _wkKey(), createdAt: new Date().toISOString() }); save('week_tasks', L); try { window.haptic.light(); } catch (_) {} _wkRe(true); };
+window.wkTick = function(id) { const L = load('week_tasks') || [], x = L.find(y => y.id === id); if (!x) return;
+  x.done = !x.done; if (x.done) { x.doneAt = new Date().toISOString(); x.week = _wkKey(); } x.updatedAt = new Date().toISOString(); save('week_tasks', L);
+  try { x.done ? window.haptic.success() : window.haptic.light(); } catch (_) {} _wkRe(); };
+window.wkMenu = function(id) { const t = _wkList().find(y => y.id === id); if (!t) return;
+  const upd = fn => { const L = load('week_tasks') || [], x = L.find(y => y.id === id); if (!x) return; fn(x); x.updatedAt = new Date().toISOString(); save('week_tasks', L); _wkRe(); };
+  spentSheet(t.text, 'משימה לשבוע', [
+    { label: t.done ? 'להחזיר לפתוחות' : 'בוצע', pri: true, run: () => wkTick(id) },
+    { label: 'לעשות את זה היום (להעביר ל״לזכור״)', run: () => { const D = load('daily_tasks') || []; D.push({ id: genId(), date: dailyDateStr(), text: t.text, done: false, createdAt: new Date().toISOString(), src: 'rem', kind: _rmKind(t.text) }); save('daily_tasks', D); upd(x => { x.deleted = true; }); toast('עבר ל״לזכור״ של היום'); } },
+    { label: 'לדחות לשבוע הבא', run: () => upd(x => { const d = new Date(_wkKey() + 'T12:00'); d.setDate(d.getDate() + 7); x.week = dailyDateStr(d); x.done = false; }) },
+    { label: 'למחוק', danger: true, run: () => upd(x => { x.deleted = true; }) }]);
+};
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
@@ -11336,6 +11371,7 @@ function spLobbyRender() {
       + (next.fc ? '<span class="fz-go" onclick="event.stopPropagation();spTick(\'' + next.id + '\');fcAskYes(\'' + next.fc + '\')">כן, ירד</span>' : '<span class="fz-go">' + (next.cta || 'פתח') + '</span><span class="fz-skip" onclick="event.stopPropagation();spTick(\'' + next.id + '\')">סיימתי</span>') + '</div>' : '')
   + afterHtml
   + spRememberHtml()
+  + spWeekHtml()
   // v621: no "עוד היום" list — home is the calendar, what to remember, and WhatsApp up top
   + spGoalHtml() + spEveningHtml(items, isDone)
   + '<button class="fz-goal" onclick="chooseMode(\'goals\')">מטרות לשנה החדשה ›</button>'
