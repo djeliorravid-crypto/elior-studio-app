@@ -21950,10 +21950,15 @@ function _morningBuildClient(income) {
   return c;
 }
 
-async function morningCreateReceiptFor(income) {
+// v661: type 400 (קבלה רגילה) is still available — for money received before 10.11.2026,
+// when Elior was עוסק פטור. A receipt carries only the payment, no VAT line.
+window.MORNING_SWITCH_DATE = '2026-11-10';
+async function morningCreateReceiptFor(income, docType) {
   if (!income) return null;
+  const T = Number(docType) === 400 ? 400 : window.MORNING_DOC_TYPE;
+  window._mrLastType = T;
   const body = {
-    type:     window.MORNING_DOC_TYPE,
+    type:     T,
     description: income.description || 'תשלום',
     lang:     'he',
     currency: 'ILS',
@@ -21963,7 +21968,7 @@ async function morningCreateReceiptFor(income) {
       quantity:    1,
       price:       parseFloat(income.amount) || 0,
       currency:    'ILS',
-      vatType:     window.MORNING_DOC_TYPE === 320 ? 1 : 0   // 1 = the price already includes VAT
+      vatType:     T === 320 ? 1 : 0   // 1 = the price already includes VAT
     }],
     payment: [{
       // Prefer the exact moment the user tapped "סמן כשולם"
@@ -21982,6 +21987,11 @@ async function morningCreateReceiptFor(income) {
     linkedDocumentIds: income.morningPrId ? [income.morningPrId] : undefined,
     linkType:          income.morningPrId ? 1 : undefined  // 1 = full close
   };
+  if (T !== 400) return _morningPostDocWithRetry(body);
+  // receipt: the payment alone first; if Morning wants a line, the old (pre-murshe) body that always worked
+  const bare = Object.assign({}, body); delete bare.income;
+  const r1 = await _morningPostDocWithRetry(bare);
+  if (r1 && (r1.id || r1.error === 'no_token' || r1.error === 'auth_no_write' || r1.error === 'network')) return r1;
   return _morningPostDocWithRetry(body);
 }
 
@@ -22021,7 +22031,7 @@ window.morningIssueReceiptForIncome = async function(incomeId) {
 function _morningErrorMessage(res) {
   if (!res) return 'תשובה ריקה';
   // v654: Morning still has the business as עוסק פטור → 320 is refused; say exactly what to change
-  try { const d0 = res && res.detail; const code = d0 && (d0.errorCode || d0.code); if (window.MORNING_DOC_TYPE === 320 && (code === 2403 || /פטור|מורשה|2403/.test(String(d0 && d0.errorMessage || '')))) return 'ב-Morning העסק עדיין מוגדר עוסק פטור — צריך לעדכן שם ל"עוסק מורשה" (הגדרות ← פרטי העסק) ואז לנסות שוב'; } catch (_) {}
+  try { const d0 = res && res.detail; const code = d0 && (d0.errorCode || d0.code); if ((window._mrLastType || window.MORNING_DOC_TYPE) === 320 && (code === 2403 || /פטור|מורשה|2403/.test(String(d0 && d0.errorMessage || '')))) return 'ב-Morning העסק עדיין מוגדר עוסק פטור — צריך לעדכן שם ל"עוסק מורשה" (הגדרות ← פרטי העסק) ואז לנסות שוב'; } catch (_) {}
   // Persistent auth fail after token refresh — means the API key
   // can fetch a token but can't create documents. The fix is on
   // Morning's side: the user must grant "documents:write" scope
@@ -22105,7 +22115,14 @@ window.morningRetryReceipt = function(incomeId) {
   const bizAr  = document.getElementById('mr-biz-arrow');
   if (bizEl) bizEl.style.display = hasBiz ? 'block' : 'none';
   if (bizAr) bizAr.textContent   = hasBiz ? '▴' : '▾';
+  try { const dv = (document.getElementById('mr-date') || {}).value || ''; mrSetType(it.morningDocType ? it.morningDocType : (dv && dv < window.MORNING_SWITCH_DATE ? 400 : 320)); } catch (_) { mrSetType(320); }
   document.getElementById('morning-receipt-overlay').classList.add('open');
+};
+window.mrSetType = function(t) {
+  window._mrType = Number(t) === 400 ? 400 : 320;
+  document.querySelectorAll('#mr-types button').forEach(b => b.classList.toggle('on', +b.dataset.t === window._mrType));
+  const h = document.getElementById('mr-type-hint'); if (h) h.textContent = window._mrType === 400 ? 'לתשלום שהתקבל לפני שהפכת לעוסק מורשה (לפני 10.11.2026) — בלי מע״מ' : 'הסכום כולל מע״מ — Morning מפריד אותו בחשבונית';
+  const go = document.getElementById('mr-go'); if (go) go.textContent = window._mrType === 400 ? 'צור קבלה' : 'צור חשבונית מס קבלה';
 };
 window._closeMorningReceiptModal = function() {
   document.getElementById('morning-receipt-overlay').classList.remove('open');
@@ -22122,6 +22139,7 @@ window._confirmMorningReceiptModal = async function() {
   const adr  = (document.getElementById('mr-address').value || '').trim();
   const city = (document.getElementById('mr-city').value    || '').trim();
   const rdate = ((document.getElementById('mr-date') || {}).value || '').trim();
+  const dT = window._mrType === 400 ? 400 : window.MORNING_DOC_TYPE, dName = dT === 400 ? 'קבלה' : window.MORNING_DOC_NAME;
   window._closeMorningReceiptModal();
   // Save the optional business fields back onto the income row so
   // future receipts / payment requests for the same client carry
@@ -22147,11 +22165,11 @@ window._confirmMorningReceiptModal = async function() {
     return;
   }
   if (!(window.morningConnected && window.morningConnected())) { spentSheet('Morning לא מחובר', 'צריך לחבר את Morning במכשיר הזה כדי ליצור קבלות', [{ label: 'לחבר עכשיו', pri: true, run: () => { try { openNotifSettings(); } catch (_) {} } }]); return; }
-  toast('יוצר ' + window.MORNING_DOC_NAME + ' ב-Morning…');
+  toast('יוצר ' + dName + ' ב-Morning…');
   _rcTrail('send', 'mc=' + !!(window.morningConnected && window.morningConnected()) + ' ws=' + !!localStorage.getItem('wa_send_secret'));
   // never hang silently: give Morning 25 seconds, then explain
   const res = await Promise.race([
-    morningCreateReceiptFor(incomeForReceipt),
+    morningCreateReceiptFor(incomeForReceipt, dT),
     new Promise(r => setTimeout(() => r({ error: 'timeout' }), 25000))
   ]).catch(e => ({ error: 'network', detail: { message: (e && e.message) || String(e) } }));
   const fresh = load('income');
@@ -22161,10 +22179,10 @@ window._confirmMorningReceiptModal = async function() {
   if (res && res.id) {
     ff.morningDocId     = res.id;
     ff.morningDocNumber = res.number;
-    ff.morningDocType   = window.MORNING_DOC_TYPE;
+    ff.morningDocType   = dT;
     ff.morningDocUrl    = res.url && (res.url.he || res.url.en || (typeof res.url === 'string' ? res.url : ''));
     save('income', fresh);
-    toast('🧾 ' + window.MORNING_DOC_NAME + ' ' + (res.number || '') + ' נוצרה ב-Morning');
+    toast('🧾 ' + dName + ' ' + (res.number || '') + ' נוצרה ב-Morning');
     if (window.haptic) window.haptic.success();
     if (typeof renderIncome === 'function') renderIncome();
     try { receiptSendAsk(id); } catch (_) {}
