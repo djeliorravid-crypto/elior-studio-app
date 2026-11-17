@@ -88,6 +88,32 @@ jobs:
           f=$(grep -rl "PAYMENT_REQUIRED_TYPES" package/dist | head -1); sed -n 55,110p "$f" > /tmp/snip; grep -rhn -iE "vatType.{0,160}" package/dist | grep -iE "includ|exempt|0 =|1 =|2 =|0=|1=|2=" | head -12 >> /tmp/snip
           split -l 6 /tmp/snip /tmp/sn_; i=0; for x in /tmp/sn_*; do i=$((i+1)); echo "::notice::DOC$i $(tr '\n' '~' < $x | head -c 900)"; done
 
+      - name: Calendar sync check (counts only)
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, datetime
+          R='https://elior-studio-default-rtdb.firebaseio.com'
+          g=lambda p: json.loads(urllib.request.urlopen(R+p, timeout=60).read() or b'null')
+          n=lambda m: print('::notice::'+m)
+          snap=g('/studio_cal/snapshot.json') or {}
+          ev=snap.get('events') or []
+          at=snap.get('at') or 0
+          n('CAL snapshot at=' + (datetime.datetime.utcfromtimestamp(at/1000).strftime('%m%d %H:%M') if at else 'none') + ' total=' + str(len(ev)))
+          today=datetime.date.today()
+          days=[(today+datetime.timedelta(days=i)).isoformat() for i in range(-1,8)]
+          n('CAL per day (iPhone/Google): ' + ' '.join(d[5:]+'='+str(sum(1 for e in ev if e.get('date')==d)) for d in days))
+          n('CAL spanning into a day but starting earlier: ' + ' '.join(d[5:]+'='+str(sum(1 for e in ev if e.get('date','')<d<=e.get('endDate','') and not (e.get('allDay') and e.get('endDate')==d))) for d in days))
+          cals={}
+          for e in ev: cals[e.get('calendar','?')]=cals.get(e.get('calendar','?'),0)+1
+          n('CAL calendars (count only): ' + str(sorted(cals.values(), reverse=True)))
+          sch=g('/studio_data/schedule.json') or []
+          sch=sch if isinstance(sch,list) else list(sch.values())
+          sch=[x for x in sch if isinstance(x,dict) and not x.get('deleted')]
+          n('SCHED app per day: ' + ' '.join(d[5:]+'='+str(sum(1 for x in sch if x.get('date')==d)) for d in days) + ' | total=' + str(len(sch)))
+          diag=g('/studio_diag/ek.json')
+          if diag: n('EKDIAG ' + json.dumps(diag)[:400])
+          PY
+
       - name: Report
         env:
           RESTORE: ${{ github.event.inputs.restore_from }}
