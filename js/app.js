@@ -21528,6 +21528,17 @@ async function gcalRefreshEventKit() {
     const seen = new Set();
     const fresh = all.filter(ev => !skip.test(String(ev.calendar || ''))).filter(ev => {
       const k = (ev.id || '') + '|' + ev.date + '|' + ev.time; if (seen.has(k)) return false; seen.add(k); return true; });
+    // v662: a quiet health record of what the phone's calendar actually gives us (counts, no titles) —
+    // which calendars exist, which ones had events, how many the holiday filter dropped, the next days
+    try { if (!window._ekDiagAt || Date.now() - window._ekDiagAt > 10 * 60 * 1000) { window._ekDiagAt = Date.now();
+      const lc = Cal.listCalendars ? await Cal.listCalendars().catch(() => null) : null, cl = (lc && lc.calendars) || [];
+      const kind = x => /google|gmail/i.test(String(x || '')) ? 'google' : /icloud/i.test(String(x || '')) ? 'icloud' : String(x || '').toLowerCase().indexOf('exchange') >= 0 ? 'exchange' : 'other';
+      const per = {}; all.forEach(ev => { const k = String(ev.calendar || '?'); per[k] = (per[k] || 0) + 1; });
+      const nd = []; for (let i = 0; i < 8; i++) { const d = new Date(base); d.setDate(d.getDate() + i); const k = key(d); nd.push(k.slice(5) + ':' + all.filter(e => e.date === k).length + '/' + fresh.filter(e => e.date === k).length); }
+      fetch('https://elior-studio-default-rtdb.firebaseio.com/studio_diag/ek.json', { method: 'PUT', body: JSON.stringify({ at: Date.now(), v: window.APP_BUILD || '', granted: _iosCalGranted(),
+        cals: cl.map(c => ({ src: kind(c.source) + '/' + (c.type || ''), n: per[String(c.title)] || 0, skip: skip.test(String(c.title || '')) })),
+        raw: all.length, kept: fresh.length, days: nd.join(' '), ics: !!(typeof _icsUrl === 'function' && _icsUrl()), icsN: (window._gcalEventsCache || []).length }) }).catch(() => {});
+    } } catch (_) {}
     const changed = JSON.stringify(fresh) !== JSON.stringify(window._eventKitCache || []);
     window._eventKitCache = fresh;
     window._ekLoadedFrom = ranges[0][0]; window._ekLoadedTo = ranges[0][1];
