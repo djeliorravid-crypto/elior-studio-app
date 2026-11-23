@@ -22355,6 +22355,15 @@ async function _morningFindCredit(it) {
     return items.find(d => d && num && String(d.description || '').indexOf(num) >= 0 && (Math.abs(Number(d.amount) || 0) === amt || !d.amount)) || null;
   } catch (_) { return null; }
 }
+// v665: cancelled directly in the Morning app → clear it here too, so a new document can be issued
+window.morningCancelledByHand = function(incomeId) {
+  const L = load('income') || [], ff = L.find(x => x.id === incomeId); if (!ff || !ff.morningDocId) return;
+  ff.morningCanceledReceipts = ff.morningCanceledReceipts || [];
+  ff.morningCanceledReceipts.push({ docId: ff.morningDocId, docNumber: ff.morningDocNumber, byHand: true, canceledAt: new Date().toISOString() });
+  delete ff.morningDocId; delete ff.morningDocNumber; delete ff.morningDocUrl; delete ff.morningError; delete ff.morningDocType;
+  save('income', L); _rcTrail('cancel-hand', String(incomeId));
+  toast('עודכן — אפשר להוציא מסמך חדש לתשלום הזה'); try { if (typeof renderIncome === 'function') renderIncome(); } catch (_) {}
+};
 async function _morningDoCancel(incomeId) {
   const all = load('income');
   const it = all.find(x => x.id === incomeId);
@@ -22399,6 +22408,7 @@ async function _morningDoCancel(incomeId) {
     const msg = _morningErrorMessage(res), raw = (() => { try { return JSON.stringify({ e: res && res.error, s: res && res.status, d: res && res.detail }).slice(0, 600); } catch (_) { return String(res); } })();
     spentSheet('הביטול לא יצא', 'Morning: ' + msg, [
       { label: 'לנסות שוב', pri: true, run: () => _morningDoCancel(incomeId) },
+      { label: 'ביטלתי בעצמי ב-Morning — לעדכן כאן', run: () => morningCancelledByHand(incomeId) },
       { label: 'העתקת הפרטים לשליחה', run: async () => { try { await navigator.clipboard.writeText('Morning cancel error · v' + (window.APP_BUILD || '') + '\n' + msg + '\n' + raw); toast('הועתק'); } catch (_) { toast('לא הצלחתי להעתיק'); } } }]);
     if (window.haptic) window.haptic.error();
     console.warn('Morning cancel failure', res);
