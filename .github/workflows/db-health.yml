@@ -114,6 +114,15 @@ jobs:
           if diag: n('EKDIAG ' + json.dumps({k: diag.get(k) for k in ('v','granted','raw','kept','days','ics','icsN')}) + ' cals=' + json.dumps(diag.get('cals'))[:500])
           PY
 
+      - name: Receipt trail (steps and Morning error codes)
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request, datetime
+          tr = json.loads(urllib.request.urlopen('https://elior-studio-default-rtdb.firebaseio.com/studio_diag/receipt.json', timeout=60).read() or b'null')
+          for e in (tr if isinstance(tr, list) else [])[-9:]:
+              if isinstance(e, dict): print('::notice::RC ' + datetime.datetime.utcfromtimestamp((e.get('at') or 0)/1000).strftime('%m%d %H:%M:%S') + ' v' + str(e.get('v')) + ' ' + str(e.get('s')) + ' ' + str(e.get('x'))[:160])
+          PY
+
       - name: Report
         env:
           RESTORE: ${{ github.event.inputs.restore_from }}
