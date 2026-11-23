@@ -22285,6 +22285,13 @@ window.receiptSendAsk = function(id) {
 // clear the local morningDocId so the user can immediately issue a
 // fresh receipt with the correct details.
 async function morningCreateCreditFor(income) {
+  const r = await _morningCreditOnce(income, true);
+  if (r && !r.id && r.error === 'create_failed') return _morningCreditOnce(income, false);
+  return r;
+}
+async function _morningCreditOnce(income, withLink) {
+  const _post = b => window._morningPostDocWithRetry(b);   // the real one (the name below is shadowed in here)
+  const _morningPostDocWithRetry = b => { if (!withLink) { delete b.linkType; } return _post(b); };
   const amt = parseFloat(income.amount) || 0;
   // v654: a חשבונית מס/קבלה is cancelled with a חשבונית זיכוי (330) linked to it
   if (Number(income.morningDocType) === 320) {
@@ -22294,7 +22301,7 @@ async function morningCreateCreditFor(income) {
       client: _morningBuildClient(income),
       income: [{ description: 'זיכוי: ' + (income.description || ''), quantity: 1, price: amt, currency: 'ILS', vatType: 1 }],
       linkedDocumentIds: income.morningDocId ? [income.morningDocId] : undefined,
-      linkType: income.morningDocId ? 1 : undefined
+      linkType: income.morningDocId ? 'cancel' : undefined
     });
   }
   // For עוסק פטור, type 405 (קבלה זיכוי) is rejected by Morning.
@@ -22322,20 +22329,31 @@ async function morningCreateCreditFor(income) {
       currency: 'ILS'
     }],
     linkedDocumentIds: income.morningDocId ? [income.morningDocId] : undefined,
-    linkType:          income.morningDocId ? 1 : undefined
+    linkType:          income.morningDocId ? 'cancel' : undefined
   };
   return _morningPostDocWithRetry(body);
 }
 
-window.morningCancelReceipt = async function(incomeId) {
-  if (!window.morningConnected()) return;
+window.morningCancelReceipt = function(incomeId) {
+  // v663: never silent — and the app's own sheet instead of a system popup (which iOS can swallow)
+  _rcTrail('cancel-open', incomeId);
+  if (!window.morningConnected()) { spentSheet('Morning לא מחובר במכשיר הזה', 'צריך את מפתחות Morning כדי לבטל מסמך', [{ label: 'לחבר עכשיו', pri: true, run: () => { try { openNotifSettings(); setTimeout(() => { const mb = document.getElementById('morning-box'); if (mb) { mb.open = true; mb.scrollIntoView({ block: 'center' }); } }, 350); } catch (_) {} } }]); return; }
+  const it = (load('income') || []).find(x => x.id === incomeId);
+  if (!it || !it.morningDocId) { spentSheet('אין כאן מסמך לבטל', 'לתשלום הזה לא שמור מסמך מ-Morning במכשיר הזה', []); return; }
+  const inv = Number(it.morningDocType) === 320, num = it.morningDocNumber ? ' #' + it.morningDocNumber : '';
+  spentSheet(inv ? 'לבטל את חשבונית מס/קבלה' + num + '?' : 'לבטל את הקבלה' + num + '?',
+    (inv ? 'תצא חשבונית זיכוי ב-Morning שמבטלת אותה' : 'תצא קבלה מבטלת ב-Morning') + ' על ' + fmtMoney(Number(it.amount) || 0) + '. אחר כך אפשר להוציא מסמך חדש עם פרטים נכונים.',
+    [{ label: inv ? 'כן, להוציא חשבונית זיכוי' : 'כן, לבטל את הקבלה', danger: true, run: () => _morningDoCancel(incomeId) }, { label: 'לא, להשאיר', run: () => {} }]);
+};
+async function _morningDoCancel(incomeId) {
   const all = load('income');
   const it = all.find(x => x.id === incomeId);
-  if (!it || !it.morningDocId) { toast('אין קבלה לבטל'); return; }
+  if (!it || !it.morningDocId) return;
   const num = it.morningDocNumber ? '#' + it.morningDocNumber : '';
-  if (!confirm(Number(it.morningDocType) === 320 ? 'לבטל את חשבונית מס/קבלה ' + num + ' ולהוציא חשבונית זיכוי ב-Morning?\n(אחר כך אפשר להוציא חשבונית חדשה עם פרטים מתוקנים)' : 'לבטל את קבלה ' + num + ' ולהוציא קבלת זיכוי ב-Morning?\n(אחר כך אפשר ליצור קבלה חדשה עם פרטים מתוקנים)')) return;
   toast('מבטל קבלה ב-Morning…');
-  const res = await morningCreateCreditFor(it);
+  _rcTrail('cancel-send', String(it.morningDocType || '?'));
+  const res = await Promise.race([morningCreateCreditFor(it), new Promise(r => setTimeout(() => r({ error: 'timeout' }), 25000))]).catch(e => ({ error: 'network', detail: { message: String(e && e.message || e) } }));
+  _rcTrail('cancel-result', res && res.id ? 'ok' : JSON.stringify({ e: res && res.error, s: res && res.status, d: res && res.detail }).slice(0, 200));
   const fresh = load('income');
   const ff    = fresh.find(x => x.id === incomeId);
   if (!ff) return;
@@ -22360,11 +22378,14 @@ window.morningCancelReceipt = async function(incomeId) {
     if (window.haptic) window.haptic.success();
     if (typeof renderIncome === 'function') renderIncome();
   } else {
-    toast('⚠️ Morning: ' + _morningErrorMessage(res));
+    const msg = _morningErrorMessage(res), raw = (() => { try { return JSON.stringify({ e: res && res.error, s: res && res.status, d: res && res.detail }).slice(0, 600); } catch (_) { return String(res); } })();
+    spentSheet('הביטול לא יצא', 'Morning: ' + msg, [
+      { label: 'לנסות שוב', pri: true, run: () => _morningDoCancel(incomeId) },
+      { label: 'העתקת הפרטים לשליחה', run: async () => { try { await navigator.clipboard.writeText('Morning cancel error · v' + (window.APP_BUILD || '') + '\n' + msg + '\n' + raw); toast('הועתק'); } catch (_) { toast('לא הצלחתי להעתיק'); } } }]);
     if (window.haptic) window.haptic.error();
     console.warn('Morning cancel failure', res);
   }
-};
+}
 
 // ===== Morning — דרישת תשלום (Payment Request) =====
 // Type 100 = הצעת מחיר (Quote). It's the only "please pay this"
