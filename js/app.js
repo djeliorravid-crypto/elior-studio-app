@@ -22062,7 +22062,7 @@ function _morningErrorMessage(res) {
   }
   if (res.error === 'no_token')     return (morningCreds().id ? 'Morning לא נתן כניסה' : 'צריך להזין פעם אחת את מפתחות Morning בהגדרות') + (window._mtDiag ? ' · ' + window._mtDiag : '');
   if (res.error === 'network')      return 'תקלת רשת';
-  if (res.error === 'timeout')      return 'Morning לא ענה אחרי 25 שניות — בדוק אינטרנט ונסה שוב';
+  if (res.error === 'timeout')      return 'Morning לא ענה בזמן. ״לנסות שוב״ בודק קודם אם המסמך כבר נוצר, כך שלא ייצא כפול';
   if (res.error === 'create_failed') return 'Morning דחה את הבקשה';
   return res.error || 'שגיאה לא ידועה';
 }
@@ -22345,14 +22345,32 @@ window.morningCancelReceipt = function(incomeId) {
     (inv ? 'תצא חשבונית זיכוי ב-Morning שמבטלת אותה' : 'תצא קבלה מבטלת ב-Morning') + ' על ' + fmtMoney(Number(it.amount) || 0) + '. אחר כך אפשר להוציא מסמך חדש עם פרטים נכונים.',
     [{ label: inv ? 'כן, להוציא חשבונית זיכוי' : 'כן, לבטל את הקבלה', danger: true, run: () => _morningDoCancel(incomeId) }, { label: 'לא, להשאיר', run: () => {} }]);
 };
+async function _morningFindCredit(it) {
+  try {
+    const tok = await morningGetToken(); if (!tok) return null;
+    const from = new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10);
+    const r = await _morningCall('POST', '/documents/search', { page: 1, pageSize: 50, type: [Number(it.morningDocType) === 320 ? 330 : 400], fromDate: from }, tok);
+    const items = (r && r.json && r.json.items) || [];
+    const num = String(it.morningDocNumber || ''), amt = Math.abs(Number(it.amount) || 0);
+    return items.find(d => d && num && String(d.description || '').indexOf(num) >= 0 && (Math.abs(Number(d.amount) || 0) === amt || !d.amount)) || null;
+  } catch (_) { return null; }
+}
 async function _morningDoCancel(incomeId) {
   const all = load('income');
   const it = all.find(x => x.id === incomeId);
   if (!it || !it.morningDocId) return;
   const num = it.morningDocNumber ? '#' + it.morningDocNumber : '';
   toast('מבטל קבלה ב-Morning…');
-  _rcTrail('cancel-send', String(it.morningDocType || '?'));
-  const res = await Promise.race([morningCreateCreditFor(it), new Promise(r => setTimeout(() => r({ error: 'timeout' }), 25000))]).catch(e => ({ error: 'network', detail: { message: String(e && e.message || e) } }));
+  // maybe a slow earlier try already made it — look first, never create a second one
+  toast('בודק ב-Morning…');
+  let res = await _morningFindCredit(it);
+  if (res) { _rcTrail('cancel-found', String(res.number || '')); res = { id: res.id, number: res.number }; }
+  else {
+    _rcTrail('cancel-send', String(it.morningDocType || '?'));
+    toast('מוציא ' + (Number(it.morningDocType) === 320 ? 'חשבונית זיכוי' : 'קבלה מבטלת') + ' ב-Morning… זה יכול לקחת עד דקה');
+    res = await Promise.race([morningCreateCreditFor(it), new Promise(r => setTimeout(() => r({ error: 'timeout' }), 70000))]).catch(e => ({ error: 'network', detail: { message: String(e && e.message || e) } }));
+    if (!(res && res.id)) { const late = await _morningFindCredit(it); if (late) { _rcTrail('cancel-found-late', String(late.number || '')); res = { id: late.id, number: late.number }; } }
+  }
   _rcTrail('cancel-result', res && res.id ? 'ok' : JSON.stringify({ e: res && res.error, s: res && res.status, d: res && res.detail }).slice(0, 200));
   const fresh = load('income');
   const ff    = fresh.find(x => x.id === incomeId);
