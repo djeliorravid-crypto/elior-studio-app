@@ -11327,6 +11327,17 @@ window.spTasksHtml = function() {
   return head('המשימות של היום', dayN ? dayN + ' פתוחות' : 'הכל סגור') + '<div class="tk-body">' + cut(spRememberHtml()) + '</div>'
     + head('המשימות של השבוע', (W.length ? wDone + '/' + W.length + ' · ' : '') + (left <= 0 ? 'היום האחרון' : left === 1 ? 'עוד יום' : 'עוד ' + left + ' ימים')) + '<div class="tk-body">' + cut(spWeekHtml()) + '</div>';
 };
+// v666: when the iPhone calendar stops bringing anything new (e.g. iOS lost the Google account),
+// say so in the לו״ז instead of showing quiet empty days
+function _ekStaleNote(todayK) {
+  try {
+    const ev = window._eventKitCache || []; if (ev.length < 10) return '';
+    const last = ev.reduce((m, e) => (e && e.date > m ? e.date : m), '');
+    const lastAt = new Date(last + 'T12:00'), now = new Date(todayK + 'T12:00'), gap = Math.round((now - lastAt) / 864e5);
+    if (!last || last >= todayK || gap < 3) return '';
+    return '<div class="ek-stale"><b>היומן של האייפון לא מביא אירועים חדשים</b><span>האירוע האחרון שהגיע ממנו הוא מ־' + (+last.slice(8)) + '.' + (+last.slice(5, 7)) + '. כנראה חשבון הגוגל באייפון התנתק: הגדרות האייפון ← יומן ← חשבונות ← Gmail — להתחבר מחדש ולוודא ש״יומנים״ דלוק.</span></div>';
+  } catch (_) { return ''; }
+}
 function spLobbyRender() {
   // v542: home = what to do today. No sums here.
   const ms = document.getElementById('mode-screen');
@@ -22670,7 +22681,7 @@ function _schedSpent(items, listEl) {
     let gap = '';
     if (n > 0) { const a = _tm(items[n - 1].time), b = _tm(it.time);
       if (a !== null && b !== null && b > a) gap = '<div class="fz-gap"><div class="h"><i></i><span>' + _gapTxt(b - a) + '</span><i></i></div></div>'; }
-    return gap + _tlRow(it, n); }).join('') : '<div class="fz-empty">' + (_scheduleDate === todayK ? 'יום פנוי היום' : 'אין כלום ביום הזה') + '</div>') + addBox;
+    return gap + _tlRow(it, n); }).join('') : '<div class="fz-empty">' + (_scheduleDate === todayK ? 'יום פנוי היום' : 'אין כלום ביום הזה') + '</div>') + addBox + _ekStaleNote(todayK);
   function _tlRow(it, n) {
     const t = FZ_TINT[tints[n % tints.length]];
     const editable = it._source !== 'gcal' || (typeof it.id === 'string' && it.id.indexOf('gcal_ek_') === 0);

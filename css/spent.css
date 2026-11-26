@@ -2253,3 +2253,7 @@ html[data-skin="spent"]:not(.desk) #page-profiles > .page-header > div:first-chi
 .mr-types button { border: none; background: none; border-radius: 999px; min-height: 40px; font-family: inherit; font-size: 14px; font-weight: 600; color: #6f7596; cursor: pointer; }
 .mr-types button.on { background: #fff; color: #161c45; box-shadow: 0 2px 8px rgba(22,28,69,.1); }
 .mr-type-hint { font-size: 12.5px; color: #6f7596; margin-top: 6px; line-height: 1.45; }
+
+/* v666 — iPhone calendar stopped syncing */
+.ek-stale { margin: 18px 4px 0; padding: 14px 16px; border-radius: 18px; background: #fdf3e3; color: #7a4a0b; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; line-height: 1.5; }
+.ek-stale b { font-size: 14.5px; color: #6b3f05; }
