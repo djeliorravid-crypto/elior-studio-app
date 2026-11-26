@@ -1786,41 +1786,35 @@ function renderIncomeSpent(o) {
   const say = o.totalPaid > lastPaid && lastPaid > 0 ? 'יותר מכל ' + prevName + ' באותו זמן'
     : o.totalNotPaid > 0 ? 'ועוד ' + fmtMoney(o.totalNotPaid) + ' בדרך אליך'
     : o.totalPaid > 0 ? 'חודש טוב' : 'עוד לא נכנס כסף החודש';
-  // v667: the whole month, grouped by day like a bank app — no "אחרונים", no "הכל".
-  // Two small tabs filter: הכל / נכנס / בדרך (what's still owed).
+  // v669: the simplest possible money page — what came in, what's still coming, and on what.
+  // Categories in the same order the old page had (biggest first), each one opens to its payments
+  // (the open/closed state is remembered, same as before).
   if (page) page.classList.remove('fz-all');
-  const all = (o.monthEntries || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  const all = (o.monthEntries || []).slice();
   const isPaid = i => (i.status || 'pending') === 'paid';
-  const f = window._incF || 'all', waitN = all.filter(i => !isPaid(i)).length;
-  // v668: "ממה נכנס" — by category (paid only), tap one to see just it below
-  const catOf = i => String(i.category || '').trim() || 'בלי קטגוריה';
-  const icat = window._incCat || null;
-  const list = (f === 'paid' ? all.filter(isPaid) : f === 'wait' ? all.filter(i => !isPaid(i)) : all).filter(i => !icat || catOf(i) === icat);
+  const byCat = {};
+  all.forEach(i => { const c = i.category || 'אחר'; const b = byCat[c] = byCat[c] || { items: [], total: 0, paid: 0, wait: 0 };
+    b.items.push(i); b.total += Number(i.amount) || 0; if (isPaid(i)) b.paid += Number(i.amount) || 0; else b.wait += Number(i.amount) || 0; });
+  Object.values(byCat).forEach(b => b.items.sort((x, y) => ((isPaid(x) ? 1 : 0) - (isPaid(y) ? 1 : 0)) || String(y.date).localeCompare(String(x.date))));
+  const cats = Object.entries(byCat).sort((x, y) => y[1].total - x[1].total);
+  let openSet; try { openSet = new Set(JSON.parse(localStorage.getItem('_inc_cat_open') || '[]')); } catch (_) { openSet = new Set(); }
+  const d2 = i => i.date ? (+String(i.date).slice(8, 10)) + '.' + (+String(i.date).slice(5, 7)) : '';
   let h = '<div class="fz-ttl">כסף</div>' + '<div class="fz-seg"><button class="on">נכנס</button><button onclick="showPage(\'expenses\')">יצא</button></div>'
-    + '<div class="fz-big"><div class="k"><button onclick="changeMonth(1)" aria-label="החודש הקודם">‹</button>' + MONTHS_HE[curMonth] + '<button onclick="changeMonth(-1)" aria-label="החודש הבא">›</button></div><div class="n">' + fmtMoney(o.totalPaid) + '</div>'
-    + '<div class="mi-sub">נכנס החודש' + (o.totalPaid > lastPaid && lastPaid > 0 ? ' · יותר מכל ' + prevName + ' באותו זמן' : '') + '</div></div>';
-  if (o.totalNotPaid > 0) h += '<button class="mi-owed" onclick="window._incF=\'wait\';renderIncome()"><span><b>' + fmtMoney(o.totalNotPaid) + '</b> עוד בדרך אליך</span><small>' + waitN + (waitN === 1 ? ' תשלום פתוח' : ' תשלומים פתוחים') + ' ›</small></button>';
-  { const cm = {}; all.filter(isPaid).forEach(i => { const k = catOf(i); (cm[k] = cm[k] || { k, sum: 0, n: 0 }); cm[k].sum += Number(i.amount) || 0; cm[k].n++; });
-    const cats = Object.values(cm).sort((a, b) => b.sum - a.sum), top = (cats[0] || {}).sum || 1;
-    if (cats.length > 1 || icat) h += '<div class="fz-lbl">ממה נכנס</div><div class="fz-card ex-cats">' + cats.map(c =>
-        '<button class="ex-cat' + (icat === c.k ? ' on' : '') + '" onclick="window._incCat=window._incCat===\'' + _escape(c.k) + '\'?null:\'' + _escape(c.k) + '\';renderIncome()">'
-        + '<span class="ex-cat-t"><b>' + _escape(c.k) + '</b><small>' + (c.n === 1 ? 'תשלום אחד' : c.n + ' תשלומים') + '</small></span>'
-        + '<span class="ex-cat-v">' + fmtMoney(c.sum) + '<small>' + Math.round(c.sum / (o.totalPaid || 1) * 100) + '%</small></span>'
-        + '<span class="ex-cat-bar"><i style="width:' + Math.max(3, Math.round(c.sum / top * 100)) + '%"></i></span></button>').join('')
-      + (icat ? '<button class="fz-more" onclick="window._incCat=null;renderIncome()">להציג את כל הקטגוריות</button>' : '') + '</div>'; }
-  if (all.length) {
-    h += (icat ? '<div class="mi-filter">מוצג: <b>' + _escape(icat) + '</b></div>' : '') + '<div class="mi-tabs">' + [['all', 'הכל', all.length], ['paid', 'נכנס', all.length - waitN], ['wait', 'בדרך', waitN]].map(([k, t, n]) => '<button class="' + (f === k ? 'on' : '') + '" onclick="window._incF=\'' + k + '\';renderIncome()">' + t + (n ? ' <i>' + n + '</i>' : '') + '</button>').join('') + '</div>';
-    const td = dailyDateStr(), yd = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return dailyDateStr(d); })();
-    const dayName = k => k === td ? 'היום' : k === yd ? 'אתמול' : 'יום ' + ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][new Date(k + 'T12:00').getDay()] + ' · ' + (+k.slice(8, 10)) + '.' + (+k.slice(5, 7));
-    const groups = []; list.forEach(i => { const k = String(i.date || '').slice(0, 10); const g = groups[groups.length - 1]; if (g && g.k === k) g.items.push(i); else groups.push({ k, items: [i] }); });
-    h += groups.length ? groups.map(g => '<div class="mi-day"><span>' + (g.k ? dayName(g.k) : 'בלי תאריך') + '</span><span>' + (g.items.some(isPaid) ? fmtMoney(g.items.filter(isPaid).reduce((t, i) => t + (Number(i.amount) || 0), 0)) : '') + '</span></div><div class="fz-card mi-card">'
-      + g.items.map(i => { const paid = isPaid(i), st = fzPayState(i);
-        return '<button class="fz-row mi-row' + (paid ? '' : ' wait') + '" onclick="incOpenEntry(\'' + i.id + '\')">' + fzPayIc(i)
-          + '<span class="fz-m"><b>' + _escape(i.clientName || i.client || i.description || 'הכנסה') + '</b><small>'
-          + (i.origAmount && !paid ? 'נשאר ' + fmtMoney(i.amount) + ' מתוך ' + fmtMoney(i.origAmount) : i.partOf ? 'חלק מתשלום' : _escape(i.description && i.description !== (i.clientName || i.client) ? i.description : (i.category || '')))
-          + '</small></span><span class="mi-v"><b>' + fmtMoney(i.amount) + '</b><em class="st-' + st + '">' + ({ wait: 'ממתין', ok: 'שולם', norc: 'בלי קבלה' })[st] + '</em></span></button>'; }).join('') + '</div>').join('')
-      : '<div class="fz-empty">' + (f === 'wait' ? 'אין תשלומים פתוחים ב' + MONTHS_HE[curMonth] : 'אין כאן כלום') + '</div>';
-  } else h += '<div class="fz-empty">עוד אין הכנסות ב' + MONTHS_HE[curMonth] + '</div>';
+    + '<div class="ms-month"><button onclick="changeMonth(1)" aria-label="החודש הקודם">‹</button><b>' + MONTHS_HE[curMonth] + ' ' + curYear + '</b><button onclick="changeMonth(-1)" aria-label="החודש הבא">›</button></div>'
+    + '<div class="ms-sum"><div class="ms-got"><small>קיבלתי</small><b>' + fmtMoney(o.totalPaid) + '</b>' + (o.totalPaid > lastPaid && lastPaid > 0 ? '<em>יותר מ' + prevName + ' באותו זמן</em>' : '') + '</div>'
+    + '<div class="ms-due"><small>אמור להיכנס</small><b>' + fmtMoney(o.totalNotPaid || 0) + '</b>' + (o.totalNotPaid ? '<em>' + all.filter(i => !isPaid(i)).length + ' תשלומים פתוחים</em>' : '<em>הכל נכנס</em>') + '</div></div>';
+  if (cats.length) h += '<div class="ms-lbl">לפי קטגוריה</div>' + cats.map(([cat, b]) => {
+      const open = openSet.has(cat), ce = String(cat).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return '<div class="ms-cat' + (open ? ' open' : '') + '"><button class="ms-head" onclick="toggleIncomeCatBox(\'' + ce + '\')" aria-expanded="' + open + '">'
+        + '<span class="ms-ic">' + (typeof _txCatSvg === 'function' ? _txCatSvg(cat) : '') + '</span>'
+        + '<span class="ms-name"><b>' + _escape(cat) + '</b><small>' + (b.items.length === 1 ? 'תשלום אחד' : b.items.length + ' תשלומים') + '</small></span>'
+        + '<span class="ms-amt"><b>' + fmtMoney(b.paid) + '</b>' + (b.wait ? '<small>+ ' + fmtMoney(b.wait) + ' בדרך</small>' : '') + '</span><span class="ms-ch">' + (open ? '⌃' : '⌄') + '</span></button>'
+        + (open ? '<div class="ms-body">' + b.items.map(i => { const pd = isPaid(i), st = fzPayState(i);
+            return '<button class="ms-row' + (pd ? '' : ' wait') + '" onclick="incOpenEntry(\'' + i.id + '\')"><span class="ms-rm"><b>' + _escape(i.clientName || i.client || 'לקוח') + '</b><small>'
+              + [d2(i), i.origAmount && !pd ? 'נשאר ' + fmtMoney(i.amount) + ' מתוך ' + fmtMoney(i.origAmount) : i.partOf ? 'חלק מתשלום' : _escape(i.description || '')].filter(Boolean).join(' · ')
+              + '</small></span><span class="ms-rv"><b>' + fmtMoney(i.amount) + '</b><em class="st-' + st + '">' + ({ wait: 'ממתין', ok: 'שולם', norc: 'בלי קבלה' })[st] + '</em></span></button>'; }).join('') + '</div>' : '')
+        + '</div>'; }).join('');
+  else h += '<div class="fz-empty">עוד אין הכנסות ב' + MONTHS_HE[curMonth] + '</div>';
   host.innerHTML = h;
 }
 // v617: part of a payment arrived — split it: the received part becomes a paid
