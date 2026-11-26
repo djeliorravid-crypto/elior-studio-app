@@ -106,6 +106,8 @@ jobs:
           cals={}
           for e in ev: cals[e.get('calendar','?')]=cals.get(e.get('calendar','?'),0)+1
           n('CAL calendars (count only): ' + str(sorted(cals.values(), reverse=True)))
+          ds=sorted(e.get('date','') for e in ev if e.get('date'))
+          n('CAL range: first=' + (ds[0] if ds else '-') + ' last=' + (ds[-1] if ds else '-') + ' future=' + str(sum(1 for d in ds if d >= today.isoformat())) + ' last30=' + str(sum(1 for d in ds if (today-datetime.timedelta(days=30)).isoformat() <= d < today.isoformat())))
           sch=g('/studio_data/schedule.json') or []
           sch=sch if isinstance(sch,list) else list(sch.values())
           sch=[x for x in sch if isinstance(x,dict) and not x.get('deleted')]
