@@ -2284,3 +2284,4 @@ html[data-skin="spent"] #page-income.fz-all #inc-spent ~ * { display: none !impo
 .mi-card > .fz-row { background: none !important; box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; padding: 12px 0 !important; border-bottom: 1px solid #eef0f6 !important; }
 .mi-card > .fz-row:last-child { border-bottom: none !important; }
 html[data-skin="spent"]:not(.desk) .page.active { padding-bottom: 150px !important; }
+.mi-filter { text-align: center; font-size: 13px; color: #6f7596; margin: 14px 0 -8px; } .mi-filter b { color: #161c45; }

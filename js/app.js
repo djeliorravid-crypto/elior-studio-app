@@ -1792,13 +1792,24 @@ function renderIncomeSpent(o) {
   const all = (o.monthEntries || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
   const isPaid = i => (i.status || 'pending') === 'paid';
   const f = window._incF || 'all', waitN = all.filter(i => !isPaid(i)).length;
-  const list = f === 'paid' ? all.filter(isPaid) : f === 'wait' ? all.filter(i => !isPaid(i)) : all;
+  // v668: "ממה נכנס" — by category (paid only), tap one to see just it below
+  const catOf = i => String(i.category || '').trim() || 'בלי קטגוריה';
+  const icat = window._incCat || null;
+  const list = (f === 'paid' ? all.filter(isPaid) : f === 'wait' ? all.filter(i => !isPaid(i)) : all).filter(i => !icat || catOf(i) === icat);
   let h = '<div class="fz-ttl">כסף</div>' + '<div class="fz-seg"><button class="on">נכנס</button><button onclick="showPage(\'expenses\')">יצא</button></div>'
     + '<div class="fz-big"><div class="k"><button onclick="changeMonth(1)" aria-label="החודש הקודם">‹</button>' + MONTHS_HE[curMonth] + '<button onclick="changeMonth(-1)" aria-label="החודש הבא">›</button></div><div class="n">' + fmtMoney(o.totalPaid) + '</div>'
     + '<div class="mi-sub">נכנס החודש' + (o.totalPaid > lastPaid && lastPaid > 0 ? ' · יותר מכל ' + prevName + ' באותו זמן' : '') + '</div></div>';
   if (o.totalNotPaid > 0) h += '<button class="mi-owed" onclick="window._incF=\'wait\';renderIncome()"><span><b>' + fmtMoney(o.totalNotPaid) + '</b> עוד בדרך אליך</span><small>' + waitN + (waitN === 1 ? ' תשלום פתוח' : ' תשלומים פתוחים') + ' ›</small></button>';
+  { const cm = {}; all.filter(isPaid).forEach(i => { const k = catOf(i); (cm[k] = cm[k] || { k, sum: 0, n: 0 }); cm[k].sum += Number(i.amount) || 0; cm[k].n++; });
+    const cats = Object.values(cm).sort((a, b) => b.sum - a.sum), top = (cats[0] || {}).sum || 1;
+    if (cats.length > 1 || icat) h += '<div class="fz-lbl">ממה נכנס</div><div class="fz-card ex-cats">' + cats.map(c =>
+        '<button class="ex-cat' + (icat === c.k ? ' on' : '') + '" onclick="window._incCat=window._incCat===\'' + _escape(c.k) + '\'?null:\'' + _escape(c.k) + '\';renderIncome()">'
+        + '<span class="ex-cat-t"><b>' + _escape(c.k) + '</b><small>' + (c.n === 1 ? 'תשלום אחד' : c.n + ' תשלומים') + '</small></span>'
+        + '<span class="ex-cat-v">' + fmtMoney(c.sum) + '<small>' + Math.round(c.sum / (o.totalPaid || 1) * 100) + '%</small></span>'
+        + '<span class="ex-cat-bar"><i style="width:' + Math.max(3, Math.round(c.sum / top * 100)) + '%"></i></span></button>').join('')
+      + (icat ? '<button class="fz-more" onclick="window._incCat=null;renderIncome()">להציג את כל הקטגוריות</button>' : '') + '</div>'; }
   if (all.length) {
-    h += '<div class="mi-tabs">' + [['all', 'הכל', all.length], ['paid', 'נכנס', all.length - waitN], ['wait', 'בדרך', waitN]].map(([k, t, n]) => '<button class="' + (f === k ? 'on' : '') + '" onclick="window._incF=\'' + k + '\';renderIncome()">' + t + (n ? ' <i>' + n + '</i>' : '') + '</button>').join('') + '</div>';
+    h += (icat ? '<div class="mi-filter">מוצג: <b>' + _escape(icat) + '</b></div>' : '') + '<div class="mi-tabs">' + [['all', 'הכל', all.length], ['paid', 'נכנס', all.length - waitN], ['wait', 'בדרך', waitN]].map(([k, t, n]) => '<button class="' + (f === k ? 'on' : '') + '" onclick="window._incF=\'' + k + '\';renderIncome()">' + t + (n ? ' <i>' + n + '</i>' : '') + '</button>').join('') + '</div>';
     const td = dailyDateStr(), yd = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return dailyDateStr(d); })();
     const dayName = k => k === td ? 'היום' : k === yd ? 'אתמול' : 'יום ' + ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'][new Date(k + 'T12:00').getDay()] + ' · ' + (+k.slice(8, 10)) + '.' + (+k.slice(5, 7));
     const groups = []; list.forEach(i => { const k = String(i.date || '').slice(0, 10); const g = groups[groups.length - 1]; if (g && g.k === k) g.items.push(i); else groups.push({ k, items: [i] }); });
