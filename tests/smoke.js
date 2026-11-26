@@ -48,7 +48,8 @@ const results = []; const ok = (name, cond, extra) => { results.push([cond ? 'PA
   ok('browsing changes no data', before === await p.evaluate(() => JSON.stringify(['income', 'expenses', 'fixed_costs', 'clients', 'productions'].map(k => load(k)))));
   // receipt path
   await p.evaluate(() => showPage('income')); await p.waitForTimeout(400);
-  await p.evaluate(() => { const r = [...document.querySelectorAll('#inc-spent .fz-row')].find(x => x.textContent.includes('מיה')); r.click(); }); await p.waitForTimeout(400);
+  await p.evaluate(() => { localStorage.setItem('_inc_cat_open', JSON.stringify([...new Set(load('income').map(i => i.category || 'אחר'))])); renderIncome(); }); await p.waitForTimeout(300);
+  await p.evaluate(() => { const r = [...document.querySelectorAll('#inc-spent .ms-row, #inc-spent .fz-row')].find(x => x.textContent.includes('מיה')); r.click(); }); await p.waitForTimeout(400);
   const acts = await p.evaluate(() => [...document.querySelectorAll('#spent-sheet.open .ss-btn')].map(x => x.textContent));
   ok('paid income offers a receipt', acts.some(a => a.includes('צור חשבונית מס קבלה')), acts.join(','));
   await p.locator('#spent-sheet .ss-btn', { hasText: 'צור חשבונית מס קבלה' }).click(); await p.waitForTimeout(700);
