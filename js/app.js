@@ -920,6 +920,7 @@ let _lastNavPage = null;
 let _lastNavTime  = 0;
 
 function showPage(name) {
+  if (name === 'income') window._incOpenSet = new Set();   // v670: categories start closed every time you come to כסף
   const now = Date.now();
   // לחיצה כפולה על אותה כרטיסייה — גלול למעלה
   if (name === _lastNavPage && now - _lastNavTime < 500) {
@@ -1797,7 +1798,7 @@ function renderIncomeSpent(o) {
     b.items.push(i); b.total += Number(i.amount) || 0; if (isPaid(i)) b.paid += Number(i.amount) || 0; else b.wait += Number(i.amount) || 0; });
   Object.values(byCat).forEach(b => b.items.sort((x, y) => ((isPaid(x) ? 1 : 0) - (isPaid(y) ? 1 : 0)) || String(y.date).localeCompare(String(x.date))));
   const cats = Object.entries(byCat).sort((x, y) => y[1].total - x[1].total);
-  let openSet; try { openSet = new Set(JSON.parse(localStorage.getItem('_inc_cat_open') || '[]')); } catch (_) { openSet = new Set(); }
+  const openSet = window._incOpenSet = window._incOpenSet || new Set();   // only for this visit — closed again next time
   const d2 = i => i.date ? (+String(i.date).slice(8, 10)) + '.' + (+String(i.date).slice(5, 7)) : '';
   let h = '<div class="fz-ttl">כסף</div>' + '<div class="fz-seg"><button class="on">נכנס</button><button onclick="showPage(\'expenses\')">יצא</button></div>'
     + '<div class="ms-month"><button onclick="changeMonth(1)" aria-label="החודש הקודם">‹</button><b>' + MONTHS_HE[curMonth] + ' ' + curYear + '</b><button onclick="changeMonth(-1)" aria-label="החודש הבא">›</button></div>'
@@ -2623,6 +2624,7 @@ function _renderIncomeCatGrid(entries, planRows) {
 }
 
 window.toggleIncomeCatBox = function(cat) {
+  if (document.documentElement.getAttribute('data-skin') === 'spent') { const st = window._incOpenSet = window._incOpenSet || new Set(); st.has(cat) ? st.delete(cat) : st.add(cat); renderIncome(); return; }
   let open = [];
   try { open = JSON.parse(localStorage.getItem('_inc_cat_open') || '[]'); }
   catch (_) {}
