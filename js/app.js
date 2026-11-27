@@ -11630,6 +11630,51 @@ window.freeTimesOpen = function() {
   ov.querySelector('.ff-copy').onclick = async () => { try { await navigator.clipboard.writeText(msg); toast('ההודעה הועתקה — אפשר להדביק בצ׳אט'); } catch (_) { toast('לא הצלחתי להעתיק'); } };
   requestAnimationFrame(() => ov.classList.add('open'));
 };
+// ── v671: scheduled WhatsApp messages from anywhere — pick a contact, write, pick a day and hour.
+// Uses the existing signed queue (/whatsapp/outbox) that the cloud helper sends every minute.
+// Meta only allows free text within 24h of the person's last message to you — we warn before saving.
+function _schedLastIn(phone) { const c = (_waConvs || []).find(x => _waPhone(x.phone) === _waPhone(phone)); return c ? Number(c.lastInTs) || 0 : 0; }
+window.schedMsgNew = function(phone, name) {
+  const go = (ph, nm) => {
+    const to = _waPhone(ph); if (!to) { toast('אין מספר'); return; }
+    const d0 = new Date(Date.now() + 3600e3); d0.setMinutes(d0.getMinutes() < 30 ? 30 : 60, 0, 0);
+    const p2 = n => String(n).padStart(2, '0');
+    spFlowOpen({ title: 'הודעה מתוזמנת · ' + (nm ? _ctClean(nm) || nm : _phPretty(ph)), vals: { d: dailyDateStr(d0), h: p2(d0.getHours()) + ':' + p2(d0.getMinutes()) },
+      steps: [{ k: 't', type: 'text', q: 'מה לשלוח?', ph: 'היי, רק מזכיר שמחר ב־11 אנחנו באולפן', req: 'כתוב את ההודעה' },
+        { k: 'd', type: 'date', future: true, q: 'באיזה יום?' },
+        { k: 'h', type: 'time', q: 'באיזו שעה?' }],
+      onSave: async v => {
+        const at = new Date(v.d + 'T' + v.h + ':00').getTime(), text = String(v.t || '').trim();
+        if (!(at > Date.now() + 30000)) { toast('בחר זמן עתידי'); return; }
+        const save1 = async () => {
+          const sig = await _waSchedSig(to, text, at); if (!sig) { toast('צריך את קוד השליחה של וואטסאפ בהגדרות'); return; }
+          if (!firebaseDB) { toast('אין חיבור לענן'); return; }
+          await firebaseDB.ref('whatsapp/outbox').push({ to, text, at, sig, status: 'pending', created: Date.now(), name: nm ? (_ctClean(nm) || nm) : '' });
+          const d = new Date(at); spDone('ההודעה תוזמנה', (d.getDate()) + '.' + (d.getMonth() + 1) + ' · ' + p2(d.getHours()) + ':' + p2(d.getMinutes()), 'תישלח לבד, גם כשהטלפון סגור');
+        };
+        const li = _schedLastIn(to);
+        if (!li || at - li > 24 * 3600e3) spentSheet('ייתכן שוואטסאפ לא יאשר את השליחה',
+          (li ? 'בזמן השליחה יעברו יותר מ־24 שעות מההודעה האחרונה שלו אליך.' : 'הוא עוד לא כתב לך במספר העסקי.') + ' וואטסאפ מרשה הודעה חופשית רק בתוך 24 שעות מההודעה האחרונה שלו. אם זה ייכשל, תקבל התראה.',
+          [{ label: 'לתזמן בכל זאת', pri: true, run: save1 }, { label: 'ביטול', run: () => {} }]);
+        else save1();
+      } });
+  };
+  if (phone) go(phone, name || ''); else contactPick('', go);
+};
+window.schedMsgList = async function() {
+  let box = _waOutbox || {};
+  try { if (!Object.keys(box).length && firebaseDB) box = (await firebaseDB.ref('whatsapp/outbox').once('value')).val() || {}; } catch (_) {}
+  const p2 = n => String(n).padStart(2, '0');
+  const ids = Object.keys(box).filter(id => box[id]).sort((a, b) => ((box[a].status === 'pending' ? 0 : 1) - (box[b].status === 'pending' ? 0 : 1)) || (Number(box[a].at) - Number(box[b].at)));
+  const label = id => { const it = box[id], d = new Date(Number(it.at) || 0), who = it.name || _waName({ phone: it.to }) || _phPretty(it.to);
+    return (it.status === 'sent' ? '✓ ' : it.status === 'failed' ? '✗ ' : '') + d.getDate() + '.' + (d.getMonth() + 1) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ' · ' + who + ' — ' + String(it.text || '').slice(0, 34); };
+  const pend = ids.filter(id => box[id].status === 'pending').length;
+  spentSheet('הודעות מתוזמנות', pend ? pend + ' ממתינות לשליחה' : 'אין הודעות שממתינות', [{ label: '+ הודעה חדשה', pri: true, run: () => schedMsgNew() }].concat(
+    ids.slice(0, 12).map(id => ({ label: label(id), run: () => { const it = box[id];
+      spentSheet(label(id), it.status === 'failed' ? 'לא נשלחה: ' + (it.err || '') : it.status === 'sent' ? 'נשלחה' : 'תישלח בזמן שנקבע', it.status === 'pending'
+        ? [{ label: 'לבטל את ההודעה', danger: true, run: () => { waSchedCancel(id); setTimeout(schedMsgList, 400); } }, { label: 'חזרה', run: () => schedMsgList() }]
+        : [{ label: 'למחוק מהרשימה', run: () => { waSchedCancel(id); setTimeout(schedMsgList, 400); } }, { label: 'חזרה', run: () => schedMsgList() }]); } }))));
+};
 window.spLobbyAdd = function() {
   // v656: the one "+" on the home screen — what you most often add, first
   spentSheet('מה להוסיף?', '', [
@@ -11638,6 +11683,8 @@ window.spLobbyAdd = function() {
     { label: 'הכנסה', run: () => quickAction('income') },
     { label: 'הוצאה', run: () => quickAction('expense') },
     { label: 'פגישה בלו״ז', run: () => quickAction('schedule') },
+    { label: 'הודעה מתוזמנת בוואטסאפ', run: () => schedMsgNew() },
+    { label: 'הודעות מתוזמנות', run: () => schedMsgList() },
     { label: 'לשלוח מתי אני פנוי', run: () => freeTimesOpen() },
     { label: 'לקבוע מהודעה שהעתקתי', run: () => offerPaste() },
     { label: 'הפקה חדשה', run: () => { chooseMode('business'); showPage('productions'); setTimeout(() => prodOpenAddModal(), 120); } },
@@ -12807,7 +12854,7 @@ window.waActDo = function(phone, act) {
   else if (act === 'unmark') waMarkClient(phone, null);
   else if (act === 'rename') waRename(phone);
   else if (act === 'done') waDismiss(phone);
-  else if (act === 'sched') waSchedOpen(phone);
+  else if (act === 'sched') schedMsgNew(phone, _waName({ phone }));
   else if (act === 'history') waHistory(phone);
   else if (act === 'snooze') waSnoozeOpen(phone);
   else if (act === 'book') waBookOpen(phone);
